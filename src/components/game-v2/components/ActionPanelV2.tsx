@@ -5,7 +5,7 @@ type ActionPanelV2Props = {
 
 export function ActionPanelV2({ selectedAction, onActionSelect }: ActionPanelV2Props) {
     return (
-        <section className="gene-v2-action-panel" aria-label="Azioni disponibili">
+        <section className="gene-v2-action-panel" aria-label="Azioni disponibili" data-testid="gene-action-panel">
             <button
                 type="button"
                 className={`gene-v2-action-btn gene-v2-action-btn--use ${selectedAction === 'USE' ? 'is-active' : ''}`}

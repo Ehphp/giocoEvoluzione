@@ -32,7 +32,7 @@ export function GeneSelectionScreenV2() {
                 }} />
             </div>
 
-            <div className="gene-v2-scroll">
+            <div className="gene-v2-scroll" data-testid="gene-v2-scroll-container">
                 <DuelHeaderV2 player={geneSelectionMockDataV2.player} opponent={geneSelectionMockDataV2.opponent} />
                 <RoundIndicatorV2 round={geneSelectionMockDataV2.round} />
                 <EnvironmentPanelV2 environment={geneSelectionMockDataV2.environment} />

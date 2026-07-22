@@ -20,15 +20,24 @@
 
 .gene-v2-screen {
   position: relative;
-  min-height: 100dvh;
+  width: 100%;
   min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   color: var(--gene-v2-text);
   background:
     radial-gradient(88% 58% at 50% -12%, rgba(121, 209, 130, 0.3), transparent 70%),
     radial-gradient(44% 24% at 96% 12%, rgba(158, 115, 255, 0.2), transparent 75%),
     radial-gradient(34% 22% at 12% 88%, rgba(115, 225, 176, 0.16), transparent 75%),
     linear-gradient(180deg, var(--gene-v2-bg-top) 0%, var(--gene-v2-bg-mid) 42%, var(--gene-v2-bg-bottom) 100%);
-  overflow-x: clip;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .gene-v2-screen::before,
@@ -77,13 +86,17 @@
   display: grid;
   align-content: start;
   gap: 10px;
-  min-height: 100dvh;
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   padding:
     calc(env(safe-area-inset-top, 0px) + 10px)
     clamp(10px, 3.4vw, 18px)
-    calc(env(safe-area-inset-bottom, 0px) + 12px);
+    calc(env(safe-area-inset-bottom, 0px) + 18px);
+  overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .gene-v2-duel-header {
@@ -678,12 +691,15 @@
 
 .gene-v2-action-panel {
   position: sticky;
-  bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+  bottom: 0;
   z-index: 3;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
-  padding: 7px;
+  padding:
+    7px
+    7px
+    max(12px, env(safe-area-inset-bottom, 0px));
   border-radius: 18px;
   background: rgba(9, 18, 15, 0.56);
   border: 1px solid rgba(213, 234, 205, 0.24);
