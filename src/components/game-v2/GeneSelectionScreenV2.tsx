@@ -1,7 +1,5 @@
-import { useMemo, useState } from 'react'
-
 import { GAME_SELECTION_ASSETS } from './gameSelectionAssets'
-import { geneSelectionMockDataV2 } from './mockData'
+import type { GeneSelectionViewModelV2 } from './types'
 import { ActionPanelV2 } from './components/ActionPanelV2'
 import { CreatureStageV2 } from './components/CreatureStageV2'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
@@ -9,20 +7,20 @@ import { EnvironmentPanelV2 } from './components/EnvironmentPanelV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
 import { RoundIndicatorV2 } from './components/RoundIndicatorV2'
 import { SelectedGeneDetailsV2 } from './components/SelectedGeneDetailsV2'
+import { WaitingStateV2 } from './components/WaitingStateV2'
 
 import './GeneSelectionScreenV2.css'
 
-export function GeneSelectionScreenV2() {
-    const [selectedGeneId, setSelectedGeneId] = useState(geneSelectionMockDataV2.selectedGeneId)
-    const [selectedAction, setSelectedAction] = useState<'USE' | 'EVOLVE' | null>(geneSelectionMockDataV2.selectedAction)
+type GeneSelectionScreenV2Props = {
+    viewModel: GeneSelectionViewModelV2
+    onSelectGene: (geneId: string) => void
+    onUseGene: () => Promise<void>
+    onEvolveGene: () => Promise<void>
+}
 
-    const selectedGene = useMemo(() => {
-        return geneSelectionMockDataV2.genes.find((gene) => gene.id === selectedGeneId) ?? geneSelectionMockDataV2.genes[0]
-    }, [selectedGeneId])
-
-    if (!selectedGene) {
-        return null
-    }
+export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene }: GeneSelectionScreenV2Props) {
+    const showWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
+    const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
 
     return (
         <section className="gene-v2-screen" aria-label="Nuova schermata scelta gene V2">
@@ -33,22 +31,58 @@ export function GeneSelectionScreenV2() {
             </div>
 
             <div className="gene-v2-scroll" data-testid="gene-v2-scroll-container">
-                <DuelHeaderV2 player={geneSelectionMockDataV2.player} opponent={geneSelectionMockDataV2.opponent} />
-                <RoundIndicatorV2 round={geneSelectionMockDataV2.round} />
-                <EnvironmentPanelV2 environment={geneSelectionMockDataV2.environment} />
+                <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
+                <RoundIndicatorV2 round={viewModel.round} />
+                <EnvironmentPanelV2 environment={viewModel.environment} />
                 <CreatureStageV2
-                    playerName={geneSelectionMockDataV2.player.name}
-                    opponentName={geneSelectionMockDataV2.opponent.name}
+                    playerName={viewModel.player.name}
+                    opponentName={viewModel.opponent.name}
                     playerCreatureUrl={GAME_SELECTION_ASSETS.playerCreature}
                     opponentCreatureUrl={GAME_SELECTION_ASSETS.opponentCreature}
                 />
-                <GeneSelectorPreviewV2
-                    genes={geneSelectionMockDataV2.genes}
-                    selectedGeneId={selectedGeneId}
-                    onSelectGene={setSelectedGeneId}
-                />
-                <SelectedGeneDetailsV2 gene={selectedGene} />
-                <ActionPanelV2 selectedAction={selectedAction} onActionSelect={setSelectedAction} />
+                {viewModel.genes.length > 0 ? (
+                    <GeneSelectorPreviewV2
+                        genes={viewModel.genes}
+                        selectedGeneId={selectedGeneId}
+                        onSelectGene={onSelectGene}
+                        disableSelection={!viewModel.canSelectGenes}
+                    />
+                ) : (
+                    <section className="gene-v2-state-card" aria-live="polite">
+                        <strong>Geni non disponibili</strong>
+                        <p>Impossibile caricare i geni del giocatore per questo round.</p>
+                    </section>
+                )}
+
+                {viewModel.selectedGene ? <SelectedGeneDetailsV2 gene={viewModel.selectedGene} /> : null}
+
+                {viewModel.status === 'loading' ? (
+                    <section className="gene-v2-state-card" aria-live="polite">
+                        <strong>Caricamento in corso...</strong>
+                        <p>Sto preparando i dati del round.</p>
+                    </section>
+                ) : null}
+
+                {viewModel.status === 'error' && viewModel.errorMessage ? (
+                    <section className="gene-v2-state-card gene-v2-state-card--error" role="alert" aria-live="assertive">
+                        <strong>Errore invio</strong>
+                        <p>{viewModel.errorMessage}</p>
+                    </section>
+                ) : null}
+
+                {showWaiting && viewModel.waitingState ? (
+                    <WaitingStateV2 waitingState={viewModel.waitingState} />
+                ) : (
+                    <ActionPanelV2
+                        selectedAction={viewModel.selectedAction}
+                        selectedGeneName={viewModel.selectedGene?.name ?? null}
+                        canUse={viewModel.canUse}
+                        canEvolve={viewModel.canEvolve}
+                        isSubmitting={viewModel.status === 'submitting'}
+                        onUseAction={onUseGene}
+                        onEvolveAction={onEvolveGene}
+                    />
+                )}
             </div>
         </section>
     )

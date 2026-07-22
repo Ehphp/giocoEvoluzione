@@ -9,6 +9,18 @@ function StatusDot({ status }: { status: DuelPlayerV2['status'] }) {
     return <span className={`gene-v2-status-dot ${status === 'ready' ? 'is-ready' : 'is-choosing'}`} aria-hidden="true" />
 }
 
+function statusLabel(status: DuelPlayerV2['status']): string {
+    if (status === 'ready') {
+        return 'Scelta inviata'
+    }
+
+    if (status === 'disconnected') {
+        return 'Disconnesso'
+    }
+
+    return 'Sta scegliendo'
+}
+
 export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
     return (
         <header className="gene-v2-duel-header" aria-label="Stato competitivo giocatori">
@@ -24,7 +36,7 @@ export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
                     <strong>{player.name}</strong>
                     <small className="gene-v2-player-status">
                         <StatusDot status={player.status} />
-                        {player.status === 'ready' ? 'Scelta inviata' : 'Sta scegliendo'}
+                        {statusLabel(player.status)}
                     </small>
                 </div>
                 <span className="gene-v2-score" aria-label={`Punteggio ${player.score}`}>
@@ -48,7 +60,7 @@ export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
                     <strong>{opponent.name}</strong>
                     <small className="gene-v2-player-status">
                         <StatusDot status={opponent.status} />
-                        {opponent.status === 'ready' ? 'Scelta inviata' : 'Sta scegliendo'}
+                        {statusLabel(opponent.status)}
                     </small>
                 </div>
                 <span className="gene-v2-score" aria-label={`Punteggio ${opponent.score}`}>

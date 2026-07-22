@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { HomeScreen } from './components/home/HomeScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
+import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { ActionDock } from './components/game/ActionDock'
 import { ChoosingDuelHeader } from './components/game/ChoosingDuelHeader'
 import { ChoosingEnvironmentCard } from './components/game/ChoosingEnvironmentCard'
@@ -277,15 +278,17 @@ function App() {
     }
   }
 
-  async function handleSubmitAction(actionType: 'USE' | 'EVOLVE') {
-    if (!snapshot?.me || !selectedTrait || !myTraits) {
-      return
+  async function handleSubmitAction(actionType: 'USE' | 'EVOLVE', traitOverride?: TraitType): Promise<boolean> {
+    const traitToSubmit = traitOverride ?? selectedTrait
+
+    if (!snapshot?.me || !traitToSubmit || !myTraits) {
+      return false
     }
 
-    if (actionType === 'USE' && !isTraitUsable(myTraits, selectedTrait)) {
+    if (actionType === 'USE' && !isTraitUsable(myTraits, traitToSubmit)) {
       setErrorMessage('Questo tratto e in cooldown e non puo essere usato in questo round.')
 
-      return
+      return false
     }
 
     setIsBusy(true)
@@ -298,14 +301,16 @@ function App() {
         gameId: snapshot.game.id,
         roundNumber: snapshot.game.current_round,
         playerId: snapshot.me.id,
-        trait: selectedTrait,
+        trait: traitToSubmit,
         actionType,
       })
 
       await refreshSnapshot(snapshot.game.id, snapshot.me.id)
       setStatusMessage('Scelta confermata. In attesa dell avversario.')
+      return true
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Invio azione non riuscito.')
+      return false
     } finally {
       setIsBusy(false)
     }
@@ -423,7 +428,12 @@ function App() {
             </>
           ) : snapshot.game.status === 'CHOOSING' ? (
             isGeneSelectionV2Enabled ? (
-              <GeneSelectionScreenV2 />
+              <ConnectedGeneSelectionScreenV2
+                snapshot={snapshot}
+                myScore={myScore}
+                opponentScore={opponentScore}
+                onSubmitAction={handleSubmitAction}
+              />
             ) : (
               <GameScreen
                 snapshot={snapshot}
@@ -487,6 +497,33 @@ function App() {
         </section>
       )}
     </main>
+  )
+}
+
+type ConnectedGeneSelectionScreenV2Props = {
+  snapshot: GameSnapshot
+  myScore: number
+  opponentScore: number
+  onSubmitAction: (actionType: 'USE' | 'EVOLVE', traitOverride?: TraitType) => Promise<boolean>
+}
+
+function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSubmitAction }: ConnectedGeneSelectionScreenV2Props) {
+  const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
+    snapshot,
+    myScore,
+    opponentScore,
+    onSubmitAction: async (trait, actionType) => {
+      return onSubmitAction(actionType, trait)
+    },
+  })
+
+  return (
+    <GeneSelectionScreenV2
+      viewModel={viewModel}
+      onSelectGene={onSelectGene}
+      onUseGene={onUseGene}
+      onEvolveGene={onEvolveGene}
+    />
   )
 }
 

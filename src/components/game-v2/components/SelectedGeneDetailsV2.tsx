@@ -34,6 +34,7 @@ export function SelectedGeneDetailsV2({ gene }: SelectedGeneDetailsV2Props) {
             <div className="gene-v2-selected-facts">
                 <span>Affinita {affinityBadge(gene.affinity)}</span>
                 <span>USE previsto {gene.predictedValue ?? 'n/d'}</span>
+                <span>{gene.usable ? 'USE disponibile' : gene.disabledReason ?? 'USE bloccato'}</span>
             </div>
         </section>
     )

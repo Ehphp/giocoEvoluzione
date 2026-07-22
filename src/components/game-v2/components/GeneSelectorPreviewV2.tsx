@@ -4,6 +4,7 @@ type GeneSelectorPreviewV2Props = {
     genes: GeneCardV2[]
     selectedGeneId: string
     onSelectGene: (geneId: string) => void
+    disableSelection?: boolean
 }
 
 function affinityLabel(affinity: GeneCardV2['affinity']): string {
@@ -22,7 +23,7 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
     return 'Affinita bassa'
 }
 
-export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: GeneSelectorPreviewV2Props) {
+export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, disableSelection = false }: GeneSelectorPreviewV2Props) {
     const total = genes.length
 
     if (total === 0) {
@@ -40,7 +41,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
     }
 
     function goToOffset(offset: number) {
-        if (total < 2) {
+        if (total < 2 || disableSelection) {
             return
         }
 
@@ -75,6 +76,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                     className="gene-v2-nav-btn"
                     onClick={() => goToOffset(-1)}
                     aria-label="Gene precedente"
+                    disabled={disableSelection}
                 >
                     ‹
                 </button>
@@ -83,6 +85,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                     className="gene-v2-nav-btn"
                     onClick={() => goToOffset(1)}
                     aria-label="Gene successivo"
+                    disabled={disableSelection}
                 >
                     ›
                 </button>
@@ -98,7 +101,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                             key={`${gene.id}-${index}`}
                             type="button"
                             role="option"
-                            className={`gene-v2-gene-card ${isCenter ? 'is-center' : 'is-side'} ${isSelected ? 'is-selected' : ''}`}
+                            className={`gene-v2-gene-card ${isCenter ? 'is-center' : 'is-side'} ${isSelected ? 'is-selected' : ''} ${gene.usable ? '' : 'is-use-disabled'}`}
                             aria-selected={isSelected}
                             onClick={() => onSelectGene(gene.id)}
                             onKeyDown={(event) => {
@@ -112,6 +115,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                                     goToOffset(1)
                                 }
                             }}
+                            disabled={disableSelection}
                         >
                             <div className="gene-v2-gene-icon" role="img" aria-label={`Icona gene ${gene.name}`}>
                                 <img src={gene.imageUrl} alt="" loading="lazy" onError={(event) => {
@@ -122,6 +126,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                             <strong>{gene.name}</strong>
                             <small>Lv {gene.level}</small>
                             <span className={`gene-v2-affinity is-${gene.affinity}`}>{affinityLabel(gene.affinity)}</span>
+                            {!gene.usable ? <small>USE bloccato</small> : null}
                         </button>
                     )
                 })}

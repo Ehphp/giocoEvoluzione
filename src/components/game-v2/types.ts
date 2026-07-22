@@ -1,8 +1,14 @@
-export type DuelPlayerStatusV2 = 'choosing' | 'ready'
+import type { TraitType } from '../../game/types'
+
+export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 
 export type ModifierToneV2 = 'positive' | 'negative' | 'neutral'
 
 export type GeneAffinityV2 = 'low' | 'medium' | 'high' | 'excellent'
+
+export type GeneActionTypeV2 = 'USE' | 'EVOLVE'
+
+export type GeneSelectionStatusV2 = 'loading' | 'choosing' | 'submitting' | 'waiting' | 'resolving' | 'error'
 
 export interface DuelPlayerV2 {
     id: string
@@ -34,21 +40,39 @@ export interface EnvironmentV2 {
 
 export interface GeneCardV2 {
     id: string
+    traitType: TraitType
     name: string
     level: number
     affinity: GeneAffinityV2
     imageUrl?: string
     description: string
     predictedValue?: number
-    disabled?: boolean
+    usable: boolean
+    disabledReason?: string
 }
 
-export interface GeneSelectionScreenDataV2 {
+export interface WaitingStateV2 {
+    submittedGeneName: string
+    submittedAction: GeneActionTypeV2
+    submittedCountLabel: string
+    opponentStatusLabel: string
+    isResolving: boolean
+}
+
+export interface GeneSelectionViewModelV2 {
     player: DuelPlayerV2
     opponent: DuelPlayerV2
     round: RoundInfoV2
     environment: EnvironmentV2
     genes: GeneCardV2[]
-    selectedGeneId: string
-    selectedAction: 'USE' | 'EVOLVE' | null
+    selectedGeneId: string | null
+    selectedAction: GeneActionTypeV2 | null
+    selectedGene: GeneCardV2 | null
+    status: GeneSelectionStatusV2
+    actionsSubmitted: number
+    canUse: boolean
+    canEvolve: boolean
+    canSelectGenes: boolean
+    errorMessage?: string
+    waitingState?: WaitingStateV2
 }

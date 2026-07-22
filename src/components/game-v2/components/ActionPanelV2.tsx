@@ -1,31 +1,53 @@
 type ActionPanelV2Props = {
     selectedAction: 'USE' | 'EVOLVE' | null
-    onActionSelect: (action: 'USE' | 'EVOLVE') => void
+    selectedGeneName: string | null
+    canUse: boolean
+    canEvolve: boolean
+    isSubmitting: boolean
+    onUseAction: () => Promise<void>
+    onEvolveAction: () => Promise<void>
 }
 
-export function ActionPanelV2({ selectedAction, onActionSelect }: ActionPanelV2Props) {
+export function ActionPanelV2({
+    selectedAction,
+    selectedGeneName,
+    canUse,
+    canEvolve,
+    isSubmitting,
+    onUseAction,
+    onEvolveAction,
+}: ActionPanelV2Props) {
+    const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
+    const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
+
     return (
         <section className="gene-v2-action-panel" aria-label="Azioni disponibili" data-testid="gene-action-panel">
             <button
                 type="button"
                 className={`gene-v2-action-btn gene-v2-action-btn--use ${selectedAction === 'USE' ? 'is-active' : ''}`}
-                onClick={() => onActionSelect('USE')}
+                onClick={() => {
+                    void onUseAction()
+                }}
                 aria-pressed={selectedAction === 'USE'}
+                disabled={!canUse || isSubmitting}
             >
                 <span className="gene-v2-action-icon" aria-hidden="true">DNA</span>
-                <span>USA</span>
-                <small>Effetto immediato</small>
+                <span>{useLabel}</span>
+                <small>{selectedGeneName ? `${selectedGeneName} · Effetto immediato` : 'Effetto immediato'}</small>
             </button>
 
             <button
                 type="button"
                 className={`gene-v2-action-btn gene-v2-action-btn--evolve ${selectedAction === 'EVOLVE' ? 'is-active' : ''}`}
-                onClick={() => onActionSelect('EVOLVE')}
+                onClick={() => {
+                    void onEvolveAction()
+                }}
                 aria-pressed={selectedAction === 'EVOLVE'}
+                disabled={!canEvolve || isSubmitting}
             >
                 <span className="gene-v2-action-icon" aria-hidden="true">UP</span>
-                <span>EVOLVI</span>
-                <small>Upgrade livello</small>
+                <span>{evolveLabel}</span>
+                <small>{selectedGeneName ? `${selectedGeneName} · Upgrade livello` : 'Upgrade livello'}</small>
             </button>
         </section>
     )
