@@ -1,26 +1,20 @@
-import { TOTAL_ROUNDS, TRAIT_LABELS, ENVIRONMENT_MODIFIERS } from '../../../game/config'
+import { TOTAL_ROUNDS, TRAIT_LABELS } from '../../../game/config'
 import { getTraitRoundValue, isTraitUsable } from '../../../game/engine'
+import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
-import { getBiomeLabel } from '../../../game/ui-context'
-import type { Environment } from '../../../game/types'
+import { getRoundEventLabel } from '../../../game/ui-context'
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
-import { GAME_SELECTION_ASSETS, getEnvironmentAsset, getGeneAssetByTrait } from '../gameSelectionAssets'
+import { GAME_SELECTION_ASSETS, getEventAssetByArtKey, getGeneAssetByTrait } from '../gameSelectionAssets'
 import type {
     DuelPlayerStatusV2,
-    EnvironmentModifierV2,
     GeneActionTypeV2,
     GeneAffinityV2,
     GeneCardV2,
+    RoundEventEffectV2,
     GeneSelectionStatusV2,
     GeneSelectionViewModelV2,
 } from '../types'
-
-const ENVIRONMENT_DESCRIPTIONS: Record<Environment, string> = {
-    FOREST: 'Vegetazione densa e linee visive irregolari: conta leggere il terreno e muoversi con precisione.',
-    MOUNTAIN: 'Clima duro e terreno instabile: sopravvivenza e controllo del corpo diventano centrali.',
-    SWAMP: 'Ambiente umido e stagnante: risorse sporche e movimenti lenti premiano geni resilienti.',
-}
 
 type BuildGeneSelectionV2ViewModelInput = {
     snapshot: GameSnapshot
@@ -35,15 +29,15 @@ type BuildGeneSelectionV2ViewModelInput = {
 }
 
 function mapAffinity(score: number): GeneAffinityV2 {
-    if (score >= 3) {
+    if (score >= 2) {
         return 'excellent'
     }
 
-    if (score >= 2) {
+    if (score >= 1) {
         return 'high'
     }
 
-    if (score >= 1) {
+    if (score === 0) {
         return 'medium'
     }
 
@@ -74,31 +68,34 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
-function buildEnvironmentModifiers(environment: NonNullable<GameSnapshot['currentEnvironment']>): EnvironmentModifierV2[] {
-    const traitModifiers = ENVIRONMENT_MODIFIERS[environment]
-    const sorted = (Object.entries(traitModifiers) as Array<[TraitType, number]>).sort((a, b) => b[1] - a[1])
-    const strongest = sorted.slice(0, 2)
-    const weakest = sorted.slice(-1)
-    const highlighted = [...strongest, ...weakest]
+function buildRoundEventEffects(snapshot: GameSnapshot): RoundEventEffectV2[] {
+    const roundEvent = snapshot.currentRoundEvent
 
-    return highlighted.map(([trait, value], index) => {
-        const tone = value > 1 ? 'positive' : value < 1 ? 'negative' : 'neutral'
-        const signedValue = value >= 0 ? `+${value}` : `${value}`
+    if (!roundEvent) {
+        return []
+    }
+
+    const sorted = [...roundEvent.effects].sort((left, right) => right.modifier - left.modifier)
+
+    return sorted.map((effect, index) => {
+        const tone = effect.modifier > 0 ? 'positive' : effect.modifier < 0 ? 'negative' : 'neutral'
+        const signedValue = effect.modifier >= 0 ? `+${effect.modifier}` : `${effect.modifier}`
 
         return {
-            id: `${trait}-${index}`,
-            label: TRAIT_LABELS[trait],
-            value: `${signedValue} ${TRAIT_LABELS[trait]}`,
+            id: `${roundEvent.id}-${effect.trait}-${index}`,
+            label: TRAIT_LABELS[effect.trait],
+            value: `${signedValue} ${TRAIT_LABELS[effect.trait]}`,
+            reason: effect.reason,
             tone,
         }
     })
 }
 
 function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
-    const environment = snapshot.currentEnvironment
+    const roundEvent = snapshot.currentRoundEvent
     const myTraits = snapshot.me?.traits
 
-    if (!environment || !myTraits) {
+    if (!roundEvent || !myTraits) {
         return []
     }
 
@@ -106,7 +103,8 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
         .sort((a, b) => TRAIT_CATALOG[a].displayOrder - TRAIT_CATALOG[b].displayOrder)
         .map((traitType) => {
             const state = myTraits[traitType]
-            const affinity = ENVIRONMENT_MODIFIERS[environment][traitType]
+            const affinity = getRoundEventEffectsForTrait(roundEvent, traitType)
+                .reduce((sum, effect) => sum + effect.modifier, 0)
             const usable = isTraitUsable(myTraits, traitType)
 
             return {
@@ -117,7 +115,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 affinity: mapAffinity(affinity),
                 imageUrl: getGeneAssetByTrait(traitType),
                 description: TRAIT_CATALOG[traitType].description,
-                predictedValue: getTraitRoundValue(environment, myTraits, traitType),
+                predictedValue: getTraitRoundValue(roundEvent, myTraits, traitType),
                 usable,
                 disabledReason: usable ? undefined : `Cooldown ${state.cooldown}`,
             }
@@ -160,12 +158,15 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 current: snapshot.game.current_round,
                 total: TOTAL_ROUNDS,
             },
-            environment: {
-                id: 'unknown-env',
-                name: 'Ambiente non disponibile',
-                description: 'Dati ambiente non disponibili.',
+            roundEvent: {
+                id: 'unknown-event',
+                title: 'Evento non disponibile',
+                description: 'Dati evento non disponibili.',
+                category: 'N/A',
+                intensity: 1,
+                artKey: 'event-missing',
                 imageUrl: GAME_SELECTION_ASSETS.environment,
-                modifiers: [],
+                effects: [],
             },
             genes: [],
             selectedGeneId: null,
@@ -181,7 +182,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     }
 
     const opponent = snapshot.opponent
-    const environment = snapshot.currentEnvironment
+    const roundEvent = snapshot.currentRoundEvent
     const genes = buildGenes(snapshot)
     const selectedGene = resolveSelectedGene(genes, input.selectedGeneId)
     const selectedGeneId = selectedGene?.id ?? null
@@ -190,7 +191,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
 
     let status: GeneSelectionStatusV2 = 'choosing'
 
-    if (!environment) {
+    if (!roundEvent) {
         status = 'loading'
     } else if (input.submitErrorMessage) {
         status = 'error'
@@ -231,12 +232,15 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             current: snapshot.game.current_round,
             total: TOTAL_ROUNDS,
         },
-        environment: {
-            id: environment ?? 'unknown-env',
-            name: getBiomeLabel(environment),
-            description: environment ? ENVIRONMENT_DESCRIPTIONS[environment] : 'Ambiente in caricamento.',
-            imageUrl: environment ? getEnvironmentAsset(environment) : GAME_SELECTION_ASSETS.environment,
-            modifiers: environment ? buildEnvironmentModifiers(environment) : [],
+        roundEvent: {
+            id: roundEvent?.id ?? 'unknown-event',
+            title: getRoundEventLabel(roundEvent ?? null),
+            description: roundEvent?.shortDescription ?? 'Evento in caricamento.',
+            category: roundEvent?.category ?? 'N/A',
+            intensity: roundEvent?.intensity ?? 1,
+            artKey: roundEvent?.artKey ?? 'event-missing',
+            imageUrl: roundEvent ? getEventAssetByArtKey(roundEvent.artKey) : GAME_SELECTION_ASSETS.environment,
+            effects: buildRoundEventEffects(snapshot),
         },
         genes,
         selectedGeneId,

@@ -1,11 +1,12 @@
-import { ENVIRONMENTS, TRAITS, type Environment, type TraitCollection, type TraitType } from './types'
+import { TRAITS, type TraitCollection, type TraitType } from './types'
 import { TRAIT_CATALOG } from './traits-catalog'
+import { generateRoundEventSequence as generateRoundEventSequenceFromCatalog, ROUND_EVENT_WEIGHT } from './round-events'
 
 export const TOTAL_ROUNDS = 6
 export const FINAL_ROUND_NUMBER = 6
 export const FINAL_ROUND_POINTS = 2
 export const DEFAULT_ROUND_POINTS = 1
-export const ENVIRONMENT_WEIGHT = 2
+export const EVENT_WEIGHT = ROUND_EVENT_WEIGHT
 export const MAX_EFFECTIVE_TRAIT_LEVEL = 5
 export const ROOM_CODE_LENGTH = 5
 
@@ -14,16 +15,6 @@ export const TRAIT_LABELS: Record<TraitType, string> = TRAITS.reduce((labels, tr
 
     return labels
 }, {} as Record<TraitType, string>)
-
-export const ENVIRONMENT_MODIFIERS: Record<Environment, Record<TraitType, number>> = ENVIRONMENTS.reduce((matrix, environment) => {
-    matrix[environment] = TRAITS.reduce((row, trait) => {
-        row[trait] = TRAIT_CATALOG[trait].modifiers[environment]
-
-        return row
-    }, {} as Record<TraitType, number>)
-
-    return matrix
-}, {} as Record<Environment, Record<TraitType, number>>)
 
 export const CREATURE_ASSETS = {
     BASE: '/assets/creatures/base.png',
@@ -83,12 +74,8 @@ export function createInitialTraits(): TraitCollection {
     }, {} as TraitCollection)
 }
 
-export function generateEnvironmentSequence(random = Math.random): Environment[] {
-    return Array.from({ length: TOTAL_ROUNDS }, () => {
-        const index = Math.floor(random() * ENVIRONMENTS.length)
-
-        return ENVIRONMENTS[index] ?? ENVIRONMENTS[0]
-    })
+export function generateRoundEventSequence(random = Math.random): string[] {
+    return generateRoundEventSequenceFromCatalog(TOTAL_ROUNDS, random)
 }
 
 type PartialTraitCollection = Partial<Record<TraitType, { level?: unknown; cooldown?: unknown } | null | undefined>>

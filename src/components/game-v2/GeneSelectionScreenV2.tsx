@@ -3,7 +3,7 @@ import type { GeneSelectionViewModelV2 } from './types'
 import { ActionPanelV2 } from './components/ActionPanelV2'
 import { CreatureStageV2 } from './components/CreatureStageV2'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
-import { EnvironmentPanelV2 } from './components/EnvironmentPanelV2'
+import { RoundEventPanelV2 } from './components/RoundEventPanelV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
 import { RoundIndicatorV2 } from './components/RoundIndicatorV2'
 import { SelectedGeneDetailsV2 } from './components/SelectedGeneDetailsV2'
@@ -16,9 +16,10 @@ type GeneSelectionScreenV2Props = {
     onSelectGene: (geneId: string) => void
     onUseGene: () => Promise<void>
     onEvolveGene: () => Promise<void>
+    onLeaveSession: () => void
 }
 
-export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene }: GeneSelectionScreenV2Props) {
+export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession }: GeneSelectionScreenV2Props) {
     const showWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
 
@@ -31,9 +32,14 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             </div>
 
             <div className="gene-v2-scroll" data-testid="gene-v2-scroll-container">
+                <div className="gene-v2-top-actions">
+                    <button type="button" className="ghost-button gene-v2-leave" onClick={onLeaveSession}>
+                        Esci
+                    </button>
+                </div>
                 <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
                 <RoundIndicatorV2 round={viewModel.round} />
-                <EnvironmentPanelV2 environment={viewModel.environment} />
+                <RoundEventPanelV2 roundEvent={viewModel.roundEvent} />
                 <CreatureStageV2
                     playerName={viewModel.player.name}
                     opponentName={viewModel.opponent.name}
@@ -45,7 +51,7 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                         genes={viewModel.genes}
                         selectedGeneId={selectedGeneId}
                         onSelectGene={onSelectGene}
-                        disableSelection={!viewModel.canSelectGenes}
+                        disableSelection={viewModel.status === 'loading' || viewModel.status === 'submitting'}
                     />
                 ) : (
                     <section className="gene-v2-state-card" aria-live="polite">

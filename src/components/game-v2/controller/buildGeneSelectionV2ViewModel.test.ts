@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createInitialTraits } from '../../../game/config'
 import { getTraitRoundValue } from '../../../game/engine'
+import { getRoundEventById } from '../../../game/round-events'
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot, GameRecord, PlayerRecord } from '../../../lib/game-api'
 import { buildGeneSelectionV2ViewModel } from './buildGeneSelectionV2ViewModel'
@@ -12,7 +13,15 @@ function createGame(overrides: Partial<GameRecord> = {}): GameRecord {
         room_code: 'ABCDE',
         status: 'CHOOSING',
         current_round: 1,
-        environment_sequence: ['FOREST', 'MOUNTAIN', 'SWAMP', 'FOREST', 'SWAMP', 'MOUNTAIN'],
+        world_id: 'AURELIA_PRIME',
+        round_event_sequence: [
+            'VOLCANIC_ASH_WAVE',
+            'PROLONGED_ECLIPSE',
+            'PREDATOR_PACK_MIGRATION',
+            'HEAT_SPIKE',
+            'NUTRIENT_COLLAPSE',
+            'FLASH_FLOOD',
+        ],
         player_1_id: 'p1',
         player_2_id: 'p2',
         player_1_score: 0,
@@ -52,8 +61,15 @@ function createSnapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
         players: [me, opponent],
         me,
         opponent,
-        currentEnvironment: 'FOREST',
-        nextEnvironment: 'MOUNTAIN',
+        world: {
+            id: 'AURELIA_PRIME',
+            name: 'Aurelia Prime',
+            planetName: 'Aurelia',
+            backgroundArtKey: 'world-aurelia-prime',
+            paletteKey: 'aurelia-amber',
+        },
+        currentRoundEvent: getRoundEventById('VOLCANIC_ASH_WAVE'),
+        nextRoundEvent: getRoundEventById('PROLONGED_ECLIPSE'),
         actionsSubmitted: 0,
         myCurrentAction: null,
         currentRoundResult: null,
@@ -86,12 +102,12 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(viewModel.opponent.score).toBe(1)
     })
 
-    it('maps environment with real name and modifiers', () => {
+    it('maps round event with title and effects', () => {
         const viewModel = build(createSnapshot())
 
-        expect(viewModel.environment.id).toBe('FOREST')
-        expect(viewModel.environment.name).toContain('Foresta')
-        expect(viewModel.environment.modifiers.length).toBeGreaterThan(0)
+        expect(viewModel.roundEvent.id).toBe('VOLCANIC_ASH_WAVE')
+        expect(viewModel.roundEvent.title).toContain('ceneri')
+        expect(viewModel.roundEvent.effects.length).toBeGreaterThan(0)
     })
 
     it('maps owned genes from real trait collection', () => {
@@ -110,18 +126,18 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(webbedLimbs?.disabledReason).toContain('Cooldown')
     })
 
-    it('maps affinity from environment modifiers', () => {
+    it('maps affinity from round event effects', () => {
         const viewModel = build(createSnapshot())
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
 
-        expect(agility?.affinity).toBe('excellent')
+        expect(agility?.affinity).toBe('medium')
     })
 
     it('uses shared engine calculation for predicted USE value', () => {
         const snapshot = createSnapshot()
         const viewModel = build(snapshot)
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
-        const expected = getTraitRoundValue('FOREST', snapshot.me!.traits, 'AGILITY')
+        const expected = getTraitRoundValue(snapshot.currentRoundEvent!, snapshot.me!.traits, 'AGILITY')
 
         expect(agility?.predictedValue).toBe(expected)
     })
@@ -192,11 +208,11 @@ describe('buildGeneSelectionV2ViewModel', () => {
     it('maps round changes from snapshot', () => {
         const snapshot = createSnapshot({
             game: createGame({ current_round: 2 }),
-            currentEnvironment: 'MOUNTAIN',
+            currentRoundEvent: getRoundEventById('PROLONGED_ECLIPSE'),
         })
         const viewModel = build(snapshot)
 
         expect(viewModel.round.current).toBe(2)
-        expect(viewModel.environment.id).toBe('MOUNTAIN')
+        expect(viewModel.roundEvent.id).toBe('PROLONGED_ECLIPSE')
     })
 })

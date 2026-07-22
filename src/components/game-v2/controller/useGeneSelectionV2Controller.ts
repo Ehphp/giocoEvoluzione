@@ -70,8 +70,8 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
 
         const traitIds = new Set((Object.keys(myTraits) as TraitType[]).map((trait) => trait))
 
-        if (myCurrentAction) {
-            setSelectedGeneId(null)
+        if (myCurrentAction && !selectedGeneId) {
+            setSelectedGeneId(myCurrentAction.trait)
 
             return
         }
@@ -96,7 +96,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
     }, [input.myScore, input.opponentScore, input.snapshot, isSubmitting, localSubmittedAction, selectedAction, selectedGeneId, submitErrorMessage])
 
     const handleSelectGene = useCallback((geneId: string) => {
-        if (!viewModel.canSelectGenes || submittingRef.current) {
+        if (submittingRef.current || viewModel.status === 'loading') {
             return
         }
 
@@ -107,7 +107,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         setSelectedGeneId(geneId)
         setSelectedAction(null)
         setSubmitErrorMessage(null)
-    }, [viewModel.canSelectGenes, viewModel.genes])
+    }, [viewModel.genes, viewModel.status])
 
     const handleSubmit = useCallback(async (actionType: GeneActionTypeV2) => {
         if (submittingRef.current || !viewModel.selectedGene) {

@@ -1,29 +1,31 @@
 import { describe, expect, it } from 'vitest'
 
 import { createInitialTraits } from './config'
+import { getTraitRoundValue, isTraitUsable, resolveRound } from './engine'
+import { getRoundEventById } from './round-events'
 import { getValidatedTraitRoundValue } from './scoring'
-import {
-    getTraitRoundValue,
-    isTraitUsable,
-    resolveRound,
-} from './engine'
+
+const volcanicAsh = getRoundEventById('VOLCANIC_ASH_WAVE')
+const eclipse = getRoundEventById('PROLONGED_ECLIPSE')
+const predators = getRoundEventById('PREDATOR_PACK_MIGRATION')
+const heatSpike = getRoundEventById('HEAT_SPIKE')
 
 describe('game engine', () => {
-    it('calculates trait value from environment modifier plus level', () => {
+    it('calculates trait value from event modifier plus level', () => {
         const traits = createInitialTraits()
-        traits.AGILITY.level = 2
+        traits.RESISTANCE.level = 2
 
-        expect(getTraitRoundValue('FOREST', traits, 'AGILITY')).toBe(8)
+        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(6)
     })
 
     it('keeps round resolution aligned with the shared validated helper', () => {
         const traits = createInitialTraits()
         traits.AGILITY.level = 1
 
-        const helperValue = getValidatedTraitRoundValue('FOREST', traits, 'AGILITY')
+        const helperValue = getValidatedTraitRoundValue(predators, traits, 'AGILITY')
         const result = resolveRound({
             roundNumber: 1,
-            environment: 'FOREST',
+            roundEvent: predators,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: traits,
@@ -47,7 +49,7 @@ describe('game engine', () => {
         const traits = createInitialTraits()
         const result = resolveRound({
             roundNumber: 1,
-            environment: 'SWAMP',
+            roundEvent: heatSpike,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: traits,
@@ -72,7 +74,7 @@ describe('game engine', () => {
     it('puts a used trait on cooldown for the next round only', () => {
         const roundOne = resolveRound({
             roundNumber: 1,
-            environment: 'FOREST',
+            roundEvent: predators,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: createInitialTraits(),
@@ -95,7 +97,7 @@ describe('game engine', () => {
         expect(() =>
             resolveRound({
                 roundNumber: 2,
-                environment: 'MOUNTAIN',
+                roundEvent: eclipse,
                 player1Id: 'p1',
                 player2Id: 'p2',
                 player1Traits: roundOne.player1.traits,
@@ -115,7 +117,7 @@ describe('game engine', () => {
 
         const roundTwo = resolveRound({
             roundNumber: 2,
-            environment: 'MOUNTAIN',
+            roundEvent: eclipse,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: roundOne.player1.traits,
@@ -139,7 +141,7 @@ describe('game engine', () => {
     it('resolves ties without assigning points', () => {
         const result = resolveRound({
             roundNumber: 1,
-            environment: 'SWAMP',
+            roundEvent: eclipse,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: createInitialTraits(),
@@ -164,7 +166,7 @@ describe('game engine', () => {
     it('assigns double points in the sixth round', () => {
         const result = resolveRound({
             roundNumber: 6,
-            environment: 'MOUNTAIN',
+            roundEvent: volcanicAsh,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: createInitialTraits(),
@@ -190,7 +192,7 @@ describe('game engine', () => {
         expect(() =>
             resolveRound({
                 roundNumber: 3,
-                environment: 'FOREST',
+                roundEvent: predators,
                 player1Id: 'p1',
                 player2Id: 'p2',
                 player1Traits: createInitialTraits(),
@@ -214,7 +216,7 @@ describe('game engine', () => {
         expect(() =>
             resolveRound({
                 roundNumber: 1,
-                environment: 'FOREST',
+                roundEvent: predators,
                 player1Id: 'p1',
                 player2Id: 'p2',
                 player1Traits: {

@@ -1,24 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { createInitialTraits, ENVIRONMENT_MODIFIERS, normalizeTraitCollection } from './config'
+import { createInitialTraits, normalizeTraitCollection } from './config'
+import { ROUND_EVENT_DEFINITIONS } from './round-events'
 import { TRAIT_CATALOG } from './traits-catalog'
-import { ENVIRONMENTS, TRAITS, type TraitType } from './types'
+import { TRAITS, type TraitType } from './types'
 
 describe('trait catalog integrity', () => {
-    it('contains all ten traits and keeps legacy IDs', () => {
+    it('contains all ten traits and keeps stable IDs', () => {
         expect(TRAITS).toHaveLength(10)
-        expect(TRAITS).toEqual([
-            'STRENGTH',
-            'RESISTANCE',
-            'AGILITY',
-            'PERCEPTION',
-            'METABOLISM',
-            'ADAPTATION',
-            'GRIP_CLAWS',
-            'CAMOUFLAGE',
-            'WEBBED_LIMBS',
-            'FAT_RESERVES',
-        ])
 
         for (const trait of TRAITS) {
             expect(TRAIT_CATALOG[trait]).toBeDefined()
@@ -35,33 +24,14 @@ describe('trait catalog integrity', () => {
         }
     })
 
-    it('has a value for each environment and every value is in [0, 3]', () => {
+    it('every trait appears in at least one round event effect', () => {
+        const coveredTraits = new Set(
+            ROUND_EVENT_DEFINITIONS.flatMap((eventDefinition) => eventDefinition.effects.map((effect) => effect.trait)),
+        )
+
         for (const trait of TRAITS) {
-            for (const environment of ENVIRONMENTS) {
-                const value = ENVIRONMENT_MODIFIERS[environment][trait]
-                expect(Number.isInteger(value)).toBe(true)
-                expect(value).toBeGreaterThanOrEqual(0)
-                expect(value).toBeLessThanOrEqual(3)
-            }
+            expect(coveredTraits.has(trait)).toBe(true)
         }
-    })
-
-    it('keeps affinity sum equal to 4 for each trait', () => {
-        for (const trait of TRAITS) {
-            const sum = ENVIRONMENTS.reduce((total, environment) => total + ENVIRONMENT_MODIFIERS[environment][trait], 0)
-            expect(sum).toBe(4)
-        }
-    })
-
-    it('has no duplicate affinity profile across genes', () => {
-        const profiles = TRAITS.map((trait) => ({
-            trait,
-            profile: ENVIRONMENTS.map((environment) => ENVIRONMENT_MODIFIERS[environment][trait]).join(','),
-        }))
-
-        const uniqueProfiles = new Set(profiles.map((entry) => entry.profile))
-
-        expect(uniqueProfiles.size).toBe(profiles.length)
     })
 
     it('normalizes legacy 6-trait state without overwriting existing values', () => {

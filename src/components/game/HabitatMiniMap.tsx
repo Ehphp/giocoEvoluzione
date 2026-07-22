@@ -1,4 +1,8 @@
-import type { HabitatZone } from '../../game/ui-context'
+type HabitatZone = {
+    id: string
+    label: string
+    control: 'player' | 'opponent' | 'neutral' | 'hazard'
+}
 
 type HabitatMiniMapProps = {
     zones: HabitatZone[]

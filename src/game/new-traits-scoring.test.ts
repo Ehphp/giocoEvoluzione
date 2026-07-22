@@ -2,29 +2,34 @@ import { describe, expect, it } from 'vitest'
 
 import { createInitialTraits } from './config'
 import { getTraitRoundValue, resolveRound } from './engine'
+import { getRoundEventById } from './round-events'
 
 describe('scoring with expanded trait catalog', () => {
-    it('modifier 3 and level 0 gives value 6', () => {
+    const flood = getRoundEventById('FLASH_FLOOD')
+    const heat = getRoundEventById('HEAT_SPIKE')
+    const predators = getRoundEventById('PREDATOR_PACK_MIGRATION')
+
+    it('positive event modifier and level 0 gives weighted value', () => {
         const traits = createInitialTraits()
 
-        expect(getTraitRoundValue('FOREST', traits, 'AGILITY')).toBe(6)
+        expect(getTraitRoundValue(flood, traits, 'WEBBED_LIMBS')).toBe(4)
     })
 
-    it('modifier 0 and level 5 gives value 5', () => {
+    it('negative event modifier with high level remains valid', () => {
         const traits = createInitialTraits()
         traits.STRENGTH.level = 5
 
-        expect(getTraitRoundValue('SWAMP', traits, 'STRENGTH')).toBe(5)
+        expect(getTraitRoundValue(flood, traits, 'STRENGTH')).toBe(3)
     })
 
-    it('modifier 0 level 5 does not beat modifier 3 level 0', () => {
+    it('high level on neutral trait can beat favored trait', () => {
         const p1 = createInitialTraits()
         const p2 = createInitialTraits()
         p1.STRENGTH.level = 5
 
         const result = resolveRound({
             roundNumber: 1,
-            environment: 'SWAMP',
+            roundEvent: heat,
             player1Id: 'p1',
             player2Id: 'p2',
             player1Traits: p1,
@@ -34,82 +39,45 @@ describe('scoring with expanded trait catalog', () => {
         })
 
         expect(result.player1.roundValue).toBe(5)
-        expect(result.player2.roundValue).toBe(6)
+        expect(result.player2.roundValue).toBe(4)
+        expect(result.winnerId).toBe('p1')
+    })
+
+    it('level advantage can recover a one-point event deficit', () => {
+        const low = createInitialTraits()
+        const high = createInitialTraits()
+
+        low.FAT_RESERVES.level = 4
+        let result = resolveRound({
+            roundNumber: 1,
+            roundEvent: predators,
+            player1Id: 'p1',
+            player2Id: 'p2',
+            player1Traits: low,
+            player2Traits: high,
+            player1Action: { playerId: 'p1', trait: 'FAT_RESERVES', actionType: 'USE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
+        })
+
+        expect(result.player1.roundValue).toBe(2)
+        expect(result.player2.roundValue).toBe(0)
+        expect(result.winnerId).toBe('p1')
+
+        low.FAT_RESERVES.level = 0
+        result = resolveRound({
+            roundNumber: 1,
+            roundEvent: predators,
+            player1Id: 'p1',
+            player2Id: 'p2',
+            player1Traits: low,
+            player2Traits: high,
+            player1Action: { playerId: 'p1', trait: 'FAT_RESERVES', actionType: 'USE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
+        })
+
+        expect(result.player1.roundValue).toBe(-2)
+        expect(result.player2.roundValue).toBe(0)
         expect(result.winnerId).toBe('p2')
-    })
-
-    it('a one-point lower environment gene needs at least three levels advantage to win', () => {
-        const low = createInitialTraits()
-        const high = createInitialTraits()
-
-        low.ADAPTATION.level = 2
-        let result = resolveRound({
-            roundNumber: 1,
-            environment: 'SWAMP',
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Traits: low,
-            player2Traits: high,
-            player1Action: { playerId: 'p1', trait: 'ADAPTATION', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'METABOLISM', actionType: 'USE' },
-        })
-
-        expect(result.player1.roundValue).toBe(6)
-        expect(result.player2.roundValue).toBe(6)
-        expect(result.winnerId).toBeNull()
-
-        low.ADAPTATION.level = 3
-        result = resolveRound({
-            roundNumber: 1,
-            environment: 'SWAMP',
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Traits: low,
-            player2Traits: high,
-            player1Action: { playerId: 'p1', trait: 'ADAPTATION', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'METABOLISM', actionType: 'USE' },
-        })
-
-        expect(result.player1.roundValue).toBe(7)
-        expect(result.player2.roundValue).toBe(6)
-        expect(result.winnerId).toBe('p1')
-    })
-
-    it('a two-point lower environment gene needs at least five levels advantage to win', () => {
-        const low = createInitialTraits()
-        const high = createInitialTraits()
-
-        low.ADAPTATION.level = 4
-        let result = resolveRound({
-            roundNumber: 1,
-            environment: 'MOUNTAIN',
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Traits: low,
-            player2Traits: high,
-            player1Action: { playerId: 'p1', trait: 'ADAPTATION', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'RESISTANCE', actionType: 'USE' },
-        })
-
-        expect(result.player1.roundValue).toBe(6)
-        expect(result.player2.roundValue).toBe(6)
-        expect(result.winnerId).toBeNull()
-
-        low.ADAPTATION.level = 5
-        result = resolveRound({
-            roundNumber: 1,
-            environment: 'MOUNTAIN',
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Traits: low,
-            player2Traits: high,
-            player1Action: { playerId: 'p1', trait: 'ADAPTATION', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'RESISTANCE', actionType: 'USE' },
-        })
-
-        expect(result.player1.roundValue).toBe(7)
-        expect(result.player2.roundValue).toBe(6)
-        expect(result.winnerId).toBe('p1')
     })
 
     it('level 6 has the same effective contribution as level 5', () => {
@@ -119,8 +87,8 @@ describe('scoring with expanded trait catalog', () => {
         five.CAMOUFLAGE.level = 5
         six.CAMOUFLAGE.level = 6
 
-        expect(getTraitRoundValue('FOREST', five, 'CAMOUFLAGE')).toBe(11)
-        expect(getTraitRoundValue('FOREST', six, 'CAMOUFLAGE')).toBe(11)
+        expect(getTraitRoundValue(predators, five, 'CAMOUFLAGE')).toBe(9)
+        expect(getTraitRoundValue(predators, six, 'CAMOUFLAGE')).toBe(9)
     })
 
     it('invalid level values are rejected (NaN, undefined, Infinity, negative)', () => {
@@ -136,18 +104,9 @@ describe('scoring with expanded trait catalog', () => {
         const negativeTraits = createInitialTraits()
         negativeTraits.CAMOUFLAGE.level = -1
 
-        expect(() => getTraitRoundValue('FOREST', nanTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
-        expect(() => getTraitRoundValue('FOREST', undefinedTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
-        expect(() => getTraitRoundValue('FOREST', infTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
-        expect(() => getTraitRoundValue('FOREST', negativeTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
-    })
-
-    it('computes round values correctly for the four new traits', () => {
-        const traits = createInitialTraits()
-
-        expect(getTraitRoundValue('MOUNTAIN', traits, 'GRIP_CLAWS')).toBe(6)
-        expect(getTraitRoundValue('FOREST', traits, 'CAMOUFLAGE')).toBe(6)
-        expect(getTraitRoundValue('SWAMP', traits, 'WEBBED_LIMBS')).toBe(6)
-        expect(getTraitRoundValue('MOUNTAIN', traits, 'FAT_RESERVES')).toBe(4)
+        expect(() => getTraitRoundValue(predators, nanTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
+        expect(() => getTraitRoundValue(predators, undefinedTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
+        expect(() => getTraitRoundValue(predators, infTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
+        expect(() => getTraitRoundValue(predators, negativeTraits, 'CAMOUFLAGE')).toThrow(/invalid trait state/i)
     })
 })

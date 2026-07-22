@@ -23,19 +23,23 @@ export interface RoundInfoV2 {
     total: number
 }
 
-export interface EnvironmentModifierV2 {
+export interface RoundEventEffectV2 {
     id: string
     label: string
     value: string
+    reason: string
     tone: ModifierToneV2
 }
 
-export interface EnvironmentV2 {
+export interface RoundEventV2 {
     id: string
-    name: string
+    title: string
     description: string
+    category: string
+    intensity: 1 | 2 | 3
+    artKey: string
     imageUrl?: string
-    modifiers: EnvironmentModifierV2[]
+    effects: RoundEventEffectV2[]
 }
 
 export interface GeneCardV2 {
@@ -63,7 +67,7 @@ export interface GeneSelectionViewModelV2 {
     player: DuelPlayerV2
     opponent: DuelPlayerV2
     round: RoundInfoV2
-    environment: EnvironmentV2
+    roundEvent: RoundEventV2
     genes: GeneCardV2[]
     selectedGeneId: string | null
     selectedAction: GeneActionTypeV2 | null

@@ -1,7 +1,7 @@
-import type { Environment, RoundValueBreakdown } from './types'
+import type { RoundValueBreakdown } from './types'
 
 export type RoundExplanationInput = {
-    environment: Environment | null
+    roundEventTitle: string | null
     meWon: boolean | null
     meActionType: 'USE' | 'EVOLVE' | null
     opponentActionType: 'USE' | 'EVOLVE' | null
@@ -9,22 +9,8 @@ export type RoundExplanationInput = {
     opponentBreakdown?: RoundValueBreakdown | null
 }
 
-const ENVIRONMENT_LABELS: Record<Environment, string> = {
-    FOREST: 'Foresta',
-    MOUNTAIN: 'Montagna',
-    SWAMP: 'Palude',
-}
-
-function getEnvironmentName(environment: Environment | null): string {
-    if (!environment) {
-        return 'l ambiente corrente'
-    }
-
-    return ENVIRONMENT_LABELS[environment]
-}
-
 export function getRoundExplanation(input: RoundExplanationInput): string {
-    const environmentName = getEnvironmentName(input.environment)
+    const eventName = input.roundEventTitle ?? 'l evento del round'
 
     if (!input.myBreakdown || !input.opponentBreakdown) {
         return 'Risultato storico: dettagli di calcolo non disponibili per questo round.'
@@ -49,16 +35,16 @@ export function getRoundExplanation(input: RoundExplanationInput): string {
     const winnerBreakdown = input.meWon ? input.myBreakdown : input.opponentBreakdown
     const loserBreakdown = input.meWon ? input.opponentBreakdown : input.myBreakdown
 
-    if (loserBreakdown.environmentModifier > winnerBreakdown.environmentModifier && winnerBreakdown.levelContribution > loserBreakdown.levelContribution) {
+    if (loserBreakdown.eventModifierTotal > winnerBreakdown.eventModifierTotal && winnerBreakdown.levelContribution > loserBreakdown.levelContribution) {
         return input.meWon
-            ? 'Il livello superiore ha compensato la minore affinità ambientale.'
-            : `Il tuo gene era più adatto alla ${environmentName}, ma il livello non è bastato.`
+            ? 'Il livello superiore ha compensato una penalita evento piu severa.'
+            : `Il tuo gene era favorito in ${eventName}, ma il livello non e bastato.`
     }
 
-    if (winnerBreakdown.environmentContribution > loserBreakdown.environmentContribution) {
+    if (winnerBreakdown.eventContribution > loserBreakdown.eventContribution) {
         return input.meWon
-            ? `Hai vinto grazie alla maggiore affinità con la ${environmentName}.`
-            : `Hai perso per minore affinità con la ${environmentName}.`
+            ? `Hai vinto grazie agli effetti favorevoli di ${eventName}.`
+            : `Hai perso per effetti evento meno favorevoli in ${eventName}.`
     }
 
     if (winnerBreakdown.levelContribution > loserBreakdown.levelContribution) {

@@ -20,15 +20,18 @@ export const geneSelectionMockDataV2: GeneSelectionViewModelV2 = {
         current: 1,
         total: 6,
     },
-    environment: {
-        id: 'forest',
-        name: 'Foresta fitta',
-        description: 'Vegetazione densa e passaggi stretti: privilegia lettura del terreno e precisione.',
+    roundEvent: {
+        id: 'VOLCANIC_ASH_WAVE',
+        title: 'Ondata di ceneri vulcaniche',
+        description: 'Particelle abrasive e visibilita ridotta: adattati in fretta.',
+        category: 'GEOLOGICAL',
+        intensity: 2,
+        artKey: 'event-volcanic-ash-wave',
         imageUrl: GAME_SELECTION_ASSETS.environment,
-        modifiers: [
-            { id: 'm1', label: 'Visibilita', value: '+2 Percezione', tone: 'positive' },
-            { id: 'm2', label: 'Mobilita', value: '+3 Agilita', tone: 'positive' },
-            { id: 'm3', label: 'Attrito', value: '-1 Forza bruta', tone: 'negative' },
+        effects: [
+            { id: 'm1', label: 'Pelle isolante', value: '+2 Pelle isolante', reason: 'Riduce danni da particolato.', tone: 'positive' },
+            { id: 'm2', label: 'Sensi acuti', value: '-1 Sensi acuti', reason: 'La cenere riduce visibilita.', tone: 'negative' },
+            { id: 'm3', label: 'Respirazione efficiente', value: '-1 Respirazione efficiente', reason: 'Aria pesante piu costosa.', tone: 'negative' },
         ],
     },
     status: 'choosing',

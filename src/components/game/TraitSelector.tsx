@@ -1,15 +1,16 @@
 import { useEffect, useMemo, type KeyboardEvent } from 'react'
 
-import { CREATURE_ASSETS, ENVIRONMENT_MODIFIERS } from '../../game/config'
+import { CREATURE_ASSETS } from '../../game/config'
 import { getTraitRoundValue } from '../../game/engine'
+import { getRoundEventEffectsForTrait } from '../../game/round-events'
 import { TRAIT_CATALOG } from '../../game/traits-catalog'
 import { getTraitTradeoffMock } from '../../game/ui-context'
-import type { Environment, TraitCollection, TraitType } from '../../game/types'
+import type { RoundEventDefinition, TraitCollection, TraitType } from '../../game/types'
 
 type TraitSelectorProps = {
     traits: TraitCollection
     selectedTrait: TraitType | null
-    currentEnvironment: Environment | null
+    currentRoundEvent: RoundEventDefinition | null
     onSelectTrait: (trait: TraitType) => void
     isSubmitted: boolean
 }
@@ -61,7 +62,7 @@ function getColumnJump(): number {
 export function TraitSelector({
     traits,
     selectedTrait,
-    currentEnvironment,
+    currentRoundEvent,
     onSelectTrait,
     isSubmitted,
 }: TraitSelectorProps) {
@@ -140,8 +141,10 @@ export function TraitSelector({
 
     const activeState = traits[activeTrait]
     const activeMetadata = TRAIT_CATALOG[activeTrait]
-    const activeAffinity = currentEnvironment ? ENVIRONMENT_MODIFIERS[currentEnvironment][activeTrait] : 0
-    const activeUseValue = currentEnvironment ? getTraitRoundValue(currentEnvironment, traits, activeTrait) : null
+    const activeAffinity = currentRoundEvent
+        ? getRoundEventEffectsForTrait(currentRoundEvent, activeTrait).reduce((sum, effect) => sum + effect.modifier, 0)
+        : 0
+    const activeUseValue = currentRoundEvent ? getTraitRoundValue(currentRoundEvent, traits, activeTrait) : null
     const activeAvailability = activeState.cooldown > 0 ? `In cooldown per ${activeState.cooldown} round` : 'Disponibile per USE'
     const activeTradeoff = getTraitTradeoffMock(activeTrait)
 
@@ -160,8 +163,10 @@ export function TraitSelector({
                     const state = traits[trait]
                     const metadata = TRAIT_CATALOG[trait]
                     const isSelected = trait === activeTrait
-                    const affinity = currentEnvironment ? ENVIRONMENT_MODIFIERS[currentEnvironment][trait] : 0
-                    const useValue = currentEnvironment ? getTraitRoundValue(currentEnvironment, traits, trait) : null
+                    const affinity = currentRoundEvent
+                        ? getRoundEventEffectsForTrait(currentRoundEvent, trait).reduce((sum, effect) => sum + effect.modifier, 0)
+                        : 0
+                    const useValue = currentRoundEvent ? getTraitRoundValue(currentRoundEvent, traits, trait) : null
                     const iconSrc = CREATURE_ASSETS[trait]
                     const availabilityText = state.cooldown > 0 ? `Cooldown ${state.cooldown}` : 'Ready'
 

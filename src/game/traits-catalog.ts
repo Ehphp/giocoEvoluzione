@@ -1,4 +1,4 @@
-import type { Environment, TraitType } from './types'
+import type { TraitType } from './types'
 
 export type TraitCatalogEntry = {
     id: TraitType
@@ -6,7 +6,6 @@ export type TraitCatalogEntry = {
     description: string
     iconKey: TraitType
     displayOrder: number
-    modifiers: Record<Environment, number>
 }
 
 export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
@@ -16,11 +15,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Struttura potente utile per ostacoli e pendenze, poco adatta ai terreni profondi.',
         iconKey: 'STRENGTH',
         displayOrder: 1,
-        modifiers: {
-            FOREST: 2,
-            MOUNTAIN: 2,
-            SWAMP: 0,
-        },
     },
     RESISTANCE: {
         id: 'RESISTANCE',
@@ -28,11 +22,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Protezione dal freddo, dal vento e dalle superfici abrasive.',
         iconKey: 'RESISTANCE',
         displayOrder: 2,
-        modifiers: {
-            FOREST: 0,
-            MOUNTAIN: 3,
-            SWAMP: 1,
-        },
     },
     AGILITY: {
         id: 'AGILITY',
@@ -40,11 +29,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Movimento rapido tra radici, rami e passaggi stretti.',
         iconKey: 'AGILITY',
         displayOrder: 3,
-        modifiers: {
-            FOREST: 3,
-            MOUNTAIN: 1,
-            SWAMP: 0,
-        },
     },
     PERCEPTION: {
         id: 'PERCEPTION',
@@ -52,11 +36,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Orientamento in vegetazione, nebbia e scarsa visibilita.',
         iconKey: 'PERCEPTION',
         displayOrder: 4,
-        modifiers: {
-            FOREST: 2,
-            MOUNTAIN: 0,
-            SWAMP: 2,
-        },
     },
     METABOLISM: {
         id: 'METABOLISM',
@@ -64,11 +43,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Tolleranza ad aria stagnante, umidita e poco ossigeno.',
         iconKey: 'METABOLISM',
         displayOrder: 5,
-        modifiers: {
-            FOREST: 0,
-            MOUNTAIN: 1,
-            SWAMP: 3,
-        },
     },
     ADAPTATION: {
         id: 'ADAPTATION',
@@ -76,11 +50,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Adattamento moderato e flessibile a condizioni differenti.',
         iconKey: 'ADAPTATION',
         displayOrder: 6,
-        modifiers: {
-            FOREST: 1,
-            MOUNTAIN: 1,
-            SWAMP: 2,
-        },
     },
     GRIP_CLAWS: {
         id: 'GRIP_CLAWS',
@@ -88,11 +57,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Presa stabile su rocce, pareti e tronchi.',
         iconKey: 'GRIP_CLAWS',
         displayOrder: 7,
-        modifiers: {
-            FOREST: 1,
-            MOUNTAIN: 3,
-            SWAMP: 0,
-        },
     },
     CAMOUFLAGE: {
         id: 'CAMOUFLAGE',
@@ -100,11 +64,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Occultamento attraverso colore e texture della pelle.',
         iconKey: 'CAMOUFLAGE',
         displayOrder: 8,
-        modifiers: {
-            FOREST: 3,
-            MOUNTAIN: 0,
-            SWAMP: 1,
-        },
     },
     WEBBED_LIMBS: {
         id: 'WEBBED_LIMBS',
@@ -112,11 +71,6 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Maggiore mobilita in acqua e fango.',
         iconKey: 'WEBBED_LIMBS',
         displayOrder: 9,
-        modifiers: {
-            FOREST: 1,
-            MOUNTAIN: 0,
-            SWAMP: 3,
-        },
     },
     FAT_RESERVES: {
         id: 'FAT_RESERVES',
@@ -124,10 +78,5 @@ export const TRAIT_CATALOG: Record<TraitType, TraitCatalogEntry> = {
         description: 'Protezione dal freddo e riserva energetica.',
         iconKey: 'FAT_RESERVES',
         displayOrder: 10,
-        modifiers: {
-            FOREST: 0,
-            MOUNTAIN: 2,
-            SWAMP: 2,
-        },
     },
 }

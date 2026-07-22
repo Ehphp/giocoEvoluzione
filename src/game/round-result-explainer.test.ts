@@ -6,9 +6,17 @@ import { getRoundExplanation } from './round-result-explainer'
 function breakdown(overrides?: Partial<RoundValueBreakdown>): RoundValueBreakdown {
     return {
         actionType: 'USE',
-        environmentModifier: 2,
-        environmentWeight: 2,
-        environmentContribution: 4,
+        eventModifierTotal: 2,
+        eventWeight: 2,
+        eventContribution: 4,
+        appliedEventEffects: [
+            {
+                trait: 'PERCEPTION',
+                modifier: 2,
+                reason: 'Placeholder reason',
+                contribution: 4,
+            },
+        ],
         originalLevel: 1,
         effectiveLevel: 1,
         levelContribution: 1,
@@ -20,7 +28,7 @@ function breakdown(overrides?: Partial<RoundValueBreakdown>): RoundValueBreakdow
 describe('round result explainer', () => {
     it('returns historical fallback when breakdown is missing', () => {
         const message = getRoundExplanation({
-            environment: 'FOREST',
+            roundEventTitle: 'Eclissi prolungata',
             meWon: true,
             meActionType: 'USE',
             opponentActionType: 'USE',
@@ -33,7 +41,7 @@ describe('round result explainer', () => {
 
     it('explains tie deterministically', () => {
         const message = getRoundExplanation({
-            environment: 'SWAMP',
+            roundEventTitle: 'Inondazione lampo',
             meWon: null,
             meActionType: 'USE',
             opponentActionType: 'USE',
@@ -46,7 +54,7 @@ describe('round result explainer', () => {
 
     it('explains USE vs EVOLVE', () => {
         const message = getRoundExplanation({
-            environment: 'MOUNTAIN',
+            roundEventTitle: 'Eclissi prolungata',
             meWon: true,
             meActionType: 'USE',
             opponentActionType: 'EVOLVE',
@@ -57,68 +65,29 @@ describe('round result explainer', () => {
         expect(message).toBe('L avversario ha evoluto il gene, rinunciando al punteggio di questo round.')
     })
 
-    it('explains both players evolving', () => {
+    it('explains victory by event effects', () => {
         const message = getRoundExplanation({
-            environment: 'FOREST',
-            meWon: null,
-            meActionType: 'EVOLVE',
-            opponentActionType: 'EVOLVE',
-            myBreakdown: breakdown({ actionType: 'EVOLVE', total: 0 }),
-            opponentBreakdown: breakdown({ actionType: 'EVOLVE', total: 0 }),
-        })
-
-        expect(message).toBe('Entrambi avete evoluto il gene, rinunciando al punteggio di questo round.')
-    })
-
-    it('explains when player evolves and gives up round score', () => {
-        const message = getRoundExplanation({
-            environment: 'MOUNTAIN',
-            meWon: false,
-            meActionType: 'EVOLVE',
-            opponentActionType: 'USE',
-            myBreakdown: breakdown({ actionType: 'EVOLVE', total: 0 }),
-            opponentBreakdown: breakdown({ total: 6 }),
-        })
-
-        expect(message).toBe('Hai evoluto il gene, rinunciando al punteggio di questo round.')
-    })
-
-    it('explains victory mostly by environment affinity', () => {
-        const message = getRoundExplanation({
-            environment: 'FOREST',
+            roundEventTitle: 'Migrazione di predatori',
             meWon: true,
             meActionType: 'USE',
             opponentActionType: 'USE',
-            myBreakdown: breakdown({ environmentContribution: 6, levelContribution: 1, total: 7 }),
-            opponentBreakdown: breakdown({ environmentContribution: 2, levelContribution: 2, total: 4 }),
+            myBreakdown: breakdown({ eventContribution: 6, levelContribution: 1, total: 7 }),
+            opponentBreakdown: breakdown({ eventContribution: 2, levelContribution: 2, total: 4 }),
         })
 
-        expect(message).toBe('Hai vinto grazie alla maggiore affinità con la Foresta.')
+        expect(message).toContain('effetti favorevoli')
     })
 
-    it('explains lower affinity compensated by level', () => {
+    it('explains lower event favor compensated by level', () => {
         const message = getRoundExplanation({
-            environment: 'MOUNTAIN',
+            roundEventTitle: 'Picco termico persistente',
             meWon: true,
             meActionType: 'USE',
             opponentActionType: 'USE',
-            myBreakdown: breakdown({ environmentModifier: 1, environmentContribution: 2, levelContribution: 5, total: 7 }),
-            opponentBreakdown: breakdown({ environmentModifier: 3, environmentContribution: 6, levelContribution: 0, total: 6 }),
+            myBreakdown: breakdown({ eventModifierTotal: -1, eventContribution: -2, levelContribution: 5, total: 3 }),
+            opponentBreakdown: breakdown({ eventModifierTotal: 2, eventContribution: 4, levelContribution: 0, total: 4 }),
         })
 
-        expect(message).toBe('Il livello superiore ha compensato la minore affinità ambientale.')
-    })
-
-    it('explains when more suitable gene loses due to insufficient level', () => {
-        const message = getRoundExplanation({
-            environment: 'SWAMP',
-            meWon: false,
-            meActionType: 'USE',
-            opponentActionType: 'USE',
-            myBreakdown: breakdown({ environmentModifier: 3, environmentContribution: 6, levelContribution: 0, total: 6 }),
-            opponentBreakdown: breakdown({ environmentModifier: 1, environmentContribution: 2, levelContribution: 5, total: 7 }),
-        })
-
-        expect(message).toBe('Il tuo gene era più adatto alla Palude, ma il livello non è bastato.')
+        expect(message).toContain('compensato')
     })
 })

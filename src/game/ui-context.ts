@@ -1,26 +1,14 @@
-import { ENVIRONMENT_MODIFIERS, TRAIT_LABELS } from './config'
-import type { Environment, TraitCollection, TraitType } from './types'
+import { TRAIT_LABELS } from './config'
+import type { RoundEventDefinition, TraitCollection, TraitType } from './types'
 
 export type PressureLevel = 'Bassa' | 'Media' | 'Alta' | 'Molto alta'
 
-export type EnvironmentPressure = {
+export type RoundEventPressure = {
     id: string
     label: string
     intensity: PressureLevel
     score: number
-}
-
-export type EnvironmentEventMock = {
-    title: string
-    detail: string
-    kind: 'flood' | 'drought' | 'cold' | 'predators' | 'resource'
-    isMock: true
-}
-
-export type HabitatZone = {
-    id: string
-    label: string
-    control: 'player' | 'opponent' | 'neutral' | 'hazard'
+    reason: string
 }
 
 export type TraitTradeoffMock = {
@@ -28,33 +16,6 @@ export type TraitTradeoffMock = {
     mobilityShift: string
     unlockedResource: string
     compromise: string
-}
-
-const BIOME_LABELS: Record<Environment, string> = {
-    FOREST: 'Foresta fitta',
-    MOUNTAIN: 'Catena montana',
-    SWAMP: 'Palude tropicale',
-}
-
-const PRESSURE_LABELS: Record<Environment, string[]> = {
-    FOREST: ['Copertura vegetale', 'Umidita', 'Mobilita tra ostacoli', 'Visibilita predatori'],
-    MOUNTAIN: ['Pendenza', 'Freddo e vento', 'Ossigeno', 'Stabilita rocciosa'],
-    SWAMP: ['Calore', 'Umidita', 'Acqua stagnante', 'Pressione predatori'],
-}
-
-const EVENT_ROTATION: Record<Environment, Array<Omit<EnvironmentEventMock, 'isMock'>>> = {
-    FOREST: [
-        { title: 'Pioggia improvvisa', detail: 'Aumenta il valore dei tratti che migliorano movimento e percezione.', kind: 'resource' },
-        { title: 'Predatori in pattuglia', detail: 'Il rischio sale nelle aree aperte e favorisce specie piu reattive.', kind: 'predators' },
-    ],
-    MOUNTAIN: [
-        { title: 'Vento gelido', detail: 'Resistenza e metabolismo diventano decisivi nelle creste esposte.', kind: 'cold' },
-        { title: 'Frana locale', detail: 'Le vie dirette si riducono e aumenta la competizione sulle zone sicure.', kind: 'resource' },
-    ],
-    SWAMP: [
-        { title: 'Acqua in risalita', detail: 'Le zone asciutte si restringono e cresce il valore dei tratti anfibi.', kind: 'flood' },
-        { title: 'Siccita breve', detail: 'Meno risorse idriche: aumenta la pressione sul metabolismo.', kind: 'drought' },
-    ],
 }
 
 const TRAIT_TRADEOFFS: Record<TraitType, TraitTradeoffMock> = {
@@ -136,63 +97,42 @@ function levelFromScore(score: number): PressureLevel {
     return 'Bassa'
 }
 
-export function getBiomeLabel(environment: Environment | null): string {
-    if (!environment) {
-        return 'Bioma sconosciuto'
+export function getRoundEventLabel(roundEvent: RoundEventDefinition | null): string {
+    if (!roundEvent) {
+        return 'Evento non disponibile'
     }
 
-    return BIOME_LABELS[environment]
+    return roundEvent.title
 }
 
-export function getEnvironmentPressures(environment: Environment | null): EnvironmentPressure[] {
-    if (!environment) {
+export function getRoundEventPressures(roundEvent: RoundEventDefinition | null): RoundEventPressure[] {
+    if (!roundEvent) {
         return []
     }
 
-    const modifiers = ENVIRONMENT_MODIFIERS[environment]
-    const values = Object.values(modifiers)
-    const average = values.reduce((sum, value) => sum + value, 0) / values.length
-    const labels = PRESSURE_LABELS[environment]
-
-    return labels.map((label, index) => {
-        const traits = Object.keys(modifiers) as TraitType[]
-        const traitA = traits[index % traits.length]
-        const traitB = traits[(index + 1) % traits.length]
-        const composite = (modifiers[traitA] + modifiers[traitB]) / 2
+    return roundEvent.effects.map((effect, index) => {
+        const score = Math.min(4, Math.max(0, Math.round(Math.abs(effect.modifier) + 1)))
 
         return {
-            id: `${environment}-${index}`,
-            label,
-            intensity: levelFromScore(composite),
-            score: Math.max(0, Math.min(4, Math.round((composite - average + 2) * 1.2))),
+            id: `${roundEvent.id}-${effect.trait}-${index}`,
+            label: TRAIT_LABELS[effect.trait],
+            intensity: levelFromScore(score),
+            score,
+            reason: effect.reason,
         }
     })
 }
 
-export function getFavoredAndPenalizedTraits(environment: Environment | null): { favored: string[]; penalized: string[] } {
-    if (!environment) {
+export function getFavoredAndPenalizedTraits(roundEvent: RoundEventDefinition | null): { favored: string[]; penalized: string[] } {
+    if (!roundEvent) {
         return { favored: [], penalized: [] }
     }
 
-    const entries = (Object.entries(ENVIRONMENT_MODIFIERS[environment]) as Array<[TraitType, number]>).sort((a, b) => b[1] - a[1])
+    const sorted = [...roundEvent.effects].sort((left, right) => right.modifier - left.modifier)
 
     return {
-        favored: entries.slice(0, 2).map(([trait]) => TRAIT_LABELS[trait]),
-        penalized: entries.slice(-2).map(([trait]) => TRAIT_LABELS[trait]),
-    }
-}
-
-export function getEnvironmentEventMock(environment: Environment | null, roundNumber: number): EnvironmentEventMock | null {
-    if (!environment) {
-        return null
-    }
-
-    const events = EVENT_ROTATION[environment]
-    const selected = events[(Math.max(0, roundNumber - 1)) % events.length]
-
-    return {
-        ...selected,
-        isMock: true,
+        favored: sorted.filter((effect) => effect.modifier > 0).slice(0, 2).map((effect) => TRAIT_LABELS[effect.trait]),
+        penalized: sorted.filter((effect) => effect.modifier < 0).slice(0, 2).map((effect) => TRAIT_LABELS[effect.trait]),
     }
 }
 
@@ -204,25 +144,19 @@ export function getTraitTradeoffMock(trait: TraitType | null): TraitTradeoffMock
     return TRAIT_TRADEOFFS[trait]
 }
 
-export function getHabitatZonesMock(diff: number): HabitatZone[] {
-    return [
-        { id: 'z1', label: 'Sponde', control: diff >= 3 ? 'player' : diff <= -3 ? 'opponent' : 'neutral' },
-        { id: 'z2', label: 'Nido alto', control: diff >= 1 ? 'player' : 'neutral' },
-        { id: 'z3', label: 'Pozza risorse', control: diff <= -1 ? 'opponent' : 'neutral' },
-        { id: 'z4', label: 'Passo stretto', control: 'hazard' },
-        { id: 'z5', label: 'Area aperta', control: diff >= 4 ? 'player' : diff <= -4 ? 'opponent' : 'neutral' },
-        { id: 'z6', label: 'Margine bosco', control: diff >= 2 ? 'player' : diff <= -2 ? 'opponent' : 'neutral' },
-    ]
-}
-
-export function calculateAdaptationIndex(environment: Environment | null, traits: TraitCollection | null, score: number): number {
-    if (!environment || !traits) {
+export function calculateAdaptationIndex(roundEvent: RoundEventDefinition | null, traits: TraitCollection | null, score: number): number {
+    if (!roundEvent || !traits) {
         return score * 8
     }
 
-    const weighted = (Object.entries(traits) as Array<[TraitType, { level: number }]>).reduce((sum, [trait, state]) => {
-        return sum + state.level * (ENVIRONMENT_MODIFIERS[environment][trait] + 1)
-    }, 0)
+    const effectsByTrait = roundEvent.effects.reduce<Record<TraitType, number>>((accumulator, effect) => {
+        accumulator[effect.trait] = (accumulator[effect.trait] ?? 0) + effect.modifier
+
+        return accumulator
+    }, {} as Record<TraitType, number>)
+
+    const weighted = (Object.entries(traits) as Array<[TraitType, { level: number }]>)
+        .reduce((sum, [trait, state]) => sum + state.level * ((effectsByTrait[trait] ?? 0) + 1), 0)
 
     return score * 8 + weighted
 }

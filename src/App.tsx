@@ -6,17 +6,18 @@ import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { ActionDock } from './components/game/ActionDock'
 import { ChoosingDuelHeader } from './components/game/ChoosingDuelHeader'
-import { ChoosingEnvironmentCard } from './components/game/ChoosingEnvironmentCard'
+import { RoundEventCard } from './components/game/RoundEventCard'
 import { TraitSelector } from './components/game/TraitSelector'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { getTraitRoundValue, isTraitUsable } from './game/engine'
+import { getRoundEventById } from './game/round-events'
 import { getRoundExplanation } from './game/round-result-explainer'
 import {
-  getBiomeLabel,
-  getEnvironmentPressures,
+  getRoundEventLabel,
+  getRoundEventPressures,
 } from './game/ui-context'
 import { TRAIT_CATALOG } from './game/traits-catalog'
-import { TRAITS, type RoundValueBreakdown, type TraitCollection, type TraitType } from './game/types'
+import { TRAITS, type RoundEventDefinition, type RoundValueBreakdown, type TraitCollection, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
 import {
   acknowledgeReveal,
@@ -46,12 +47,6 @@ type ResolutionData = {
   player1Breakdown?: RoundValueBreakdown
   player2Breakdown?: RoundValueBreakdown
 }
-
-const ENVIRONMENT_BRIEF_COPY = {
-  FOREST: 'Vegetazione densa e linee visive irregolari: conta leggere il terreno e muoversi con precisione.',
-  MOUNTAIN: 'Clima duro e terreno instabile: sopravvivenza e controllo del corpo diventano centrali.',
-  SWAMP: 'Ambiente umido e stagnante: risorse sporche e movimenti lenti premiano geni resilienti.',
-} as const
 
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
   if (!player) {
@@ -433,6 +428,7 @@ function App() {
                 myScore={myScore}
                 opponentScore={opponentScore}
                 onSubmitAction={handleSubmitAction}
+                onLeaveSession={handleLeaveSession}
               />
             ) : (
               <GameScreen
@@ -505,9 +501,10 @@ type ConnectedGeneSelectionScreenV2Props = {
   myScore: number
   opponentScore: number
   onSubmitAction: (actionType: 'USE' | 'EVOLVE', traitOverride?: TraitType) => Promise<boolean>
+  onLeaveSession: () => void
 }
 
-function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSubmitAction }: ConnectedGeneSelectionScreenV2Props) {
+function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSubmitAction, onLeaveSession }: ConnectedGeneSelectionScreenV2Props) {
   const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
@@ -523,6 +520,7 @@ function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSu
       onSelectGene={onSelectGene}
       onUseGene={onUseGene}
       onEvolveGene={onEvolveGene}
+      onLeaveSession={onLeaveSession}
     />
   )
 }
@@ -562,18 +560,18 @@ function GameScreen({
 }: GameScreenProps) {
   const myActionSubmitted = Boolean(snapshot.myCurrentAction)
   const selectedTraitState = selectedTrait && myTraits ? myTraits[selectedTrait] : null
-  const currentEnvironment = snapshot.currentEnvironment
-  const biomeLabel = getBiomeLabel(currentEnvironment)
-  const environmentPressures = getEnvironmentPressures(currentEnvironment)
-  const primaryThreats = [...environmentPressures].sort((a, b) => b.score - a.score).slice(0, 3)
+  const currentRoundEvent = snapshot.currentRoundEvent
+  const roundEventLabel = getRoundEventLabel(currentRoundEvent)
+  const roundEventPressures = getRoundEventPressures(currentRoundEvent)
+  const primaryThreats = [...roundEventPressures].sort((a, b) => b.score - a.score).slice(0, 3)
   const selectedTraitLabel = selectedTrait ? getTraitLabel(selectedTrait) : null
   const selectedTraitDescription = selectedTrait ? TRAIT_CATALOG[selectedTrait].description : null
   const selectedTraitLevel = selectedTraitState?.level ?? null
-  const useValue = selectedTrait && myTraits && currentEnvironment
-    ? getTraitRoundValue(currentEnvironment, myTraits, selectedTrait)
+  const useValue = selectedTrait && myTraits && currentRoundEvent
+    ? getTraitRoundValue(currentRoundEvent, myTraits, selectedTrait)
     : null
   const evolveNextLevel = selectedTraitState ? selectedTraitState.level + 1 : null
-  const environmentBrief = currentEnvironment ? ENVIRONMENT_BRIEF_COPY[currentEnvironment] : 'L ambiente attuale richiede una risposta adattiva rapida.'
+  const roundEventBrief = currentRoundEvent?.shortDescription ?? 'L evento del round richiede una risposta adattiva rapida.'
   const mySelectionStatus = myActionSubmitted ? 'Scelta effettuata' : 'Sta scegliendo'
   const myName = snapshot.me?.nickname ?? 'Tu'
   const opponentName = snapshot.opponent?.nickname ?? 'Rivale'
@@ -621,10 +619,10 @@ function GameScreen({
         onLeaveSession={onLeaveSession}
       />
 
-      <ChoosingEnvironmentCard
-        environment={currentEnvironment}
-        biomeLabel={biomeLabel}
-        description={environmentBrief}
+      <RoundEventCard
+        roundEvent={currentRoundEvent}
+        eventLabel={roundEventLabel}
+        description={roundEventBrief}
       />
 
       <section className="choosing-intro" aria-label="Obiettivo del round">
@@ -649,7 +647,7 @@ function GameScreen({
           <TraitSelector
             traits={Object.fromEntries(TRAITS.map((trait) => [trait, myTraits[trait]])) as TraitCollection}
             selectedTrait={selectedTrait}
-            currentEnvironment={currentEnvironment}
+            currentRoundEvent={currentRoundEvent}
             onSelectTrait={onSelectTrait}
             isSubmitted={myActionSubmitted || Boolean(pendingAction)}
           />
@@ -692,8 +690,8 @@ type RoundResultScreenProps = {
 
 function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: RoundResultScreenProps) {
   const result = snapshot.currentRoundResult
-  const environment = snapshot.currentEnvironment
-  const environmentLabel = getBiomeLabel(environment)
+  const roundEvent = snapshot.currentRoundEvent
+  const roundEventLabel = getRoundEventLabel(roundEvent)
   const [animationPhase, setAnimationPhase] = useState(snapshot.game.status === 'REVEALING' ? 0 : 3)
   const iAmPlayer1 = snapshot.me?.slot === 1
   const winnerNickname = snapshot.players.find((player) => player.id === result?.winner_id)?.nickname ?? null
@@ -724,7 +722,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
         ? 'Round vinto'
         : 'Round perso'
   const explanation = getRoundExplanation({
-    environment,
+    roundEventTitle: roundEvent?.title ?? null,
     meWon: iWon,
     meActionType: myResolvedAction?.actionType ?? null,
     opponentActionType: opponentResolvedAction?.actionType ?? null,
@@ -764,7 +762,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
   return (
     <section className="round-result-screen" aria-label="Risultato del round" onPointerDown={skipRevealAnimation}>
       <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
-        <span className="eyebrow">Round {snapshot.game.current_round} · {environmentLabel}</span>
+        <span className="eyebrow">Round {snapshot.game.current_round} · {roundEventLabel}</span>
         <h2>{outcomeTitle}</h2>
         <div
           className={`round-result-hero__values ${animationPhase < 1 ? 'is-hidden' : ''}`}
@@ -790,7 +788,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
           breakdown={myBreakdown}
           total={myRoundValue}
           awardedPoints={myRoundPoints}
-          environmentLabel={environmentLabel}
+          roundEventLabel={roundEventLabel}
           showContributions={animationPhase >= 2}
           showTotal={animationPhase >= 3}
           isMe
@@ -801,7 +799,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
           breakdown={opponentBreakdown}
           total={opponentRoundValue}
           awardedPoints={opponentRoundPoints}
-          environmentLabel={environmentLabel}
+          roundEventLabel={roundEventLabel}
           showContributions={animationPhase >= 2}
           showTotal={animationPhase >= 3}
         />
@@ -824,7 +822,7 @@ type RoundBreakdownCardProps = {
   breakdown: RoundValueBreakdown | undefined
   total: number
   awardedPoints: number
-  environmentLabel: string
+  roundEventLabel: string
   showContributions: boolean
   showTotal: boolean
   isMe?: boolean
@@ -836,7 +834,7 @@ function RoundBreakdownCard({
   breakdown,
   total,
   awardedPoints,
-  environmentLabel,
+  roundEventLabel,
   showContributions,
   showTotal,
   isMe = false,
@@ -854,7 +852,7 @@ function RoundBreakdownCard({
 
       {breakdown ? (
         <div className={`round-breakdown-card__math ${showContributions ? '' : 'is-hidden'}`}>
-          <p>Affinità {environmentLabel}: {breakdown.environmentModifier} × {breakdown.environmentWeight} = {breakdown.environmentContribution}</p>
+          <p>Effetti evento {roundEventLabel}: {breakdown.eventModifierTotal} × {breakdown.eventWeight} = {breakdown.eventContribution}</p>
           <p>Livello: +{breakdown.levelContribution}</p>
           {breakdown.originalLevel > breakdown.effectiveLevel ? (
             <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
@@ -904,10 +902,12 @@ function FinalScreen({
   const opponentRoundPoints = iAmPlayer1
     ? resolutionData?.player2PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
     : resolutionData?.player1PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-  const roundEnvironment = result ? snapshot.game.environment_sequence[result.round_number - 1] ?? null : null
-  const environmentLabel = getBiomeLabel(roundEnvironment)
+  const roundEventFromResult = result
+    ? getRoundEventFromSequence(snapshot.game.round_event_sequence, result.round_number)
+    : null
+  const roundEventLabel = getRoundEventLabel(roundEventFromResult)
   const explanation = getRoundExplanation({
-    environment: roundEnvironment,
+    roundEventTitle: roundEventFromResult?.title ?? null,
     meWon: result?.winner_id ? result.winner_id === snapshot.me?.id : null,
     meActionType: myResolvedAction?.actionType ?? null,
     opponentActionType: opponentResolvedAction?.actionType ?? null,
@@ -932,7 +932,7 @@ function FinalScreen({
         <section className="final-round-recap" aria-label="Dettaglio ultimo round">
           <header className="final-round-recap__header">
             <span className="eyebrow">Ultimo round</span>
-            <strong>Round {result.round_number} · {environmentLabel}</strong>
+            <strong>Round {result.round_number} · {roundEventLabel}</strong>
           </header>
 
           <div className="round-result-cards">
@@ -942,7 +942,7 @@ function FinalScreen({
               breakdown={myBreakdown}
               total={myRoundValue}
               awardedPoints={myRoundPoints}
-              environmentLabel={environmentLabel}
+              roundEventLabel={roundEventLabel}
               showContributions
               showTotal
               isMe
@@ -953,7 +953,7 @@ function FinalScreen({
               breakdown={opponentBreakdown}
               total={opponentRoundValue}
               awardedPoints={opponentRoundPoints}
-              environmentLabel={environmentLabel}
+              roundEventLabel={roundEventLabel}
               showContributions
               showTotal
             />
@@ -999,6 +999,20 @@ function formatDuration(startedAt: string, finishedAt: string): string {
   const totalMinutes = Math.max(1, Math.round(elapsedMs / 60000))
 
   return `${totalMinutes} min`
+}
+
+function getRoundEventFromSequence(eventSequence: string[], roundNumber: number): RoundEventDefinition | null {
+  const eventId = eventSequence[roundNumber - 1]
+
+  if (!eventId) {
+    return null
+  }
+
+  try {
+    return getRoundEventById(eventId)
+  } catch {
+    return null
+  }
 }
 
 export default App

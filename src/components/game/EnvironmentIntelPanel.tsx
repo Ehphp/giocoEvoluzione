@@ -1,11 +1,17 @@
-import type { EnvironmentPressure, EnvironmentEventMock } from '../../game/ui-context'
+import type { RoundEventPressure } from '../../game/ui-context'
+
+type EventHighlight = {
+    title: string
+    detail: string
+    kind: 'flood' | 'drought' | 'cold' | 'predators' | 'resource'
+}
 
 type EnvironmentIntelPanelProps = {
     biomeName: string
-    pressures: EnvironmentPressure[]
+    pressures: RoundEventPressure[]
     favoredTraits: string[]
     penalizedTraits: string[]
-    activeEvent: EnvironmentEventMock | null
+    activeEvent: EventHighlight | null
 }
 
 export function EnvironmentIntelPanel({ biomeName, pressures, favoredTraits, penalizedTraits, activeEvent }: EnvironmentIntelPanelProps) {

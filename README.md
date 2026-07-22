@@ -1,6 +1,6 @@
 # Gioco Evoluzione MVP
 
-Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `EVOLVE` su sei round condivisi tra due telefoni.
+Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `EVOLVE` su sei round condivisi con evento evolutivo sincronizzato.
 
 ## Cosa include
 
@@ -10,6 +10,7 @@ Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `E
 - Risoluzione round centralizzata e idempotente con Edge Function `resolve-round`.
 - Reconnect minimo via `localStorage`.
 - Placeholder creatura pronto per asset manuali in `public/assets/creatures/`.
+- Modello `World` (visivo) separato da `Round Event` (scoring).
 
 ## Variabili di ambiente
 
@@ -54,7 +55,7 @@ Apri l indirizzo di rete mostrato da Vite sui due telefoni collegati alla stessa
 1. Telefono A apre la home, inserisce un nickname e tocca `Crea partita`.
 2. Telefono A copia il codice stanza.
 3. Telefono B apre la stessa URL, inserisce nickname e codice, poi entra.
-4. Entrambi vedono round, punteggio, ambiente corrente e prossimo ambiente.
+4. Entrambi vedono round, punteggio, evento corrente e prossimo evento.
 5. Ognuno seleziona un tratto e poi `Usa` oppure `Evolvi`.
 6. Dopo la seconda conferma, il round viene risolto contemporaneamente.
 7. Dopo sei round appare il vincitore finale.

@@ -1,10 +1,13 @@
-import { createInitialTraits, generateEnvironmentSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS } from '../game/config'
+import { createInitialTraits, generateRoundEventSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS } from '../game/config'
+import { getRoundEventForRound } from '../game/round-events'
 import type {
-    Environment,
     GameStatus,
+    RoundEventDefinition,
     TraitCollection,
     TraitType,
+    WorldDefinition,
 } from '../game/types'
+import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
 import { requireSupabase } from './supabase'
 
 export type GameRecord = {
@@ -12,7 +15,8 @@ export type GameRecord = {
     room_code: string
     status: GameStatus
     current_round: number
-    environment_sequence: Environment[]
+    world_id: string
+    round_event_sequence: string[]
     player_1_id: string | null
     player_2_id: string | null
     player_1_score: number
@@ -61,8 +65,9 @@ export type GameSnapshot = {
     players: PlayerRecord[]
     me: PlayerRecord | null
     opponent: PlayerRecord | null
-    currentEnvironment: Environment | null
-    nextEnvironment: Environment | null
+    world: WorldDefinition
+    currentRoundEvent: RoundEventDefinition | null
+    nextRoundEvent: RoundEventDefinition | null
     actionsSubmitted: number
     myCurrentAction: RoundActionRecord | null
     currentRoundResult: RoundResultRecord | null
@@ -84,7 +89,8 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
         room_code: String(data.room_code),
         status: data.status as GameStatus,
         current_round: Number(data.current_round),
-        environment_sequence: (data.environment_sequence as Environment[]) ?? [],
+        world_id: String(data.world_id ?? DEFAULT_WORLD_ID),
+        round_event_sequence: (data.round_event_sequence as string[]) ?? [],
         player_1_id: (data.player_1_id as string | null) ?? null,
         player_2_id: (data.player_2_id as string | null) ?? null,
         player_1_score: Number(data.player_1_score),
@@ -245,13 +251,20 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
         throw new Error(roundResultError.message)
     }
 
+    if (game.status === 'CHOOSING' && (count ?? 0) >= 2 && !roundResultData) {
+        // Self-heal stuck rounds by retrying idempotent resolution.
+        void maybeResolveRound(gameId, game.current_round).catch(() => undefined)
+    }
+
+    const world = getWorldById(game.world_id)
     return {
         game,
         players,
         me,
         opponent,
-        currentEnvironment: game.environment_sequence[game.current_round - 1] ?? null,
-        nextEnvironment: game.environment_sequence[game.current_round] ?? null,
+        world,
+        currentRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round),
+        nextRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round + 1),
         actionsSubmitted: count ?? 0,
         myCurrentAction: myActionData ? mapRoundActionRecord(myActionData) : null,
         currentRoundResult: roundResultData ? mapRoundResultRecord(roundResultData) : null,
@@ -263,7 +276,7 @@ export async function createGame(input: { nickname: string; playerId: string }):
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
         const roomCode = generateRoomCode()
-        const environmentSequence = generateEnvironmentSequence()
+        const roundEventSequence = generateRoundEventSequence()
 
         const { data: gameData, error: gameError } = await supabase
             .from('games')
@@ -271,7 +284,8 @@ export async function createGame(input: { nickname: string; playerId: string }):
                 room_code: roomCode,
                 status: 'WAITING',
                 current_round: 1,
-                environment_sequence: environmentSequence,
+                world_id: DEFAULT_WORLD_ID,
+                round_event_sequence: roundEventSequence,
                 player_1_score: 0,
                 player_2_score: 0,
             })
@@ -435,7 +449,12 @@ export async function submitRoundAction(input: {
         throw new Error(error.message)
     }
 
-    await maybeResolveRound(input.gameId, input.roundNumber)
+    try {
+        await maybeResolveRound(input.gameId, input.roundNumber)
+    } catch (error) {
+        // The action row is already persisted; keep UX consistent and rely on subscription/snapshot retries.
+        console.warn('Round resolution retry scheduled after submit failure.', error)
+    }
 }
 
 export async function maybeResolveRound(gameId: string, roundNumber: number) {

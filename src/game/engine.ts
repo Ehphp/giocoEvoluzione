@@ -27,11 +27,11 @@ export function isTraitUsable(traits: TraitCollection, trait: TraitType): boolea
 }
 
 export function getTraitRoundValue(
-    environment: ResolveRoundInput['environment'],
+    roundEvent: ResolveRoundInput['roundEvent'],
     traits: TraitCollection,
     trait: TraitType,
 ): number {
-    return getValidatedTraitRoundValue(environment, traits, trait)
+    return getValidatedTraitRoundValue(roundEvent, traits, trait)
 }
 
 function tickCooldowns(traits: TraitCollection): TraitCollection {
@@ -45,12 +45,12 @@ function tickCooldowns(traits: TraitCollection): TraitCollection {
 }
 
 function resolvePlayerAction(
-    environment: ResolveRoundInput['environment'],
+    roundEvent: ResolveRoundInput['roundEvent'],
     traits: TraitCollection,
     action: PlayerRoundAction,
 ) {
     getValidatedTraitState(traits, action.trait)
-    const breakdown = getValidatedActionBreakdown(environment, traits, action.trait, action.actionType)
+    const breakdown = getValidatedActionBreakdown(roundEvent, traits, action.trait, action.actionType)
     const nextTraits = tickCooldowns(traits)
 
     if (action.actionType === 'EVOLVE') {
@@ -70,7 +70,7 @@ function resolvePlayerAction(
     nextTraits[action.trait].cooldown = 1
 
     return {
-        roundValue: getTraitRoundValue(environment, traits, action.trait),
+        roundValue: getTraitRoundValue(roundEvent, traits, action.trait),
         breakdown,
         traits: nextTraits,
     }
@@ -81,15 +81,15 @@ export function resolveRound(input: ResolveRoundInput): RoundResolution {
         throw new Error(`Round ${input.roundNumber} has already been resolved.`)
     }
 
-    const player1 = resolvePlayerAction(input.environment, input.player1Traits, input.player1Action)
-    const player2 = resolvePlayerAction(input.environment, input.player2Traits, input.player2Action)
+    const player1 = resolvePlayerAction(input.roundEvent, input.player1Traits, input.player1Action)
+    const player2 = resolvePlayerAction(input.roundEvent, input.player2Traits, input.player2Action)
 
     const awardedPoints = getRoundPoints(input.roundNumber)
 
     if (player1.roundValue === player2.roundValue) {
         return {
             roundNumber: input.roundNumber,
-            environment: input.environment,
+            roundEvent: input.roundEvent,
             player1: {
                 ...input.player1Action,
                 roundValue: player1.roundValue,
@@ -113,7 +113,7 @@ export function resolveRound(input: ResolveRoundInput): RoundResolution {
 
     return {
         roundNumber: input.roundNumber,
-        environment: input.environment,
+        roundEvent: input.roundEvent,
         player1: {
             ...input.player1Action,
             roundValue: player1.roundValue,

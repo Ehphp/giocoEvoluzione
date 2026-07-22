@@ -1,10 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import type { ActionType, Environment, RoundValueBreakdown, TraitType } from '../../../src/game/types.ts'
+import type { ActionType, RoundEventDefinition, RoundValueBreakdown, TraitType } from '../../../src/game/types.ts'
 
-// Scoring stays aligned with src/game/engine.ts through shared pure helpers;
+// Scoring stays aligned with src/game/engine.ts through equivalent pure helpers;
 // only persistence and idempotent resolution orchestration remain local here.
 
-type EnvironmentName = Environment
 type TraitName = TraitType
 type TraitState = { level: number; cooldown: number }
 type TraitCollection = Record<TraitName, TraitState>
@@ -15,7 +14,7 @@ type PlayerAction = {
 }
 
 const FINAL_ROUND_NUMBER = 6
-const ENVIRONMENT_WEIGHT = 2
+const EVENT_WEIGHT = 2
 const MAX_EFFECTIVE_TRAIT_LEVEL = 5
 
 const TRAITS = [
@@ -31,44 +30,104 @@ const TRAITS = [
     'FAT_RESERVES',
 ] as const satisfies readonly TraitName[]
 
-const ENVIRONMENT_MODIFIERS: Record<EnvironmentName, Record<TraitName, number>> = {
-    FOREST: {
-        STRENGTH: 2,
-        RESISTANCE: 0,
-        AGILITY: 3,
-        PERCEPTION: 2,
-        METABOLISM: 0,
-        ADAPTATION: 1,
-        GRIP_CLAWS: 1,
-        CAMOUFLAGE: 3,
-        WEBBED_LIMBS: 1,
-        FAT_RESERVES: 0,
+const ROUND_EVENTS: RoundEventDefinition[] = [
+    {
+        id: 'VOLCANIC_ASH_WAVE',
+        title: 'Ondata di ceneri vulcaniche',
+        shortDescription: 'Particelle abrasive e visibilita ridotta.',
+        category: 'GEOLOGICAL',
+        rarity: 'UNCOMMON',
+        intensity: 2,
+        artKey: 'event-volcanic-ash-wave',
+        tags: ['placeholder', 'abrasion', 'air-quality'],
+        effects: [
+            { trait: 'RESISTANCE', modifier: 2, reason: 'La pelle isolante limita danni da particolato.' },
+            { trait: 'PERCEPTION', modifier: -1, reason: 'La cenere sospesa riduce lettura del territorio.' },
+            { trait: 'METABOLISM', modifier: -1, reason: 'Respirazione piu costosa in aria pesante.' },
+        ],
     },
-    MOUNTAIN: {
-        STRENGTH: 2,
-        RESISTANCE: 3,
-        AGILITY: 1,
-        PERCEPTION: 0,
-        METABOLISM: 1,
-        ADAPTATION: 1,
-        GRIP_CLAWS: 3,
-        CAMOUFLAGE: 0,
-        WEBBED_LIMBS: 0,
-        FAT_RESERVES: 2,
+    {
+        id: 'PROLONGED_ECLIPSE',
+        title: 'Eclissi prolungata',
+        shortDescription: 'Luce minima e orientamento instabile.',
+        category: 'ASTRONOMICAL',
+        rarity: 'RARE',
+        intensity: 3,
+        artKey: 'event-prolonged-eclipse',
+        tags: ['placeholder', 'darkness'],
+        effects: [
+            { trait: 'PERCEPTION', modifier: 2, reason: 'I sensi acuti mantengono vantaggio in scarsa luce.' },
+            { trait: 'CAMOUFLAGE', modifier: 1, reason: 'L ombra diffusa migliora occultamento.' },
+            { trait: 'STRENGTH', modifier: -1, reason: 'Ingaggi diretti meno frequenti in buio profondo.' },
+        ],
     },
-    SWAMP: {
-        STRENGTH: 0,
-        RESISTANCE: 1,
-        AGILITY: 0,
-        PERCEPTION: 2,
-        METABOLISM: 3,
-        ADAPTATION: 2,
-        GRIP_CLAWS: 0,
-        CAMOUFLAGE: 1,
-        WEBBED_LIMBS: 3,
-        FAT_RESERVES: 2,
+    {
+        id: 'PREDATOR_PACK_MIGRATION',
+        title: 'Migrazione di predatori',
+        shortDescription: 'La catena trofica entra in pressione.',
+        category: 'BIOLOGICAL',
+        rarity: 'COMMON',
+        intensity: 2,
+        artKey: 'event-predator-pack-migration',
+        tags: ['placeholder', 'predators', 'threat'],
+        effects: [
+            { trait: 'AGILITY', modifier: 2, reason: 'La fuga rapida riduce esposizione agli inseguimenti.' },
+            { trait: 'CAMOUFLAGE', modifier: 2, reason: 'Mimetismo efficace contro pattugliamenti predatori.' },
+            { trait: 'FAT_RESERVES', modifier: -1, reason: 'Maggiore massa penalizza cambi direzione rapidi.' },
+        ],
     },
-}
+    {
+        id: 'HEAT_SPIKE',
+        title: 'Picco termico persistente',
+        shortDescription: 'Calore costante e consumo energetico alto.',
+        category: 'CLIMATE',
+        rarity: 'COMMON',
+        intensity: 2,
+        artKey: 'event-heat-spike',
+        tags: ['placeholder', 'temperature', 'stress'],
+        effects: [
+            { trait: 'METABOLISM', modifier: 2, reason: 'Gestione energetica piu efficiente sotto stress termico.' },
+            { trait: 'WEBBED_LIMBS', modifier: 1, reason: 'Aree umide residue favoriscono mobilita anfibia.' },
+            { trait: 'FAT_RESERVES', modifier: -2, reason: 'Accumulo adiposo peggiora dissipazione del calore.' },
+        ],
+    },
+    {
+        id: 'NUTRIENT_COLLAPSE',
+        title: 'Collasso risorse nutritive',
+        shortDescription: 'Scarsita estesa nelle zone di foraggiamento.',
+        category: 'ECOLOGICAL',
+        rarity: 'UNCOMMON',
+        intensity: 3,
+        artKey: 'event-nutrient-collapse',
+        tags: ['placeholder', 'food', 'scarcity'],
+        effects: [
+            { trait: 'METABOLISM', modifier: 2, reason: 'Metabolismo efficiente mantiene attivita con poche risorse.' },
+            { trait: 'ADAPTATION', modifier: 1, reason: 'Plasticita utile per cambiare dieta rapidamente.' },
+            { trait: 'STRENGTH', modifier: -1, reason: 'Mantenere massa muscolare richiede energia rara.' },
+        ],
+    },
+    {
+        id: 'FLASH_FLOOD',
+        title: 'Inondazione lampo',
+        shortDescription: 'Canali rapidi e terreno allagato.',
+        category: 'ECOLOGICAL',
+        rarity: 'COMMON',
+        intensity: 1,
+        artKey: 'event-flash-flood',
+        tags: ['placeholder', 'water', 'mobility'],
+        effects: [
+            { trait: 'WEBBED_LIMBS', modifier: 2, reason: 'Gli arti palmati dominano i tratti sommersi.' },
+            { trait: 'GRIP_CLAWS', modifier: 1, reason: 'Presa su appigli instabili durante la corrente.' },
+            { trait: 'STRENGTH', modifier: -1, reason: 'La forza frontale rende meno in acqua veloce.' },
+        ],
+    },
+]
+
+const ROUND_EVENT_BY_ID = ROUND_EVENTS.reduce<Record<string, RoundEventDefinition>>((accumulator, roundEvent) => {
+    accumulator[roundEvent.id] = roundEvent
+
+    return accumulator
+}, {})
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -123,76 +182,94 @@ function normalizeTraitCollection(traits: PartialTraitCollection | null | undefi
     return normalized
 }
 
-function getValidatedEnvironmentModifier(environment: EnvironmentName, trait: TraitName): number {
-    const environmentModifiers = ENVIRONMENT_MODIFIERS[environment]
+function getRoundEventById(roundEventId: string): RoundEventDefinition {
+    const roundEvent = ROUND_EVENT_BY_ID[roundEventId]
 
-    if (!environmentModifiers) {
-        throw new Error(`Unknown environment "${environment}".`)
+    if (!roundEvent) {
+        throw new Error(`Unknown round event \"${roundEventId}\".`)
     }
 
-    if (!(trait in environmentModifiers)) {
-        throw new Error(`Unknown trait "${trait}" for environment "${environment}".`)
+    return roundEvent
+}
+
+function getValidatedRoundEventModifier(roundEvent: RoundEventDefinition, trait: TraitName): {
+    modifierTotal: number
+    appliedEventEffects: RoundValueBreakdown['appliedEventEffects']
+} {
+    const effects = roundEvent.effects.filter((effect) => effect.trait === trait)
+
+    const appliedEventEffects = effects.map((effect) => {
+        if (!Number.isFinite(effect.modifier)) {
+            throw new Error(`Invalid round event effect for trait \"${trait}\" in event \"${roundEvent.id}\".`)
+        }
+
+        if (!effect.reason.trim()) {
+            throw new Error(`Round event effect reason is required for trait \"${trait}\" in event \"${roundEvent.id}\".`)
+        }
+
+        return {
+            ...effect,
+            contribution: effect.modifier * EVENT_WEIGHT,
+        }
+    })
+
+    return {
+        modifierTotal: appliedEventEffects.reduce((sum, effect) => sum + effect.modifier, 0),
+        appliedEventEffects,
     }
-
-    const modifier = environmentModifiers[trait]
-
-    if (!Number.isFinite(modifier) || modifier < 0) {
-        throw new Error(`Invalid environment modifier for "${environment}" and trait "${trait}".`)
-    }
-
-    return modifier
 }
 
 function getValidatedTraitState(traits: TraitCollection, trait: TraitName): TraitState {
     const traitState = traits[trait]
 
     if (!traitState) {
-        throw new Error(`Unknown trait "${trait}".`)
+        throw new Error(`Unknown trait \"${trait}\".`)
     }
 
     const { level, cooldown } = traitState
 
     if (!Number.isFinite(level) || !Number.isFinite(cooldown)) {
-        throw new Error(`Invalid trait state for "${trait}": level and cooldown must be finite numbers.`)
+        throw new Error(`Invalid trait state for \"${trait}\": level and cooldown must be finite numbers.`)
     }
 
     if (level < 0 || cooldown < 0) {
-        throw new Error(`Invalid trait state for "${trait}": level and cooldown cannot be negative.`)
+        throw new Error(`Invalid trait state for \"${trait}\": level and cooldown cannot be negative.`)
     }
 
     return traitState
 }
 
 function getValidatedTraitUseBreakdown(
-    environment: EnvironmentName,
+    roundEvent: RoundEventDefinition,
     traits: TraitCollection,
     trait: TraitName,
 ): RoundValueBreakdown {
-    const environmentModifier = getValidatedEnvironmentModifier(environment, trait)
+    const { modifierTotal, appliedEventEffects } = getValidatedRoundEventModifier(roundEvent, trait)
     const traitState = getValidatedTraitState(traits, trait)
     const effectiveLevel = Math.min(traitState.level, MAX_EFFECTIVE_TRAIT_LEVEL)
-    const environmentContribution = environmentModifier * ENVIRONMENT_WEIGHT
+    const eventContribution = modifierTotal * EVENT_WEIGHT
     const levelContribution = effectiveLevel
 
     return {
         actionType: 'USE',
-        environmentModifier,
-        environmentWeight: ENVIRONMENT_WEIGHT,
-        environmentContribution,
+        eventModifierTotal: modifierTotal,
+        eventWeight: EVENT_WEIGHT,
+        eventContribution,
+        appliedEventEffects,
         originalLevel: traitState.level,
         effectiveLevel,
         levelContribution,
-        total: environmentContribution + levelContribution,
+        total: eventContribution + levelContribution,
     }
 }
 
 function getValidatedActionBreakdown(
-    environment: EnvironmentName,
+    roundEvent: RoundEventDefinition,
     traits: TraitCollection,
     trait: TraitName,
     actionType: ActionType,
 ): RoundValueBreakdown {
-    const useBreakdown = getValidatedTraitUseBreakdown(environment, traits, trait)
+    const useBreakdown = getValidatedTraitUseBreakdown(roundEvent, traits, trait)
 
     if (actionType === 'USE') {
         return useBreakdown
@@ -201,14 +278,14 @@ function getValidatedActionBreakdown(
     return {
         ...useBreakdown,
         actionType,
-        environmentContribution: 0,
+        eventContribution: 0,
         levelContribution: 0,
         total: 0,
     }
 }
 
-function getValidatedTraitRoundValue(environment: EnvironmentName, traits: TraitCollection, trait: TraitName): number {
-    return getValidatedTraitUseBreakdown(environment, traits, trait).total
+function getValidatedTraitRoundValue(roundEvent: RoundEventDefinition, traits: TraitCollection, trait: TraitName): number {
+    return getValidatedTraitUseBreakdown(roundEvent, traits, trait).total
 }
 
 function cloneTraits(traits: TraitCollection): TraitCollection {
@@ -227,13 +304,13 @@ function tickCooldowns(traits: TraitCollection): TraitCollection {
     return nextTraits
 }
 
-function getTraitRoundValue(environment: EnvironmentName, traits: TraitCollection, trait: TraitName) {
-    return getValidatedTraitRoundValue(environment, traits, trait)
+function getTraitRoundValue(roundEvent: RoundEventDefinition, traits: TraitCollection, trait: TraitName) {
+    return getValidatedTraitRoundValue(roundEvent, traits, trait)
 }
 
-function resolvePlayerAction(environment: EnvironmentName, traits: TraitCollection, action: PlayerAction) {
+function resolvePlayerAction(roundEvent: RoundEventDefinition, traits: TraitCollection, action: PlayerAction) {
     getValidatedTraitState(traits, action.trait)
-    const breakdown = getValidatedActionBreakdown(environment, traits, action.trait, action.actionType)
+    const breakdown = getValidatedActionBreakdown(roundEvent, traits, action.trait, action.actionType)
     const nextTraits = tickCooldowns(traits)
 
     if (action.actionType === 'EVOLVE') {
@@ -247,13 +324,24 @@ function resolvePlayerAction(environment: EnvironmentName, traits: TraitCollecti
     }
 
     if (traits[action.trait].cooldown > 0) {
-        throw new Error(`Trait ${action.trait} is on cooldown.`)
+        return {
+            roundValue: 0,
+            breakdown: {
+                ...breakdown,
+                eventModifierTotal: 0,
+                eventContribution: 0,
+                levelContribution: 0,
+                total: 0,
+                appliedEventEffects: [],
+            },
+            traitsAfter: nextTraits,
+        }
     }
 
     nextTraits[action.trait].cooldown = 1
 
     return {
-        roundValue: getTraitRoundValue(environment, traits, action.trait),
+        roundValue: getTraitRoundValue(roundEvent, traits, action.trait),
         breakdown,
         traitsAfter: nextTraits,
     }
@@ -261,7 +349,7 @@ function resolvePlayerAction(environment: EnvironmentName, traits: TraitCollecti
 
 function buildResolution(params: {
     roundNumber: number
-    environment: EnvironmentName
+    roundEvent: RoundEventDefinition
     player1Id: string
     player2Id: string
     player1Score: number
@@ -272,8 +360,8 @@ function buildResolution(params: {
     player2Action: PlayerAction
     startedAt: string | null
 }) {
-    const player1 = resolvePlayerAction(params.environment, params.player1Traits, params.player1Action)
-    const player2 = resolvePlayerAction(params.environment, params.player2Traits, params.player2Action)
+    const player1 = resolvePlayerAction(params.roundEvent, params.player1Traits, params.player1Action)
+    const player2 = resolvePlayerAction(params.roundEvent, params.player2Traits, params.player2Action)
     const awardedPoints = params.roundNumber === FINAL_ROUND_NUMBER ? 2 : 1
     const winnerId =
         player1.roundValue === player2.roundValue
@@ -303,6 +391,7 @@ function buildResolution(params: {
         winner_id: winnerId,
         resolution_data: {
             awardedPoints,
+            roundEventId: params.roundEvent.id,
             player1Action: params.player1Action,
             player2Action: params.player2Action,
             player1Breakdown: player1.breakdown,
@@ -455,11 +544,17 @@ Deno.serve(async (request) => {
             return json({ status: 'pending', reason: 'missing_player_action' })
         }
 
-        const environment = (gameData.environment_sequence?.[roundNumber - 1] ?? '') as EnvironmentName
+        const roundEventId = String(gameData.round_event_sequence?.[roundNumber - 1] ?? '')
+
+        if (!roundEventId) {
+            return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
+        }
+
+        const roundEvent = getRoundEventById(roundEventId)
 
         const resolution = buildResolution({
             roundNumber,
-            environment,
+            roundEvent,
             player1Id: String(player1.id),
             player2Id: String(player2.id),
             player1Score: Number(gameData.player_1_score ?? 0),

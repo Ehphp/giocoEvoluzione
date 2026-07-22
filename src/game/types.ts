@@ -1,5 +1,3 @@
-export const ENVIRONMENTS = ['FOREST', 'MOUNTAIN', 'SWAMP'] as const
-
 export const TRAITS = [
     'STRENGTH',
     'RESISTANCE',
@@ -23,10 +21,51 @@ export const GAME_STATUSES = [
     'FINISHED',
 ] as const
 
-export type Environment = (typeof ENVIRONMENTS)[number]
 export type TraitType = (typeof TRAITS)[number]
 export type ActionType = (typeof ACTION_TYPES)[number]
 export type GameStatus = (typeof GAME_STATUSES)[number]
+
+export const ROUND_EVENT_CATEGORIES = [
+    'CLIMATE',
+    'GEOLOGICAL',
+    'BIOLOGICAL',
+    'ASTRONOMICAL',
+    'ECOLOGICAL',
+] as const
+
+export const ROUND_EVENT_RARITIES = ['COMMON', 'UNCOMMON', 'RARE'] as const
+export const ROUND_EVENT_INTENSITIES = [1, 2, 3] as const
+
+export type RoundEventCategory = (typeof ROUND_EVENT_CATEGORIES)[number]
+export type RoundEventRarity = (typeof ROUND_EVENT_RARITIES)[number]
+export type RoundEventIntensity = (typeof ROUND_EVENT_INTENSITIES)[number]
+
+export type WorldDefinition = {
+    id: string
+    name: string
+    planetName: string
+    backgroundArtKey: string
+    paletteKey: string
+}
+
+export type RoundEventEffect = {
+    trait: TraitType
+    modifier: number
+    reason: string
+}
+
+export type RoundEventDefinition = {
+    id: string
+    title: string
+    shortDescription: string
+    longDescription?: string
+    category: RoundEventCategory
+    rarity: RoundEventRarity
+    intensity: RoundEventIntensity
+    artKey: string
+    tags: string[]
+    effects: RoundEventEffect[]
+}
 
 export type TraitState = {
     level: number
@@ -35,9 +74,10 @@ export type TraitState = {
 
 export type RoundValueBreakdown = {
     actionType: ActionType
-    environmentModifier: number
-    environmentWeight: number
-    environmentContribution: number
+    eventModifierTotal: number
+    eventWeight: number
+    eventContribution: number
+    appliedEventEffects: Array<RoundEventEffect & { contribution: number }>
     originalLevel: number
     effectiveLevel: number
     levelContribution: number
@@ -63,7 +103,7 @@ export type ResolvedPlayerRound = {
 
 export type ResolveRoundInput = {
     roundNumber: number
-    environment: Environment
+    roundEvent: RoundEventDefinition
     player1Id: string
     player2Id: string
     player1Traits: TraitCollection
@@ -75,7 +115,7 @@ export type ResolveRoundInput = {
 
 export type RoundResolution = {
     roundNumber: number
-    environment: Environment
+    roundEvent: RoundEventDefinition
     player1: ResolvedPlayerRound
     player2: ResolvedPlayerRound
     winnerId: string | null

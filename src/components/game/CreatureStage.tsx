@@ -4,28 +4,28 @@ import type { TraitCollection } from '../../game/types'
 type CreatureStageProps = {
     playerName: string
     traits: TraitCollection
-    currentEnvironment: string
+    currentRoundEventLabel: string
     dominantTraitLabel: string
     dominantTraitLevel: number
     opponentName: string
     opponentAvatarSrc: string
-    environmentEffectClass: string
+    eventEffectClass: string
 }
 
 export function CreatureStage({
     playerName,
     traits,
-    currentEnvironment,
+    currentRoundEventLabel,
     dominantTraitLabel,
     dominantTraitLevel,
     opponentName,
     opponentAvatarSrc,
-    environmentEffectClass,
+    eventEffectClass,
 }: CreatureStageProps) {
     return (
-        <section className={`game-creature-stage ${environmentEffectClass}`}>
+        <section className={`game-creature-stage ${eventEffectClass}`}>
             <div className="game-creature-stage__meta">
-                <span className="game-pill game-pill--environment">{currentEnvironment}</span>
+                <span className="game-pill game-pill--event">{currentRoundEventLabel}</span>
                 <span className="game-pill">{dominantTraitLabel}</span>
                 <span className="game-pill game-pill--level">Lv {dominantTraitLevel}</span>
             </div>

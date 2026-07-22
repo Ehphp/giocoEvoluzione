@@ -99,6 +99,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.gene-v2-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -2px;
+}
+
+.gene-v2-leave {
+  min-height: 32px;
+  padding: 6px 12px;
+}
+
 .gene-v2-duel-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -255,7 +266,7 @@
   color: #ffffff;
 }
 
-.gene-v2-environment {
+.gene-v2-round-event {
   border-radius: 18px;
   border: 1px solid rgba(255, 248, 226, 0.7);
   background: linear-gradient(180deg, #f8f1df, #efe4cd);
@@ -267,7 +278,7 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
-.gene-v2-environment-art {
+.gene-v2-round-event-art {
   min-height: 108px;
   border-radius: 14px;
   overflow: hidden;
@@ -276,7 +287,7 @@
   background: linear-gradient(180deg, #8fbc7d, #4c7455);
 }
 
-.gene-v2-environment-art img {
+.gene-v2-round-event-art img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -284,7 +295,7 @@
   object-fit: cover;
 }
 
-.gene-v2-environment-art span {
+.gene-v2-round-event-art span {
   position: absolute;
   bottom: 6px;
   left: 6px;
@@ -297,7 +308,7 @@
   letter-spacing: 0.08em;
 }
 
-.gene-v2-environment-copy {
+.gene-v2-round-event-copy {
   min-width: 0;
   display: grid;
   gap: 4px;
@@ -310,12 +321,12 @@
   text-transform: uppercase;
 }
 
-.gene-v2-environment-copy strong {
+.gene-v2-round-event-copy strong {
   color: #242520;
   font-size: 0.98rem;
 }
 
-.gene-v2-environment-copy p {
+.gene-v2-round-event-copy p {
   margin: 0;
   color: #4f5344;
   font-size: 0.71rem;
@@ -809,7 +820,7 @@
 }
 
 @media (max-width: 430px) {
-  .gene-v2-environment {
+  .gene-v2-round-event {
     grid-template-columns: 88px minmax(0, 1fr);
   }
 
@@ -835,7 +846,7 @@
     min-height: 174px;
   }
 
-  .gene-v2-environment-copy p {
+  .gene-v2-round-event-copy p {
     font-size: 0.68rem;
     line-height: 1.24;
   }

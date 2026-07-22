@@ -10,7 +10,7 @@ type GeneAssetKey =
     | 'webbed-limbs'
     | 'fat-reserves'
 
-import type { Environment, TraitType } from '../../game/types'
+import type { TraitType } from '../../game/types'
 
 export const GAME_SELECTION_ASSETS = {
     background: '/assets/game-ui/placeholders/background.svg',
@@ -51,16 +51,10 @@ const TRAIT_ASSET_KEYS: Record<TraitType, GeneAssetKey> = {
     FAT_RESERVES: 'fat-reserves',
 }
 
-const ENVIRONMENT_ASSETS: Record<Environment, string> = {
-    FOREST: GAME_SELECTION_ASSETS.environment,
-    MOUNTAIN: GAME_SELECTION_ASSETS.environment,
-    SWAMP: GAME_SELECTION_ASSETS.environment,
-}
-
 export function getGeneAssetByTrait(traitType: TraitType): string {
     return getGeneAssetOrFallback(TRAIT_ASSET_KEYS[traitType])
 }
 
-export function getEnvironmentAsset(environment: Environment): string {
-    return ENVIRONMENT_ASSETS[environment] ?? GAME_SELECTION_ASSETS.environment
+export function getEventAssetByArtKey(_artKey: string): string {
+    return GAME_SELECTION_ASSETS.environment
 }
