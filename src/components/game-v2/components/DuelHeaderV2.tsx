@@ -12,7 +12,7 @@ function StatusDot({ status }: { status: DuelPlayerV2['status'] }) {
 export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
     return (
         <header className="gene-v2-duel-header" aria-label="Stato competitivo giocatori">
-            <article className="gene-v2-player-card" aria-label={`Giocatore ${player.name}, punteggio ${player.score}`}>
+            <article className="gene-v2-player-card gene-v2-player-card--player" aria-label={`Giocatore ${player.name}, punteggio ${player.score}`}>
                 <div className="gene-v2-avatar-fallback" role="img" aria-label={`Avatar ${player.name}`}>
                     <img src={player.avatarUrl} alt="" className="gene-v2-avatar-image" loading="lazy" onError={(event) => {
                         event.currentTarget.style.display = 'none'
@@ -22,7 +22,7 @@ export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
                 <div className="gene-v2-player-copy">
                     <span className="gene-v2-player-tag">Tu</span>
                     <strong>{player.name}</strong>
-                    <small>
+                    <small className="gene-v2-player-status">
                         <StatusDot status={player.status} />
                         {player.status === 'ready' ? 'Scelta inviata' : 'Sta scegliendo'}
                     </small>
@@ -32,9 +32,11 @@ export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
                 </span>
             </article>
 
-            <span className="gene-v2-versus" aria-hidden="true">VS</span>
+            <span className="gene-v2-versus" aria-hidden="true">
+                VS
+            </span>
 
-            <article className="gene-v2-player-card" aria-label={`Avversario ${opponent.name}, punteggio ${opponent.score}`}>
+            <article className="gene-v2-player-card gene-v2-player-card--opponent" aria-label={`Avversario ${opponent.name}, punteggio ${opponent.score}`}>
                 <div className="gene-v2-avatar-fallback" role="img" aria-label={`Avatar ${opponent.name}`}>
                     <img src={opponent.avatarUrl} alt="" className="gene-v2-avatar-image" loading="lazy" onError={(event) => {
                         event.currentTarget.style.display = 'none'
@@ -44,7 +46,7 @@ export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
                 <div className="gene-v2-player-copy">
                     <span className="gene-v2-player-tag">Avversario</span>
                     <strong>{opponent.name}</strong>
-                    <small>
+                    <small className="gene-v2-player-status">
                         <StatusDot status={opponent.status} />
                         {opponent.status === 'ready' ? 'Scelta inviata' : 'Sta scegliendo'}
                     </small>

@@ -6,11 +6,13 @@ type RoundIndicatorV2Props = {
 
 export function RoundIndicatorV2({ round }: RoundIndicatorV2Props) {
     return (
-        <section className="gene-v2-round-indicator" aria-label={`Round ${round.current} su ${round.total}`}>
-            <span>ROUND</span>
-            <strong>
-                {round.current} / {round.total}
-            </strong>
+        <section className="gene-v2-round-wrap" aria-label={`Round ${round.current} su ${round.total}`}>
+            <div className="gene-v2-round-indicator">
+                <span>ROUND</span>
+                <strong>
+                    {round.current} / {round.total}
+                </strong>
+            </div>
         </section>
     )
 }

@@ -13,6 +13,8 @@ export function CreatureStageV2({
 }: CreatureStageV2Props) {
     return (
         <section className="gene-v2-creature-stage" aria-label="Confronto creature nel round corrente">
+            <div className="gene-v2-stage-ground" aria-hidden="true" />
+
             <article className="gene-v2-creature-card">
                 <div className="gene-v2-creature-art" role="img" aria-label={`Creatura ${playerName}`}>
                     <img src={playerCreatureUrl} alt="" loading="lazy" onError={(event) => {
@@ -20,6 +22,7 @@ export function CreatureStageV2({
                     }} />
                     <span>{playerName.slice(0, 1).toUpperCase()}</span>
                 </div>
+                <span className="gene-v2-creature-shadow" aria-hidden="true" />
                 <strong>{playerName}</strong>
             </article>
 
@@ -32,6 +35,7 @@ export function CreatureStageV2({
                     }} />
                     <span>{opponentName.slice(0, 1).toUpperCase()}</span>
                 </div>
+                <span className="gene-v2-creature-shadow" aria-hidden="true" />
                 <strong>{opponentName}</strong>
             </article>
         </section>

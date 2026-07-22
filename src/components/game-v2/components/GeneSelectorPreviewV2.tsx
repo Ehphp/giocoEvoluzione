@@ -23,21 +23,74 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
 }
 
 export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: GeneSelectorPreviewV2Props) {
+    const total = genes.length
+
+    if (total === 0) {
+        return null
+    }
+
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
-    const leftIndex = Math.max(0, selectedIndex - 1)
-    const rightIndex = Math.min(genes.length - 1, selectedIndex + 1)
-    const previewGenes = [genes[leftIndex], genes[selectedIndex], genes[rightIndex]].filter(Boolean) as GeneCardV2[]
+
+    function getWrappedIndex(index: number): number {
+        if (total === 0) {
+            return 0
+        }
+
+        return (index + total) % total
+    }
+
+    function goToOffset(offset: number) {
+        if (total < 2) {
+            return
+        }
+
+        const nextIndex = getWrappedIndex(selectedIndex + offset)
+        const nextGene = genes[nextIndex]
+
+        if (nextGene) {
+            onSelectGene(nextGene.id)
+        }
+    }
+
+    const leftGene = genes[getWrappedIndex(selectedIndex - 1)]
+    const centerGene = genes[selectedIndex]
+    const rightGene = genes[getWrappedIndex(selectedIndex + 1)]
+
+    const previewGenes = total >= 3
+        ? [leftGene, centerGene, rightGene]
+        : [centerGene, rightGene].filter((gene, index, array) => {
+            return gene && array.findIndex((item) => item?.id === gene.id) === index
+        })
 
     return (
         <section className="gene-v2-selector" aria-label="Anteprima selettore geni">
             <header className="gene-v2-selector-head">
                 <strong>Selettore geni</strong>
-                <span>{selectedIndex + 1}/{genes.length}</span>
+                <span>{selectedIndex + 1}/{total}</span>
             </header>
+
+            <div className="gene-v2-selector-nav">
+                <button
+                    type="button"
+                    className="gene-v2-nav-btn"
+                    onClick={() => goToOffset(-1)}
+                    aria-label="Gene precedente"
+                >
+                    ‹
+                </button>
+                <button
+                    type="button"
+                    className="gene-v2-nav-btn"
+                    onClick={() => goToOffset(1)}
+                    aria-label="Gene successivo"
+                >
+                    ›
+                </button>
+            </div>
 
             <div className="gene-v2-selector-rail" role="listbox" aria-label="Card geni visibili">
                 {previewGenes.map((gene, index) => {
-                    const isCenter = index === 1 || (previewGenes.length < 3 && gene.id === selectedGeneId)
+                    const isCenter = gene.id === selectedGeneId
                     const isSelected = gene.id === selectedGeneId
 
                     return (
@@ -48,6 +101,17 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene }: G
                             className={`gene-v2-gene-card ${isCenter ? 'is-center' : 'is-side'} ${isSelected ? 'is-selected' : ''}`}
                             aria-selected={isSelected}
                             onClick={() => onSelectGene(gene.id)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'ArrowLeft') {
+                                    event.preventDefault()
+                                    goToOffset(-1)
+                                }
+
+                                if (event.key === 'ArrowRight') {
+                                    event.preventDefault()
+                                    goToOffset(1)
+                                }
+                            }}
                         >
                             <div className="gene-v2-gene-icon" role="img" aria-label={`Icona gene ${gene.name}`}>
                                 <img src={gene.imageUrl} alt="" loading="lazy" onError={(event) => {
