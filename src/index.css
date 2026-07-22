@@ -1,0 +1,65 @@
+:root {
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  line-height: 1.4;
+  font-weight: 400;
+  color: #2f3125;
+  background: #efe7cf;
+  --game-bg: #0f211b;
+  --game-surface: #19352b;
+  --game-surface-elevated: #234438;
+  --game-text: #f5f3e8;
+  --game-text-muted: #aebdb4;
+  --game-use: #b8e85e;
+  --game-evolve: #62d5cf;
+  --game-warning: #f4c95d;
+  --game-danger: #ff7474;
+  --game-border: rgba(255, 255, 255, 0.12);
+  --game-shadow: rgba(0, 0, 0, 0.18);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+h1 {
+  margin: 6px 0 0;
+  font-size: clamp(1.8rem, 5vw, 2.7rem);
+  line-height: 1.05;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+p {
+  margin: 0;
+}
+
+strong {
+  color: #1f281d;
+}
+
+a {
+  color: inherit;
+}

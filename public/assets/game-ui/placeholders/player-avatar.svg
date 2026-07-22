@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Placeholder avatar giocatore">
+  <rect width="256" height="256" rx="48" fill="#244c3b"/>
+  <circle cx="128" cy="96" r="48" fill="#d7efc4"/>
+  <rect x="56" y="150" width="144" height="74" rx="36" fill="#b4ec6b"/>
+</svg>

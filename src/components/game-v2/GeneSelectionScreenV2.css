@@ -1,0 +1,591 @@
+:root {
+  --gene-v2-bg-top: #123326;
+  --gene-v2-bg-bottom: #0c2018;
+  --gene-v2-surface: rgba(17, 45, 34, 0.82);
+  --gene-v2-surface-soft: rgba(255, 255, 255, 0.07);
+  --gene-v2-border: rgba(220, 240, 206, 0.24);
+  --gene-v2-text: #f4f5e8;
+  --gene-v2-muted: #b9c9b8;
+  --gene-v2-use: #b4ec6b;
+  --gene-v2-evolve: #76d7d4;
+  --gene-v2-danger: #ff9f88;
+}
+
+.gene-v2-screen {
+  position: relative;
+  min-height: 100dvh;
+  min-height: 100vh;
+  overflow: clip;
+  color: var(--gene-v2-text);
+  background:
+    radial-gradient(90% 56% at 50% -4%, rgba(130, 212, 151, 0.24), transparent 65%),
+    radial-gradient(42% 22% at 10% 88%, rgba(235, 255, 194, 0.08), transparent 75%),
+    linear-gradient(180deg, var(--gene-v2-bg-top), var(--gene-v2-bg-bottom));
+}
+
+.gene-v2-background {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gene-v2-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+
+.gene-v2-scroll {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 10px)
+    clamp(10px, 3.4vw, 18px)
+    calc(env(safe-area-inset-bottom, 0px) + 14px);
+  min-height: 100dvh;
+  min-height: 100vh;
+  align-content: start;
+}
+
+.gene-v2-duel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.gene-v2-player-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-radius: 18px;
+  border: 1px solid var(--gene-v2-border);
+  background: linear-gradient(180deg, rgba(26, 61, 47, 0.9), rgba(20, 45, 35, 0.9));
+  padding: 8px;
+}
+
+.gene-v2-avatar-fallback {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--gene-v2-border);
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05));
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  color: var(--gene-v2-text);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.gene-v2-avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gene-v2-player-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.gene-v2-player-tag {
+  color: var(--gene-v2-muted);
+  font-size: 0.63rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gene-v2-player-copy strong {
+  font-size: 0.84rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gene-v2-player-copy small {
+  color: var(--gene-v2-muted);
+  font-size: 0.67rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gene-v2-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.gene-v2-status-dot.is-choosing {
+  background: var(--gene-v2-evolve);
+}
+
+.gene-v2-status-dot.is-ready {
+  background: var(--gene-v2-use);
+}
+
+.gene-v2-score {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--gene-v2-border);
+  background: rgba(255, 255, 255, 0.06);
+  display: inline-grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.77rem;
+}
+
+.gene-v2-versus,
+.gene-v2-stage-vs {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid var(--gene-v2-border);
+  background: rgba(255, 255, 255, 0.07);
+  display: grid;
+  place-items: center;
+  color: var(--gene-v2-text);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+}
+
+.gene-v2-round-indicator {
+  border-radius: 14px;
+  border: 1px solid var(--gene-v2-border);
+  background: var(--gene-v2-surface);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+}
+
+.gene-v2-round-indicator span {
+  color: var(--gene-v2-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.gene-v2-round-indicator strong {
+  font-size: 0.88rem;
+}
+
+.gene-v2-environment {
+  border-radius: 18px;
+  border: 1px solid var(--gene-v2-border);
+  background: linear-gradient(180deg, rgba(29, 62, 48, 0.9), rgba(21, 44, 35, 0.9));
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.gene-v2-environment-art {
+  border-radius: 14px;
+  border: 1px solid var(--gene-v2-border);
+  min-height: 104px;
+  background: linear-gradient(180deg, rgba(148, 223, 146, 0.22), rgba(53, 95, 72, 0.3));
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.gene-v2-environment-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gene-v2-environment-art span {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.gene-v2-environment-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.gene-v2-eyebrow {
+  color: var(--gene-v2-muted);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gene-v2-environment-copy strong {
+  font-size: 0.9rem;
+}
+
+.gene-v2-environment-copy p {
+  margin: 0;
+  color: var(--gene-v2-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.gene-v2-modifiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gene-v2-modifier {
+  border-radius: 10px;
+  border: 1px solid var(--gene-v2-border);
+  padding: 5px 7px;
+  display: grid;
+  gap: 1px;
+  background: var(--gene-v2-surface-soft);
+}
+
+.gene-v2-modifier small {
+  color: var(--gene-v2-muted);
+  font-size: 0.62rem;
+}
+
+.gene-v2-modifier strong {
+  font-size: 0.67rem;
+}
+
+.gene-v2-modifier.is-positive strong {
+  color: var(--gene-v2-use);
+}
+
+.gene-v2-modifier.is-negative strong {
+  color: var(--gene-v2-danger);
+}
+
+.gene-v2-modifier.is-neutral strong {
+  color: var(--gene-v2-evolve);
+}
+
+.gene-v2-creature-stage {
+  border-radius: 18px;
+  border: 1px solid var(--gene-v2-border);
+  background: linear-gradient(180deg, rgba(29, 56, 46, 0.84), rgba(17, 35, 28, 0.9));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: end;
+  padding: 12px 10px;
+}
+
+.gene-v2-creature-card {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.gene-v2-creature-card strong {
+  font-size: 0.73rem;
+  color: var(--gene-v2-muted);
+}
+
+.gene-v2-creature-art {
+  width: 100%;
+  min-height: 128px;
+  border-radius: 16px;
+  border: 1px solid var(--gene-v2-border);
+  background:
+    radial-gradient(64% 68% at 50% 26%, rgba(197, 250, 141, 0.2), transparent 66%),
+    linear-gradient(180deg, rgba(36, 74, 58, 0.8), rgba(21, 43, 34, 0.86));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.gene-v2-creature-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gene-v2-creature-art span {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--gene-v2-border);
+  background: rgba(255, 255, 255, 0.08);
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.gene-v2-selector,
+.gene-v2-selected,
+.gene-v2-action-panel {
+  border-radius: 18px;
+  border: 1px solid var(--gene-v2-border);
+  background: var(--gene-v2-surface);
+}
+
+.gene-v2-selector {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.gene-v2-selector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gene-v2-selector-head strong {
+  font-size: 0.86rem;
+}
+
+.gene-v2-selector-head span {
+  font-size: 0.7rem;
+  color: var(--gene-v2-muted);
+}
+
+.gene-v2-selector-rail {
+  display: grid;
+  grid-template-columns: 0.82fr 1fr 0.82fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.gene-v2-gene-card {
+  min-height: 176px;
+  border-radius: 16px;
+  border: 1px solid var(--gene-v2-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  color: var(--gene-v2-text);
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  padding: 8px;
+  text-align: left;
+}
+
+.gene-v2-gene-card.is-side {
+  opacity: 0.75;
+  transform: scale(0.95);
+}
+
+.gene-v2-gene-card.is-center {
+  min-height: 196px;
+}
+
+.gene-v2-gene-card.is-selected {
+  border-color: rgba(180, 236, 107, 0.7);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+}
+
+.gene-v2-gene-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--gene-v2-border);
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.gene-v2-gene-icon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gene-v2-gene-icon span {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.gene-v2-gene-card strong {
+  font-size: 0.77rem;
+  line-height: 1.2;
+}
+
+.gene-v2-gene-card small {
+  color: var(--gene-v2-muted);
+  font-size: 0.68rem;
+}
+
+.gene-v2-affinity {
+  align-self: end;
+  justify-self: start;
+  border-radius: 999px;
+  border: 1px solid var(--gene-v2-border);
+  padding: 2px 7px;
+  font-size: 0.62rem;
+}
+
+.gene-v2-affinity.is-low {
+  color: #ffd5b8;
+}
+
+.gene-v2-affinity.is-medium {
+  color: #f9ecbc;
+}
+
+.gene-v2-affinity.is-high {
+  color: #b8f2dc;
+}
+
+.gene-v2-affinity.is-excellent {
+  color: #b4ec6b;
+}
+
+.gene-v2-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.gene-v2-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.gene-v2-dots span.is-active {
+  width: 16px;
+  border-radius: 999px;
+  background: var(--gene-v2-use);
+}
+
+.gene-v2-selected {
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.gene-v2-selected header {
+  display: grid;
+  gap: 2px;
+}
+
+.gene-v2-selected header strong {
+  font-size: 0.95rem;
+}
+
+.gene-v2-selected p {
+  margin: 0;
+  color: var(--gene-v2-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.gene-v2-selected-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gene-v2-selected-facts span {
+  border-radius: 999px;
+  border: 1px solid var(--gene-v2-border);
+  background: var(--gene-v2-surface-soft);
+  padding: 4px 8px;
+  font-size: 0.68rem;
+}
+
+.gene-v2-action-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  position: sticky;
+  bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+}
+
+.gene-v2-action-btn {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid var(--gene-v2-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gene-v2-text);
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 8px;
+  text-align: center;
+}
+
+.gene-v2-action-btn span {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.gene-v2-action-btn small {
+  color: var(--gene-v2-muted);
+  font-size: 0.65rem;
+}
+
+.gene-v2-action-btn.is-active {
+  border-color: rgba(180, 236, 107, 0.68);
+  background: linear-gradient(180deg, rgba(180, 236, 107, 0.2), rgba(180, 236, 107, 0.1));
+}
+
+.gene-v2-action-btn:focus-visible,
+.gene-v2-gene-card:focus-visible {
+  outline: 2px solid var(--gene-v2-evolve);
+  outline-offset: 2px;
+}
+
+@media (max-width: 430px) {
+  .gene-v2-environment {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .gene-v2-selector-rail {
+    grid-template-columns: 0.8fr 1fr 0.8fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .gene-v2-player-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .gene-v2-score {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gene-v2-gene-card,
+  .gene-v2-action-btn,
+  .gene-v2-dots span {
+    transition: none;
+    animation: none;
+  }
+}

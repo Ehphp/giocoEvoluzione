@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Placeholder creatura avversario">
+  <rect width="512" height="512" rx="48" fill="#223f36"/>
+  <ellipse cx="256" cy="384" rx="170" ry="56" fill="#13241d"/>
+  <path d="M152 318c0-78 44-162 104-162s104 84 104 162" fill="#76d7d4"/>
+  <circle cx="220" cy="250" r="14" fill="#12322f"/>
+  <circle cx="292" cy="250" r="14" fill="#12322f"/>
+</svg>

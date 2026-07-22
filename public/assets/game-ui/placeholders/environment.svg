@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Placeholder ambiente">
+  <defs>
+    <linearGradient id="env" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6ba26b"/>
+      <stop offset="100%" stop-color="#33553a"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#env)"/>
+  <circle cx="130" cy="80" r="48" fill="#e6f6c6" fill-opacity="0.5"/>
+  <rect x="0" y="250" width="640" height="110" fill="#274736"/>
+  <path d="M80 250L150 140L220 250Z" fill="#214231"/>
+  <path d="M220 250L300 120L380 250Z" fill="#214231"/>
+  <path d="M360 250L450 150L540 250Z" fill="#214231"/>
+</svg>
