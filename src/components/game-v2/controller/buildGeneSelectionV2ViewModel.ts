@@ -137,6 +137,7 @@ function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null)
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {
     const { snapshot } = input
     const me = snapshot.me
+    const isVsBot = snapshot.game.game_mode === 'VS_BOT'
 
     if (!me) {
         return {
@@ -200,7 +201,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     } else if (myHasSubmitted && snapshot.actionsSubmitted >= 2) {
         status = 'resolving'
     } else if (myHasSubmitted) {
-        status = 'waiting'
+        status = isVsBot ? 'resolving' : 'waiting'
     }
 
     const canSelectGenes = status === 'choosing' || status === 'error'
@@ -256,9 +257,15 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             ? {
                 submittedGeneName: submittedGene.name,
                 submittedAction: submittedAction.actionType,
-                submittedCountLabel: `${Math.min(snapshot.actionsSubmitted, 2)}/2`,
-                opponentStatusLabel: opponentHasSubmitted ? 'Scelta avversario ricevuta' : 'In attesa dell avversario',
-                isResolving: snapshot.actionsSubmitted >= 2,
+                submittedCountLabel: isVsBot && myHasSubmitted
+                    ? '1/1'
+                    : `${Math.min(snapshot.actionsSubmitted, 2)}/2`,
+                opponentStatusLabel: isVsBot
+                    ? 'Il bot sta scegliendo'
+                    : opponentHasSubmitted
+                        ? 'Scelta avversario ricevuta'
+                        : 'In attesa dell avversario',
+                isResolving: snapshot.actionsSubmitted >= 2 || (isVsBot && myHasSubmitted),
             }
             : undefined,
     }

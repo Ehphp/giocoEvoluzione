@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
+import { ensureBotRoundAction } from '../../../src/game/vs-bot-round.ts'
 import type { ActionType, RoundEventDefinition, RoundValueBreakdown, TraitType } from '../../../src/game/types.ts'
 
 // Scoring stays aligned with src/game/engine.ts through equivalent pure helpers;
@@ -523,7 +524,7 @@ Deno.serve(async (request) => {
             return json({ status: 'already_resolved', result: existingResultData })
         }
 
-        const { data: actionsData, error: actionsError } = await supabaseAdmin
+        let { data: actionsData, error: actionsError } = await supabaseAdmin
             .from('round_actions')
             .select('*')
             .eq('game_id', gameId)
@@ -531,6 +532,65 @@ Deno.serve(async (request) => {
 
         if (actionsError) {
             return json({ error: actionsError.message }, 400)
+        }
+
+        const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
+
+        if (gameMode === 'VS_BOT') {
+            const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
+
+            if (botPlayer && (!actionsData || !actionsData.some((action) => action.player_id === botPlayer.id))) {
+                await ensureBotRoundAction(
+                    {
+                        insertRoundAction: async (input) => {
+                            const { error } = await supabaseAdmin.from('round_actions').insert({
+                                game_id: input.gameId,
+                                round_number: input.roundNumber,
+                                player_id: input.playerId,
+                                trait: input.trait,
+                                action_type: input.actionType,
+                            })
+
+                            if (error) {
+                                throw error
+                            }
+                        },
+                        getRoundAction: async (currentGameId, currentRoundNumber, playerId) => {
+                            const { data, error } = await supabaseAdmin
+                                .from('round_actions')
+                                .select('*')
+                                .eq('game_id', currentGameId)
+                                .eq('round_number', currentRoundNumber)
+                                .eq('player_id', playerId)
+                                .maybeSingle()
+
+                            if (error) {
+                                throw error
+                            }
+
+                            return data
+                        },
+                    },
+                    {
+                        gameId,
+                        roundNumber,
+                        playerId: String(botPlayer.id),
+                        traits: normalizeTraitCollection(botPlayer.traits as TraitCollection),
+                    },
+                )
+
+                const { data: refreshedActionsData, error: refreshedActionsError } = await supabaseAdmin
+                    .from('round_actions')
+                    .select('*')
+                    .eq('game_id', gameId)
+                    .eq('round_number', roundNumber)
+
+                if (refreshedActionsError) {
+                    return json({ error: refreshedActionsError.message }, 400)
+                }
+
+                actionsData = refreshedActionsData
+            }
         }
 
         if (!actionsData || actionsData.length < 2) {

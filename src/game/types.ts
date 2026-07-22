@@ -21,9 +21,15 @@ export const GAME_STATUSES = [
     'FINISHED',
 ] as const
 
+export const GAME_MODES = ['PVP', 'VS_BOT'] as const
+
+export const PLAYER_TYPES = ['HUMAN', 'BOT'] as const
+
 export type TraitType = (typeof TRAITS)[number]
 export type ActionType = (typeof ACTION_TYPES)[number]
 export type GameStatus = (typeof GAME_STATUSES)[number]
+export type GameMode = (typeof GAME_MODES)[number]
+export type PlayerType = (typeof PLAYER_TYPES)[number]
 
 export const ROUND_EVENT_CATEGORIES = [
     'CLIMATE',

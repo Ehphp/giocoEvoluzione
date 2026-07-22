@@ -23,6 +23,7 @@ import {
   acknowledgeReveal,
   advanceToNextRound,
   createGame,
+  createVsBotGame,
   fetchGameSnapshot,
   joinGame,
   maybeResolveRound,
@@ -36,7 +37,7 @@ import {
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 
 type PendingAction = 'USE' | 'EVOLVE' | null
-type BusyAction = 'CREATE' | 'JOIN' | null
+type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 
 type ResolutionData = {
   awardedPoints?: number
@@ -156,8 +157,17 @@ function App() {
     const actionsSubmitted = snapshot?.actionsSubmitted ?? 0
     const currentRoundResultId = snapshot?.currentRoundResult?.id
     const currentRound = snapshot?.game.current_round ?? 0
+    const isVsBot = snapshot?.game.game_mode === 'VS_BOT'
+    const hasHumanAction = Boolean(snapshot?.myCurrentAction)
 
-    if (!gameId || !playerId || currentStatus !== 'CHOOSING' || actionsSubmitted < 2 || currentRoundResultId || currentRound <= 0) {
+    if (
+      !gameId
+      || !playerId
+      || currentStatus !== 'CHOOSING'
+      || currentRoundResultId
+      || currentRound <= 0
+      || (!(actionsSubmitted >= 2) && !(isVsBot && hasHumanAction))
+    ) {
       return
     }
 
@@ -215,6 +225,28 @@ function App() {
   async function refreshSnapshot(gameId: string, playerId: string) {
     const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
     setSnapshot(nextSnapshot)
+
+    return nextSnapshot
+  }
+
+  async function settleVsBotRound(gameId: string, playerId: string, roundNumber: number) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await maybeResolveRound(gameId, roundNumber)
+      } catch {
+        // Keep retrying locally; the edge function is idempotent.
+      }
+
+      const nextSnapshot = await refreshSnapshot(gameId, playerId)
+
+      if (nextSnapshot.currentRoundResult) {
+        return nextSnapshot
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 200))
+    }
+
+    return refreshSnapshot(gameId, playerId)
   }
 
   async function handleCreateGame() {
@@ -236,6 +268,31 @@ function App() {
       setSnapshot(created)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Impossibile creare la partita.')
+    } finally {
+      setIsBusy(false)
+      setBusyAction(null)
+    }
+  }
+
+  async function handleCreateBotGame() {
+    if (!nickname.trim()) {
+      setErrorMessage('Inserisci un nickname.')
+
+      return
+    }
+
+    setIsBusy(true)
+    setBusyAction('CREATE_BOT')
+    setErrorMessage(null)
+    setStatusMessage(null)
+
+    try {
+      const playerId = createPlayerId()
+      const created = await createVsBotGame({ nickname, playerId })
+      saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code })
+      setSnapshot(created)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Impossibile creare la partita contro il bot.')
     } finally {
       setIsBusy(false)
       setBusyAction(null)
@@ -300,7 +357,14 @@ function App() {
         actionType,
       })
 
-      await refreshSnapshot(snapshot.game.id, snapshot.me.id)
+      const submittedSnapshot = await refreshSnapshot(snapshot.game.id, snapshot.me.id)
+
+      if (submittedSnapshot.game.game_mode === 'VS_BOT') {
+        await settleVsBotRound(submittedSnapshot.game.id, submittedSnapshot.me?.id ?? snapshot.me.id, submittedSnapshot.game.current_round)
+        setStatusMessage('Scelta confermata. Il bot sta completando il round.')
+        return true
+      }
+
       setStatusMessage('Scelta confermata. In attesa dell avversario.')
       return true
     } catch (error) {
@@ -384,6 +448,7 @@ function App() {
               onNicknameChange={setNickname}
               onRoomCodeChange={(value) => setRoomCode(value.toUpperCase())}
               onCreateGame={() => void handleCreateGame()}
+              onCreateBotGame={() => void handleCreateBotGame()}
               onJoinGame={() => void handleJoinGame()}
               onLeaveSession={handleLeaveSession}
             />

@@ -11,6 +11,7 @@ function createGame(overrides: Partial<GameRecord> = {}): GameRecord {
     return {
         id: 'game-1',
         room_code: 'ABCDE',
+        game_mode: 'PVP',
         status: 'CHOOSING',
         current_round: 1,
         world_id: 'AURELIA_PRIME',
@@ -42,6 +43,7 @@ function createPlayer(id: string, slot: 1 | 2, nickname: string): PlayerRecord {
         game_id: 'game-1',
         nickname,
         slot,
+        player_type: 'HUMAN',
         traits: createInitialTraits(),
         connected: true,
         created_at: 'now',

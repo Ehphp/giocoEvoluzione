@@ -22,7 +22,15 @@ export function getWorldById(worldId: string): WorldDefinition {
     const world = WORLD_BY_ID[worldId]
 
     if (!world) {
-        throw new Error(`Unknown world \"${worldId}\".`)
+        return DEFAULT_WORLD_ID === WORLD_DEFINITIONS[0]?.id
+            ? WORLD_DEFINITIONS[0]!
+            : WORLD_DEFINITIONS[0] ?? {
+                id: DEFAULT_WORLD_ID,
+                name: 'Aurelia Prime',
+                planetName: 'Aurelia',
+                backgroundArtKey: 'world-aurelia-prime',
+                paletteKey: 'aurelia-amber',
+            }
     }
 
     return world

@@ -1,10 +1,12 @@
 import { createInitialTraits, generateRoundEventSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS } from '../game/config'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
+    GameMode,
     GameStatus,
     RoundEventDefinition,
     TraitCollection,
     TraitType,
+    PlayerType,
     WorldDefinition,
 } from '../game/types'
 import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
@@ -13,6 +15,7 @@ import { requireSupabase } from './supabase'
 export type GameRecord = {
     id: string
     room_code: string
+    game_mode: GameMode
     status: GameStatus
     current_round: number
     world_id: string
@@ -34,6 +37,7 @@ export type PlayerRecord = {
     game_id: string
     nickname: string
     slot: 1 | 2
+    player_type: PlayerType
     traits: TraitCollection
     connected: boolean
     created_at: string
@@ -87,6 +91,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
     return {
         id: String(data.id),
         room_code: String(data.room_code),
+        game_mode: (data.game_mode as GameMode) ?? 'PVP',
         status: data.status as GameStatus,
         current_round: Number(data.current_round),
         world_id: String(data.world_id ?? DEFAULT_WORLD_ID),
@@ -110,6 +115,7 @@ function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         game_id: String(data.game_id),
         nickname: String(data.nickname),
         slot: Number(data.slot) as 1 | 2,
+        player_type: (data.player_type as PlayerType) ?? 'HUMAN',
         traits: normalizeTraitCollection(data.traits as TraitCollection),
         connected: Boolean(data.connected),
         created_at: String(data.created_at),
@@ -282,6 +288,7 @@ export async function createGame(input: { nickname: string; playerId: string }):
             .from('games')
             .insert({
                 room_code: roomCode,
+                game_mode: 'PVP',
                 status: 'WAITING',
                 current_round: 1,
                 world_id: DEFAULT_WORLD_ID,
@@ -307,6 +314,7 @@ export async function createGame(input: { nickname: string; playerId: string }):
             game_id: game.id,
             nickname: input.nickname.trim(),
             slot: 1,
+            player_type: 'HUMAN',
             traits: createInitialTraits(),
             connected: true,
         })
@@ -330,6 +338,33 @@ export async function createGame(input: { nickname: string; playerId: string }):
     }
 
     throw new Error('Impossibile generare un codice stanza valido. Riprova.')
+}
+
+export async function createVsBotGame(input: { nickname: string; playerId: string }): Promise<GameSnapshot> {
+    const supabase = requireSupabase()
+
+    const { data, error } = await supabase.rpc('create_vs_bot_game', {
+        p_nickname: input.nickname.trim(),
+        p_player_id: input.playerId,
+    })
+
+    if (error) {
+        throw new Error(error.message)
+    }
+
+    const created = Array.isArray(data) ? data[0] : data
+
+    if (!created) {
+        throw new Error('Impossibile creare la partita contro il bot.')
+    }
+
+    const gameId = String((created as { game_id?: unknown }).game_id ?? (created as { id?: unknown }).id ?? '')
+
+    if (!gameId) {
+        throw new Error('Impossibile recuperare la partita contro il bot.')
+    }
+
+    return fetchGameSnapshot(gameId, input.playerId)
 }
 
 export async function joinGame(input: {
@@ -360,6 +395,28 @@ export async function joinGame(input: {
         throw new Error('La partita è già terminata.')
     }
 
+    if (game.game_mode === 'VS_BOT') {
+        const { data: existingPlayersData, error: existingPlayersError } = await supabase
+            .from('players')
+            .select('*')
+            .eq('game_id', game.id)
+
+        if (existingPlayersError) {
+            throw new Error(existingPlayersError.message)
+        }
+
+        const existingPlayers = (existingPlayersData ?? []).map((entry) => mapPlayerRecord(entry))
+        const existingSessionPlayer = existingPlayers.find((player) => player.id === input.playerId)
+
+        if (existingSessionPlayer) {
+            await ensurePlayerConnected(existingSessionPlayer.id)
+
+            return fetchGameSnapshot(game.id, existingSessionPlayer.id)
+        }
+
+        throw new Error('Questa partita è contro il bot e non accetta altri giocatori.')
+    }
+
     const { data: existingPlayersData, error: existingPlayersError } = await supabase
         .from('players')
         .select('*')
@@ -387,6 +444,7 @@ export async function joinGame(input: {
         game_id: game.id,
         nickname: input.nickname.trim(),
         slot: 2,
+        player_type: 'HUMAN',
         traits: createInitialTraits(),
         connected: true,
     })

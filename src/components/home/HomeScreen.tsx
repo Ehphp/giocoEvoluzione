@@ -8,10 +8,11 @@ type HomeScreenProps = {
     errorMessage: string | null
     statusMessage: string | null
     isBusy: boolean
-    busyAction: 'CREATE' | 'JOIN' | null
+    busyAction: 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
     onNicknameChange: (value: string) => void
     onRoomCodeChange: (value: string) => void
     onCreateGame: () => void
+    onCreateBotGame: () => void
     onJoinGame: () => void
     onLeaveSession: () => void
 }
@@ -29,6 +30,7 @@ export function HomeScreen({
     onNicknameChange,
     onRoomCodeChange,
     onCreateGame,
+    onCreateBotGame,
     onJoinGame,
     onLeaveSession,
 }: HomeScreenProps) {
@@ -83,6 +85,11 @@ export function HomeScreen({
                 <button type="button" className="primary-button home-entry__create" onClick={onCreateGame} disabled={isBusy}>
                     <span>{busyAction === 'CREATE' ? 'CREAZIONE...' : 'CREA PARTITA'}</span>
                     <small>Genera un codice da condividere</small>
+                </button>
+
+                <button type="button" className="secondary-button home-entry__create" onClick={onCreateBotGame} disabled={isBusy}>
+                    <span>{busyAction === 'CREATE_BOT' ? 'CREAZIONE...' : 'Gioca contro il bot'}</span>
+                    <small>Avvio immediato con avversario automatico</small>
                 </button>
 
                 <div className="home-entry__divider" role="presentation">

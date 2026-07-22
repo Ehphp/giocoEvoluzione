@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { createInitialTraits, TOTAL_ROUNDS } from './config'
+import { selectRandomBotAction } from './bot'
 import { resolveRound } from './engine'
 import { generateRoundEventSequence, getRoundEventForRound } from './round-events'
+import type { TraitType } from './types'
 
 describe('round flow with event sequence', () => {
     it('plays a complete match using one persisted event sequence', () => {
@@ -66,5 +68,43 @@ describe('round flow with event sequence', () => {
 
         expect(resolution.awardedPoints).toBe(2)
         expect(resolution.player1ScoreDelta).toBe(2)
+    })
+
+    it('completes a full VS_BOT loop across all rounds without invalid bot actions', () => {
+        const sequence = generateRoundEventSequence(TOTAL_ROUNDS, () => 0.23)
+        let humanTraits = createInitialTraits()
+        let botTraits = createInitialTraits()
+
+        for (let roundNumber = 1; roundNumber <= TOTAL_ROUNDS; roundNumber += 1) {
+            const roundEvent = getRoundEventForRound(sequence, roundNumber)
+
+            expect(roundEvent).not.toBeNull()
+
+            const botAction = selectRandomBotAction(botTraits, () => 0.61)
+            const humanAction = humanTraits.AGILITY.cooldown === 0
+                ? { playerId: 'human', trait: 'AGILITY' as TraitType, actionType: 'USE' as const }
+                : { playerId: 'human', trait: 'AGILITY' as TraitType, actionType: 'EVOLVE' as const }
+
+            const resolution = resolveRound({
+                roundNumber,
+                roundEvent: roundEvent!,
+                player1Id: 'human',
+                player2Id: 'bot',
+                player1Traits: humanTraits,
+                player2Traits: botTraits,
+                player1Action: humanAction,
+                player2Action: {
+                    playerId: 'bot',
+                    trait: botAction.trait,
+                    actionType: botAction.actionType,
+                },
+            })
+
+            humanTraits = resolution.player1.traits
+            botTraits = resolution.player2.traits
+        }
+
+        expect(humanTraits.AGILITY.level).toBeGreaterThanOrEqual(0)
+        expect(botTraits.AGILITY.level).toBeGreaterThanOrEqual(0)
     })
 })
