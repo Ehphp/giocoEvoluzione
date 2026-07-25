@@ -98,6 +98,8 @@ function GeneCard({
     onPredictionKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
     onPredictionKeyUp: (event: KeyboardEvent<HTMLButtonElement>) => void
 }) {
+    const [imageFailed, setImageFailed] = useState(false)
+
     return (
         <button
             type="button"
@@ -120,10 +122,16 @@ function GeneCard({
             disabled={disabled}
         >
             <div className="selector-v2-icon" role="img" aria-label={`Icona gene ${gene.name}`}>
-                <img src={gene.imageUrl} alt="" loading="lazy" onError={(event) => {
-                    event.currentTarget.style.display = 'none'
-                }} />
-                <span aria-hidden="true">{gene.name.slice(0, 2).toUpperCase()}</span>
+                {gene.imageUrl && !imageFailed ? (
+                    <img
+                        src={gene.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        onError={() => setImageFailed(true)}
+                    />
+                ) : (
+                    <span aria-hidden="true">{gene.name.slice(0, 2).toUpperCase()}</span>
+                )}
             </div>
             <strong className="selector-v2-name">{gene.name}</strong>
             <div className="selector-v2-meta">

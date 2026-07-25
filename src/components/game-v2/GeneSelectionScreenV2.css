@@ -438,7 +438,8 @@
 
 .selector-v2-icon img {
   z-index: 1;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 9px;
 }
 
 .selector-v2-icon span {
