@@ -22,7 +22,7 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
         return 'Adatto'
     }
 
-    return 'Bassa affinita'
+    return 'Bassa affinità'
 }
 
 function wrapIndex(index: number, total: number): number {
@@ -33,7 +33,7 @@ function wrapIndex(index: number, total: number): number {
     return (index + total) % total
 }
 
-const VISIBLE_CARD_OFFSETS = [-2, -1, 0, 1, 2]
+const VISIBLE_CARD_OFFSETS = [-1, 0, 1]
 const HOLD_DELAY_MS = 240
 
 function formatContribution(value: number): string {
@@ -126,8 +126,13 @@ function GeneCard({
                 <span aria-hidden="true">{gene.name.slice(0, 2).toUpperCase()}</span>
             </div>
             <strong className="selector-v2-name">{gene.name}</strong>
-            <span className="selector-v2-level">Lv. {gene.level}</span>
-            <span className={`selector-v2-affinity is-${gene.affinity}`}>{affinityLabel(gene.affinity)}</span>
+            <div className="selector-v2-meta">
+                <span className="selector-v2-level">
+                    <small>LV</small>
+                    <b>{gene.level}</b>
+                </span>
+                <span className={`selector-v2-affinity is-${gene.affinity}`}>{affinityLabel(gene.affinity)}</span>
+            </div>
             {!gene.usable ? <span className="selector-v2-cooldown">{gene.disabledReason}</span> : null}
         </button>
     )
