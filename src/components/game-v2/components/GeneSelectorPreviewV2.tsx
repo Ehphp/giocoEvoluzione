@@ -129,7 +129,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                             isSelected
                             isSide={false}
                             disabled={disableSelection}
-                            onClick={() => {}}
+                            onClick={() => { }}
                         />
                     ) : null}
 
