@@ -391,7 +391,7 @@ function App() {
   }
 
   return (
-    <main className={`shell ${isChoosingScreen ? 'shell--game' : ''} ${!snapshot ? 'shell--home' : ''}`}>
+    <main className={`shell ${isChoosingScreen ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
       {isLoading ? (
         <section className="panel centered-panel home-state-panel" aria-live="polite" aria-busy="true">
           <span className="eyebrow">Connessione alla partita</span>
@@ -410,7 +410,7 @@ function App() {
           </div>
         </section>
       ) : (
-        <section className={`panel app-panel ${isChoosingScreen ? 'app-panel--game' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
+        <section className={`panel app-panel ${isChoosingScreen ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot ? (
             <HomeScreen
               nickname={nickname}
