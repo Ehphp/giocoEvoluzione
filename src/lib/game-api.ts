@@ -1,4 +1,4 @@
-import { createInitialTraits, generateRoundEventSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS } from '../game/config'
+import { createInitialTraits, generateRoundEventSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS, TRAITS } from '../game/config'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
     GameMode,
@@ -78,6 +78,37 @@ export type GameSnapshot = {
 }
 
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
+    if (!snapshot.me) {
+        return false
+    }
+
+    const traits = snapshot.me.traits
+
+    if (!traits) {
+        return false
+    }
+
+    const hasAllTraits = TRAITS.every((trait) => {
+        const state = traits[trait]
+
+        return state && typeof state.level === 'number' && typeof state.cooldown === 'number'
+    })
+
+    if (!hasAllTraits) {
+        return false
+    }
+
+    const sequence = snapshot.game.round_event_sequence
+    const currentRound = snapshot.game.current_round
+
+    if (!Array.isArray(sequence) || sequence.length < currentRound || currentRound <= 0) {
+        return false
+    }
+
+    return snapshot.currentRoundEvent !== null
+}
 
 function generateRoomCode(): string {
     return Array.from({ length: ROOM_CODE_LENGTH }, () => {

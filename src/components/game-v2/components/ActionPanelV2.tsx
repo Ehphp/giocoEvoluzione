@@ -8,6 +8,40 @@ type ActionPanelV2Props = {
     onEvolveAction: () => Promise<void>
 }
 
+function ActionButton({
+    variant,
+    label,
+    sublabel,
+    disabled,
+    isActive,
+    isSubmitting,
+    onClick,
+    icon,
+}: {
+    variant: 'use' | 'evolve'
+    label: string
+    sublabel: string
+    disabled: boolean
+    isActive: boolean
+    isSubmitting: boolean
+    onClick: () => void
+    icon: string
+}) {
+    return (
+        <button
+            type="button"
+            className={`action-v2-btn action-v2-btn--${variant} ${isActive ? 'is-active' : ''} ${isSubmitting ? 'is-submitting' : ''}`}
+            onClick={onClick}
+            aria-pressed={isActive}
+            disabled={disabled}
+        >
+            <span className="action-v2-btn__icon" aria-hidden="true">{icon}</span>
+            <span className="action-v2-btn__label">{label}</span>
+            <span className="action-v2-btn__sublabel">{sublabel}</span>
+        </button>
+    )
+}
+
 export function ActionPanelV2({
     selectedAction,
     selectedGeneName,
@@ -17,38 +51,39 @@ export function ActionPanelV2({
     onUseAction,
     onEvolveAction,
 }: ActionPanelV2Props) {
+    if (!selectedGeneName) {
+        return null
+    }
+
     const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
     const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
 
     return (
-        <section className="gene-v2-action-panel" aria-label="Azioni disponibili" data-testid="gene-action-panel">
-            <button
-                type="button"
-                className={`gene-v2-action-btn gene-v2-action-btn--use ${selectedAction === 'USE' ? 'is-active' : ''}`}
+        <section className="action-v2-panel" aria-label="Azioni disponibili" data-testid="gene-action-panel">
+            <ActionButton
+                variant="use"
+                label={useLabel}
+                sublabel="Usa nel round"
+                disabled={!canUse || isSubmitting}
+                isActive={selectedAction === 'USE'}
+                isSubmitting={isSubmitting && selectedAction === 'USE'}
                 onClick={() => {
                     void onUseAction()
                 }}
-                aria-pressed={selectedAction === 'USE'}
-                disabled={!canUse || isSubmitting}
-            >
-                <span className="gene-v2-action-icon" aria-hidden="true">DNA</span>
-                <span>{useLabel}</span>
-                <small>{selectedGeneName ? `${selectedGeneName} · Effetto immediato` : 'Effetto immediato'}</small>
-            </button>
-
-            <button
-                type="button"
-                className={`gene-v2-action-btn gene-v2-action-btn--evolve ${selectedAction === 'EVOLVE' ? 'is-active' : ''}`}
+                icon="⚡"
+            />
+            <ActionButton
+                variant="evolve"
+                label={evolveLabel}
+                sublabel="Aumenta il livello"
+                disabled={!canEvolve || isSubmitting}
+                isActive={selectedAction === 'EVOLVE'}
+                isSubmitting={isSubmitting && selectedAction === 'EVOLVE'}
                 onClick={() => {
                     void onEvolveAction()
                 }}
-                aria-pressed={selectedAction === 'EVOLVE'}
-                disabled={!canEvolve || isSubmitting}
-            >
-                <span className="gene-v2-action-icon" aria-hidden="true">UP</span>
-                <span>{evolveLabel}</span>
-                <small>{selectedGeneName ? `${selectedGeneName} · Upgrade livello` : 'Upgrade livello'}</small>
-            </button>
+                icon="⬆"
+            />
         </section>
     )
 }

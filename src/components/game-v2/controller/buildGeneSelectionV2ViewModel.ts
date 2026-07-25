@@ -1,9 +1,9 @@
-import { TOTAL_ROUNDS, TRAIT_LABELS } from '../../../game/config'
-import { getTraitRoundValue, isTraitUsable } from '../../../game/engine'
+import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
+import { isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import { getRoundEventLabel } from '../../../game/ui-context'
-import type { TraitType } from '../../../game/types'
+import type { TraitCollection, TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { GAME_SELECTION_ASSETS, getEventAssetByArtKey, getGeneAssetByTrait } from '../gameSelectionAssets'
 import type {
@@ -44,6 +44,36 @@ function mapAffinity(score: number): GeneAffinityV2 {
     return 'low'
 }
 
+function validateTraits(traits: TraitCollection | null | undefined): boolean {
+    if (!traits) {
+        return false
+    }
+
+    return TRAITS.every((trait) => {
+        const state = traits[trait]
+
+        return state && typeof state.level === 'number' && typeof state.cooldown === 'number'
+    })
+}
+
+function isSnapshotPlayable(snapshot: GameSnapshot): { valid: boolean; reason?: string } {
+    if (!snapshot.me) {
+        return { valid: false, reason: 'Dati giocatore non disponibili.' }
+    }
+
+    if (!validateTraits(snapshot.me.traits)) {
+        return { valid: false, reason: 'I tratti della creatura non sono validi o sono incompleti. Crea una nuova partita.' }
+    }
+
+    const hasEventSequence = Array.isArray(snapshot.game.round_event_sequence) && snapshot.game.round_event_sequence.length >= snapshot.game.current_round
+
+    if (!hasEventSequence || !snapshot.currentRoundEvent) {
+        return { valid: false, reason: 'La partita non ha un evento valido per questo round. La sessione e obsoleta: crea una nuova partita.' }
+    }
+
+    return { valid: true }
+}
+
 function resolveOpponentSubmitted(snapshot: GameSnapshot): boolean {
     if (!snapshot.opponent) {
         return false
@@ -75,36 +105,56 @@ function buildRoundEventEffects(snapshot: GameSnapshot): RoundEventEffectV2[] {
         return []
     }
 
-    const sorted = [...roundEvent.effects].sort((left, right) => right.modifier - left.modifier)
+    const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
+    const positive = effects
+        .filter((effect) => effect.modifier > 0)
+        .sort((a, b) => b.modifier - a.modifier)[0]
+    const negative = effects
+        .filter((effect) => effect.modifier < 0)
+        .sort((a, b) => a.modifier - b.modifier)[0]
 
-    return sorted.map((effect, index) => {
-        const tone = effect.modifier > 0 ? 'positive' : effect.modifier < 0 ? 'negative' : 'neutral'
-        const signedValue = effect.modifier >= 0 ? `+${effect.modifier}` : `${effect.modifier}`
+    const picked: RoundEventEffectV2[] = []
 
-        return {
-            id: `${roundEvent.id}-${effect.trait}-${index}`,
-            label: TRAIT_LABELS[effect.trait],
-            value: `${signedValue} ${TRAIT_LABELS[effect.trait]}`,
-            reason: effect.reason,
-            tone,
-        }
-    })
+    if (positive) {
+        picked.push({
+            id: `${roundEvent.id}-${positive.trait}-pos`,
+            label: TRAIT_LABELS[positive.trait],
+            value: `+${positive.modifier} ${TRAIT_LABELS[positive.trait]}`,
+            tone: 'positive',
+        })
+    }
+
+    if (negative) {
+        picked.push({
+            id: `${roundEvent.id}-${negative.trait}-neg`,
+            label: TRAIT_LABELS[negative.trait],
+            value: `${negative.modifier} ${TRAIT_LABELS[negative.trait]}`,
+            tone: 'negative',
+        })
+    }
+
+    return picked
 }
 
 function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
     const roundEvent = snapshot.currentRoundEvent
     const myTraits = snapshot.me?.traits
 
-    if (!roundEvent || !myTraits) {
+    if (!myTraits) {
         return []
     }
 
-    return (Object.keys(myTraits) as TraitType[])
+    return [...TRAITS]
         .sort((a, b) => TRAIT_CATALOG[a].displayOrder - TRAIT_CATALOG[b].displayOrder)
-        .map((traitType) => {
+        .map((traitType): GeneCardV2 | null => {
             const state = myTraits[traitType]
-            const affinity = getRoundEventEffectsForTrait(roundEvent, traitType)
-                .reduce((sum, effect) => sum + effect.modifier, 0)
+            if (!state) {
+                return null
+            }
+
+            const affinity = roundEvent
+                ? getRoundEventEffectsForTrait(roundEvent, traitType).reduce((sum, effect) => sum + effect.modifier, 0)
+                : 0
             const usable = isTraitUsable(myTraits, traitType)
 
             return {
@@ -114,12 +164,11 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 level: state.level,
                 affinity: mapAffinity(affinity),
                 imageUrl: getGeneAssetByTrait(traitType),
-                description: TRAIT_CATALOG[traitType].description,
-                predictedValue: getTraitRoundValue(roundEvent, myTraits, traitType),
                 usable,
                 disabledReason: usable ? undefined : `Cooldown ${state.cooldown}`,
             }
         })
+        .filter((gene): gene is GeneCardV2 => gene !== null)
 }
 
 function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null): GeneCardV2 | null {
@@ -138,8 +187,16 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     const { snapshot } = input
     const me = snapshot.me
     const isVsBot = snapshot.game.game_mode === 'VS_BOT'
+    const playability = isSnapshotPlayable(snapshot)
+    const genes = buildGenes(snapshot)
+    const selectedGene = resolveSelectedGene(genes, input.selectedGeneId)
+    const selectedGeneId = selectedGene?.id ?? null
+    const myHasSubmitted = Boolean(snapshot.myCurrentAction) || input.hasLocalSubmittedAction
+    const opponentHasSubmitted = resolveOpponentSubmitted(snapshot)
 
-    if (!me) {
+    const opponent = snapshot.opponent
+
+    if (!playability.valid || !me) {
         return {
             player: {
                 id: 'unknown',
@@ -163,9 +220,6 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 id: 'unknown-event',
                 title: 'Evento non disponibile',
                 description: 'Dati evento non disponibili.',
-                category: 'N/A',
-                intensity: 1,
-                artKey: 'event-missing',
                 imageUrl: GAME_SELECTION_ASSETS.environment,
                 effects: [],
             },
@@ -173,28 +227,18 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             selectedGeneId: null,
             selectedAction: null,
             selectedGene: null,
-            status: 'loading',
+            status: 'invalid',
             actionsSubmitted: snapshot.actionsSubmitted,
             canUse: false,
             canEvolve: false,
             canSelectGenes: false,
-            errorMessage: 'Dati giocatore non disponibili.',
+            invalidReason: playability.reason ?? 'Sessione non valida.',
         }
     }
 
-    const opponent = snapshot.opponent
-    const roundEvent = snapshot.currentRoundEvent
-    const genes = buildGenes(snapshot)
-    const selectedGene = resolveSelectedGene(genes, input.selectedGeneId)
-    const selectedGeneId = selectedGene?.id ?? null
-    const myHasSubmitted = Boolean(snapshot.myCurrentAction) || input.hasLocalSubmittedAction
-    const opponentHasSubmitted = resolveOpponentSubmitted(snapshot)
-
     let status: GeneSelectionStatusV2 = 'choosing'
 
-    if (!roundEvent) {
-        status = 'loading'
-    } else if (input.submitErrorMessage) {
+    if (input.submitErrorMessage) {
         status = 'error'
     } else if (input.isSubmitting) {
         status = 'submitting'
@@ -234,13 +278,12 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             total: TOTAL_ROUNDS,
         },
         roundEvent: {
-            id: roundEvent?.id ?? 'unknown-event',
-            title: getRoundEventLabel(roundEvent ?? null),
-            description: roundEvent?.shortDescription ?? 'Evento in caricamento.',
-            category: roundEvent?.category ?? 'N/A',
-            intensity: roundEvent?.intensity ?? 1,
-            artKey: roundEvent?.artKey ?? 'event-missing',
-            imageUrl: roundEvent ? getEventAssetByArtKey(roundEvent.artKey) : GAME_SELECTION_ASSETS.environment,
+            id: snapshot.currentRoundEvent?.id ?? 'unknown-event',
+            title: getRoundEventLabel(snapshot.currentRoundEvent ?? null),
+            description: snapshot.currentRoundEvent?.shortDescription ?? 'Evento in caricamento.',
+            imageUrl: snapshot.currentRoundEvent
+                ? getEventAssetByArtKey(snapshot.currentRoundEvent.artKey)
+                : GAME_SELECTION_ASSETS.environment,
             effects: buildRoundEventEffects(snapshot),
         },
         genes,

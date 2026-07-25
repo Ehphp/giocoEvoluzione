@@ -6,13 +6,19 @@ type WaitingStateV2Props = {
 
 export function WaitingStateV2({ waitingState }: WaitingStateV2Props) {
     return (
-        <section className="gene-v2-waiting" aria-live="polite" aria-label="Stato attesa multiplayer">
-            <span className="gene-v2-eyebrow">{waitingState.isResolving ? 'SCELTE RICEVUTE' : 'SCELTA INVIATA'}</span>
-            <strong>
-                {waitingState.submittedGeneName} · {waitingState.submittedAction}
-            </strong>
-            <p>{waitingState.isResolving ? 'Risoluzione del round...' : waitingState.opponentStatusLabel}</p>
-            <span className="gene-v2-waiting-count">{waitingState.submittedCountLabel}</span>
+        <section className="waiting-v2" aria-live="polite" aria-label="Stato attesa multiplayer">
+            <div className="waiting-v2-main">
+                <span className="waiting-v2-eyebrow">{waitingState.isResolving ? 'SCELTE RICEVUTE' : 'SCELTA INVIATA'}</span>
+                <strong className="waiting-v2-choice">
+                    {waitingState.submittedGeneName} · {waitingState.submittedAction === 'USE' ? 'USA' : 'EVOLVI'}
+                </strong>
+                <p className="waiting-v2-status">
+                    {waitingState.isResolving ? 'Risoluzione del round...' : waitingState.opponentStatusLabel}
+                </p>
+            </div>
+            <span className="waiting-v2-count" aria-label="Scelte ricevute">
+                {waitingState.submittedCountLabel}
+            </span>
         </section>
     )
 }

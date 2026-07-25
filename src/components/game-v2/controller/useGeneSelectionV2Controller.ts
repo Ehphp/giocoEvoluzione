@@ -96,7 +96,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
     }, [input.myScore, input.opponentScore, input.snapshot, isSubmitting, localSubmittedAction, selectedAction, selectedGeneId, submitErrorMessage])
 
     const handleSelectGene = useCallback((geneId: string) => {
-        if (submittingRef.current || viewModel.status === 'loading') {
+        if (submittingRef.current || viewModel.status === 'loading' || viewModel.status === 'invalid') {
             return
         }
 
@@ -110,7 +110,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
     }, [viewModel.genes, viewModel.status])
 
     const handleSubmit = useCallback(async (actionType: GeneActionTypeV2) => {
-        if (submittingRef.current || !viewModel.selectedGene) {
+        if (submittingRef.current || !viewModel.selectedGene || viewModel.status === 'invalid') {
             return
         }
 
@@ -141,7 +141,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         setIsSubmitting(false)
         submittingRef.current = false
         setSubmitErrorMessage('Invio azione non riuscito. Riprova.')
-    }, [input, viewModel.canEvolve, viewModel.canUse, viewModel.selectedGene])
+    }, [input, viewModel.canEvolve, viewModel.canUse, viewModel.selectedGene, viewModel.status])
 
     const handleUseGene = useCallback(async () => {
         await handleSubmit('USE')

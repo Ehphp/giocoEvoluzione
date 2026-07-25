@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { createInitialTraits } from '../../../game/config'
-import { getTraitRoundValue } from '../../../game/engine'
 import { getRoundEventById } from '../../../game/round-events'
-import type { TraitType } from '../../../game/types'
+import type { RoundEventDefinition, TraitCollection, TraitType } from '../../../game/types'
 import type { GameSnapshot, GameRecord, PlayerRecord } from '../../../lib/game-api'
 import { buildGeneSelectionV2ViewModel } from './buildGeneSelectionV2ViewModel'
 
@@ -79,6 +78,21 @@ function createSnapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
     }
 }
 
+function createEvent(overrides: Partial<RoundEventDefinition> = {}): RoundEventDefinition {
+    return {
+        id: 'custom-event',
+        title: 'Evento di test',
+        shortDescription: 'Descrizione breve',
+        category: 'CLIMATE',
+        rarity: 'COMMON',
+        intensity: 1,
+        artKey: 'world-aurelia-prime',
+        tags: [],
+        effects: [],
+        ...overrides,
+    }
+}
+
 function build(snapshot: GameSnapshot, overrides: Partial<Parameters<typeof buildGeneSelectionV2ViewModel>[0]> = {}) {
     return buildGeneSelectionV2ViewModel({
         snapshot,
@@ -135,19 +149,80 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(agility?.affinity).toBe('medium')
     })
 
-    it('uses shared engine calculation for predicted USE value', () => {
-        const snapshot = createSnapshot()
-        const viewModel = build(snapshot)
-        const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
-        const expected = getTraitRoundValue(snapshot.currentRoundEvent!, snapshot.me!.traits, 'AGILITY')
-
-        expect(agility?.predictedValue).toBe(expected)
-    })
-
     it('returns choosing status by default', () => {
         const viewModel = build(createSnapshot())
 
         expect(viewModel.status).toBe('choosing')
+    })
+
+    it('selects the first gene by default when no selectedGeneId is provided', () => {
+        const viewModel = build(createSnapshot(), { selectedGeneId: null })
+
+        expect(viewModel.selectedGene).not.toBeNull()
+        expect(viewModel.selectedGeneId).toBe(viewModel.genes[0]?.id)
+    })
+
+    it('produces all 10 genes from valid traits', () => {
+        const snapshot = createSnapshot()
+        const viewModel = build(snapshot)
+
+        expect(viewModel.genes.length).toBe(10)
+        expect(viewModel.genes.map((gene) => gene.traitType)).toEqual([
+            'STRENGTH',
+            'RESISTANCE',
+            'AGILITY',
+            'PERCEPTION',
+            'METABOLISM',
+            'ADAPTATION',
+            'GRIP_CLAWS',
+            'CAMOUFLAGE',
+            'WEBBED_LIMBS',
+            'FAT_RESERVES',
+        ])
+    })
+
+    it('keeps all 10 genes available when event has no effects', () => {
+        const snapshot = createSnapshot({
+            currentRoundEvent: createEvent({ id: 'NO_EFFECT_EVENT', title: 'No Effect', effects: [] }),
+        })
+        const viewModel = build(snapshot)
+
+        expect(viewModel.genes.length).toBe(10)
+        expect(viewModel.genes.every((gene) => gene.affinity === 'medium')).toBe(true)
+    })
+
+    it('marks snapshot as invalid when round event sequence is empty', () => {
+        const snapshot = createSnapshot({
+            game: createGame({ round_event_sequence: [] }),
+            currentRoundEvent: null,
+        })
+        const viewModel = build(snapshot)
+
+        expect(viewModel.status).toBe('invalid')
+        expect(viewModel.genes.length).toBe(0)
+        expect(viewModel.invalidReason).toContain('obsoleta')
+    })
+
+    it('marks snapshot as invalid when traits are incomplete', () => {
+        const snapshot = createSnapshot()
+        const incompleteTraits = { ...snapshot.me!.traits }
+        delete (incompleteTraits as Record<string, unknown>).AGILITY
+        snapshot.me!.traits = incompleteTraits as unknown as TraitCollection
+
+        const viewModel = build(snapshot)
+
+        expect(viewModel.status).toBe('invalid')
+        expect(viewModel.genes.length).toBe(0)
+    })
+
+    it('does not show action panel state when no gene is selected', () => {
+        const snapshot = createSnapshot()
+        snapshot.me!.traits = null as unknown as TraitCollection
+        const viewModel = build(snapshot, { selectedGeneId: null })
+
+        expect(viewModel.selectedGene).toBeNull()
+        expect(viewModel.canUse).toBe(false)
+        expect(viewModel.canEvolve).toBe(false)
     })
 
     it('returns submitting status while local submit is in progress', () => {

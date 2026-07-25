@@ -4,20 +4,11 @@ import './App.css'
 import { HomeScreen } from './components/home/HomeScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
-import { ActionDock } from './components/game/ActionDock'
-import { ChoosingDuelHeader } from './components/game/ChoosingDuelHeader'
-import { RoundEventCard } from './components/game/RoundEventCard'
-import { TraitSelector } from './components/game/TraitSelector'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
-import { getTraitRoundValue, isTraitUsable } from './game/engine'
 import { getRoundEventById } from './game/round-events'
 import { getRoundExplanation } from './game/round-result-explainer'
-import {
-  getRoundEventLabel,
-  getRoundEventPressures,
-} from './game/ui-context'
-import { TRAIT_CATALOG } from './game/traits-catalog'
-import { TRAITS, type RoundEventDefinition, type RoundValueBreakdown, type TraitCollection, type TraitType } from './game/types'
+import { getRoundEventLabel } from './game/ui-context'
+import { type RoundEventDefinition, type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
 import {
   acknowledgeReveal,
@@ -25,6 +16,7 @@ import {
   createGame,
   createVsBotGame,
   fetchGameSnapshot,
+  isGameSnapshotPlayable,
   joinGame,
   maybeResolveRound,
   restoreGameSession,
@@ -36,7 +28,6 @@ import {
 } from './lib/game-api'
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 
-type PendingAction = 'USE' | 'EVOLVE' | null
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 
 type ResolutionData = {
@@ -61,18 +52,10 @@ function getTraitLabel(trait: TraitType): string {
   return TRAIT_LABELS[trait]
 }
 
-function isTransientChoosingStatusMessage(message: string | null): boolean {
-  return message === 'Sessione ripristinata.' || message === 'Scelta confermata. In attesa dell avversario.'
-}
-
-const isGeneSelectionV2Enabled = import.meta.env.VITE_GENE_SELECTION_V2 === 'true'
-
 function App() {
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
   const [nickname, setNickname] = useState('')
   const [roomCode, setRoomCode] = useState('')
-  const [selectedTrait, setSelectedTrait] = useState<TraitType | null>(null)
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [isBusy, setIsBusy] = useState(false)
   const [busyAction, setBusyAction] = useState<BusyAction>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -98,6 +81,15 @@ function App() {
     void (async () => {
       try {
         const restored = await restoreGameSession(session)
+
+        if (!isGameSnapshotPlayable(restored)) {
+          clearStoredSession()
+          setErrorMessage('La partita salvata non e compatibile con questa versione. Crea una nuova partita.')
+          setIsLoading(false)
+
+          return
+        }
+
         setSnapshot(restored)
         setStatusMessage('Sessione ripristinata.')
       } catch (error) {
@@ -179,7 +171,7 @@ function App() {
         return
       }
     })()
-  }, [snapshot?.actionsSubmitted, snapshot?.game.status, snapshot?.currentRoundResult?.id, snapshot?.game.id, snapshot?.game.current_round, snapshot?.me?.id])
+  }, [snapshot?.actionsSubmitted, snapshot?.game.status, snapshot?.game.game_mode, snapshot?.myCurrentAction, snapshot?.currentRoundResult?.id, snapshot?.game.id, snapshot?.game.current_round, snapshot?.me?.id])
 
   useEffect(() => {
     const gameId = snapshot?.game.id
@@ -208,12 +200,6 @@ function App() {
     }
   }, [snapshot?.game.id, snapshot?.game.status, snapshot?.currentRoundResult?.id, snapshot?.game.current_round, snapshot?.me?.id])
 
-  useEffect(() => {
-    setSelectedTrait(null)
-    setPendingAction(null)
-  }, [snapshot?.game.current_round, snapshot?.game.status])
-
-  const myTraits = snapshot?.me?.traits ?? null
   const myScore = snapshot ? getPlayerScore(snapshot, snapshot.me) : 0
   const opponentScore = snapshot ? getPlayerScore(snapshot, snapshot.opponent) : 0
   const isChoosingScreen = snapshot?.game.status === 'CHOOSING'
@@ -330,30 +316,21 @@ function App() {
     }
   }
 
-  async function handleSubmitAction(actionType: 'USE' | 'EVOLVE', traitOverride?: TraitType): Promise<boolean> {
-    const traitToSubmit = traitOverride ?? selectedTrait
-
-    if (!snapshot?.me || !traitToSubmit || !myTraits) {
-      return false
-    }
-
-    if (actionType === 'USE' && !isTraitUsable(myTraits, traitToSubmit)) {
-      setErrorMessage('Questo tratto e in cooldown e non puo essere usato in questo round.')
-
+  async function handleSubmitAction(actionType: 'USE' | 'EVOLVE', trait: TraitType): Promise<boolean> {
+    if (!snapshot?.me || !trait) {
       return false
     }
 
     setIsBusy(true)
     setErrorMessage(null)
     setStatusMessage(null)
-    setPendingAction(actionType)
 
     try {
       await submitRoundAction({
         gameId: snapshot.game.id,
         roundNumber: snapshot.game.current_round,
         playerId: snapshot.me.id,
-        trait: traitToSubmit,
+        trait,
         actionType,
       })
 
@@ -397,8 +374,6 @@ function App() {
     clearStoredSession()
     setSnapshot(null)
     setRoomCode('')
-    setSelectedTrait(null)
-    setPendingAction(null)
     setStatusMessage('Sessione locale rimossa.')
   }
 
@@ -487,32 +462,13 @@ function App() {
               </section>
             </>
           ) : snapshot.game.status === 'CHOOSING' ? (
-            isGeneSelectionV2Enabled ? (
-              <ConnectedGeneSelectionScreenV2
-                snapshot={snapshot}
-                myScore={myScore}
-                opponentScore={opponentScore}
-                onSubmitAction={handleSubmitAction}
-                onLeaveSession={handleLeaveSession}
-              />
-            ) : (
-              <GameScreen
-                snapshot={snapshot}
-                myTraits={myTraits}
-                myScore={myScore}
-                opponentScore={opponentScore}
-                selectedTrait={selectedTrait}
-                onSelectTrait={setSelectedTrait}
-                onUse={() => void handleSubmitAction('USE')}
-                onEvolve={() => void handleSubmitAction('EVOLVE')}
-                isBusy={isBusy}
-                pendingAction={pendingAction}
-                isOnline={isOnline}
-                errorMessage={errorMessage}
-                statusMessage={statusMessage}
-                onLeaveSession={handleLeaveSession}
-              />
-            )
+            <ConnectedGeneSelectionScreenV2
+              snapshot={snapshot}
+              myScore={myScore}
+              opponentScore={opponentScore}
+              onSubmitAction={handleSubmitAction}
+              onLeaveSession={handleLeaveSession}
+            />
           ) : snapshot.game.status === 'REVEALING' || snapshot.game.status === 'ROUND_RESULT' ? (
             <>
               <header className="topbar">
@@ -565,7 +521,7 @@ type ConnectedGeneSelectionScreenV2Props = {
   snapshot: GameSnapshot
   myScore: number
   opponentScore: number
-  onSubmitAction: (actionType: 'USE' | 'EVOLVE', traitOverride?: TraitType) => Promise<boolean>
+  onSubmitAction: (actionType: 'USE' | 'EVOLVE', trait: TraitType) => Promise<boolean>
   onLeaveSession: () => void
 }
 
@@ -587,162 +543,6 @@ function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSu
       onEvolveGene={onEvolveGene}
       onLeaveSession={onLeaveSession}
     />
-  )
-}
-
-type GameScreenProps = {
-  snapshot: GameSnapshot
-  myTraits: TraitCollection | null
-  myScore: number
-  opponentScore: number
-  selectedTrait: TraitType | null
-  onSelectTrait: (trait: TraitType) => void
-  onUse: () => void
-  onEvolve: () => void
-  isBusy: boolean
-  pendingAction: PendingAction
-  isOnline: boolean
-  errorMessage: string | null
-  statusMessage: string | null
-  onLeaveSession: () => void
-}
-
-function GameScreen({
-  snapshot,
-  myTraits,
-  myScore,
-  opponentScore,
-  selectedTrait,
-  onSelectTrait,
-  onUse,
-  onEvolve,
-  isBusy,
-  pendingAction,
-  isOnline,
-  errorMessage,
-  statusMessage,
-  onLeaveSession,
-}: GameScreenProps) {
-  const myActionSubmitted = Boolean(snapshot.myCurrentAction)
-  const selectedTraitState = selectedTrait && myTraits ? myTraits[selectedTrait] : null
-  const currentRoundEvent = snapshot.currentRoundEvent
-  const roundEventLabel = getRoundEventLabel(currentRoundEvent)
-  const roundEventPressures = getRoundEventPressures(currentRoundEvent)
-  const primaryThreats = [...roundEventPressures].sort((a, b) => b.score - a.score).slice(0, 3)
-  const selectedTraitLabel = selectedTrait ? getTraitLabel(selectedTrait) : null
-  const selectedTraitDescription = selectedTrait ? TRAIT_CATALOG[selectedTrait].description : null
-  const selectedTraitLevel = selectedTraitState?.level ?? null
-  const useValue = selectedTrait && myTraits && currentRoundEvent
-    ? getTraitRoundValue(currentRoundEvent, myTraits, selectedTrait)
-    : null
-  const evolveNextLevel = selectedTraitState ? selectedTraitState.level + 1 : null
-  const roundEventBrief = currentRoundEvent?.shortDescription ?? 'L evento del round richiede una risposta adattiva rapida.'
-  const mySelectionStatus = myActionSubmitted ? 'Scelta effettuata' : 'Sta scegliendo'
-  const myName = snapshot.me?.nickname ?? 'Tu'
-  const opponentName = snapshot.opponent?.nickname ?? 'Rivale'
-  const opponentSelectionStatus = !snapshot.opponent
-    ? 'In attesa'
-    : snapshot.actionsSubmitted >= 2 || (!myActionSubmitted && snapshot.actionsSubmitted === 1)
-      ? 'Scelta effettuata'
-      : 'Sta scegliendo'
-  const choosingSystemMessage = errorMessage
-    ? errorMessage
-    : !isOnline
-      ? 'Connessione assente: la sincronizzazione riparte appena torna la rete.'
-      : myActionSubmitted
-        ? `Scelta inviata · azioni ricevute ${snapshot.actionsSubmitted}/2`
-        : statusMessage && !isTransientChoosingStatusMessage(statusMessage)
-          ? statusMessage
-          : null
-  const actionHelper = !selectedTrait
-    ? 'Tocca un gene, poi scegli USE o EVOLVE'
-    : selectedTraitState?.cooldown
-      ? 'USE è bloccato dal cooldown, EVOLVE resta disponibile'
-      : 'USE applica effetto ora, EVOLVE aumenta il livello per i prossimi round'
-  const submittedTitle = snapshot.myCurrentAction ? 'Scelta inviata' : pendingAction ? 'Invio in corso' : null
-  const submittedActionType = snapshot.myCurrentAction?.action_type ?? pendingAction
-  const submittedTraitLabel = snapshot.myCurrentAction ? getTraitLabel(snapshot.myCurrentAction.trait) : selectedTraitLabel
-  const submittedProgressLabel = myActionSubmitted ? `${snapshot.actionsSubmitted}/2` : pendingAction ? 'Invio...' : null
-  const waitingDetail = myActionSubmitted
-    ? `In attesa dell’avversario · ${snapshot.actionsSubmitted}/2`
-    : 'Sincronizzazione scelta'
-
-  return (
-    <section className="game-screen">
-      <ChoosingDuelHeader
-        myName={myName}
-        opponentName={opponentName}
-        myScore={myScore}
-        opponentScore={opponentScore}
-        roundNumber={snapshot.game.current_round}
-        totalRounds={TOTAL_ROUNDS}
-        myStatus={mySelectionStatus}
-        opponentStatus={opponentSelectionStatus}
-        actionsSubmitted={snapshot.actionsSubmitted}
-        isOnline={isOnline}
-        opponentConnected={snapshot.opponent?.connected ?? false}
-        onLeaveSession={onLeaveSession}
-      />
-
-      <RoundEventCard
-        roundEvent={currentRoundEvent}
-        eventLabel={roundEventLabel}
-        description={roundEventBrief}
-      />
-
-      <section className="choosing-intro" aria-label="Obiettivo del round">
-        <h2>Scegli un gene</h2>
-        <p>Confronta tutti i geni, apri il dettaglio del selezionato e invia una sola scelta.</p>
-        {choosingSystemMessage ? (
-          <p className={`choosing-intro__system ${errorMessage ? 'is-error' : !isOnline ? 'is-warning' : ''}`} aria-live="polite">
-            {choosingSystemMessage}
-          </p>
-        ) : null}
-        <div className="choosing-intro__tags" aria-label="Pressioni principali dell ambiente">
-          {primaryThreats.map((threat) => (
-            <span key={threat.id} className="choosing-intro__tag">
-              {threat.label}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      <div className="game-main-scroll game-main-scroll--choosing">
-        {myTraits ? (
-          <TraitSelector
-            traits={Object.fromEntries(TRAITS.map((trait) => [trait, myTraits[trait]])) as TraitCollection}
-            selectedTrait={selectedTrait}
-            currentRoundEvent={currentRoundEvent}
-            onSelectTrait={onSelectTrait}
-            isSubmitted={myActionSubmitted || Boolean(pendingAction)}
-          />
-        ) : null}
-      </div>
-
-      <ActionDock
-        isBusy={isBusy}
-        pendingAction={pendingAction}
-        hasSelection={Boolean(selectedTrait)}
-        useDisabled={isBusy || myActionSubmitted || !selectedTrait || Boolean(selectedTraitState?.cooldown)}
-        evolveDisabled={isBusy || myActionSubmitted || !selectedTrait}
-        onUse={onUse}
-        onEvolve={onEvolve}
-        selectedTraitLabel={selectedTraitLabel}
-        selectedTraitDescription={selectedTraitDescription}
-        selectedTraitLevel={selectedTraitLevel}
-        nextTraitLevel={evolveNextLevel}
-        useDetail={selectedTrait && useValue !== null ? `USA — ottieni ${useValue}` : 'USA — ottieni n/d'}
-        evolveDetail={selectedTrait ? `EVOLVI — passa al livello ${evolveNextLevel}` : 'EVOLVI — passa al livello n/d'}
-        useBlockedReason={selectedTraitState?.cooldown ? 'USE disabilitato: gene in cooldown per questo round.' : null}
-        helperText={actionHelper}
-        submittedTitle={submittedTitle ?? 'Scelta effettuata'}
-        submittedActionType={submittedActionType}
-        submittedTraitLabel={submittedTraitLabel}
-        submittedProgressLabel={submittedProgressLabel}
-        isSubmitted={myActionSubmitted || Boolean(pendingAction)}
-        waitingDetail={waitingDetail}
-      />
-    </section>
   )
 }
 

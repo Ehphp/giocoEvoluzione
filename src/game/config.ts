@@ -1,6 +1,8 @@
-import { TRAITS, type TraitCollection, type TraitType } from './types'
+import { TRAITS as TRAIT_TYPES, type TraitCollection, type TraitType } from './types'
 import { TRAIT_CATALOG } from './traits-catalog'
 import { generateRoundEventSequence as generateRoundEventSequenceFromCatalog, ROUND_EVENT_WEIGHT } from './round-events'
+
+export const TRAITS = TRAIT_TYPES
 
 export const TOTAL_ROUNDS = 6
 export const FINAL_ROUND_NUMBER = 6

@@ -1,12 +1,10 @@
 import { GAME_SELECTION_ASSETS } from './gameSelectionAssets'
 import type { GeneSelectionViewModelV2 } from './types'
 import { ActionPanelV2 } from './components/ActionPanelV2'
-import { CreatureStageV2 } from './components/CreatureStageV2'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
-import { RoundEventPanelV2 } from './components/RoundEventPanelV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
+import { RoundEventPanelV2 } from './components/RoundEventPanelV2'
 import { RoundIndicatorV2 } from './components/RoundIndicatorV2'
-import { SelectedGeneDetailsV2 } from './components/SelectedGeneDetailsV2'
 import { WaitingStateV2 } from './components/WaitingStateV2'
 
 import './GeneSelectionScreenV2.css'
@@ -19,76 +17,137 @@ type GeneSelectionScreenV2Props = {
     onLeaveSession: () => void
 }
 
+function SceneFallback() {
+    return (
+        <div className="scene-fallback" aria-hidden="true">
+            <img
+                className="scene-fallback-bg"
+                src={GAME_SELECTION_ASSETS.backgroundFallback}
+                alt=""
+                onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                }}
+            />
+            <div className="scene-fallback-creatures">
+                <img
+                    src="/assets/game-ui/placeholders/player-creature.svg"
+                    alt=""
+                    className="scene-fallback-creature scene-fallback-creature--player"
+                    onError={(event) => {
+                        event.currentTarget.style.display = 'none'
+                    }}
+                />
+                <span className="scene-fallback-vs">VS</span>
+                <img
+                    src="/assets/game-ui/placeholders/opponent-creature.svg"
+                    alt=""
+                    className="scene-fallback-creature scene-fallback-creature--opponent"
+                    onError={(event) => {
+                        event.currentTarget.style.display = 'none'
+                    }}
+                />
+            </div>
+        </div>
+    )
+}
+
+function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; onLeaveSession: () => void }) {
+    return (
+        <section className="state-message state-message--invalid" role="alert" aria-live="assertive">
+            <strong>Sessione obsoleta</strong>
+            <p>{reason ?? 'La partita non e compatibile con questa versione.'}</p>
+            <button type="button" className="leave-button leave-button--inline" onClick={onLeaveSession}>
+                Torna alla home
+            </button>
+        </section>
+    )
+}
+
 export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession }: GeneSelectionScreenV2Props) {
-    const showWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
+    const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
+    const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
+    const hasRenderableContent = viewModel.status !== 'invalid' && viewModel.status !== 'loading'
 
     return (
-        <section className="gene-v2-screen" aria-label="Nuova schermata scelta gene V2">
-            <div className="gene-v2-background" aria-hidden="true">
-                <img src={GAME_SELECTION_ASSETS.background} alt="" onError={(event) => {
+        <section className="gene-selection-screen" aria-label="Schermata scelta gene">
+            <img
+                className="frame-scene-image"
+                src={GAME_SELECTION_ASSETS.battleScene}
+                alt=""
+                onError={(event) => {
                     event.currentTarget.style.display = 'none'
-                }} />
-            </div>
-
-            <div className="gene-v2-scroll" data-testid="gene-v2-scroll-container">
-                <div className="gene-v2-top-actions">
-                    <button type="button" className="ghost-button gene-v2-leave" onClick={onLeaveSession}>
+                    event.currentTarget.closest('.gene-selection-screen')?.classList.add('has-scene-error')
+                }}
+            />
+            <SceneFallback />
+            <div className="frame-scene-overlay frame-scene-overlay--top" aria-hidden="true" />
+            <div className="frame-scene-overlay frame-scene-overlay--bottom" aria-hidden="true" />
+            <div className="screen-content" data-testid="gene-v2-scroll-container">
+                <div className="top-actions">
+                    <button type="button" className="leave-button" onClick={onLeaveSession}>
                         Esci
                     </button>
                 </div>
-                <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
-                <RoundIndicatorV2 round={viewModel.round} />
-                <RoundEventPanelV2 roundEvent={viewModel.roundEvent} />
-                <CreatureStageV2
-                    playerName={viewModel.player.name}
-                    opponentName={viewModel.opponent.name}
-                    playerCreatureUrl={GAME_SELECTION_ASSETS.playerCreature}
-                    opponentCreatureUrl={GAME_SELECTION_ASSETS.opponentCreature}
-                />
-                {viewModel.genes.length > 0 ? (
-                    <GeneSelectorPreviewV2
-                        genes={viewModel.genes}
-                        selectedGeneId={selectedGeneId}
-                        onSelectGene={onSelectGene}
-                        disableSelection={viewModel.status === 'loading' || viewModel.status === 'submitting'}
-                    />
-                ) : (
-                    <section className="gene-v2-state-card" aria-live="polite">
-                        <strong>Geni non disponibili</strong>
-                        <p>Impossibile caricare i geni del giocatore per questo round.</p>
-                    </section>
-                )}
 
-                {viewModel.selectedGene ? <SelectedGeneDetailsV2 gene={viewModel.selectedGene} /> : null}
+                {viewModel.status === 'invalid' ? (
+                    <div className="screen-main screen-main--centered">
+                        <InvalidSessionMessage reason={viewModel.invalidReason} onLeaveSession={onLeaveSession} />
+                    </div>
+                ) : null}
 
                 {viewModel.status === 'loading' ? (
-                    <section className="gene-v2-state-card" aria-live="polite">
-                        <strong>Caricamento in corso...</strong>
-                        <p>Sto preparando i dati del round.</p>
-                    </section>
+                    <div className="screen-main screen-main--centered">
+                        <section className="state-message" aria-live="polite">
+                            <strong>Caricamento in corso...</strong>
+                            <p>Sto preparando i dati del round.</p>
+                        </section>
+                    </div>
                 ) : null}
 
-                {viewModel.status === 'error' && viewModel.errorMessage ? (
-                    <section className="gene-v2-state-card gene-v2-state-card--error" role="alert" aria-live="assertive">
-                        <strong>Errore invio</strong>
-                        <p>{viewModel.errorMessage}</p>
-                    </section>
-                ) : null}
+                {hasRenderableContent ? (
+                    <>
+                        <div className="screen-top">
+                            <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
+                            <RoundIndicatorV2 round={viewModel.round} />
+                            <RoundEventPanelV2 roundEvent={viewModel.roundEvent} />
+                        </div>
 
-                {showWaiting && viewModel.waitingState ? (
-                    <WaitingStateV2 waitingState={viewModel.waitingState} />
-                ) : (
-                    <ActionPanelV2
-                        selectedAction={viewModel.selectedAction}
-                        selectedGeneName={viewModel.selectedGene?.name ?? null}
-                        canUse={viewModel.canUse}
-                        canEvolve={viewModel.canEvolve}
-                        isSubmitting={viewModel.status === 'submitting'}
-                        onUseAction={onUseGene}
-                        onEvolveAction={onEvolveGene}
-                    />
-                )}
+                        <div className="screen-middle" aria-hidden="true" />
+
+                        <div className="bottom-sheet">
+                            {viewModel.genes.length > 0 ? (
+                                <GeneSelectorPreviewV2
+                                    genes={viewModel.genes}
+                                    selectedGeneId={selectedGeneId}
+                                    onSelectGene={onSelectGene}
+                                    disableSelection={!isChoosing}
+                                />
+                            ) : null}
+
+                            {viewModel.status === 'error' && viewModel.errorMessage ? (
+                                <section className="state-message state-message--error" role="alert" aria-live="assertive">
+                                    <strong>Errore invio</strong>
+                                    <p>{viewModel.errorMessage}</p>
+                                </section>
+                            ) : null}
+
+                            {isWaiting && viewModel.waitingState ? (
+                                <WaitingStateV2 waitingState={viewModel.waitingState} />
+                            ) : (
+                                <ActionPanelV2
+                                    selectedAction={viewModel.selectedAction}
+                                    selectedGeneName={viewModel.selectedGene?.name ?? null}
+                                    canUse={viewModel.canUse}
+                                    canEvolve={viewModel.canEvolve}
+                                    isSubmitting={viewModel.status === 'submitting'}
+                                    onUseAction={onUseGene}
+                                    onEvolveAction={onEvolveGene}
+                                />
+                            )}
+                        </div>
+                    </>
+                ) : null}
             </div>
         </section>
     )

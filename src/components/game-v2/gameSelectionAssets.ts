@@ -1,3 +1,5 @@
+import type { TraitType } from '../../game/types'
+
 type GeneAssetKey =
     | 'strength'
     | 'resistance'
@@ -10,14 +12,11 @@ type GeneAssetKey =
     | 'webbed-limbs'
     | 'fat-reserves'
 
-import type { TraitType } from '../../game/types'
-
 export const GAME_SELECTION_ASSETS = {
-    background: '/assets/game-ui/placeholders/background.svg',
+    battleScene: '/assets/game-ui/battle-scene-mobile.jpeg',
+    backgroundFallback: '/assets/game-ui/placeholders/background.svg',
     playerAvatar: '/assets/game-ui/placeholders/player-avatar.svg',
     opponentAvatar: '/assets/game-ui/placeholders/opponent-avatar.svg',
-    playerCreature: '/assets/game-ui/placeholders/player-creature.svg',
-    opponentCreature: '/assets/game-ui/placeholders/opponent-creature.svg',
     environment: '/assets/game-ui/placeholders/environment.svg',
     gene: '/assets/game-ui/placeholders/gene.svg',
     genes: {

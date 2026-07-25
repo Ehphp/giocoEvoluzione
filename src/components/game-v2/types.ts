@@ -8,7 +8,7 @@ export type GeneAffinityV2 = 'low' | 'medium' | 'high' | 'excellent'
 
 export type GeneActionTypeV2 = 'USE' | 'EVOLVE'
 
-export type GeneSelectionStatusV2 = 'loading' | 'choosing' | 'submitting' | 'waiting' | 'resolving' | 'error'
+export type GeneSelectionStatusV2 = 'loading' | 'choosing' | 'submitting' | 'waiting' | 'resolving' | 'error' | 'invalid'
 
 export interface DuelPlayerV2 {
     id: string
@@ -27,7 +27,6 @@ export interface RoundEventEffectV2 {
     id: string
     label: string
     value: string
-    reason: string
     tone: ModifierToneV2
 }
 
@@ -35,9 +34,6 @@ export interface RoundEventV2 {
     id: string
     title: string
     description: string
-    category: string
-    intensity: 1 | 2 | 3
-    artKey: string
     imageUrl?: string
     effects: RoundEventEffectV2[]
 }
@@ -49,8 +45,6 @@ export interface GeneCardV2 {
     level: number
     affinity: GeneAffinityV2
     imageUrl?: string
-    description: string
-    predictedValue?: number
     usable: boolean
     disabledReason?: string
 }
@@ -78,5 +72,6 @@ export interface GeneSelectionViewModelV2 {
     canEvolve: boolean
     canSelectGenes: boolean
     errorMessage?: string
+    invalidReason?: string
     waitingState?: WaitingStateV2
 }
