@@ -16,7 +16,6 @@ function ActionButton({
     isActive,
     isSubmitting,
     onClick,
-    icon,
 }: {
     variant: 'use' | 'evolve'
     label: string
@@ -25,7 +24,6 @@ function ActionButton({
     isActive: boolean
     isSubmitting: boolean
     onClick: () => void
-    icon: string
 }) {
     return (
         <button
@@ -35,9 +33,23 @@ function ActionButton({
             aria-pressed={isActive}
             disabled={disabled}
         >
-            <span className="action-v2-btn__icon" aria-hidden="true">{icon}</span>
-            <span className="action-v2-btn__label">{label}</span>
-            <span className="action-v2-btn__sublabel">{sublabel}</span>
+            <span className="action-v2-btn__icon" aria-hidden="true">
+                {variant === 'use' ? (
+                    <svg viewBox="0 0 24 24">
+                        <path d="M13.2 2.5 5.8 13h5.1l-.8 8.5L18.4 10h-5.2V2.5Z" />
+                    </svg>
+                ) : (
+                    <svg viewBox="0 0 24 24">
+                        <path d="m12 3 5 5h-3v5h-4V8H7l5-5Z" />
+                        <path d="M6 16h12v4H6z" />
+                    </svg>
+                )}
+            </span>
+            <span className="action-v2-btn__copy">
+                <span className="action-v2-btn__label">{label}</span>
+                <span className="action-v2-btn__sublabel">{sublabel}</span>
+            </span>
+            <span className="action-v2-btn__arrow" aria-hidden="true">›</span>
         </button>
     )
 }
@@ -70,7 +82,6 @@ export function ActionPanelV2({
                 onClick={() => {
                     void onUseAction()
                 }}
-                icon="⚡"
             />
             <ActionButton
                 variant="evolve"
@@ -82,7 +93,6 @@ export function ActionPanelV2({
                 onClick={() => {
                     void onEvolveAction()
                 }}
-                icon="⬆"
             />
         </section>
     )

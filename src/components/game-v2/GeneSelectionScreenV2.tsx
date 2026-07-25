@@ -134,7 +134,7 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                 </section>
                             ) : null}
 
-                            <div className="action-panel-shell">
+                            <div className={`action-panel-shell ${isWaiting ? 'is-waiting' : 'is-actions'}`}>
                                 {isWaiting && viewModel.waitingState ? (
                                     <WaitingStateV2 waitingState={viewModel.waitingState} />
                                 ) : (
