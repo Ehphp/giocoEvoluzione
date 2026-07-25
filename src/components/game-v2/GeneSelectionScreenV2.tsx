@@ -117,12 +117,14 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
 
                         <div className="bottom-sheet">
                             {viewModel.genes.length > 0 ? (
-                                <GeneSelectorPreviewV2
-                                    genes={viewModel.genes}
-                                    selectedGeneId={selectedGeneId}
-                                    onSelectGene={onSelectGene}
-                                    disableSelection={!isChoosing}
-                                />
+                                <div className="gene-selector-panel">
+                                    <GeneSelectorPreviewV2
+                                        genes={viewModel.genes}
+                                        selectedGeneId={selectedGeneId}
+                                        onSelectGene={onSelectGene}
+                                        disableSelection={!isChoosing}
+                                    />
+                                </div>
                             ) : null}
 
                             {viewModel.status === 'error' && viewModel.errorMessage ? (
@@ -132,19 +134,21 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                 </section>
                             ) : null}
 
-                            {isWaiting && viewModel.waitingState ? (
-                                <WaitingStateV2 waitingState={viewModel.waitingState} />
-                            ) : (
-                                <ActionPanelV2
-                                    selectedAction={viewModel.selectedAction}
-                                    selectedGeneName={viewModel.selectedGene?.name ?? null}
-                                    canUse={viewModel.canUse}
-                                    canEvolve={viewModel.canEvolve}
-                                    isSubmitting={viewModel.status === 'submitting'}
-                                    onUseAction={onUseGene}
-                                    onEvolveAction={onEvolveGene}
-                                />
-                            )}
+                            <div className="action-panel-shell">
+                                {isWaiting && viewModel.waitingState ? (
+                                    <WaitingStateV2 waitingState={viewModel.waitingState} />
+                                ) : (
+                                    <ActionPanelV2
+                                        selectedAction={viewModel.selectedAction}
+                                        selectedGeneName={viewModel.selectedGene?.name ?? null}
+                                        canUse={viewModel.canUse}
+                                        canEvolve={viewModel.canEvolve}
+                                        isSubmitting={viewModel.status === 'submitting'}
+                                        onUseAction={onUseGene}
+                                        onEvolveAction={onEvolveGene}
+                                    />
+                                )}
+                            </div>
                         </div>
                     </>
                 ) : null}

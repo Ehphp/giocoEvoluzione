@@ -31,6 +31,8 @@ function wrapIndex(index: number, total: number): number {
     return (index + total) % total
 }
 
+const VISIBLE_CARD_OFFSETS = [-2, -1, 0, 1, 2]
+
 function GeneCard({
     gene,
     isSelected,
@@ -48,7 +50,7 @@ function GeneCard({
         <button
             type="button"
             role="option"
-            className={`selector-v2-card ${isSelected ? 'is-selected' : ''} ${isSide ? 'is-side' : ''} ${gene.usable ? '' : 'is-cooldown'}`}
+            className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${isSide ? 'is-side' : ''} ${gene.usable ? '' : 'is-cooldown'}`}
             aria-selected={isSelected}
             onClick={onClick}
             disabled={disabled}
@@ -70,16 +72,14 @@ function GeneCard({
 export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, disableSelection = false }: GeneSelectorPreviewV2Props) {
     const total = genes.length
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
-    const selectedGene = genes[selectedIndex]
 
     if (total === 0) {
         return null
     }
 
-    const prevIndex = wrapIndex(selectedIndex - 1, total)
-    const nextIndex = wrapIndex(selectedIndex + 1, total)
-    const prevGene = genes[prevIndex]
-    const nextGene = genes[nextIndex]
+    const visibleOffsets = total >= VISIBLE_CARD_OFFSETS.length
+        ? VISIBLE_CARD_OFFSETS
+        : Array.from({ length: total }, (_, index) => index - selectedIndex)
 
     function selectByOffset(offset: number) {
         if (disableSelection) {
@@ -94,11 +94,19 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
         }
     }
 
+    function selectByIndex(index: number) {
+        if (disableSelection || index === selectedIndex) {
+            return
+        }
+
+        onSelectGene(genes[index].id)
+    }
+
     return (
         <section className="selector-v2" aria-label="Selettore geni">
             <div className="selector-v2-header">
                 <strong>SCEGLI UN GENE</strong>
-                <span>{selectedIndex + 1}/{total}</span>
+                <span className="selector-v2-sr-only">Gene {selectedIndex + 1} di {total}</span>
             </div>
 
             <div className="selector-v2-carousel" role="listbox" aria-label="Card geni">
@@ -113,35 +121,21 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                 </button>
 
                 <div className="selector-v2-rail">
-                    {prevGene ? (
-                        <GeneCard
-                            gene={prevGene}
-                            isSelected={false}
-                            isSide
-                            disabled={disableSelection}
-                            onClick={() => !disableSelection && onSelectGene(prevGene.id)}
-                        />
-                    ) : null}
+                    {visibleOffsets.map((offset) => {
+                        const geneIndex = wrapIndex(selectedIndex + offset, total)
+                        const gene = genes[geneIndex]
 
-                    {selectedGene ? (
-                        <GeneCard
-                            gene={selectedGene}
-                            isSelected
-                            isSide={false}
-                            disabled={disableSelection}
-                            onClick={() => { }}
-                        />
-                    ) : null}
-
-                    {nextGene ? (
-                        <GeneCard
-                            gene={nextGene}
-                            isSelected={false}
-                            isSide
-                            disabled={disableSelection}
-                            onClick={() => !disableSelection && onSelectGene(nextGene.id)}
-                        />
-                    ) : null}
+                        return (
+                            <GeneCard
+                                key={`${gene.id}-${offset}`}
+                                gene={gene}
+                                isSelected={offset === 0}
+                                isSide={offset !== 0}
+                                disabled={disableSelection}
+                                onClick={() => selectByIndex(geneIndex)}
+                            />
+                        )
+                    })}
                 </div>
 
                 <button
@@ -155,16 +149,20 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                 </button>
             </div>
 
-            {selectedGene ? (
-                <div className="selector-v2-summary" aria-live="polite">
-                    <strong>{selectedGene.name} · Lv. {selectedGene.level}</strong>
-                    <span>
-                        {affinityLabel(selectedGene.affinity)}
-                        {' · '}
-                        {selectedGene.usable ? 'USA disponibile' : selectedGene.disabledReason ?? 'USA non disponibile'}
-                    </span>
-                </div>
-            ) : null}
+            <div className="selector-v2-dots" role="tablist" aria-label="Posizione nel selettore geni">
+                {genes.map((gene, index) => (
+                    <button
+                        key={gene.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={index === selectedIndex}
+                        aria-label={`Seleziona ${gene.name}`}
+                        className={`selector-v2-dot ${index === selectedIndex ? 'is-active' : ''}`}
+                        onClick={() => selectByIndex(index)}
+                        disabled={disableSelection}
+                    />
+                ))}
+            </div>
         </section>
     )
 }
