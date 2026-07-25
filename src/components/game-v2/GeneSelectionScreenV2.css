@@ -1441,13 +1441,12 @@
     background:
       linear-gradient(rgba(4, 21, 17, 0.35), rgba(4, 21, 17, 0.62)),
       url('/assets/game-ui/battle-scene-mobile.jpeg') center / cover no-repeat;
-    filter: blur(22px) saturate(0.72);
-    transform: scale(1.08);
+    opacity: 0;
   }
 
   .frame-scene-image {
-    object-fit: contain;
-    object-position: center;
+    object-fit: cover;
+    object-position: center 40%;
     transform: none;
   }
 
@@ -1457,12 +1456,11 @@
     background:
       linear-gradient(
         90deg,
-        rgba(3, 20, 15, 0.8) 0%,
-        rgba(3, 20, 15, 0.58) 25%,
-        rgba(3, 20, 15, 0.08) 42%,
-        rgba(3, 20, 15, 0.08) 58%,
-        rgba(3, 20, 15, 0.58) 75%,
-        rgba(3, 20, 15, 0.82) 100%
+        rgba(3, 20, 15, 0.58) 0%,
+        rgba(3, 20, 15, 0.2) 30%,
+        rgba(3, 20, 15, 0.04) 50%,
+        rgba(3, 20, 15, 0.18) 72%,
+        rgba(3, 20, 15, 0.48) 100%
       );
   }
 
@@ -1477,10 +1475,10 @@
     min-height: 100dvh;
     display: grid;
     grid-template-columns:
-      minmax(250px, 340px)
-      minmax(0, 1fr)
-      minmax(360px, 520px);
+      minmax(320px, 430px)
+      minmax(460px, 560px);
     grid-template-rows: auto minmax(0, 1fr);
+    justify-content: space-between;
     column-gap: clamp(10px, 1.5vw, 24px);
     row-gap: 16px;
     padding:
@@ -1490,7 +1488,7 @@
   }
 
   .top-actions {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 1;
     min-height: 44px;
     margin: 0;
@@ -1507,19 +1505,16 @@
   }
 
   .duel-v2-header {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    position: static;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px;
   }
 
   .duel-v2-vs {
-    position: absolute;
-    z-index: 2;
-    left: 50%;
-    top: 50%;
-    width: 32px;
-    height: 32px;
-    transform: translate(-50%, -50%);
+    position: static;
+    width: 36px;
+    height: 36px;
+    transform: none;
   }
 
   .duel-v2-card {
@@ -1550,14 +1545,11 @@
   }
 
   .screen-middle {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    display: block;
-    min-height: 0;
+    display: none;
   }
 
   .bottom-sheet {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 2;
     min-width: 0;
     align-self: end;
@@ -1593,9 +1585,9 @@
 @media (min-width: 900px) and (max-width: 1100px) {
   .screen-content {
     grid-template-columns:
-      minmax(250px, 300px)
-      minmax(0, 1fr)
-      minmax(340px, 430px);
+      minmax(280px, 340px)
+      minmax(400px, 480px);
+    justify-content: space-between;
     column-gap: 10px;
     padding-inline: 14px;
   }
@@ -1702,5 +1694,136 @@
 
   .action-v2-btn {
     min-height: 64px;
+  }
+}
+
+/* Compact portrait phones, including the Galaxy S22 Ultra browser viewport.
+   Keep both primary actions inside the first visible viewport. */
+@media (max-width: 640px) and (max-height: 850px) and (orientation: portrait) {
+  .screen-content {
+    gap: 4px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 5px);
+  }
+
+  .top-actions {
+    min-height: 44px;
+  }
+
+  .screen-top {
+    gap: 4px;
+  }
+
+  .duel-v2-card {
+    min-height: 56px;
+    padding-block: 6px;
+  }
+
+  .duel-v2-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .duel-v2-score {
+    min-width: 30px;
+    min-height: 28px;
+  }
+
+  .event-v2-card {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 96px;
+    padding: 7px;
+    border-radius: 18px;
+  }
+
+  .event-v2-art {
+    min-height: 82px;
+    border-radius: 13px;
+  }
+
+  .event-v2-title {
+    font-size: 0.84rem;
+  }
+
+  .event-v2-description {
+    font-size: 0.61rem;
+    -webkit-line-clamp: 1;
+  }
+
+  .event-v2-chip {
+    padding: 2px 5px;
+    font-size: 0.5rem;
+  }
+
+  .screen-middle {
+    flex: 0 0 clamp(78px, 12svh, 98px);
+    min-height: clamp(78px, 12svh, 98px);
+  }
+
+  .bottom-sheet {
+    gap: 8px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+  }
+
+  .selector-v2 {
+    gap: 4px;
+  }
+
+  .selector-v2-header {
+    min-height: 25px;
+    padding-block: 3px;
+  }
+
+  .selector-v2-carousel,
+  .selector-v2-rail {
+    min-height: 172px;
+  }
+
+  .selector-v2-card,
+  .selector-v2-card.is-side {
+    height: 146px;
+    min-height: 146px;
+  }
+
+  .selector-v2-card.is-selected {
+    height: 168px;
+    min-height: 168px;
+  }
+
+  .selector-v2-icon,
+  .selector-v2-card.is-selected .selector-v2-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .selector-v2-card.is-selected .selector-v2-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .selector-v2-level {
+    top: 43px;
+  }
+
+  .selector-v2-card.is-selected .selector-v2-level {
+    top: 51px;
+  }
+
+  .selector-v2-hold-hint {
+    display: none;
+  }
+
+  .selector-v2-dots {
+    min-height: 16px;
+  }
+
+  .action-v2-btn {
+    min-height: 68px;
+    padding-block: 8px;
+  }
+
+  .action-v2-btn__icon {
+    width: 38px;
+    height: 38px;
   }
 }
