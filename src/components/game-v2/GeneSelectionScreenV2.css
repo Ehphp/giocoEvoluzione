@@ -313,7 +313,7 @@
    the scene spacer bounded so the action buttons remain reachable without
    relying on a scroll gesture. */
 @media (max-width: 640px) and (orientation: portrait) {
-  .screen-middle { flex: 0 0 clamp(104px, 18svh, 160px); min-height: clamp(104px, 18svh, 160px); }
+  .screen-middle { flex: 1 1 clamp(104px, 18svh, 160px); min-height: clamp(104px, 18svh, 160px); }
 }
 
 @media (max-width: 359px) {
