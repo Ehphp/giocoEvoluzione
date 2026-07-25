@@ -149,6 +149,24 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(agility?.affinity).toBe('medium')
     })
 
+    it('maps the exact predicted use score and its contributions', () => {
+        const viewModel = build(createSnapshot())
+        const resistance = viewModel.genes.find((gene) => gene.traitType === 'RESISTANCE')
+        const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
+
+        expect(resistance?.prediction).toMatchObject({
+            useScore: 4,
+            levelContribution: 0,
+            eventContribution: 4,
+        })
+        expect(resistance?.prediction?.reasons[0]).toContain('pelle isolante')
+        expect(agility?.prediction).toMatchObject({
+            useScore: 2,
+            levelContribution: 2,
+            eventContribution: 0,
+        })
+    })
+
     it('returns choosing status by default', () => {
         const viewModel = build(createSnapshot())
 

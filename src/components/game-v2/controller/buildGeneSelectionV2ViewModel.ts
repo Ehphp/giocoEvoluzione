@@ -1,6 +1,7 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
 import { isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
+import { getValidatedTraitUseBreakdown } from '../../../game/scoring'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import { getRoundEventLabel } from '../../../game/ui-context'
 import type { TraitCollection, TraitType } from '../../../game/types'
@@ -156,6 +157,9 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 ? getRoundEventEffectsForTrait(roundEvent, traitType).reduce((sum, effect) => sum + effect.modifier, 0)
                 : 0
             const usable = isTraitUsable(myTraits, traitType)
+            const prediction = roundEvent
+                ? getValidatedTraitUseBreakdown(roundEvent, myTraits, traitType)
+                : null
 
             return {
                 id: traitType,
@@ -166,6 +170,14 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 imageUrl: getGeneAssetByTrait(traitType),
                 usable,
                 disabledReason: usable ? undefined : `Cooldown ${state.cooldown}`,
+                prediction: prediction
+                    ? {
+                        useScore: prediction.total,
+                        levelContribution: prediction.levelContribution,
+                        eventContribution: prediction.eventContribution,
+                        reasons: prediction.appliedEventEffects.map((effect) => effect.reason),
+                    }
+                    : undefined,
             }
         })
         .filter((gene): gene is GeneCardV2 => gene !== null)

@@ -47,6 +47,12 @@ export interface GeneCardV2 {
     imageUrl?: string
     usable: boolean
     disabledReason?: string
+    prediction?: {
+        useScore: number
+        levelContribution: number
+        eventContribution: number
+        reasons: string[]
+    }
 }
 
 export interface WaitingStateV2 {
