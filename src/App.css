@@ -4116,10 +4116,117 @@
 
 @media (max-width: 640px) {
   .app-panel--home,
-  .app-panel--session:not(.app-panel--game) { padding: 8px; }
+  .app-panel--session:not(.app-panel--game) {
+    width: 100%;
+    padding:
+      calc(8px + env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-right, 0px))
+      calc(8px + env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+  }
   .home-screen { min-height: calc(100svh - 16px); }
   .home-entry { padding: 10px; }
   .home-entry__join-block { grid-template-columns: minmax(0, 1fr) auto; }
   .round-result-cards { gap: 7px; }
   .round-breakdown-card { padding: 9px; }
+}
+
+/* Mobile hardening: keep long labels inside the viewport and make every
+   primary interaction comfortably reachable by touch. */
+@media (max-width: 430px) {
+  .home-screen__header h1 {
+    max-width: 100%;
+    font-size: clamp(1.7rem, 8.5vw, 2.15rem);
+    overflow-wrap: anywhere;
+  }
+
+  .home-screen__header {
+    padding-inline: 2px;
+  }
+
+  .home-entry__create,
+  .home-entry__join,
+  .home-screen__leave,
+  .app-panel--session:not(.app-panel--game) button {
+    min-height: 48px;
+  }
+
+  .home-entry__create small {
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .app-panel--session:not(.app-panel--game) > .topbar {
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .app-panel--session:not(.app-panel--game) .topbar > div {
+    min-width: 0;
+  }
+
+  .app-panel--session:not(.app-panel--game) .topbar h1,
+  .app-panel--session:not(.app-panel--game) .room-code {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 359px) {
+  .home-entry__join-block {
+    grid-template-columns: 1fr;
+  }
+
+  .home-entry__join {
+    width: 100%;
+  }
+
+  .home-screen__subcopy {
+    display: none;
+  }
+
+  .home-hero {
+    min-height: 126px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .primary-button,
+  .secondary-button,
+  .ghost-button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .primary-button:active:not(:disabled),
+  .secondary-button:active:not(:disabled),
+  .ghost-button:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .shell--home,
+  .shell--session:not(.shell--game) {
+    padding:
+      max(6px, env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-right, 0px))
+      max(6px, env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+  }
+
+  .app-panel--home,
+  .app-panel--session:not(.app-panel--game) {
+    width: min(100%, 980px);
+    max-width: 980px;
+    min-height: 0;
+    height: calc(100dvh - 12px);
+    padding: 8px;
+    overflow-y: auto;
+    border-radius: 22px;
+  }
+
+  .home-screen {
+    min-height: 0;
+    align-content: start;
+  }
 }
