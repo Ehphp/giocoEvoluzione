@@ -27,7 +27,7 @@
   width: 100%;
   max-width: none;
   min-width: 0;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow-x: hidden;
   overflow-y: auto;
   color: #f7f8f1;
@@ -77,7 +77,7 @@
   z-index: 1;
   width: 100%;
   min-width: 0;
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -182,7 +182,7 @@
 .event-v2-chip.is-neutral { color: #3f4d8a; background: #e4ebff; border-color: #a6b6f5; }
 
 /* Transparent spacer: keep the creature portraits above the bottom sheet. */
-.screen-middle { flex: 1 1 clamp(270px, 35dvh, 380px); min-height: clamp(270px, 35dvh, 380px); }
+.screen-middle { flex: 1 1 clamp(270px, 35svh, 380px); min-height: clamp(270px, 35svh, 380px); }
 
 /* Bottom sheet */
 .bottom-sheet {
@@ -268,7 +268,7 @@
 .action-v2-btn:disabled { opacity: 0.56; cursor: not-allowed; filter: grayscale(0.25); }
 
 .screen-main { flex: 1 1 auto; display: flex; flex-direction: column; padding: 0 12px; }
-.screen-main--centered { justify-content: center; align-items: center; min-height: 60dvh; text-align: center; }
+.screen-main--centered { justify-content: center; align-items: center; min-height: 60svh; text-align: center; }
 .state-message { max-width: 420px; display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; background: rgba(255, 255, 255, 0.12); color: #fff; }
 .state-message strong { font-size: 0.92rem; }
 .state-message p { margin: 0; color: rgba(255, 255, 255, 0.85); font-size: 0.78rem; line-height: 1.35; }

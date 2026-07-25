@@ -10,9 +10,7 @@
   height: 100vh;
   min-height: 100vh;
   min-height: 100svh;
-  min-height: 100dvh;
   height: 100svh;
-  height: 100dvh;
   background:
     radial-gradient(circle at top, rgba(98, 213, 207, 0.18), transparent 26%),
     linear-gradient(180deg, #12261f 0%, #0f211b 100%);
@@ -52,9 +50,7 @@
   height: 100vh;
   min-height: 100vh;
   min-height: 100svh;
-  min-height: 100dvh;
   height: 100svh;
-  height: 100dvh;
   min-height: 0;
   padding: 0;
   border: 0;
