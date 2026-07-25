@@ -181,8 +181,8 @@
 .event-v2-chip.is-negative { color: #8a3a25; background: #ffe3d8; border-color: #f8a888; }
 .event-v2-chip.is-neutral { color: #3f4d8a; background: #e4ebff; border-color: #a6b6f5; }
 
-/* Transparent spacer: it intentionally reveals the creatures in the background. */
-.screen-middle { flex: 1 1 clamp(180px, 27dvh, 280px); min-height: clamp(180px, 27dvh, 280px); }
+/* Transparent spacer: keep the creature portraits above the bottom sheet. */
+.screen-middle { flex: 1 1 clamp(270px, 35dvh, 380px); min-height: clamp(270px, 35dvh, 380px); }
 
 /* Bottom sheet */
 .bottom-sheet {
