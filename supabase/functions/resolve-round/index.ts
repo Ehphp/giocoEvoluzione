@@ -154,6 +154,15 @@ Deno.serve(async (request) => {
         }
 
         const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
+        const roundEventId = String(gameData.round_event_sequence?.[roundNumber - 1] ?? '')
+
+        if (!roundEventId) {
+            return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
+        }
+
+        const roundEvent = getRoundEventById(roundEventId)
+        const nextRoundEventId = String(gameData.round_event_sequence?.[roundNumber] ?? '')
+        const nextRoundEvent = nextRoundEventId ? getRoundEventById(nextRoundEventId) : null
 
         if (gameMode === 'VS_BOT') {
             const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
@@ -195,6 +204,8 @@ Deno.serve(async (request) => {
                         roundNumber,
                         playerId: String(botPlayer.id),
                         traits: normalizeGeneCollection(botPlayer.traits as GeneCollection),
+                        roundEvent,
+                        nextRoundEvent,
                     },
                 )
 
@@ -222,14 +233,6 @@ Deno.serve(async (request) => {
         if (!player1ActionRow || !player2ActionRow) {
             return json({ status: 'pending', reason: 'missing_player_action' })
         }
-
-        const roundEventId = String(gameData.round_event_sequence?.[roundNumber - 1] ?? '')
-
-        if (!roundEventId) {
-            return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
-        }
-
-        const roundEvent = getRoundEventById(roundEventId)
 
         const resolution = buildPersistedRoundResolution({
             roundNumber,

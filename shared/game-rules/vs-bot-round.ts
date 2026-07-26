@@ -1,5 +1,5 @@
-import { selectRandomBotAction } from './bot.ts'
-import type { ActionType, GeneCollection, GeneId } from './types.ts'
+import { selectStrategicBotAction } from './bot.ts'
+import type { ActionType, GeneCollection, GeneId, RoundEventDefinition } from './types.ts'
 
 export type BotRoundActionRecord = {
     id?: string
@@ -18,9 +18,9 @@ export type BotRoundActionStore = {
 
 export async function ensureBotRoundAction(
     store: BotRoundActionStore,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: GeneCollection; random?: () => number },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: GeneCollection; roundEvent: RoundEventDefinition; nextRoundEvent: RoundEventDefinition | null; random?: () => number },
 ): Promise<BotRoundActionRecord> {
-    const botAction = selectRandomBotAction(input.traits, input.random)
+    const botAction = selectStrategicBotAction(input.traits, input.roundEvent, input.roundNumber, input.nextRoundEvent, input.random)
     try {
         await store.insertRoundAction({ gameId: input.gameId, roundNumber: input.roundNumber, playerId: input.playerId, trait: botAction.trait, actionType: botAction.actionType })
     } catch (error) {
