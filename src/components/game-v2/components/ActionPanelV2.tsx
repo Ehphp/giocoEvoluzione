@@ -72,15 +72,15 @@ export function ActionPanelV2({
 
     const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
     const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
-    const useSublabel = isSubmitting && selectedAction === 'USE'
-        ? 'Invio della scelta'
+    const useSublabel = isSubmitting
+        ? (selectedAction === 'USE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canUse
             ? (selectedGene.disabledReason ?? 'Non disponibile ora')
             : selectedGene.prediction
                 ? `${selectedGene.prediction.useScore} pt previsti`
                 : 'Attiva il gene ora'
-    const evolveSublabel = isSubmitting && selectedAction === 'EVOLVE'
-        ? 'Invio della scelta'
+    const evolveSublabel = isSubmitting
+        ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canEvolve
             ? 'Livello massimo raggiunto'
             : `Porta al livello ${selectedGene.level + 1}`
