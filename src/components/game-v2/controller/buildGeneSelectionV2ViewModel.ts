@@ -4,7 +4,7 @@ import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { getValidatedTraitUseBreakdown } from '../../../game/scoring'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import { getRoundEventLabel } from '../../../game/ui-context'
-import type { TraitCollection, TraitType } from '../../../game/types'
+import type { RoundEventDefinition, TraitCollection, TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { GAME_SELECTION_ASSETS, getEventAssetByArtKey, getGeneAssetByTrait } from '../gameSelectionAssets'
 import type {
@@ -99,14 +99,26 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
-function buildRoundEventEffects(snapshot: GameSnapshot): RoundEventEffectV2[] {
-    const roundEvent = snapshot.currentRoundEvent
+function buildRoundEventEffects(roundEvent: RoundEventDefinition, includeAll = false): RoundEventEffectV2[] {
+    const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
+    if (includeAll) {
+        const modifierOrder = new Map([[2, 0], [1, 1], [-1, 2], [-2, 3]])
 
-    if (!roundEvent) {
-        return []
+        return effects
+            .filter((effect) => effect.modifier !== 0)
+            .sort((a, b) => (
+                (modifierOrder.get(a.modifier) ?? 4) - (modifierOrder.get(b.modifier) ?? 4)
+                || TRAIT_LABELS[a.trait].localeCompare(TRAIT_LABELS[b.trait], 'it')
+            ))
+            .map((effect) => ({
+                id: `${roundEvent.id}-${effect.trait}-${effect.modifier}`,
+                label: TRAIT_LABELS[effect.trait],
+                modifier: effect.modifier,
+                value: `${effect.modifier > 0 ? '+' : ''}${effect.modifier} ${TRAIT_LABELS[effect.trait]}`,
+                tone: effect.modifier > 0 ? 'positive' : 'negative',
+            }))
     }
 
-    const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
     const positive = effects
         .filter((effect) => effect.modifier > 0)
         .sort((a, b) => b.modifier - a.modifier)[0]
@@ -120,6 +132,7 @@ function buildRoundEventEffects(snapshot: GameSnapshot): RoundEventEffectV2[] {
         picked.push({
             id: `${roundEvent.id}-${positive.trait}-pos`,
             label: TRAIT_LABELS[positive.trait],
+            modifier: positive.modifier,
             value: `+${positive.modifier} ${TRAIT_LABELS[positive.trait]}`,
             tone: 'positive',
         })
@@ -129,12 +142,48 @@ function buildRoundEventEffects(snapshot: GameSnapshot): RoundEventEffectV2[] {
         picked.push({
             id: `${roundEvent.id}-${negative.trait}-neg`,
             label: TRAIT_LABELS[negative.trait],
+            modifier: negative.modifier,
             value: `${negative.modifier} ${TRAIT_LABELS[negative.trait]}`,
             tone: 'negative',
         })
     }
 
     return picked
+}
+
+function mapRoundEvent(roundEvent: RoundEventDefinition, includeAllEffects = false) {
+    return {
+        id: roundEvent.id,
+        title: getRoundEventLabel(roundEvent),
+        description: roundEvent.shortDescription,
+        imageUrl: getEventAssetByArtKey(roundEvent.artKey),
+        effects: buildRoundEventEffects(roundEvent, includeAllEffects),
+    }
+}
+
+function compareGenesWeakestFirst(a: GeneCardV2, b: GeneCardV2): number {
+    // A gene that cannot legally be used has no immediately obtainable USE value.
+    // It stays in the slider, sorted deterministically with the other unavailable genes.
+    const aValue = a.usable ? (a.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
+    const bValue = b.usable ? (b.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
+
+    if (aValue !== bValue) {
+        return aValue - bValue
+    }
+
+    if (a.level !== b.level) {
+        return a.level - b.level
+    }
+
+    // The slider is weakest -> strongest. Reverse the alphabetical comparison so
+    // the alphabetically first gene wins an otherwise exact tie at the right edge.
+    const alphabetical = b.name.localeCompare(a.name, 'it')
+
+    if (alphabetical !== 0) {
+        return alphabetical
+    }
+
+    return TRAIT_CATALOG[a.traitType].displayOrder - TRAIT_CATALOG[b.traitType].displayOrder
 }
 
 function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
@@ -146,7 +195,6 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
     }
 
     return [...TRAITS]
-        .sort((a, b) => TRAIT_CATALOG[a].displayOrder - TRAIT_CATALOG[b].displayOrder)
         .map((traitType): GeneCardV2 | null => {
             const state = myTraits[traitType]
             if (!state) {
@@ -181,6 +229,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
             }
         })
         .filter((gene): gene is GeneCardV2 => gene !== null)
+        .sort(compareGenesWeakestFirst)
 }
 
 function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null): GeneCardV2 | null {
@@ -189,10 +238,14 @@ function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null)
     }
 
     if (selectedGeneId) {
-        return genes.find((gene) => gene.id === selectedGeneId) ?? genes[0]
+        return genes.find((gene) => gene.id === selectedGeneId) ?? genes.at(-1) ?? null
     }
 
-    return genes[0]
+    return genes.at(-1) ?? null
+}
+
+export function getBestTraitIdForSnapshot(snapshot: GameSnapshot): TraitType | null {
+    return buildGenes(snapshot).at(-1)?.traitType ?? null
 }
 
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {
@@ -235,6 +288,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 imageUrl: GAME_SELECTION_ASSETS.environment,
                 effects: [],
             },
+            nextRoundEvent: null,
             genes: [],
             selectedGeneId: null,
             selectedAction: null,
@@ -293,15 +347,10 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             current: snapshot.game.current_round,
             total: TOTAL_ROUNDS,
         },
-        roundEvent: {
-            id: snapshot.currentRoundEvent?.id ?? 'unknown-event',
-            title: getRoundEventLabel(snapshot.currentRoundEvent ?? null),
-            description: snapshot.currentRoundEvent?.shortDescription ?? 'Evento in caricamento.',
-            imageUrl: snapshot.currentRoundEvent
-                ? getEventAssetByArtKey(snapshot.currentRoundEvent.artKey)
-                : GAME_SELECTION_ASSETS.environment,
-            effects: buildRoundEventEffects(snapshot),
-        },
+        roundEvent: mapRoundEvent(snapshot.currentRoundEvent!),
+        nextRoundEvent: snapshot.nextRoundEvent
+            ? mapRoundEvent(snapshot.nextRoundEvent, true)
+            : null,
         genes,
         selectedGeneId,
         selectedAction: submittedAction?.actionType ?? input.selectedAction,

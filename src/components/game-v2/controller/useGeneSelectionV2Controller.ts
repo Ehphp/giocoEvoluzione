@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import type { GeneActionTypeV2 } from '../types'
-import { buildGeneSelectionV2ViewModel } from './buildGeneSelectionV2ViewModel'
+import { buildGeneSelectionV2ViewModel, getBestTraitIdForSnapshot } from './buildGeneSelectionV2ViewModel'
 
 type UseGeneSelectionV2ControllerInput = {
     snapshot: GameSnapshot
@@ -14,15 +13,7 @@ type UseGeneSelectionV2ControllerInput = {
 }
 
 function getInitialTraitId(snapshot: GameSnapshot): string | null {
-    const meTraits = snapshot.me?.traits
-
-    if (!meTraits) {
-        return null
-    }
-
-    const sortedTraits = (Object.keys(meTraits) as TraitType[]).sort((a, b) => TRAIT_CATALOG[a].displayOrder - TRAIT_CATALOG[b].displayOrder)
-
-    return sortedTraits[0] ?? null
+    return getBestTraitIdForSnapshot(snapshot)
 }
 
 export function useGeneSelectionV2Controller(input: UseGeneSelectionV2ControllerInput) {

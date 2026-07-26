@@ -66,7 +66,7 @@ function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; on
 export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession }: GeneSelectionScreenV2Props) {
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
-    const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
+    const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes.at(-1)?.id ?? ''
     const hasRenderableContent = viewModel.status !== 'invalid' && viewModel.status !== 'loading'
 
     return (
@@ -110,7 +110,10 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                         <div className="screen-top">
                             <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
                             <RoundIndicatorV2 round={viewModel.round} />
-                            <RoundEventPanelV2 roundEvent={viewModel.roundEvent} />
+                            <RoundEventPanelV2
+                                roundEvent={viewModel.roundEvent}
+                                nextRoundEvent={viewModel.nextRoundEvent}
+                            />
                         </div>
 
                         <div className="screen-middle" aria-hidden="true" />

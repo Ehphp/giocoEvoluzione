@@ -26,9 +26,20 @@ export const geneSelectionMockDataV2: GeneSelectionViewModelV2 = {
         description: 'Particelle abrasive e visibilita ridotta: adattati in fretta.',
         imageUrl: GAME_SELECTION_ASSETS.environment,
         effects: [
-            { id: 'm1', label: 'Pelle isolante', value: '+2 Pelle isolante', tone: 'positive' },
-            { id: 'm2', label: 'Sensi acuti', value: '-1 Sensi acuti', tone: 'negative' },
-            { id: 'm3', label: 'Respirazione efficiente', value: '-1 Respirazione efficiente', tone: 'negative' },
+            { id: 'm1', label: 'Pelle isolante', modifier: 2, value: '+2 Pelle isolante', tone: 'positive' },
+            { id: 'm2', label: 'Sensi acuti', modifier: -1, value: '-1 Sensi acuti', tone: 'negative' },
+            { id: 'm3', label: 'Respirazione efficiente', modifier: -1, value: '-1 Respirazione efficiente', tone: 'negative' },
+        ],
+    },
+    nextRoundEvent: {
+        id: 'PROLONGED_ECLIPSE',
+        title: 'Eclissi prolungata',
+        description: 'Luce minima e orientamento instabile.',
+        imageUrl: GAME_SELECTION_ASSETS.environment,
+        effects: [
+            { id: 'n1', label: 'Sensi acuti', modifier: 2, value: '+2 Sensi acuti', tone: 'positive' },
+            { id: 'n2', label: 'Mimetismo naturale', modifier: 1, value: '+1 Mimetismo naturale', tone: 'positive' },
+            { id: 'n3', label: 'Respirazione efficiente', modifier: -1, value: '-1 Respirazione efficiente', tone: 'negative' },
         ],
     },
     status: 'choosing',

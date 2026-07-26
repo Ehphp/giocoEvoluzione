@@ -126,6 +126,25 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(viewModel.roundEvent.effects.length).toBeGreaterThan(0)
     })
 
+    it('maps the next event and all of its non-zero modifiers in strategic order', () => {
+        const nextEvent = createEvent({
+            id: 'NEXT_EVENT',
+            title: 'Evento successivo',
+            effects: [
+                { trait: 'STRENGTH', modifier: -1, reason: 'Test -1' },
+                { trait: 'RESISTANCE', modifier: 0, reason: 'Test 0' },
+                { trait: 'AGILITY', modifier: 1, reason: 'Test +1' },
+                { trait: 'PERCEPTION', modifier: 2, reason: 'Test +2' },
+                { trait: 'METABOLISM', modifier: -2, reason: 'Test -2' },
+            ],
+        })
+        const viewModel = build(createSnapshot({ nextRoundEvent: nextEvent }))
+
+        expect(viewModel.nextRoundEvent?.title).toBe('Evento successivo')
+        expect(viewModel.nextRoundEvent?.effects.map((effect) => effect.modifier)).toEqual([2, 1, -1, -2])
+        expect(viewModel.nextRoundEvent?.effects.some((effect) => effect.modifier === 0)).toBe(false)
+    })
+
     it('maps owned genes from real trait collection', () => {
         const viewModel = build(createSnapshot())
 
@@ -183,30 +202,51 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(viewModel.canUse).toBe(true)
     })
 
-    it('selects the first gene by default when no selectedGeneId is provided', () => {
+    it('selects the strongest legally usable gene by default', () => {
         const viewModel = build(createSnapshot(), { selectedGeneId: null })
 
         expect(viewModel.selectedGene).not.toBeNull()
-        expect(viewModel.selectedGeneId).toBe(viewModel.genes[0]?.id)
+        expect(viewModel.selectedGeneId).toBe(viewModel.genes.at(-1)?.id)
+        expect(viewModel.selectedGeneId).toBe('AGILITY')
     })
 
-    it('produces all 10 genes from valid traits', () => {
+    it('produces all 10 genes ordered from weakest to strongest immediate USE', () => {
         const snapshot = createSnapshot()
         const viewModel = build(snapshot)
 
         expect(viewModel.genes.length).toBe(10)
-        expect(viewModel.genes.map((gene) => gene.traitType)).toEqual([
-            'STRENGTH',
-            'RESISTANCE',
-            'AGILITY',
-            'PERCEPTION',
-            'METABOLISM',
-            'ADAPTATION',
-            'GRIP_CLAWS',
-            'CAMOUFLAGE',
-            'WEBBED_LIMBS',
-            'FAT_RESERVES',
-        ])
+        expect(viewModel.genes[0]?.traitType).toBe('WEBBED_LIMBS')
+        expect(viewModel.genes.at(-1)?.traitType).toBe('AGILITY')
+
+        const obtainableValues = viewModel.genes.map((gene) => (
+            gene.usable ? gene.prediction?.useScore ?? Number.NEGATIVE_INFINITY : Number.NEGATIVE_INFINITY
+        ))
+        expect(obtainableValues).toEqual([...obtainableValues].sort((a, b) => a - b))
+    })
+
+    it('uses level then stable alphabetical order to break equal-value ties', () => {
+        const snapshot = createSnapshot({
+            currentRoundEvent: createEvent({
+                effects: [
+                    { trait: 'STRENGTH', modifier: -1, reason: 'Compensa il livello.' },
+                ],
+            }),
+        })
+        snapshot.me!.traits.STRENGTH.level = 1
+        snapshot.me!.traits.ADAPTATION.level = 0
+        snapshot.me!.traits.CAMOUFLAGE.level = 0
+
+        const viewModel = build(snapshot, { selectedGeneId: null })
+        const zeroValueGenes = viewModel.genes.filter((gene) => gene.usable && gene.prediction?.useScore === 0)
+        const strengthIndex = zeroValueGenes.findIndex((gene) => gene.traitType === 'STRENGTH')
+        const adaptationIndex = zeroValueGenes.findIndex((gene) => gene.traitType === 'ADAPTATION')
+
+        expect(strengthIndex).toBeGreaterThan(adaptationIndex)
+
+        const levelZeroNames = zeroValueGenes
+            .filter((gene) => gene.level === 0)
+            .map((gene) => gene.name)
+        expect(levelZeroNames).toEqual([...levelZeroNames].sort((a, b) => b.localeCompare(a, 'it')))
     })
 
     it('keeps all 10 genes available when event has no effects', () => {
@@ -217,6 +257,15 @@ describe('buildGeneSelectionV2ViewModel', () => {
 
         expect(viewModel.genes.length).toBe(10)
         expect(viewModel.genes.every((gene) => gene.affinity === 'medium')).toBe(true)
+    })
+
+    it('keeps cooldown genes in the calculated slider order but disables them', () => {
+        const viewModel = build(createSnapshot(), { selectedGeneId: null })
+        const cooldownGene = viewModel.genes.find((gene) => gene.traitType === 'WEBBED_LIMBS')
+
+        expect(viewModel.genes).toContain(cooldownGene)
+        expect(cooldownGene?.usable).toBe(false)
+        expect(viewModel.selectedGeneId).not.toBe('WEBBED_LIMBS')
     })
 
     it('marks snapshot as invalid when round event sequence is empty', () => {
@@ -315,9 +364,30 @@ describe('buildGeneSelectionV2ViewModel', () => {
             game: createGame({ current_round: 2 }),
             currentRoundEvent: getRoundEventById('PROLONGED_ECLIPSE'),
         })
+        snapshot.me!.traits.AGILITY.level = 0
         const viewModel = build(snapshot)
 
         expect(viewModel.round.current).toBe(2)
         expect(viewModel.roundEvent.id).toBe('PROLONGED_ECLIPSE')
+        expect(viewModel.genes.at(-1)?.traitType).toBe('PERCEPTION')
+    })
+
+    it('reorders the slider and opens on the new best gene when the round changes', () => {
+        const firstRound = createSnapshot()
+        firstRound.me!.traits.AGILITY.level = 0
+        const firstViewModel = build(firstRound, { selectedGeneId: null })
+
+        const secondRound = createSnapshot({
+            game: createGame({ current_round: 2 }),
+            currentRoundEvent: getRoundEventById('PROLONGED_ECLIPSE'),
+        })
+        secondRound.me!.traits.AGILITY.level = 0
+        const secondViewModel = build(secondRound, { selectedGeneId: null })
+
+        expect(firstViewModel.genes.map((gene) => gene.id)).not.toEqual(
+            secondViewModel.genes.map((gene) => gene.id),
+        )
+        expect(firstViewModel.selectedGeneId).toBe('RESISTANCE')
+        expect(secondViewModel.selectedGeneId).toBe('PERCEPTION')
     })
 })

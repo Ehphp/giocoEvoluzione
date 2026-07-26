@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import type { GeneCardV2 } from '../types'
 
@@ -25,15 +25,7 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
     return 'Bassa affinità'
 }
 
-function wrapIndex(index: number, total: number): number {
-    if (total === 0) {
-        return 0
-    }
-
-    return (index + total) % total
-}
-
-const VISIBLE_CARD_OFFSETS = [-1, 0, 1]
+const VISIBLE_CARD_COUNT = 3
 const HOLD_DELAY_MS = 240
 
 function formatContribution(value: number): string {
@@ -79,6 +71,7 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
 
 function GeneCard({
     gene,
+    buttonRef,
     isSelected,
     isSide,
     disabled,
@@ -89,6 +82,7 @@ function GeneCard({
     onPredictionKeyUp,
 }: {
     gene: GeneCardV2
+    buttonRef: (element: HTMLButtonElement | null) => void
     isSelected: boolean
     isSide: boolean
     disabled: boolean
@@ -102,6 +96,7 @@ function GeneCard({
 
     return (
         <button
+            ref={buttonRef}
             type="button"
             role="option"
             className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${isSide ? 'is-side' : ''} ${gene.usable ? '' : 'is-cooldown'}`}
@@ -150,13 +145,48 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
     const total = genes.length
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
     const [previewGeneId, setPreviewGeneId] = useState<string | null>(null)
+    const [isReordering, setIsReordering] = useState(false)
     const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const previousOrderRef = useRef(genes.map((gene) => gene.id).join('|'))
+    const cardRefs = useRef(new Map<string, HTMLButtonElement>())
+    const orderSignature = genes.map((gene) => gene.id).join('|')
+    const visibleIndices = useMemo(() => {
+        const visibleCount = Math.min(VISIBLE_CARD_COUNT, total)
+        const start = Math.min(
+            Math.max(0, selectedIndex - 1),
+            Math.max(0, total - visibleCount),
+        )
+
+        return Array.from({ length: visibleCount }, (_, index) => start + index)
+    }, [selectedIndex, total])
 
     useEffect(() => () => clearHoldTimer(), [])
 
     useEffect(() => {
         closePrediction()
     }, [selectedGeneId])
+
+    useEffect(() => {
+        const selectedCard = cardRefs.current.get(selectedGeneId)
+
+        selectedCard?.scrollIntoView?.({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+        })
+    }, [orderSignature, selectedGeneId])
+
+    useEffect(() => {
+        if (previousOrderRef.current === orderSignature) {
+            return
+        }
+
+        previousOrderRef.current = orderSignature
+        setIsReordering(true)
+        const timer = setTimeout(() => setIsReordering(false), 260)
+
+        return () => clearTimeout(timer)
+    }, [orderSignature])
 
     function clearHoldTimer() {
         if (holdTimerRef.current) {
@@ -201,16 +231,12 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
         return null
     }
 
-    const visibleOffsets = total >= VISIBLE_CARD_OFFSETS.length
-        ? VISIBLE_CARD_OFFSETS
-        : Array.from({ length: total }, (_, index) => index - selectedIndex)
-
     function selectByOffset(offset: number) {
         if (disableSelection) {
             return
         }
 
-        const nextIndex = wrapIndex(selectedIndex + offset, total)
+        const nextIndex = Math.min(total - 1, Math.max(0, selectedIndex + offset))
         const nextGene = genes[nextIndex]
 
         if (nextGene && nextGene.id !== selectedGeneId) {
@@ -233,7 +259,10 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
         : null
 
     return (
-        <section className="selector-v2" aria-label="Selettore geni">
+        <section
+            className={`selector-v2 ${isReordering ? 'is-reordering' : ''}`}
+            aria-label="Selettore geni ordinato dal gene più debole al più forte"
+        >
             {previewGene ? <GenePredictionPopover gene={previewGene} /> : null}
 
             <div className="selector-v2-header">
@@ -241,28 +270,34 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                 <span className="selector-v2-sr-only">Gene {selectedIndex + 1} di {total}</span>
             </div>
 
-            <div className="selector-v2-carousel" role="listbox" aria-label="Card geni">
+            <div className="selector-v2-carousel" role="listbox" aria-label="Card geni, da più debole a più forte">
                 <button
                     type="button"
                     className="selector-v2-arrow selector-v2-arrow--prev"
                     onClick={() => selectByOffset(-1)}
                     aria-label="Gene precedente"
-                    disabled={disableSelection}
+                    disabled={disableSelection || selectedIndex === 0}
                 >
                     ‹
                 </button>
 
                 <div className="selector-v2-rail">
-                    {visibleOffsets.map((offset) => {
-                        const geneIndex = wrapIndex(selectedIndex + offset, total)
+                    {visibleIndices.map((geneIndex) => {
                         const gene = genes[geneIndex]
 
                         return (
                             <GeneCard
-                                key={`${gene.id}-${offset}`}
+                                key={gene.id}
                                 gene={gene}
-                                isSelected={offset === 0}
-                                isSide={offset !== 0}
+                                buttonRef={(element) => {
+                                    if (element) {
+                                        cardRefs.current.set(gene.id, element)
+                                    } else {
+                                        cardRefs.current.delete(gene.id)
+                                    }
+                                }}
+                                isSelected={geneIndex === selectedIndex}
+                                isSide={geneIndex !== selectedIndex}
                                 disabled={disableSelection}
                                 onClick={() => selectByIndex(geneIndex)}
                                 onHoldStart={(event) => startPredictionHold(gene, event)}
@@ -279,7 +314,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                     className="selector-v2-arrow selector-v2-arrow--next"
                     onClick={() => selectByOffset(1)}
                     aria-label="Gene successivo"
-                    disabled={disableSelection}
+                    disabled={disableSelection || selectedIndex === total - 1}
                 >
                     ›
                 </button>

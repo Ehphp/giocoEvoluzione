@@ -26,6 +26,7 @@ export interface RoundInfoV2 {
 export interface RoundEventEffectV2 {
     id: string
     label: string
+    modifier: number
     value: string
     tone: ModifierToneV2
 }
@@ -68,6 +69,7 @@ export interface GeneSelectionViewModelV2 {
     opponent: DuelPlayerV2
     round: RoundInfoV2
     roundEvent: RoundEventV2
+    nextRoundEvent: RoundEventV2 | null
     genes: GeneCardV2[]
     selectedGeneId: string | null
     selectedAction: GeneActionTypeV2 | null
