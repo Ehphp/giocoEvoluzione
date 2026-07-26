@@ -12,7 +12,7 @@ describe('scoring with expanded trait catalog', () => {
     it('positive +2 event modifier and level 0 gives value 2', () => {
         const traits = createInitialTraits()
 
-        expect(getTraitRoundValue(flood, traits, 'WEBBED_LIMBS')).toBe(2)
+        expect(getTraitRoundValue(flood, traits, 'GRIP_CLAWS')).toBe(2)
     })
 
     it('negative event modifier with high level remains valid', () => {
@@ -56,7 +56,7 @@ describe('scoring with expanded trait catalog', () => {
             player1Traits: secondary,
             player2Traits: primary,
             player1Action: { playerId: 'p1', trait: 'CAMOUFLAGE', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'AGILITY', actionType: 'USE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
         expect(result.player1.roundValue).toBe(2)
@@ -72,7 +72,7 @@ describe('scoring with expanded trait catalog', () => {
             player1Traits: secondary,
             player2Traits: primary,
             player1Action: { playerId: 'p1', trait: 'CAMOUFLAGE', actionType: 'USE' },
-            player2Action: { playerId: 'p2', trait: 'AGILITY', actionType: 'USE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
         expect(result.player1.roundValue).toBe(3)

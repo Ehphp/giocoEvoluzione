@@ -165,7 +165,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const viewModel = build(createSnapshot())
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
 
-        expect(agility?.affinity).toBe('medium')
+        expect(agility?.affinity).toBe('low')
     })
 
     it('maps the exact predicted use score and its contributions', () => {
@@ -174,15 +174,15 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
 
         expect(resistance?.prediction).toMatchObject({
-            useScore: 2,
+            useScore: 1,
             levelContribution: 0,
-            eventContribution: 2,
+            eventContribution: 1,
         })
-        expect(resistance?.prediction?.reasons[0]).toContain('pelle isolante')
+        expect(resistance?.prediction?.reasons[0]).toContain('particolato')
         expect(agility?.prediction).toMatchObject({
-            useScore: 2,
+            useScore: 1,
             levelContribution: 2,
-            eventContribution: 0,
+            eventContribution: -1,
         })
     })
 
@@ -207,7 +207,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
 
         expect(viewModel.selectedGene).not.toBeNull()
         expect(viewModel.selectedGeneId).toBe(viewModel.genes.at(-1)?.id)
-        expect(viewModel.selectedGeneId).toBe('AGILITY')
+        expect(viewModel.selectedGeneId).toBe('FAT_RESERVES')
     })
 
     it('produces all 10 genes ordered from weakest to strongest immediate USE', () => {
@@ -216,7 +216,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
 
         expect(viewModel.genes.length).toBe(10)
         expect(viewModel.genes[0]?.traitType).toBe('WEBBED_LIMBS')
-        expect(viewModel.genes.at(-1)?.traitType).toBe('AGILITY')
+        expect(viewModel.genes.at(-1)?.traitType).toBe('FAT_RESERVES')
 
         const obtainableValues = viewModel.genes.map((gene) => (
             gene.usable ? gene.prediction?.useScore ?? Number.NEGATIVE_INFINITY : Number.NEGATIVE_INFINITY
@@ -369,7 +369,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
 
         expect(viewModel.round.current).toBe(2)
         expect(viewModel.roundEvent.id).toBe('PROLONGED_ECLIPSE')
-        expect(viewModel.genes.at(-1)?.traitType).toBe('PERCEPTION')
+        expect(viewModel.genes.at(-1)?.traitType).toBe('ADAPTATION')
     })
 
     it('reorders the slider and opens on the new best gene when the round changes', () => {
@@ -387,7 +387,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(firstViewModel.genes.map((gene) => gene.id)).not.toEqual(
             secondViewModel.genes.map((gene) => gene.id),
         )
-        expect(firstViewModel.selectedGeneId).toBe('RESISTANCE')
-        expect(secondViewModel.selectedGeneId).toBe('PERCEPTION')
+        expect(firstViewModel.selectedGeneId).toBe('FAT_RESERVES')
+        expect(secondViewModel.selectedGeneId).toBe('ADAPTATION')
     })
 })

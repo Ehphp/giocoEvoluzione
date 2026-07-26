@@ -13,9 +13,11 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-volcanic-ash-wave',
         tags: ['placeholder', 'abrasion', 'air-quality'],
         effects: [
-            { trait: 'RESISTANCE', modifier: 2, reason: 'La pelle isolante limita danni da particolato.' },
-            { trait: 'FAT_RESERVES', modifier: 1, reason: 'Le riserve energetiche sostengono il corpo durante l esposizione prolungata alla cenere.' },
-            { trait: 'PERCEPTION', modifier: -1, reason: 'La cenere sospesa riduce lettura del territorio.' },
+            { trait: 'FAT_RESERVES', modifier: 2, reason: 'Le riserve energetiche sostengono la sopravvivenza quando la cenere interrompe il foraggiamento.' },
+            { trait: 'RESISTANCE', modifier: 1, reason: 'La tolleranza fisiologica riduce i danni causati dal particolato abrasivo.' },
+            { trait: 'METABOLISM', modifier: 1, reason: 'La regolazione metabolica limita il consumo di risorse durante l esposizione prolungata.' },
+            { trait: 'AGILITY', modifier: -1, reason: 'I movimenti rapidi sollevano altra cenere e aumentano l esposizione.' },
+            { trait: 'PERCEPTION', modifier: -1, reason: 'La cenere sospesa riduce la lettura del territorio.' },
         ],
     },
     {
@@ -28,9 +30,9 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-prolonged-eclipse',
         tags: ['placeholder', 'darkness'],
         effects: [
-            { trait: 'PERCEPTION', modifier: 2, reason: 'I sensi acuti mantengono vantaggio in scarsa luce.' },
-            { trait: 'CAMOUFLAGE', modifier: 1, reason: 'L ombra diffusa migliora occultamento.' },
-            { trait: 'METABOLISM', modifier: -1, reason: 'Il buio prolungato altera i ritmi energetici piu efficienti alla luce.' },
+            { trait: 'ADAPTATION', modifier: 2, reason: 'La plasticita fenotipica permette di compensare rapidamente il lungo ciclo di oscurita.' },
+            { trait: 'GRIP_CLAWS', modifier: 1, reason: 'Una presa stabile rende piu sicuri gli spostamenti quando i riferimenti visivi scompaiono.' },
+            { trait: 'METABOLISM', modifier: -1, reason: 'Il buio prolungato altera i ritmi energetici regolati dalla luce.' },
         ],
     },
     {
@@ -43,10 +45,10 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-predator-pack-migration',
         tags: ['placeholder', 'predators', 'threat'],
         effects: [
-            { trait: 'AGILITY', modifier: 2, reason: 'La fuga rapida riduce esposizione agli inseguimenti.' },
-            { trait: 'CAMOUFLAGE', modifier: 1, reason: 'Il mimetismo riduce la probabilita di essere individuati dai predatori.' },
-            { trait: 'STRENGTH', modifier: 1, reason: 'La muscolatura compatta aiuta a respingere gli assalti ravvicinati.' },
-            { trait: 'FAT_RESERVES', modifier: -1, reason: 'Maggiore massa penalizza cambi direzione rapidi.' },
+            { trait: 'STRENGTH', modifier: 2, reason: 'La forza muscolare consente di respingere gli assalti ravvicinati del branco.' },
+            { trait: 'AGILITY', modifier: 1, reason: 'Cambi di direzione rapidi aiutano a spezzare gli inseguimenti.' },
+            { trait: 'PERCEPTION', modifier: 1, reason: 'I sensi acuti anticipano l avvicinamento coordinato dei predatori.' },
+            { trait: 'CAMOUFLAGE', modifier: 1, reason: 'Il mimetismo riduce la probabilita di essere individuati dal branco.' },
         ],
     },
     {
@@ -60,6 +62,7 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         tags: ['placeholder', 'temperature', 'stress'],
         effects: [
             { trait: 'METABOLISM', modifier: 2, reason: 'Gestione energetica piu efficiente sotto stress termico.' },
+            { trait: 'ADAPTATION', modifier: 1, reason: 'La plasticita fenotipica facilita una risposta rapida al calore persistente.' },
             { trait: 'WEBBED_LIMBS', modifier: 1, reason: 'Aree umide residue favoriscono mobilita anfibia.' },
             { trait: 'FAT_RESERVES', modifier: -1, reason: 'Accumulo adiposo peggiora dissipazione del calore.' },
         ],
@@ -75,9 +78,8 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         tags: ['placeholder', 'food', 'scarcity'],
         effects: [
             { trait: 'METABOLISM', modifier: 2, reason: 'Un metabolismo efficiente riduce il consumo energetico durante la scarsita nutritiva.' },
-            { trait: 'FAT_RESERVES', modifier: 1, reason: 'Le riserve adipose sostengono la creatura durante la scarsita prolungata.' },
             { trait: 'ADAPTATION', modifier: 1, reason: 'Plasticita utile per cambiare dieta rapidamente.' },
-            { trait: 'STRENGTH', modifier: -1, reason: 'Mantenere massa muscolare richiede energia rara.' },
+            { trait: 'WEBBED_LIMBS', modifier: -1, reason: 'Arti specializzati per l acqua offrono poco vantaggio quando le risorse alimentari terrestri collassano.' },
         ],
     },
     {
@@ -90,10 +92,11 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-flash-flood',
         tags: ['placeholder', 'water', 'mobility'],
         effects: [
-            { trait: 'WEBBED_LIMBS', modifier: 2, reason: 'Gli arti palmati dominano i tratti sommersi.' },
-            { trait: 'GRIP_CLAWS', modifier: 1, reason: 'Presa su appigli instabili durante la corrente.' },
+            { trait: 'GRIP_CLAWS', modifier: 2, reason: 'Una presa salda sugli appigli evita di essere trascinati dalla corrente.' },
             { trait: 'STRENGTH', modifier: 1, reason: 'La forza aiuta a resistere alla spinta della corrente.' },
+            { trait: 'WEBBED_LIMBS', modifier: 1, reason: 'Gli arti palmati migliorano la propulsione nei tratti sommersi.' },
             { trait: 'AGILITY', modifier: -1, reason: 'Movimenti elastici e leggeri perdono efficacia nell acqua impetuosa.' },
+            { trait: 'FAT_RESERVES', modifier: -1, reason: 'La massa delle riserve adipose rallenta le correzioni contro una corrente improvvisa.' },
         ],
     },
 ]

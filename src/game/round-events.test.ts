@@ -89,40 +89,43 @@ describe('round event deck', () => {
         expect(playerOneView?.id).toBe(playerTwoView?.id)
     })
 
-    it('keeps stable event and trait IDs with the controlled affinity matrix', () => {
+    it('keeps stable event and trait IDs with approved catalog-0226', () => {
         const expectedMatrix = {
             VOLCANIC_ASH_WAVE: [
-                ['RESISTANCE', 2],
-                ['FAT_RESERVES', 1],
+                ['FAT_RESERVES', 2],
+                ['RESISTANCE', 1],
+                ['METABOLISM', 1],
+                ['AGILITY', -1],
                 ['PERCEPTION', -1],
             ],
             PROLONGED_ECLIPSE: [
-                ['PERCEPTION', 2],
-                ['CAMOUFLAGE', 1],
+                ['ADAPTATION', 2],
+                ['GRIP_CLAWS', 1],
                 ['METABOLISM', -1],
             ],
             PREDATOR_PACK_MIGRATION: [
-                ['AGILITY', 2],
+                ['STRENGTH', 2],
+                ['AGILITY', 1],
+                ['PERCEPTION', 1],
                 ['CAMOUFLAGE', 1],
-                ['STRENGTH', 1],
-                ['FAT_RESERVES', -1],
             ],
             HEAT_SPIKE: [
                 ['METABOLISM', 2],
+                ['ADAPTATION', 1],
                 ['WEBBED_LIMBS', 1],
                 ['FAT_RESERVES', -1],
             ],
             NUTRIENT_COLLAPSE: [
                 ['METABOLISM', 2],
-                ['FAT_RESERVES', 1],
                 ['ADAPTATION', 1],
-                ['STRENGTH', -1],
+                ['WEBBED_LIMBS', -1],
             ],
             FLASH_FLOOD: [
-                ['WEBBED_LIMBS', 2],
-                ['GRIP_CLAWS', 1],
+                ['GRIP_CLAWS', 2],
                 ['STRENGTH', 1],
+                ['WEBBED_LIMBS', 1],
                 ['AGILITY', -1],
+                ['FAT_RESERVES', -1],
             ],
         } as const
 
@@ -147,7 +150,7 @@ describe('round event deck', () => {
         }
     })
 
-    it('shares METABOLISM +2 across heat and nutrient events without changing the alternatives', () => {
+    it('implements the approved duplicated primaries and per-event constraints', () => {
         const heatEffects = getRoundEventById('HEAT_SPIKE').effects
         const nutrientEffects = getRoundEventById('NUTRIENT_COLLAPSE').effects
 
@@ -157,9 +160,21 @@ describe('round event deck', () => {
         }))
         expect(nutrientEffects).toEqual([
             expect.objectContaining({ trait: 'METABOLISM', modifier: 2 }),
-            expect.objectContaining({ trait: 'FAT_RESERVES', modifier: 1 }),
             expect.objectContaining({ trait: 'ADAPTATION', modifier: 1 }),
-            expect.objectContaining({ trait: 'STRENGTH', modifier: -1 }),
+            expect.objectContaining({ trait: 'WEBBED_LIMBS', modifier: -1 }),
         ])
+
+        const primaryCounts = new Map<string, number>()
+
+        for (const event of ROUND_EVENT_DEFINITIONS) {
+            const primaries = event.effects.filter((effect) => effect.modifier === 2)
+            expect(primaries).toHaveLength(1)
+            primaryCounts.set(
+                primaries[0].trait,
+                (primaryCounts.get(primaries[0].trait) ?? 0) + 1,
+            )
+        }
+
+        expect(Math.max(...primaryCounts.values())).toBeLessThanOrEqual(2)
     })
 })

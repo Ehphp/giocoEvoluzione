@@ -15,7 +15,7 @@ describe('game engine', () => {
         const traits = createInitialTraits()
         traits.RESISTANCE.level = 2
 
-        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(4)
+        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(3)
     })
 
     it('keeps round resolution aligned with the shared validated helper', () => {

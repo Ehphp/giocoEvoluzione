@@ -77,26 +77,26 @@ describe('frontend and persisted Edge resolution parity', () => {
     it.each([
         {
             label: 'level 0 with +2 affinity',
-            trait: 'RESISTANCE' as const,
+            trait: 'FAT_RESERVES' as const,
             traits: createInitialTraits(),
             expected: 2,
         },
         {
             label: 'level 2 with neutral affinity',
-            trait: 'AGILITY' as const,
-            traits: withTraitState('AGILITY', { level: 2 }),
+            trait: 'STRENGTH' as const,
+            traits: withTraitState('STRENGTH', { level: 2 }),
             expected: 2,
         },
         {
             label: 'level 1 with +1 affinity',
-            trait: 'FAT_RESERVES' as const,
-            traits: withTraitState('FAT_RESERVES', { level: 1 }),
+            trait: 'RESISTANCE' as const,
+            traits: withTraitState('RESISTANCE', { level: 1 }),
             expected: 2,
         },
         {
             label: 'level 3 with +2 affinity',
-            trait: 'RESISTANCE' as const,
-            traits: withTraitState('RESISTANCE', { level: 3 }),
+            trait: 'FAT_RESERVES' as const,
+            traits: withTraitState('FAT_RESERVES', { level: 3 }),
             expected: 5,
         },
     ])('uses level + modifier for $label', ({ trait, traits, expected }) => {

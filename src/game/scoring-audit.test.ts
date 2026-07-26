@@ -52,8 +52,8 @@ describe('scoring audit scenarios', () => {
     it('bonus positivo su tratto favorito', () => {
         const result = playRound({
             eventId: 'PREDATOR_PACK_MIGRATION',
-            player1Action: { trait: 'AGILITY', actionType: 'USE' },
-            player2Action: { trait: 'STRENGTH', actionType: 'USE' },
+            player1Action: { trait: 'STRENGTH', actionType: 'USE' },
+            player2Action: { trait: 'AGILITY', actionType: 'USE' },
         })
 
         expect(result.player1.roundValue).toBe(2)

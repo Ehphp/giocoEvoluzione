@@ -67,7 +67,7 @@ describe('round flow with event sequence', () => {
             player2Id: 'p2',
             player1Traits: createInitialTraits(),
             player2Traits: createInitialTraits(),
-            player1Action: { playerId: 'p1', trait: 'WEBBED_LIMBS', actionType: 'USE' },
+            player1Action: { playerId: 'p1', trait: 'GRIP_CLAWS', actionType: 'USE' },
             player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
