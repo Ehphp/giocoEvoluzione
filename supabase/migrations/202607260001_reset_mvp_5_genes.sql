@@ -1,9 +1,12 @@
--- Development-only destructive five-gene cutover. It is self-contained so
--- `supabase db reset --local` and the remote SQL Editor use the same baseline.
+-- Generated development-only destructive reset. Do not edit manually.
+-- Sources: supabase/schema.sql and supabase/generated/game-rules.sql.
 drop schema if exists public cascade;
 create schema public;
 grant usage on schema public to postgres, anon, authenticated, service_role;
 grant all on schema public to postgres, service_role;
+
+-- Five-gene MVP baseline. This file is intentionally destructive only when used
+-- through the reset procedure documented in README.md.
 create extension if not exists pgcrypto;
 
 create or replace function public.set_updated_at()
@@ -27,8 +30,7 @@ create table public.players (
 create table public.round_actions (
   id uuid primary key default gen_random_uuid(), game_id uuid not null references public.games(id) on delete cascade,
   round_number integer not null check (round_number between 1 and 6), player_id text not null references public.players(id) on delete cascade,
-  trait text not null check (trait in ('RESILIENCE', 'MOBILITY', 'SENSES', 'METABOLISM', 'AQUATIC')),
-  action_type text not null check (action_type in ('USE', 'EVOLVE')), created_at timestamptz not null default timezone('utc', now()),
+  trait text not null, action_type text not null check (action_type in ('USE', 'EVOLVE')), created_at timestamptz not null default timezone('utc', now()),
   unique (game_id, round_number, player_id)
 );
 create table public.round_results (
@@ -55,15 +57,38 @@ create index idx_round_actions_lookup on public.round_actions(game_id, round_num
 do $$ begin if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if; end $$;
 alter publication supabase_realtime add table public.games, public.players, public.round_actions, public.round_results;
 
-create or replace function public.initial_traits() returns jsonb language sql immutable as $$
+-- Apply supabase/generated/game-rules.sql immediately after this baseline.
+
+-- Generated from shared/game-rules/catalog.ts. Do not edit manually.
+
+create or replace function public.initial_traits()
+returns jsonb language sql immutable as $$
   select jsonb_build_object(
-    'RESILIENCE', jsonb_build_object('level', 0, 'cooldown', 0), 'MOBILITY', jsonb_build_object('level', 0, 'cooldown', 0),
-    'SENSES', jsonb_build_object('level', 0, 'cooldown', 0), 'METABOLISM', jsonb_build_object('level', 0, 'cooldown', 0),
-    'AQUATIC', jsonb_build_object('level', 0, 'cooldown', 0));
+      'RESILIENCE', jsonb_build_object('level', 0, 'cooldown', 0),
+      'MOBILITY', jsonb_build_object('level', 0, 'cooldown', 0),
+      'SENSES', jsonb_build_object('level', 0, 'cooldown', 0),
+      'METABOLISM', jsonb_build_object('level', 0, 'cooldown', 0),
+      'AQUATIC', jsonb_build_object('level', 0, 'cooldown', 0)
+  );
 $$;
-create or replace function public.generate_round_event_sequence() returns jsonb language sql as $$
-  select jsonb_agg(event_id) from (select event_id from unnest(array['VOLCANIC_ASH_WAVE','PROLONGED_ECLIPSE','PREDATOR_PACK_MIGRATION','HEAT_SPIKE','NUTRIENT_COLLAPSE','FLASH_FLOOD']::text[]) event_id order by random()) shuffled;
+
+alter table public.round_actions drop constraint if exists round_actions_trait_check;
+alter table public.round_actions add constraint round_actions_trait_check
+  check (trait in ('RESILIENCE', 'MOBILITY', 'SENSES', 'METABOLISM', 'AQUATIC'));
+
+create or replace function public.generate_round_event_sequence()
+returns jsonb language sql as $$
+  select jsonb_agg(event_id)
+  from (select event_id from unnest(array[
+      'VOLCANIC_ASH_WAVE',
+      'PROLONGED_ECLIPSE',
+      'PREDATOR_PACK_MIGRATION',
+      'HEAT_SPIKE',
+      'NUTRIENT_COLLAPSE',
+      'FLASH_FLOOD'
+    ]::text[]) event_id order by random()) shuffled;
 $$;
+
 create or replace function public.create_vs_bot_game(p_nickname text, p_player_id text)
 returns table (game_id uuid, room_code text, human_player_id text, bot_player_id text)
 language plpgsql security definer set search_path = public as $$

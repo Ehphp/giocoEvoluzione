@@ -13,6 +13,7 @@ di sviluppo; non esiste alcuna conversione dei dieci geni precedenti.
    `RESILIENCE`, `MOBILITY`, `SENSES`, `METABOLISM` e `AQUATIC`.
 
 La migrazione e' autosufficiente per rendere identica l'inizializzazione locale
-e remota. `supabase/schema.sql` e `supabase/generated/game-rules.sql` restano i
-baseline leggibili: il secondo e' generato dal catalogo TypeScript con
+e remota, ma e' generata: non modificarla a mano. `supabase/schema.sql` e
+`supabase/generated/game-rules.sql` restano i baseline leggibili; il secondo
+deriva dal catalogo TypeScript e la migrazione viene assemblata con
 `npm run rules:generate`.
