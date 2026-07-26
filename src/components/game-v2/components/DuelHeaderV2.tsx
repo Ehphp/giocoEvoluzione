@@ -1,8 +1,11 @@
-import type { DuelPlayerV2 } from '../types'
+import type { DuelPlayerV2, RoundInfoV2 } from '../types'
+import { RoundIndicatorV2 } from './RoundIndicatorV2'
 
 type DuelHeaderV2Props = {
     player: DuelPlayerV2
     opponent: DuelPlayerV2
+    round: RoundInfoV2
+    onLeaveSession: () => void
 }
 
 function statusLabel(status: DuelPlayerV2['status']): string {
@@ -52,12 +55,15 @@ function PlayerCard({
     )
 }
 
-export function DuelHeaderV2({ player, opponent }: DuelHeaderV2Props) {
+export function DuelHeaderV2({ player, opponent, round, onLeaveSession }: DuelHeaderV2Props) {
     return (
         <header className="duel-v2-header" aria-label="Stato competitivo giocatori">
             <PlayerCard player={player} role="Tu" variant="player" />
-            <span className="duel-v2-vs" aria-hidden="true">VS</span>
+            <RoundIndicatorV2 round={round} />
             <PlayerCard player={opponent} role="Avversario" variant="opponent" />
+            <button type="button" className="leave-button" onClick={onLeaveSession} aria-label="Esci dalla partita">
+                <span aria-hidden="true">×</span>
+            </button>
         </header>
     )
 }

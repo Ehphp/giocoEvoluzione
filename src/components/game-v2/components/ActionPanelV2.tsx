@@ -13,6 +13,7 @@ type ActionPanelV2Props = {
 function ActionButton({
     variant,
     label,
+    value,
     sublabel,
     disabled,
     isActive,
@@ -21,6 +22,7 @@ function ActionButton({
 }: {
     variant: 'use' | 'evolve'
     label: string
+    value: string
     sublabel: string
     disabled: boolean
     isActive: boolean
@@ -33,7 +35,7 @@ function ActionButton({
             className={`action-v2-btn action-v2-btn--${variant} ${isActive ? 'is-active' : ''} ${isSubmitting ? 'is-submitting' : ''}`}
             onClick={onClick}
             aria-pressed={isActive}
-            aria-label={`${label}. ${sublabel}`}
+            aria-label={`${label}, ${value}. ${sublabel}`}
             disabled={disabled}
         >
             <span className="action-v2-btn__icon" aria-hidden="true">
@@ -50,6 +52,7 @@ function ActionButton({
             </span>
             <span className="action-v2-btn__copy">
                 <span className="action-v2-btn__label">{label}</span>
+                <strong className="action-v2-btn__value">{value}</strong>
                 <span className="action-v2-btn__sublabel">{sublabel}</span>
             </span>
             <span className="action-v2-btn__arrow" aria-hidden="true">›</span>
@@ -72,13 +75,16 @@ export function ActionPanelV2({
 
     const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
     const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
+    const predictedPoints = selectedGene.prediction?.useScore
+    const eventContribution = selectedGene.prediction?.eventContribution ?? 0
+    const eventContributionLabel = `Evento ${eventContribution > 0 ? '+' : ''}${eventContribution}`
+    const useValue = predictedPoints === undefined ? '— PT' : `${predictedPoints} PT`
+    const evolveValue = canEvolve || isSubmitting ? `LV ${selectedGene.level + 1}` : 'MAX'
     const useSublabel = isSubmitting
         ? (selectedAction === 'USE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canUse
             ? (selectedGene.disabledReason ?? 'Non disponibile ora')
-            : selectedGene.prediction
-                ? `${selectedGene.prediction.useScore} pt previsti`
-                : 'Attiva il gene ora'
+            : eventContributionLabel
     const evolveSublabel = isSubmitting
         ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canEvolve
@@ -95,6 +101,7 @@ export function ActionPanelV2({
             <ActionButton
                 variant="use"
                 label={useLabel}
+                value={useValue}
                 sublabel={useSublabel}
                 disabled={!canUse || isSubmitting}
                 isActive={selectedAction === 'USE'}
@@ -106,6 +113,7 @@ export function ActionPanelV2({
             <ActionButton
                 variant="evolve"
                 label={evolveLabel}
+                value={evolveValue}
                 sublabel={evolveSublabel}
                 disabled={!canEvolve || isSubmitting}
                 isActive={selectedAction === 'EVOLVE'}

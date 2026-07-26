@@ -138,10 +138,14 @@ async function collectMetrics(send, viewport) {
         const selectors = [
             '.gene-selection-screen',
             '.screen-content',
+            '.duel-v2-header',
+            '.scene-v2-stage',
             '.event-v2-card',
             '.next-event-v2-section',
             '.next-event-v2-card',
             '.gene-selector-panel',
+            '.selector-v2-carousel',
+            '.selector-v2-rail',
             '.action-v2-panel',
             '.action-v2-btn--use',
             '.action-v2-btn--evolve',
@@ -172,6 +176,13 @@ async function collectMetrics(send, viewport) {
             innerHeight: window.innerHeight,
             documentScrollHeight: document.documentElement.scrollHeight,
             screenScrollHeight: document.querySelector('.gene-selection-screen')?.scrollHeight ?? null,
+            hasVerticalOverflow: document.documentElement.scrollHeight > window.innerHeight,
+            sceneViewportRatio: (() => {
+                const scene = document.querySelector('.scene-v2-stage')?.getBoundingClientRect()
+                return scene ? Math.round((scene.height / window.innerHeight) * 1000) / 10 : null
+            })(),
+            geneCardCount: document.querySelectorAll('.selector-v2-card').length,
+            railStart: document.querySelector('.selector-v2-rail')?.style.getPropertyValue('--rail-start') ?? null,
             scrollY: window.scrollY,
             boxes,
         }
@@ -379,20 +390,27 @@ async function run() {
             `${result.innerWidth}x${result.innerHeight}: `
             + `USA=${useButton?.fullyVisible ? 'visible' : 'hidden'}, `
             + `EVOLVI=${evolveButton?.fullyVisible ? 'visible' : 'hidden'}, `
+            + `overflow=${result.hasVerticalOverflow ? 'yes' : 'no'}, `
+            + `scene=${result.sceneViewportRatio}%, `
+            + `genes=${result.geneCardCount}, `
             + `screenHeight=${result.screenScrollHeight}`,
         )
     }
 
     await setViewport(send, VIEWPORTS[0])
     await evaluate(send, `(() => {
-        const dots = document.querySelectorAll('.selector-v2-dot')
-        dots[dots.length - 1]?.click()
+        const cards = document.querySelectorAll('.selector-v2-card')
+        cards[cards.length - 1]?.click()
     })()`)
     await delay(250)
 
     const lastGeneMetrics = await evaluate(send, `(() => {
         const screen = document.querySelector('.gene-selection-screen')?.getBoundingClientRect()
-        const activeDot = document.querySelector('.selector-v2-dot[aria-current="true"]')
+        const cards = document.querySelectorAll('.selector-v2-card')
+        const selectedCard = document.querySelector('.selector-v2-card[aria-selected="true"]')
+        const rail = document.querySelector('.selector-v2-rail')
+        const selectedRect = selectedCard?.getBoundingClientRect()
+        const selectedStyle = selectedCard ? getComputedStyle(selectedCard) : null
 
         return {
             innerWidth: window.innerWidth,
@@ -400,7 +418,22 @@ async function run() {
             documentScrollWidth: document.documentElement.scrollWidth,
             screenLeft: screen?.left ?? null,
             screenRight: screen?.right ?? null,
-            selectedLastGene: activeDot === document.querySelector('.selector-v2-dot:last-child'),
+            selectedLastGene: selectedCard === cards[cards.length - 1],
+            geneCardCount: cards.length,
+            railStart: rail?.style.getPropertyValue('--rail-start') ?? null,
+            railTransform: rail ? getComputedStyle(rail).transform : null,
+            selectedCardRect: selectedRect ? {
+                top: selectedRect.top,
+                bottom: selectedRect.bottom,
+                left: selectedRect.left,
+                right: selectedRect.right,
+            } : null,
+            selectedCardOpacity: selectedStyle?.opacity ?? null,
+            selectedCardVisibility: selectedStyle?.visibility ?? null,
+            selectedCardFullyVisible: selectedCard
+                ? selectedCard.getBoundingClientRect().left >= 0
+                    && selectedCard.getBoundingClientRect().right <= window.innerWidth
+                : false,
         }
     })()`)
     const lastGeneScreenshot = await send('Page.captureScreenshot', {
@@ -419,6 +452,8 @@ async function run() {
     )
 
     await setViewport(send, VIEWPORTS[1])
+    await evaluate(send, `document.querySelector('.selector-v2-card')?.click()`)
+    await delay(100)
     await evaluate(send, `document.querySelector('.action-v2-btn--use')?.click()`)
     await waitForSelector(send, '.round-result-screen', 30_000)
     await delay(1_500)

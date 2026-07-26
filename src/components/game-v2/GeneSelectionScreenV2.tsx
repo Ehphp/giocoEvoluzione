@@ -4,7 +4,6 @@ import { ActionPanelV2 } from './components/ActionPanelV2'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
 import { RoundEventPanelV2 } from './components/RoundEventPanelV2'
-import { RoundIndicatorV2 } from './components/RoundIndicatorV2'
 import { WaitingStateV2 } from './components/WaitingStateV2'
 
 import './GeneSelectionScreenV2.css'
@@ -84,12 +83,6 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             <div className="frame-scene-overlay frame-scene-overlay--top" aria-hidden="true" />
             <div className="frame-scene-overlay frame-scene-overlay--bottom" aria-hidden="true" />
             <div className="screen-content" data-testid="gene-v2-scroll-container">
-                <div className="top-actions">
-                    <button type="button" className="leave-button" onClick={onLeaveSession} aria-label="Esci dalla partita">
-                        Esci
-                    </button>
-                </div>
-
                 {viewModel.status === 'invalid' ? (
                     <div className="screen-main screen-main--centered">
                         <InvalidSessionMessage reason={viewModel.invalidReason} onLeaveSession={onLeaveSession} />
@@ -107,16 +100,19 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
 
                 {hasRenderableContent ? (
                     <>
-                        <div className="screen-top">
-                            <DuelHeaderV2 player={viewModel.player} opponent={viewModel.opponent} />
-                            <RoundIndicatorV2 round={viewModel.round} />
+                        <DuelHeaderV2
+                            player={viewModel.player}
+                            opponent={viewModel.opponent}
+                            round={viewModel.round}
+                            onLeaveSession={onLeaveSession}
+                        />
+
+                        <div className="scene-v2-stage">
                             <RoundEventPanelV2
                                 roundEvent={viewModel.roundEvent}
                                 nextRoundEvent={viewModel.nextRoundEvent}
                             />
                         </div>
-
-                        <div className="screen-middle" aria-hidden="true" />
 
                         <div className="bottom-sheet">
                             {viewModel.genes.length > 0 ? (

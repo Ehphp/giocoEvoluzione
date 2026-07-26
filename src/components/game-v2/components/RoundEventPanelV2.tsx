@@ -82,16 +82,16 @@ function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
     if (!roundEvent) {
         return (
             <section className="next-event-v2-section" aria-label="Prossimo evento">
-                <span className="next-event-v2-label">Prossimo evento</span>
-                <div className="next-event-v2-empty">Fine dell’ecosistema dopo questo round</div>
+                <div className="next-event-v2-empty">
+                    <span>PROSSIMO</span>
+                    <strong>Fine ecosistema</strong>
+                </div>
             </section>
         )
     }
 
     return (
         <section className="next-event-v2-section" aria-label="Prossimo evento">
-            <span className="next-event-v2-arrow" aria-hidden="true">↓</span>
-            <span className="next-event-v2-label">Prossimo evento</span>
             <button
                 ref={cardRef}
                 type="button"
@@ -102,12 +102,11 @@ function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
                 onClick={() => setIsOpen((current) => !current)}
                 onKeyDown={handleKeyDown}
             >
-                <EventArtwork roundEvent={roundEvent} />
                 <div className="next-event-v2-copy">
+                    <span>PROSSIMO</span>
                     <strong>{roundEvent.title}</strong>
-                    <span>{roundEvent.description}</span>
-                    <small>Tocca per vedere le affinità</small>
                 </div>
+                <span className="next-event-v2-chevron" aria-hidden="true">›</span>
                 {isOpen ? <NextEventDetails roundEvent={roundEvent} /> : null}
             </button>
         </section>
@@ -117,14 +116,12 @@ function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
 export function RoundEventPanelV2({ roundEvent, nextRoundEvent }: RoundEventPanelV2Props) {
     return (
         <div className="event-v2-stack">
-            <span className="event-v2-section-label">Evento corrente</span>
             <section className="event-v2-card" aria-label="Evento corrente">
                 <EventArtwork roundEvent={roundEvent} />
 
                 <div className="event-v2-copy">
-                    <span className="event-v2-eyebrow">Evento del round</span>
+                    <span className="event-v2-eyebrow">EVENTO ATTIVO</span>
                     <strong className="event-v2-title">{roundEvent.title}</strong>
-                    <p className="event-v2-description">{roundEvent.description}</p>
                     {roundEvent.effects.length > 0 ? (
                         <div className="event-v2-effects" aria-label="Effetti principali">
                             {roundEvent.effects.map((effect) => (

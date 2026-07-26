@@ -4,5 +4,17 @@
   "documentScrollWidth": 360,
   "screenLeft": 10,
   "screenRight": 350,
-  "selectedLastGene": true
+  "selectedLastGene": true,
+  "geneCardCount": 10,
+  "railStart": "7",
+  "railTransform": "matrix(1, 0, 0, 1, -746.659, 0)",
+  "selectedCardRect": {
+    "top": 607.5,
+    "bottom": 720.5,
+    "left": 236.24688720703125,
+    "right": 336.90313720703125
+  },
+  "selectedCardOpacity": "1",
+  "selectedCardVisibility": "visible",
+  "selectedCardFullyVisible": true
 }
