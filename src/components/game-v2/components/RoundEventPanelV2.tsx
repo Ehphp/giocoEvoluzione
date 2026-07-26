@@ -201,6 +201,9 @@ export function RoundEventPanelV2({ roundEvent, nextRoundEvent }: RoundEventPane
                         <div className="event-v2-effects" aria-label="Effetti principali">
                             {roundEvent.effects.map((effect) => (
                                 <span key={effect.id} className={`event-v2-chip is-${effect.tone}`}>
+                                    <span className="event-v2-chip__icon" aria-hidden="true">
+                                        {effect.tone === 'positive' ? '✦' : effect.tone === 'negative' ? '−' : '•'}
+                                    </span>
                                     {effect.value}
                                 </span>
                             ))}

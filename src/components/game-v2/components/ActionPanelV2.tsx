@@ -75,7 +75,7 @@ export function ActionPanelV2({
             <ActionButton
                 variant="use"
                 label={useLabel}
-                sublabel="Usa nel round"
+                sublabel="Attiva il gene ora"
                 disabled={!canUse || isSubmitting}
                 isActive={selectedAction === 'USE'}
                 isSubmitting={isSubmitting && selectedAction === 'USE'}

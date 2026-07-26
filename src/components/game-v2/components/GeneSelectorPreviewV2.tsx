@@ -26,7 +26,7 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
     return 'Bassa affinità'
 }
 
-const VISIBLE_CARD_COUNT = 3
+const VISIBLE_CARD_COUNT = 5
 const HOLD_DELAY_MS = 240
 
 function formatContribution(value: number): string {
@@ -155,12 +155,14 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
     const orderSignature = genes.map((gene) => gene.id).join('|')
     const visibleIndices = useMemo(() => {
         const visibleCount = Math.min(VISIBLE_CARD_COUNT, total)
-        const start = Math.min(
-            Math.max(0, selectedIndex - 1),
-            Math.max(0, total - visibleCount),
-        )
+        const selectedSlot = Math.floor(visibleCount / 2)
 
-        return Array.from({ length: visibleCount }, (_, index) => start + index)
+        // Keep the selected gene in the visual focal point even when it is
+        // first or last in the score ordering. Selection and arrow behaviour
+        // remain tied to the original sorted list.
+        return Array.from({ length: visibleCount }, (_, slot) => (
+            (selectedIndex + slot - selectedSlot + total) % total
+        ))
     }, [selectedIndex, total])
 
     useEffect(() => () => clearHoldTimer(), [])

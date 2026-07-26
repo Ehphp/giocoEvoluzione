@@ -2042,6 +2042,261 @@
   }
 }
 
+/* Bright, compact mobile arena: the illustrated creatures retain the central
+   stage while the decision UI follows the same clear vertical rhythm. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .gene-selection-screen {
+    --battle-scene-position: center 43%;
+    --battle-scene-scale: 1.12;
+    --battle-scene-translate-y: 0;
+    background: #174f42;
+  }
+
+  .frame-scene-overlay--top {
+    height: 37%;
+    background: linear-gradient(180deg, rgba(5, 37, 30, 0.52), rgba(5, 37, 30, 0.12) 66%, transparent);
+  }
+
+  .frame-scene-overlay--bottom {
+    height: 23%;
+    background: linear-gradient(0deg, rgba(5, 30, 24, 0.36), transparent);
+  }
+
+  .screen-content {
+    gap: 5px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+  }
+
+  .top-actions {
+    position: absolute;
+    z-index: 12;
+    top: calc(env(safe-area-inset-top, 0px) + 7px);
+    right: 9px;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .leave-button {
+    min-height: 32px;
+    padding: 5px 10px;
+    border-color: rgba(255, 255, 255, 0.38);
+    background: rgba(6, 44, 36, 0.72);
+    font-size: 0.59rem;
+  }
+
+  .screen-top {
+    gap: 6px;
+    margin-inline: 10px;
+  }
+
+  .duel-v2-header { gap: 7px; }
+
+  .duel-v2-card {
+    min-height: 66px;
+    padding: 7px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.54);
+    border-radius: 23px;
+    box-shadow: 0 8px 20px rgba(5, 40, 31, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  }
+
+  .duel-v2-card--player {
+    background: linear-gradient(135deg, #4bd47a, #177a55 78%);
+  }
+
+  .duel-v2-card--opponent {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    background: linear-gradient(135deg, #b864ed, #6435a8 78%);
+  }
+
+  .duel-v2-card--opponent .duel-v2-copy { order: 1; text-align: right; }
+  .duel-v2-card--opponent .duel-v2-score { order: 2; }
+  .duel-v2-card--opponent .duel-v2-avatar { order: 3; }
+
+  .duel-v2-avatar {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+    box-shadow: 0 4px 11px rgba(4, 28, 23, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  .duel-v2-name { font-size: 0.78rem; }
+  .duel-v2-status { font-size: 0.5rem; }
+  .duel-v2-role { font-size: 0.46rem; }
+  .duel-v2-score { min-width: 30px; min-height: 30px; border-radius: 10px; font-size: 0.76rem; }
+
+  .duel-v2-vs {
+    width: 40px;
+    height: 40px;
+    border-color: rgba(255, 244, 202, 0.95);
+    background: linear-gradient(180deg, #ffd768, #ec8f28 76%);
+    box-shadow: 0 0 18px rgba(255, 200, 78, 0.55), 0 6px 14px rgba(59, 41, 13, 0.3);
+    font-size: 0.74rem;
+  }
+
+  .round-v2-pill {
+    min-width: 132px;
+    padding: 6px 16px;
+    border-color: rgba(212, 239, 223, 0.52);
+    background: linear-gradient(180deg, #236454, #16483e);
+    box-shadow: 0 5px 12px rgba(4, 31, 25, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    font-size: 0.58rem;
+  }
+
+  .event-v2-stack { gap: 0; }
+  .event-v2-section-label { display: none; }
+
+  .event-v2-card {
+    width: min(100%, 370px);
+    min-height: 104px;
+    grid-template-columns: 102px minmax(0, 1fr);
+    gap: 10px;
+    align-self: center;
+    padding: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    border-radius: 25px;
+    background: linear-gradient(135deg, #fffdf4, #eee2c8);
+    box-shadow: 0 10px 24px rgba(5, 38, 29, 0.24), inset 0 1px 0 #fff;
+  }
+
+  .event-v2-art { min-height: 86px; border-radius: 18px; }
+  .event-v2-eyebrow { display: none; }
+  .event-v2-copy { gap: 4px; }
+  .event-v2-title { font-size: 0.94rem; -webkit-line-clamp: 1; }
+  .event-v2-description { font-size: 0.64rem; -webkit-line-clamp: 2; }
+  .event-v2-effects { gap: 5px; margin-top: 1px; }
+  .event-v2-chip { display: inline-flex; align-items: center; gap: 3px; padding: 4px 7px; font-size: 0.49rem; }
+  .event-v2-chip__icon { font-size: 0.62rem; line-height: 1; }
+
+  .next-event-v2-section {
+    top: calc(100% + 5px);
+    width: min(61%, 250px);
+    gap: 1px;
+  }
+
+  .next-event-v2-arrow { display: none; }
+  .next-event-v2-label { padding-top: 2px; font-size: 0.43rem; }
+  .next-event-v2-card { min-height: 38px; grid-template-columns: 32px minmax(0, 1fr); gap: 5px; padding: 3px; border-radius: 12px; }
+  .next-event-v2-card .event-v2-art { min-height: 30px; border-radius: 8px; }
+  .next-event-v2-copy strong { font-size: 0.55rem; }
+  .next-event-v2-copy span,
+  .next-event-v2-copy small { display: none; }
+
+  .screen-middle {
+    flex: 1 1 auto;
+    min-height: clamp(132px, 19svh, 184px);
+  }
+
+  .bottom-sheet {
+    width: calc(100% - 18px);
+    gap: 9px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 7px);
+  }
+
+  .gene-selector-panel {
+    padding: 8px 7px 5px;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    border-radius: 26px;
+    background: linear-gradient(180deg, #fffaf0, #ece0c5);
+    box-shadow: 0 12px 26px rgba(4, 32, 24, 0.28), inset 0 1px 0 #fff;
+  }
+
+  .selector-v2 { gap: 3px; }
+  .selector-v2-header { min-height: 23px; padding: 1px 7px; border: 0; background: transparent; box-shadow: none; }
+  .selector-v2-header::before, .selector-v2-header::after { width: 18px; }
+  .selector-v2-header strong { color: #40503d; font-size: 0.62rem; letter-spacing: 0.12em; text-shadow: none; }
+  .selector-v2-carousel, .selector-v2-rail { min-height: 150px; }
+  .selector-v2-carousel { display: block; }
+  .selector-v2-rail {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 5px 25px 6px;
+  }
+
+  .selector-v2-card,
+  .selector-v2-card.is-side {
+    height: 126px;
+    min-height: 126px;
+    gap: 3px;
+    padding: 7px 2px 5px;
+    border-radius: 14px;
+    opacity: 0.8;
+    transform: scale(0.96);
+  }
+
+  .selector-v2-card.is-selected {
+    height: 145px;
+    min-height: 145px;
+    padding-top: 8px;
+    border: 2px solid #77bf39;
+    transform: translateY(-3px) scale(1.035);
+    box-shadow: 0 0 0 3px rgba(189, 239, 86, 0.52), 0 11px 22px rgba(44, 95, 30, 0.27), inset 0 1px 0 #fff;
+  }
+
+  .selector-v2-card::before { height: 2px; }
+  .selector-v2-card.is-selected::after { top: 4px; right: 4px; width: 15px; height: 15px; border-width: 1px; font-size: 0.52rem; }
+  .selector-v2-icon, .selector-v2-card.is-selected .selector-v2-icon { width: 34px; height: 34px; border-radius: 11px; }
+  .selector-v2-card.is-selected .selector-v2-icon { width: 43px; height: 43px; }
+  .selector-v2-icon img { padding: 5px; }
+  .selector-v2-name, .selector-v2-card.is-selected .selector-v2-name { min-height: 2.15em; font-size: 0.48rem; line-height: 1.06; }
+  .selector-v2-card.is-selected .selector-v2-name { font-size: 0.57rem; }
+  .selector-v2-level { top: 29px; height: 17px; padding: 1px 3px; border-width: 1px; transform: translateX(2px); }
+  .selector-v2-card.is-selected .selector-v2-level { top: 36px; transform: translateX(5px); }
+  .selector-v2-level small { font-size: 0.29rem; }
+  .selector-v2-level b { font-size: 0.45rem; }
+  .selector-v2-affinity, .selector-v2-cooldown { min-height: 17px; padding: 2px 3px; font-size: 0.37rem; }
+  .selector-v2-hold-hint { display: none; }
+  .selector-v2-dots { min-height: 13px; gap: 2px; }
+  .selector-v2-dot { width: 15px; height: 15px; flex-basis: 15px; }
+  .selector-v2-dot::after { inset: 4px; }
+  .selector-v2-dot.is-active::after { inset: 2px; }
+
+  .selector-v2-arrow, .selector-v2-arrow--next {
+    top: 50%;
+    width: 31px;
+    height: 40px;
+    border: 2px solid rgba(255, 255, 255, 0.78);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #66b9ee, #2577c7);
+    color: #fff;
+    font-size: 1.45rem;
+    box-shadow: 0 5px 12px rgba(26, 84, 126, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+
+  .selector-v2-arrow--prev { left: -4px; }
+  .selector-v2-arrow--next { right: -4px; background: linear-gradient(180deg, #c980ee, #833ac7); }
+
+  .action-panel-shell.is-actions { padding: 0; }
+  .action-v2-panel { gap: 9px; }
+  .action-v2-btn {
+    min-height: 76px;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 7px;
+    padding: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 23px;
+    box-shadow: 0 9px 18px rgba(5, 31, 23, 0.32), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  .action-v2-btn--use { background: linear-gradient(145deg, #a3ec3c, #55bf19 70%, #359b16); }
+  .action-v2-btn--evolve { background: linear-gradient(145deg, #d186fb, #a444e1 70%, #7e2fbd); }
+  .action-v2-btn__icon { width: 36px; height: 36px; border-radius: 12px; }
+  .action-v2-btn__icon svg { width: 23px; height: 23px; }
+  .action-v2-btn__label { font-size: 0.88rem; }
+  .action-v2-btn__sublabel { overflow: visible; white-space: normal; font-size: 0.48rem; }
+  .action-v2-btn__arrow { display: none; }
+  .action-v2-btn:disabled { opacity: 0.48; filter: grayscale(0.45) saturate(0.58); }
+}
+
+@media (max-width: 390px) and (max-height: 850px) and (orientation: portrait) {
+  .screen-middle { min-height: clamp(116px, 16svh, 142px); }
+  .event-v2-card { min-height: 96px; grid-template-columns: 88px minmax(0, 1fr); }
+  .event-v2-art { min-height: 78px; }
+  .selector-v2-carousel, .selector-v2-rail { min-height: 142px; }
+  .selector-v2-card, .selector-v2-card.is-side { height: 118px; min-height: 118px; }
+  .selector-v2-card.is-selected { height: 136px; min-height: 136px; }
+  .action-v2-btn { min-height: 70px; }
+}
+
 /* On portrait phones the upcoming event lives in the scene spacer instead of
    increasing the document height. This keeps the primary actions in the first
    viewport while preserving the preview and its long-press interaction. */
