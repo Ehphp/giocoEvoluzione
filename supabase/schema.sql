@@ -51,6 +51,9 @@ grant usage on schema public to anon, authenticated;
 grant select, insert, update on all tables in schema public to anon, authenticated;
 grant usage, select on all sequences in schema public to anon, authenticated;
 grant execute on all functions in schema public to anon, authenticated;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
 
 do $$ begin if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if; end $$;
 alter publication supabase_realtime add table public.games, public.players, public.round_actions, public.round_results;
