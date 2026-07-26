@@ -25,7 +25,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 1. Crea un progetto Supabase.
 2. Apri SQL Editor.
-3. Esegui il contenuto di `supabase/schema.sql`.
+3. Per il reset distruttivo dell ambiente di sviluppo, esegui nell ordine: `supabase/migrations/202607260001_reset_mvp_5_genes.sql`, `supabase/schema.sql`, poi `supabase/generated/game-rules.sql`.
 4. Lo schema abilita anche la publication Realtime per `games`, `players`, `round_actions` e `round_results`.
 5. Se stai usando un progetto già esistente, verifica comunque in Database > Replication che le quattro tabelle siano presenti.
 

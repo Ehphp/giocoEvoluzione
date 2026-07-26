@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "rules:generate": "node --experimental-strip-types tools/generate-game-rules-sql.ts",
+    "rules:check": "node --experimental-strip-types tools/generate-game-rules-sql.ts --check",
+    "audit:core": "node --experimental-strip-types tools/audit-core-check.ts",
+    "audit:exact": "node --experimental-strip-types tools/audit-exact.ts",
+    "audit:report": "node --experimental-strip-types tools/audit-report.ts",
+    "audit:search": "node --experimental-strip-types tools/audit-search.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
