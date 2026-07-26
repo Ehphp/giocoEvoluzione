@@ -161,23 +161,23 @@ function mapRoundEvent(roundEvent: RoundEventDefinition, includeAllEffects = fal
     }
 }
 
-function compareGenesWeakestFirst(a: GeneCardV2, b: GeneCardV2): number {
+function compareGenesStrongestFirst(a: GeneCardV2, b: GeneCardV2): number {
     // A gene that cannot legally be used has no immediately obtainable USE value.
     // It stays in the slider, sorted deterministically with the other unavailable genes.
     const aValue = a.usable ? (a.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
     const bValue = b.usable ? (b.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
 
     if (aValue !== bValue) {
-        return aValue - bValue
+        return bValue - aValue
     }
 
     if (a.level !== b.level) {
-        return a.level - b.level
+        return b.level - a.level
     }
 
-    // The slider is weakest -> strongest. Reverse the alphabetical comparison so
-    // the alphabetically first gene wins an otherwise exact tie at the right edge.
-    const alphabetical = b.name.localeCompare(a.name, 'it')
+    // The slider is strongest -> weakest. Keep exact ties deterministic from
+    // the left edge without changing their actual predicted value.
+    const alphabetical = a.name.localeCompare(b.name, 'it')
 
     if (alphabetical !== 0) {
         return alphabetical
@@ -230,7 +230,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
             }
         })
         .filter((gene): gene is GeneCardV2 => gene !== null)
-        .sort(compareGenesWeakestFirst)
+        .sort(compareGenesStrongestFirst)
 }
 
 function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null): GeneCardV2 | null {
@@ -239,14 +239,14 @@ function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null)
     }
 
     if (selectedGeneId) {
-        return genes.find((gene) => gene.id === selectedGeneId) ?? genes.at(-1) ?? null
+        return genes.find((gene) => gene.id === selectedGeneId) ?? genes[0] ?? null
     }
 
-    return genes.at(-1) ?? null
+    return genes[0] ?? null
 }
 
 export function getBestTraitIdForSnapshot(snapshot: GameSnapshot): TraitType | null {
-    return buildGenes(snapshot).at(-1)?.traitType ?? null
+    return buildGenes(snapshot)[0]?.traitType ?? null
 }
 
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {

@@ -67,7 +67,7 @@ export function HomeScreen({
                 </div>
             ) : null}
 
-            <section className="home-entry" aria-label="Avvio partita multiplayer">
+            <section className="home-entry" aria-label="Avvio partita">
                 <label className="field home-entry__field" htmlFor="player-name">
                     <span>Il tuo nome</span>
                     <input
@@ -98,7 +98,7 @@ export function HomeScreen({
 
                 <div className="home-entry__join-block">
                     <label className="field home-entry__field" htmlFor="room-code">
-                        <span>Hai gia un codice?</span>
+                        <span>Hai già un codice?</span>
                         <input
                             id="room-code"
                             value={roomCode}

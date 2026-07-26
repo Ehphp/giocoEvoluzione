@@ -1,6 +1,8 @@
+import type { GeneCardV2 } from '../types'
+
 type ActionPanelV2Props = {
     selectedAction: 'USE' | 'EVOLVE' | null
-    selectedGeneName: string | null
+    selectedGene: GeneCardV2 | null
     canUse: boolean
     canEvolve: boolean
     isSubmitting: boolean
@@ -31,6 +33,7 @@ function ActionButton({
             className={`action-v2-btn action-v2-btn--${variant} ${isActive ? 'is-active' : ''} ${isSubmitting ? 'is-submitting' : ''}`}
             onClick={onClick}
             aria-pressed={isActive}
+            aria-label={`${label}. ${sublabel}`}
             disabled={disabled}
         >
             <span className="action-v2-btn__icon" aria-hidden="true">
@@ -56,26 +59,43 @@ function ActionButton({
 
 export function ActionPanelV2({
     selectedAction,
-    selectedGeneName,
+    selectedGene,
     canUse,
     canEvolve,
     isSubmitting,
     onUseAction,
     onEvolveAction,
 }: ActionPanelV2Props) {
-    if (!selectedGeneName) {
+    if (!selectedGene) {
         return null
     }
 
     const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
     const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
+    const useSublabel = isSubmitting && selectedAction === 'USE'
+        ? 'Invio della scelta'
+        : !canUse
+            ? (selectedGene.disabledReason ?? 'Non disponibile ora')
+            : selectedGene.prediction
+                ? `${selectedGene.prediction.useScore} pt previsti`
+                : 'Attiva il gene ora'
+    const evolveSublabel = isSubmitting && selectedAction === 'EVOLVE'
+        ? 'Invio della scelta'
+        : !canEvolve
+            ? 'Livello massimo raggiunto'
+            : `Porta al livello ${selectedGene.level + 1}`
 
     return (
-        <section className="action-v2-panel" aria-label="Azioni disponibili" data-testid="gene-action-panel">
+        <section
+            className="action-v2-panel"
+            aria-label={`Azioni per ${selectedGene.name}`}
+            aria-busy={isSubmitting}
+            data-testid="gene-action-panel"
+        >
             <ActionButton
                 variant="use"
                 label={useLabel}
-                sublabel="Attiva il gene ora"
+                sublabel={useSublabel}
                 disabled={!canUse || isSubmitting}
                 isActive={selectedAction === 'USE'}
                 isSubmitting={isSubmitting && selectedAction === 'USE'}
@@ -86,7 +106,7 @@ export function ActionPanelV2({
             <ActionButton
                 variant="evolve"
                 label={evolveLabel}
-                sublabel="Aumenta il livello"
+                sublabel={evolveSublabel}
                 disabled={!canEvolve || isSubmitting}
                 isActive={selectedAction === 'EVOLVE'}
                 isSubmitting={isSubmitting && selectedAction === 'EVOLVE'}

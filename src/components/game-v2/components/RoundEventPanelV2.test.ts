@@ -1,6 +1,6 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { RoundEventV2 } from '../types'
 import { RoundEventPanelV2 } from './RoundEventPanelV2'
@@ -23,13 +23,8 @@ const nextEvent: RoundEventV2 = {
     ],
 }
 
-function dispatchPointer(element: Element, type: string, init: { pointerId?: number; clientY?: number } = {}) {
+function dispatchPointer(element: Element, type: string) {
     const event = new Event(type, { bubbles: true, cancelable: true })
-    Object.defineProperties(event, {
-        button: { value: 0 },
-        pointerId: { value: init.pointerId ?? 1 },
-        clientY: { value: init.clientY ?? 100 },
-    })
     element.dispatchEvent(event)
 }
 
@@ -38,7 +33,6 @@ describe('RoundEventPanelV2 next event preview', () => {
     let root: Root
 
     beforeEach(() => {
-        vi.useFakeTimers()
         container = document.createElement('div')
         document.body.append(container)
         root = createRoot(container)
@@ -53,7 +47,6 @@ describe('RoundEventPanelV2 next event preview', () => {
     afterEach(() => {
         act(() => root.unmount())
         container.remove()
-        vi.useRealTimers()
     })
 
     it('keeps the next event visible in a dedicated compact card', () => {
@@ -65,46 +58,34 @@ describe('RoundEventPanelV2 next event preview', () => {
         expect(card?.getAttribute('aria-expanded')).toBe('false')
     })
 
-    it('opens only after a long press and closes on release', () => {
+    it('opens on tap, exposes every modifier, and closes on a second tap', () => {
         const card = container.querySelector('.next-event-v2-card')!
 
-        act(() => {
-            dispatchPointer(card, 'pointerdown')
-            vi.advanceTimersByTime(419)
-        })
-        expect(container.querySelector('.next-event-v2-popover')).toBeNull()
-
-        act(() => vi.advanceTimersByTime(1))
+        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
         const modifiers = [...container.querySelectorAll('.next-event-v2-modifier b')].map((node) => node.textContent)
         expect(modifiers).toEqual(['+2', '+1', '-1'])
+        expect(card.getAttribute('aria-expanded')).toBe('true')
 
-        act(() => dispatchPointer(card, 'pointerup'))
+        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
         expect(container.querySelector('.next-event-v2-popover')).toBeNull()
+        expect(card.getAttribute('aria-expanded')).toBe('false')
     })
 
-    it('closes the preview on swipe down', () => {
-        const card = container.querySelector('.next-event-v2-card')!
+    it('closes the preview with Escape and returns focus to its trigger', () => {
+        const card = container.querySelector<HTMLButtonElement>('.next-event-v2-card')!
 
-        act(() => {
-            dispatchPointer(card, 'pointerdown', { clientY: 100 })
-            vi.advanceTimersByTime(420)
-        })
+        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
         expect(container.querySelector('.next-event-v2-popover')).not.toBeNull()
 
-        act(() => dispatchPointer(card, 'pointermove', { clientY: 150 }))
+        act(() => card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
         expect(container.querySelector('.next-event-v2-popover')).toBeNull()
+        expect(document.activeElement).toBe(card)
     })
 
-    it('closes an accessible preview when the player taps outside', () => {
+    it('closes the preview when the player taps outside', () => {
         const card = container.querySelector('.next-event-v2-card')!
 
-        act(() => {
-            card.dispatchEvent(new KeyboardEvent('keydown', {
-                key: 'Enter',
-                bubbles: true,
-                cancelable: true,
-            }))
-        })
+        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
         expect(container.querySelector('.next-event-v2-popover')).not.toBeNull()
 
         act(() => dispatchPointer(document.body, 'pointerdown'))

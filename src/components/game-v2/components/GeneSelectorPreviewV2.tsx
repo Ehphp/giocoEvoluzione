@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { BASE_USE_VALUE } from '../../../game/config'
 import type { GeneCardV2 } from '../types'
 
@@ -26,8 +25,7 @@ function affinityLabel(affinity: GeneCardV2['affinity']): string {
     return 'Bassa affinità'
 }
 
-const VISIBLE_CARD_COUNT = 5
-const HOLD_DELAY_MS = 240
+const VISIBLE_CARD_COUNT = 3
 
 function formatContribution(value: number): string {
     return value > 0 ? `+${value}` : String(value)
@@ -43,7 +41,7 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
     }
 
     return (
-        <aside className="selector-v2-popover" role="tooltip" aria-live="polite">
+        <aside id="gene-prediction-details" className="selector-v2-popover" role="tooltip" aria-live="polite">
             <div className="selector-v2-popover__header">
                 <div>
                     <span>
@@ -67,7 +65,7 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
                         ? 'Questo evento non modifica il rendimento del gene.'
                         : 'Il punteggio include il modificatore dell evento.')}
             </p>
-            <small className="selector-v2-popover__hint">Rilascia per chiudere</small>
+            <small className="selector-v2-popover__hint">Tocca di nuovo il gene o fuori dal pannello per chiudere</small>
         </aside>
     )
 }
@@ -76,24 +74,18 @@ function GeneCard({
     gene,
     buttonRef,
     isSelected,
+    isPredictionOpen,
     isSide,
     disabled,
     onClick,
-    onHoldStart,
-    onHoldEnd,
-    onPredictionKeyDown,
-    onPredictionKeyUp,
 }: {
     gene: GeneCardV2
     buttonRef: (element: HTMLButtonElement | null) => void
     isSelected: boolean
+    isPredictionOpen: boolean
     isSide: boolean
     disabled: boolean
     onClick: () => void
-    onHoldStart: (event: ReactPointerEvent<HTMLButtonElement>) => void
-    onHoldEnd: () => void
-    onPredictionKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
-    onPredictionKeyUp: (event: KeyboardEvent<HTMLButtonElement>) => void
 }) {
     const [imageFailed, setImageFailed] = useState(false)
 
@@ -104,19 +96,10 @@ function GeneCard({
             role="option"
             className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${isSide ? 'is-side' : ''} ${gene.usable ? '' : 'is-cooldown'}`}
             aria-selected={isSelected}
-            aria-label={`${gene.name}, livello ${gene.level}${isSelected ? '. Tieni premuto per la previsione del punteggio' : ''}`}
+            aria-label={`${gene.name}, livello ${gene.level}${isSelected ? `. Tocca per ${isPredictionOpen ? 'chiudere' : 'vedere'} la previsione del punteggio` : ''}`}
+            aria-expanded={isSelected ? isPredictionOpen : undefined}
+            aria-describedby={isPredictionOpen ? 'gene-prediction-details' : undefined}
             onClick={onClick}
-            onPointerDown={onHoldStart}
-            onPointerUp={onHoldEnd}
-            onPointerLeave={onHoldEnd}
-            onPointerCancel={onHoldEnd}
-            onKeyDown={onPredictionKeyDown}
-            onKeyUp={onPredictionKeyUp}
-            onContextMenu={(event) => {
-                if (isSelected) {
-                    event.preventDefault()
-                }
-            }}
             disabled={disabled}
         >
             <div className="selector-v2-icon" role="img" aria-label={`Icona gene ${gene.name}`}>
@@ -149,27 +132,49 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
     const [previewGeneId, setPreviewGeneId] = useState<string | null>(null)
     const [isReordering, setIsReordering] = useState(false)
-    const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const selectorRef = useRef<HTMLElement | null>(null)
     const previousOrderRef = useRef(genes.map((gene) => gene.id).join('|'))
     const cardRefs = useRef(new Map<string, HTMLButtonElement>())
     const orderSignature = genes.map((gene) => gene.id).join('|')
     const visibleIndices = useMemo(() => {
         const visibleCount = Math.min(VISIBLE_CARD_COUNT, total)
         const selectedSlot = Math.floor(visibleCount / 2)
+        const start = Math.min(
+            Math.max(0, selectedIndex - selectedSlot),
+            Math.max(0, total - visibleCount),
+        )
 
-        // Keep the selected gene in the visual focal point even when it is
-        // first or last in the score ordering. Selection and arrow behaviour
-        // remain tied to the original sorted list.
-        return Array.from({ length: visibleCount }, (_, slot) => (
-            (selectedIndex + slot - selectedSlot + total) % total
-        ))
+        // Keep the slider linear from strongest to weakest. The selected gene
+        // occupies the visual focal point whenever there are cards on both
+        // sides; at either end the list remains naturally ordered.
+        return Array.from({ length: visibleCount }, (_, slot) => start + slot)
     }, [selectedIndex, total])
-
-    useEffect(() => () => clearHoldTimer(), [])
 
     useEffect(() => {
         closePrediction()
     }, [selectedGeneId])
+
+    useEffect(() => {
+        if (disableSelection) {
+            closePrediction()
+        }
+    }, [disableSelection])
+
+    useEffect(() => {
+        if (!previewGeneId) {
+            return
+        }
+
+        function handleOutsidePointerDown(event: PointerEvent) {
+            if (!selectorRef.current?.contains(event.target as Node)) {
+                closePrediction()
+            }
+        }
+
+        document.addEventListener('pointerdown', handleOutsidePointerDown, true)
+
+        return () => document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
+    }, [previewGeneId])
 
     useEffect(() => {
         const selectedCard = cardRefs.current.get(selectedGeneId)
@@ -193,43 +198,8 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
         return () => clearTimeout(timer)
     }, [orderSignature])
 
-    function clearHoldTimer() {
-        if (holdTimerRef.current) {
-            clearTimeout(holdTimerRef.current)
-            holdTimerRef.current = null
-        }
-    }
-
     function closePrediction() {
-        clearHoldTimer()
         setPreviewGeneId(null)
-    }
-
-    function startPredictionHold(gene: GeneCardV2, event: ReactPointerEvent<HTMLButtonElement>) {
-        if (gene.id !== selectedGeneId || event.button !== 0) {
-            return
-        }
-
-        clearHoldTimer()
-        holdTimerRef.current = setTimeout(() => {
-            setPreviewGeneId(gene.id)
-            holdTimerRef.current = null
-        }, HOLD_DELAY_MS)
-    }
-
-    function handlePredictionKeyDown(gene: GeneCardV2, event: KeyboardEvent<HTMLButtonElement>) {
-        if (gene.id !== selectedGeneId || (event.key !== 'Enter' && event.key !== ' ')) {
-            return
-        }
-
-        clearHoldTimer()
-        setPreviewGeneId(gene.id)
-    }
-
-    function handlePredictionKeyUp(event: KeyboardEvent<HTMLButtonElement>) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            closePrediction()
-        }
     }
 
     if (total === 0) {
@@ -265,8 +235,9 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
 
     return (
         <section
+            ref={selectorRef}
             className={`selector-v2 ${isReordering ? 'is-reordering' : ''}`}
-            aria-label="Selettore geni ordinato dal gene più debole al più forte"
+            aria-label="Selettore geni ordinato dal gene più forte al più debole"
         >
             {previewGene ? <GenePredictionPopover gene={previewGene} /> : null}
 
@@ -275,7 +246,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                 <span className="selector-v2-sr-only">Gene {selectedIndex + 1} di {total}</span>
             </div>
 
-            <div className="selector-v2-carousel" role="listbox" aria-label="Card geni, da più debole a più forte">
+            <div className="selector-v2-carousel" role="listbox" aria-label="Card geni, da più forte a più debole">
                 <button
                     type="button"
                     className="selector-v2-arrow selector-v2-arrow--prev"
@@ -302,13 +273,16 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                                     }
                                 }}
                                 isSelected={geneIndex === selectedIndex}
+                                isPredictionOpen={gene.id === previewGeneId}
                                 isSide={geneIndex !== selectedIndex}
                                 disabled={disableSelection}
-                                onClick={() => selectByIndex(geneIndex)}
-                                onHoldStart={(event) => startPredictionHold(gene, event)}
-                                onHoldEnd={closePrediction}
-                                onPredictionKeyDown={(event) => handlePredictionKeyDown(gene, event)}
-                                onPredictionKeyUp={handlePredictionKeyUp}
+                                onClick={() => {
+                                    if (geneIndex === selectedIndex) {
+                                        setPreviewGeneId((current) => current === gene.id ? null : gene.id)
+                                    } else {
+                                        selectByIndex(geneIndex)
+                                    }
+                                }}
                             />
                         )
                     })}
@@ -325,17 +299,16 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                 </button>
             </div>
 
-            <span className="selector-v2-hold-hint" aria-hidden="true">
-                Tieni premuto il gene selezionato per i dettagli
+            <span className="selector-v2-hold-hint">
+                Tocca il gene selezionato per punteggio e dettagli
             </span>
 
-            <div className="selector-v2-dots" role="tablist" aria-label="Posizione nel selettore geni">
+            <div className="selector-v2-dots" role="group" aria-label="Scelta rapida gene">
                 {genes.map((gene, index) => (
                     <button
                         key={gene.id}
                         type="button"
-                        role="tab"
-                        aria-selected={index === selectedIndex}
+                        aria-current={index === selectedIndex ? 'true' : undefined}
                         aria-label={`Seleziona ${gene.name}`}
                         className={`selector-v2-dot ${index === selectedIndex ? 'is-active' : ''}`}
                         onClick={() => selectByIndex(index)}

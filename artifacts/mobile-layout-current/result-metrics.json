@@ -1,0 +1,408 @@
+[
+  {
+    "screenshot": "result-current-360x800.png",
+    "requestedViewport": {
+      "width": 360,
+      "height": 800
+    },
+    "innerWidth": 360,
+    "innerHeight": 800,
+    "documentScrollHeight": 926,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 140.7,
+        "bottom": 916.8,
+        "left": 9,
+        "right": 351,
+        "width": 342,
+        "height": 776.1,
+        "fullyVisible": false
+      },
+      ".round-result-hero": {
+        "top": 140.7,
+        "bottom": 373.9,
+        "left": 9,
+        "right": 351,
+        "width": 342,
+        "height": 233.2,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 446.3,
+        "bottom": 847.1,
+        "left": 9,
+        "right": 351,
+        "width": 342,
+        "height": 400.8,
+        "fullyVisible": false
+      },
+      ".round-result-explanation": {
+        "top": 857.1,
+        "bottom": 912.8,
+        "left": 9,
+        "right": 351,
+        "width": 342,
+        "height": 55.7,
+        "fullyVisible": false
+      },
+      ".round-result-screen .primary-button": {
+        "top": 383.9,
+        "bottom": 436.3,
+        "left": 9,
+        "right": 351,
+        "width": 342,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-390x844.png",
+    "requestedViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "innerWidth": 390,
+    "innerHeight": 844,
+    "documentScrollHeight": 909,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 140.7,
+        "bottom": 899.9,
+        "left": 9,
+        "right": 381,
+        "width": 372,
+        "height": 759.3,
+        "fullyVisible": false
+      },
+      ".round-result-hero": {
+        "top": 140.7,
+        "bottom": 373.9,
+        "left": 9,
+        "right": 381,
+        "width": 372,
+        "height": 233.2,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 446.3,
+        "bottom": 847.1,
+        "left": 9,
+        "right": 381,
+        "width": 372,
+        "height": 400.8,
+        "fullyVisible": false
+      },
+      ".round-result-explanation": {
+        "top": 857.1,
+        "bottom": 895.9,
+        "left": 9,
+        "right": 381,
+        "width": 372,
+        "height": 38.8,
+        "fullyVisible": false
+      },
+      ".round-result-screen .primary-button": {
+        "top": 383.9,
+        "bottom": 436.3,
+        "left": 9,
+        "right": 381,
+        "width": 372,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-412x915.png",
+    "requestedViewport": {
+      "width": 412,
+      "height": 915
+    },
+    "innerWidth": 412,
+    "innerHeight": 915,
+    "documentScrollHeight": 915,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 140.7,
+        "bottom": 906,
+        "left": 9,
+        "right": 403,
+        "width": 394,
+        "height": 765.3,
+        "fullyVisible": true
+      },
+      ".round-result-hero": {
+        "top": 140.7,
+        "bottom": 373.9,
+        "left": 9,
+        "right": 403,
+        "width": 394,
+        "height": 233.2,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 446.3,
+        "bottom": 847.1,
+        "left": 9,
+        "right": 403,
+        "width": 394,
+        "height": 400.8,
+        "fullyVisible": true
+      },
+      ".round-result-explanation": {
+        "top": 857.1,
+        "bottom": 895.9,
+        "left": 9,
+        "right": 403,
+        "width": 394,
+        "height": 38.8,
+        "fullyVisible": true
+      },
+      ".round-result-screen .primary-button": {
+        "top": 383.9,
+        "bottom": 436.3,
+        "left": 9,
+        "right": 403,
+        "width": 394,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-430x932.png",
+    "requestedViewport": {
+      "width": 430,
+      "height": 932
+    },
+    "innerWidth": 430,
+    "innerHeight": 932,
+    "documentScrollHeight": 932,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 140.7,
+        "bottom": 923,
+        "left": 9,
+        "right": 421,
+        "width": 412,
+        "height": 782.3,
+        "fullyVisible": true
+      },
+      ".round-result-hero": {
+        "top": 140.7,
+        "bottom": 373.9,
+        "left": 9,
+        "right": 421,
+        "width": 412,
+        "height": 233.2,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 446.3,
+        "bottom": 847.1,
+        "left": 9,
+        "right": 421,
+        "width": 412,
+        "height": 400.8,
+        "fullyVisible": true
+      },
+      ".round-result-explanation": {
+        "top": 857.1,
+        "bottom": 895.9,
+        "left": 9,
+        "right": 421,
+        "width": 412,
+        "height": 38.8,
+        "fullyVisible": true
+      },
+      ".round-result-screen .primary-button": {
+        "top": 383.9,
+        "bottom": 436.3,
+        "left": 9,
+        "right": 421,
+        "width": 412,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-768x1024.png",
+    "requestedViewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "innerWidth": 768,
+    "innerHeight": 1024,
+    "documentScrollHeight": 1024,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 97.4,
+        "bottom": 1011,
+        "left": 167,
+        "right": 601,
+        "width": 434,
+        "height": 913.6,
+        "fullyVisible": true
+      },
+      ".round-result-hero": {
+        "top": 97.4,
+        "bottom": 263.3,
+        "left": 167,
+        "right": 601,
+        "width": 434,
+        "height": 166,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 335.7,
+        "bottom": 550.2,
+        "left": 167,
+        "right": 601,
+        "width": 434,
+        "height": 214.4,
+        "fullyVisible": true
+      },
+      ".round-result-explanation": {
+        "top": 560.2,
+        "bottom": 599,
+        "left": 167,
+        "right": 601,
+        "width": 434,
+        "height": 38.8,
+        "fullyVisible": true
+      },
+      ".round-result-screen .primary-button": {
+        "top": 273.3,
+        "bottom": 325.7,
+        "left": 167,
+        "right": 601,
+        "width": 434,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-844x390.png",
+    "requestedViewport": {
+      "width": 844,
+      "height": 390
+    },
+    "innerWidth": 844,
+    "innerHeight": 390,
+    "documentScrollHeight": 390,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 99.4,
+        "bottom": 589.5,
+        "left": 17,
+        "right": 827,
+        "width": 810,
+        "height": 490.1,
+        "fullyVisible": false
+      },
+      ".round-result-hero": {
+        "top": 99.4,
+        "bottom": 265.3,
+        "left": 17,
+        "right": 827,
+        "width": 810,
+        "height": 166,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 337.7,
+        "bottom": 536.6,
+        "left": 17,
+        "right": 827,
+        "width": 810,
+        "height": 198.9,
+        "fullyVisible": false
+      },
+      ".round-result-explanation": {
+        "top": 546.6,
+        "bottom": 585.5,
+        "left": 17,
+        "right": 827,
+        "width": 810,
+        "height": 38.8,
+        "fullyVisible": false
+      },
+      ".round-result-screen .primary-button": {
+        "top": 275.3,
+        "bottom": 327.7,
+        "left": 17,
+        "right": 827,
+        "width": 810,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "result-current-1440x900.png",
+    "requestedViewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "innerWidth": 1440,
+    "innerHeight": 900,
+    "documentScrollHeight": 900,
+    "hasHorizontalOverflow": false,
+    "boxes": {
+      ".round-result-screen": {
+        "top": 97.4,
+        "bottom": 887,
+        "left": 503,
+        "right": 937,
+        "width": 434,
+        "height": 789.6,
+        "fullyVisible": true
+      },
+      ".round-result-hero": {
+        "top": 97.4,
+        "bottom": 263.3,
+        "left": 503,
+        "right": 937,
+        "width": 434,
+        "height": 166,
+        "fullyVisible": true
+      },
+      ".round-result-cards": {
+        "top": 335.7,
+        "bottom": 550.2,
+        "left": 503,
+        "right": 937,
+        "width": 434,
+        "height": 214.4,
+        "fullyVisible": true
+      },
+      ".round-result-explanation": {
+        "top": 560.2,
+        "bottom": 599,
+        "left": 503,
+        "right": 937,
+        "width": 434,
+        "height": 38.8,
+        "fullyVisible": true
+      },
+      ".round-result-screen .primary-button": {
+        "top": 273.3,
+        "bottom": 325.7,
+        "left": 503,
+        "right": 937,
+        "width": 434,
+        "height": 52.4,
+        "fullyVisible": true
+      }
+    }
+  }
+]

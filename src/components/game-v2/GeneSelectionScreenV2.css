@@ -2368,3 +2368,137 @@
     min-height: clamp(68px, 10svh, 84px);
   }
 }
+
+/* Keep the current arena decision entirely inside the portrait viewport. This
+   must follow the compact legacy overrides above so the creature stage keeps
+   enough breathing room on short phones. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .gene-selection-screen { overflow-y: hidden; }
+  .next-event-v2-section { width: min(61%, 250px); gap: 1px; }
+  .next-event-v2-arrow { display: none; }
+  .next-event-v2-label { padding-top: 2px; font-size: 0.43rem; }
+  .next-event-v2-card { min-height: 38px; grid-template-columns: 32px minmax(0, 1fr); gap: 5px; padding: 3px; border-radius: 12px; }
+  .next-event-v2-card .event-v2-art { min-height: 30px; border-radius: 8px; }
+  .next-event-v2-copy strong { font-size: 0.55rem; }
+  .next-event-v2-copy span,
+  .next-event-v2-copy small { display: none; }
+  .screen-middle { flex-basis: auto; min-height: clamp(132px, 19svh, 184px); }
+}
+
+@media (max-width: 390px) and (max-height: 850px) and (orientation: portrait) {
+  .screen-middle { min-height: clamp(116px, 16svh, 142px); }
+}
+
+/* UX hardening: preserve readable labels and direct, conventional tap targets
+   without increasing the number of controls or changing game behavior. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .top-actions {
+    top: calc(env(safe-area-inset-top, 0px) + 72px);
+    right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .leave-button {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .duel-v2-role { font-size: 0.54rem; }
+  .duel-v2-status { font-size: 0.56rem; }
+  .event-v2-description { font-size: 0.68rem; }
+  .event-v2-chip { font-size: 0.56rem; }
+  .next-event-v2-label { font-size: 0.52rem; }
+  .next-event-v2-copy strong { font-size: 0.66rem; }
+
+  .selector-v2-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding-inline: 32px;
+  }
+
+  .selector-v2-name,
+  .selector-v2-card.is-selected .selector-v2-name {
+    font-size: 0.68rem;
+    line-height: 1.12;
+  }
+
+  .selector-v2-card.is-selected .selector-v2-name { font-size: 0.76rem; }
+  .selector-v2-level small { font-size: 0.42rem; }
+  .selector-v2-level b { font-size: 0.58rem; }
+
+  .selector-v2-affinity,
+  .selector-v2-cooldown {
+    min-height: 20px;
+    padding-inline: 5px;
+    font-size: 0.56rem;
+  }
+
+  .selector-v2-hold-hint {
+    display: block;
+    max-width: 100%;
+    color: #595b4c;
+    background: transparent;
+    font-size: 0.6rem;
+    line-height: 1.2;
+  }
+
+  .selector-v2-dots {
+    min-height: 24px;
+    gap: 1px;
+  }
+
+  .selector-v2-dot {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+  }
+
+  .selector-v2-dot::after { inset: 8px; }
+  .selector-v2-dot.is-active::after { inset: 6px; }
+  .action-v2-btn__sublabel { font-size: 0.64rem; }
+}
+
+@media (max-width: 359px) and (orientation: portrait) {
+  .selector-v2-rail {
+    gap: 4px;
+    padding-inline: 28px;
+  }
+
+  .selector-v2-name,
+  .selector-v2-card.is-selected .selector-v2-name { font-size: 0.62rem; }
+  .selector-v2-card.is-selected .selector-v2-name { font-size: 0.7rem; }
+  .selector-v2-affinity,
+  .selector-v2-cooldown { font-size: 0.51rem; }
+}
+
+.leave-button:focus-visible,
+.selector-v2-arrow:focus-visible,
+.selector-v2-dot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.action-v2-btn--use {
+  background: linear-gradient(145deg, #2f861b, #226416);
+}
+
+.action-v2-btn--evolve {
+  background: linear-gradient(145deg, #8534b8, #642096);
+}
+
+/* Tablet portrait keeps the stacked composition but reserves the lower third
+   for the decision controls instead of an oversized decorative scene spacer. */
+@media (min-width: 641px) and (max-width: 899px) and (orientation: portrait) {
+  .gene-selection-screen,
+  .screen-content {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .screen-middle {
+    flex: 1 1 140px;
+    min-height: 140px;
+  }
+}

@@ -3054,6 +3054,34 @@
   }
 }
 
+.button-row__reason {
+  flex-basis: 100%;
+  color: var(--ui-cream-muted, #6b695a);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.ghost-button:focus-visible {
+  outline: 3px solid var(--game-evolve);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero,
+  .round-result-hero,
+  .round-result-hero.is-revealing,
+  .round-result-hero__values,
+  .round-result-hero__values strong,
+  .round-result-cards,
+  .round-breakdown-card,
+  .creature-visual__image.is-changing {
+    animation: none;
+    transition: none;
+  }
+}
+
 .game-hud__exit:focus-visible,
 .competitive-header__exit:focus-visible,
 .home-entry__create:focus-visible,
@@ -3903,10 +3931,10 @@
   --ui-cream-light: #fffaf0;
   --ui-cream-text: #2f3126;
   --ui-cream-muted: #6b695a;
-  --ui-player: #68d91e;
-  --ui-player-dark: #38a900;
-  --ui-opponent: #b65bfa;
-  --ui-opponent-dark: #7d26c7;
+  --ui-player: #2f861b;
+  --ui-player-dark: #226416;
+  --ui-opponent: #8534b8;
+  --ui-opponent-dark: #642096;
   --ui-blue: #3d9be8;
   --ui-border: rgba(255, 255, 255, 0.5);
 }
@@ -4231,5 +4259,14 @@
   .home-screen {
     min-height: 0;
     align-content: start;
+  }
+}
+
+/* The home switches to two columns at tablet widths, so its containing panel
+   must grow with it. This follows the shared session skin that caps panels. */
+@media (min-width: 641px) {
+  .app-panel--home {
+    width: min(100%, 960px);
+    max-width: 960px;
   }
 }

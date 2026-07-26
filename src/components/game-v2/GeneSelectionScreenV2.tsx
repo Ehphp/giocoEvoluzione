@@ -55,7 +55,7 @@ function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; on
     return (
         <section className="state-message state-message--invalid" role="alert" aria-live="assertive">
             <strong>Sessione obsoleta</strong>
-            <p>{reason ?? 'La partita non e compatibile con questa versione.'}</p>
+            <p>{reason ?? 'La partita non è compatibile con questa versione.'}</p>
             <button type="button" className="leave-button leave-button--inline" onClick={onLeaveSession}>
                 Torna alla home
             </button>
@@ -66,7 +66,7 @@ function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; on
 export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession }: GeneSelectionScreenV2Props) {
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
-    const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes.at(-1)?.id ?? ''
+    const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
     const hasRenderableContent = viewModel.status !== 'invalid' && viewModel.status !== 'loading'
 
     return (
@@ -85,7 +85,7 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             <div className="frame-scene-overlay frame-scene-overlay--bottom" aria-hidden="true" />
             <div className="screen-content" data-testid="gene-v2-scroll-container">
                 <div className="top-actions">
-                    <button type="button" className="leave-button" onClick={onLeaveSession}>
+                    <button type="button" className="leave-button" onClick={onLeaveSession} aria-label="Esci dalla partita">
                         Esci
                     </button>
                 </div>
@@ -143,7 +143,7 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                 ) : (
                                     <ActionPanelV2
                                         selectedAction={viewModel.selectedAction}
-                                        selectedGeneName={viewModel.selectedGene?.name ?? null}
+                                        selectedGene={viewModel.selectedGene}
                                         canUse={viewModel.canUse}
                                         canEvolve={viewModel.canEvolve}
                                         isSubmitting={viewModel.status === 'submitting'}

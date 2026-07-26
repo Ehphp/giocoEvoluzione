@@ -31,38 +31,38 @@
       },
       ".event-v2-card": {
         "top": 117.3,
-        "bottom": 222.8,
+        "bottom": 226.8,
         "left": 20,
         "right": 340,
         "width": 320,
-        "height": 105.6,
+        "height": 109.5,
         "fullyVisible": true
       },
       ".next-event-v2-section": {
-        "top": 225.8,
-        "bottom": 291.7,
-        "left": 55.2,
-        "right": 304.8,
-        "width": 249.6,
-        "height": 65.8,
+        "top": 229.8,
+        "bottom": 279.1,
+        "left": 82.4,
+        "right": 277.6,
+        "width": 195.2,
+        "height": 49.3,
         "fullyVisible": true
       },
       ".next-event-v2-card": {
-        "top": 237.7,
-        "bottom": 291.7,
-        "left": 55.2,
-        "right": 304.8,
-        "width": 249.6,
-        "height": 54,
+        "top": 241.1,
+        "bottom": 279.1,
+        "left": 82.4,
+        "right": 277.6,
+        "width": 195.2,
+        "height": 38,
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 508,
+        "top": 476.5,
         "bottom": 714,
         "left": 19,
         "right": 341,
         "width": 322,
-        "height": 206,
+        "height": 237.5,
         "fullyVisible": true
       },
       ".action-v2-panel": {
@@ -126,38 +126,38 @@
       },
       ".event-v2-card": {
         "top": 117.3,
-        "bottom": 215.3,
+        "bottom": 226.8,
         "left": 20,
         "right": 370,
         "width": 350,
-        "height": 98,
+        "height": 109.5,
         "fullyVisible": true
       },
       ".next-event-v2-section": {
-        "top": 218.3,
-        "bottom": 284.1,
-        "left": 58.5,
-        "right": 331.5,
-        "width": 273,
-        "height": 65.8,
+        "top": 229.8,
+        "bottom": 279.1,
+        "left": 88.3,
+        "right": 301.8,
+        "width": 213.5,
+        "height": 49.3,
         "fullyVisible": true
       },
       ".next-event-v2-card": {
-        "top": 230.1,
-        "bottom": 284.1,
-        "left": 58.5,
-        "right": 331.5,
-        "width": 273,
-        "height": 54,
+        "top": 241.1,
+        "bottom": 279.1,
+        "left": 88.3,
+        "right": 301.8,
+        "width": 213.5,
+        "height": 38,
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 552,
+        "top": 520.5,
         "bottom": 758,
         "left": 19,
         "right": 371,
         "width": 352,
-        "height": 206,
+        "height": 237.5,
         "fullyVisible": true
       },
       ".action-v2-panel": {
@@ -185,6 +185,101 @@
         "right": 371,
         "width": 171.5,
         "height": 70,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-412x915.png",
+    "requestedViewport": {
+      "width": 412,
+      "height": 915
+    },
+    "innerWidth": 412,
+    "innerHeight": 915,
+    "documentScrollHeight": 915,
+    "screenScrollHeight": 970,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 915,
+        "left": 10,
+        "right": 402,
+        "width": 392,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 0,
+        "bottom": 915,
+        "left": 10,
+        "right": 402,
+        "width": 392,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 117.3,
+        "bottom": 226.8,
+        "left": 21,
+        "right": 391,
+        "width": 370,
+        "height": 109.5,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 231.8,
+        "bottom": 284.4,
+        "left": 92.5,
+        "right": 319.5,
+        "width": 226.9,
+        "height": 52.6,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 246.4,
+        "bottom": 284.4,
+        "left": 92.5,
+        "right": 319.5,
+        "width": 226.9,
+        "height": 38,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 576.5,
+        "bottom": 823,
+        "left": 19,
+        "right": 393,
+        "width": 374,
+        "height": 246.5,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 832,
+        "bottom": 908,
+        "left": 19,
+        "right": 393,
+        "width": 374,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 832,
+        "bottom": 908,
+        "left": 19,
+        "right": 201.5,
+        "width": 182.5,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 832,
+        "bottom": 908,
+        "left": 210.5,
+        "right": 393,
+        "width": 182.5,
+        "height": 76,
         "fullyVisible": true
       }
     }
@@ -221,38 +316,38 @@
       },
       ".event-v2-card": {
         "top": 117.3,
-        "bottom": 223.3,
+        "bottom": 226.8,
         "left": 30,
         "right": 400,
         "width": 370,
-        "height": 106,
+        "height": 109.5,
         "fullyVisible": true
       },
       ".next-event-v2-section": {
-        "top": 228.3,
-        "bottom": 278.9,
-        "left": 66.8,
-        "right": 363.2,
-        "width": 296.4,
-        "height": 50.6,
+        "top": 231.8,
+        "bottom": 284.4,
+        "left": 96.1,
+        "right": 333.9,
+        "width": 237.9,
+        "height": 52.6,
         "fullyVisible": true
       },
       ".next-event-v2-card": {
-        "top": 240.9,
-        "bottom": 278.9,
-        "left": 66.8,
-        "right": 363.2,
-        "width": 296.4,
+        "top": 246.4,
+        "bottom": 284.4,
+        "left": 96.1,
+        "right": 333.9,
+        "width": 237.9,
         "height": 38,
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 625,
+        "top": 593.5,
         "bottom": 840,
         "left": 19,
         "right": 411,
         "width": 392,
-        "height": 215,
+        "height": 246.5,
         "fullyVisible": true
       },
       ".action-v2-panel": {
@@ -280,6 +375,291 @@
         "right": 411,
         "width": 191.5,
         "height": 76,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-768x1024.png",
+    "requestedViewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "innerWidth": 768,
+    "innerHeight": 1024,
+    "documentScrollHeight": 1024,
+    "screenScrollHeight": 990,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 17,
+        "bottom": 1007,
+        "left": 154,
+        "right": 614,
+        "width": 460,
+        "height": 990,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 17,
+        "bottom": 1007,
+        "left": 154,
+        "right": 614,
+        "width": 460,
+        "height": 990,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 202.6,
+        "bottom": 314.6,
+        "left": 168,
+        "right": 600,
+        "width": 432,
+        "height": 112,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 319.6,
+        "bottom": 412.9,
+        "left": 232.8,
+        "right": 535.2,
+        "width": 302.4,
+        "height": 93.3,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 340.9,
+        "bottom": 412.9,
+        "left": 232.8,
+        "right": 535.2,
+        "width": 302.4,
+        "height": 72,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 610.5,
+        "bottom": 905,
+        "left": 162,
+        "right": 606,
+        "width": 444,
+        "height": 294.5,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 917,
+        "bottom": 997,
+        "left": 162,
+        "right": 606,
+        "width": 444,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 917,
+        "bottom": 997,
+        "left": 162,
+        "right": 379,
+        "width": 217,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 917,
+        "bottom": 997,
+        "left": 389,
+        "right": 606,
+        "width": 217,
+        "height": 80,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-844x390.png",
+    "requestedViewport": {
+      "width": 844,
+      "height": 390
+    },
+    "innerWidth": 844,
+    "innerHeight": 390,
+    "documentScrollHeight": 390,
+    "screenScrollHeight": 390,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 7,
+        "bottom": 397,
+        "left": 7,
+        "right": 837,
+        "width": 830,
+        "height": 390,
+        "fullyVisible": false
+      },
+      ".screen-content": {
+        "top": 7,
+        "bottom": 397,
+        "left": 7,
+        "right": 837,
+        "width": 830,
+        "height": 390,
+        "fullyVisible": false
+      },
+      ".event-v2-card": {
+        "top": 177,
+        "bottom": 290.3,
+        "left": 15,
+        "right": 376.8,
+        "width": 361.8,
+        "height": 113.3,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 295.3,
+        "bottom": 388.7,
+        "left": 69.3,
+        "right": 322.5,
+        "width": 253.3,
+        "height": 93.3,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 316.7,
+        "bottom": 388.7,
+        "left": 69.3,
+        "right": 322.5,
+        "width": 253.3,
+        "height": 72,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 59.5,
+        "bottom": 275.5,
+        "left": 386.8,
+        "right": 829,
+        "width": 442.2,
+        "height": 216,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 282.5,
+        "bottom": 344.5,
+        "left": 386.8,
+        "right": 829,
+        "width": 442.2,
+        "height": 62,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 282.5,
+        "bottom": 344.5,
+        "left": 386.8,
+        "right": 602.9,
+        "width": 216.1,
+        "height": 62,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 282.5,
+        "bottom": 344.5,
+        "left": 612.9,
+        "right": 829,
+        "width": 216.1,
+        "height": 62,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-1440x900.png",
+    "requestedViewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "innerWidth": 1440,
+    "innerHeight": 900,
+    "documentScrollHeight": 900,
+    "screenScrollHeight": 932,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 17,
+        "bottom": 917,
+        "left": 80,
+        "right": 1360,
+        "width": 1280,
+        "height": 900,
+        "fullyVisible": false
+      },
+      ".screen-content": {
+        "top": 17,
+        "bottom": 917,
+        "left": 80,
+        "right": 1360,
+        "width": 1280,
+        "height": 900,
+        "fullyVisible": false
+      },
+      ".event-v2-card": {
+        "top": 171.6,
+        "bottom": 297.6,
+        "left": 123.2,
+        "right": 553.2,
+        "width": 430,
+        "height": 126,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 302.6,
+        "bottom": 395.9,
+        "left": 187.7,
+        "right": 488.7,
+        "width": 301,
+        "height": 93.3,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 323.9,
+        "bottom": 395.9,
+        "left": 187.7,
+        "right": 488.7,
+        "width": 301,
+        "height": 72,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 481.5,
+        "bottom": 790,
+        "left": 796.8,
+        "right": 1316.8,
+        "width": 520,
+        "height": 308.5,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 805,
+        "bottom": 889,
+        "left": 796.8,
+        "right": 1316.8,
+        "width": 520,
+        "height": 84,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 805,
+        "bottom": 889,
+        "left": 796.8,
+        "right": 1051.8,
+        "width": 255,
+        "height": 84,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 805,
+        "bottom": 889,
+        "left": 1061.8,
+        "right": 1316.8,
+        "width": 255,
+        "height": 84,
         "fullyVisible": true
       }
     }

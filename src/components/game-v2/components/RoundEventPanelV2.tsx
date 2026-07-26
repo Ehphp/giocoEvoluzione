@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { KeyboardEvent } from 'react'
 
 import type { RoundEventV2 } from '../types'
 
@@ -7,10 +7,6 @@ type RoundEventPanelV2Props = {
     roundEvent: RoundEventV2
     nextRoundEvent: RoundEventV2 | null
 }
-
-const HOLD_DELAY_MS = 420
-const SWIPE_DOWN_THRESHOLD_PX = 42
-const HOLD_MOVE_TOLERANCE_PX = 12
 
 function EventArtwork({ roundEvent }: { roundEvent: RoundEventV2 }) {
     return (
@@ -45,7 +41,7 @@ function NextEventDetails({ roundEvent }: { roundEvent: RoundEventV2 }) {
                     </div>
                 ))}
             </div>
-            <small>Rilascia o scorri verso il basso per chiudere</small>
+            <small>Tocca di nuovo l’evento o fuori dal pannello per chiudere</small>
         </aside>
     )
 }
@@ -53,26 +49,10 @@ function NextEventDetails({ roundEvent }: { roundEvent: RoundEventV2 }) {
 function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
     const [isOpen, setIsOpen] = useState(false)
     const cardRef = useRef<HTMLButtonElement | null>(null)
-    const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const pointerIdRef = useRef<number | null>(null)
-    const startYRef = useRef(0)
-
-    function clearHoldTimer() {
-        if (holdTimerRef.current) {
-            clearTimeout(holdTimerRef.current)
-            holdTimerRef.current = null
-        }
-    }
 
     function closeDetails() {
-        clearHoldTimer()
-        pointerIdRef.current = null
         setIsOpen(false)
     }
-
-    useEffect(() => {
-        return () => clearHoldTimer()
-    }, [])
 
     useEffect(() => {
         if (!isOpen) {
@@ -85,56 +65,18 @@ function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
             }
         }
 
-        function handlePointerUp() {
-            closeDetails()
-        }
-
         document.addEventListener('pointerdown', handleOutsidePointerDown, true)
-        document.addEventListener('pointerup', handlePointerUp)
-        document.addEventListener('pointercancel', handlePointerUp)
 
         return () => {
             document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
-            document.removeEventListener('pointerup', handlePointerUp)
-            document.removeEventListener('pointercancel', handlePointerUp)
         }
     }, [isOpen])
 
-    function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
-        if (!roundEvent || event.button !== 0) {
-            return
-        }
-
-        clearHoldTimer()
-        pointerIdRef.current = event.pointerId
-        startYRef.current = event.clientY
-        holdTimerRef.current = setTimeout(() => {
-            setIsOpen(true)
-            holdTimerRef.current = null
-        }, HOLD_DELAY_MS)
-    }
-
-    function handlePointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
-        if (event.pointerId !== pointerIdRef.current) {
-            return
-        }
-
-        const verticalDistance = event.clientY - startYRef.current
-
-        if (isOpen && verticalDistance >= SWIPE_DOWN_THRESHOLD_PX) {
-            closeDetails()
-        } else if (!isOpen && Math.abs(verticalDistance) >= HOLD_MOVE_TOLERANCE_PX) {
-            clearHoldTimer()
-        }
-    }
-
     function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-        if (!roundEvent || (event.key !== 'Enter' && event.key !== ' ')) {
-            return
+        if (event.key === 'Escape') {
+            closeDetails()
+            cardRef.current?.focus()
         }
-
-        event.preventDefault()
-        setIsOpen(true)
     }
 
     if (!roundEvent) {
@@ -154,31 +96,17 @@ function NextEventCard({ roundEvent }: { roundEvent: RoundEventV2 | null }) {
                 ref={cardRef}
                 type="button"
                 className="next-event-v2-card"
-                aria-label={`Prossimo evento: ${roundEvent.title}. Tieni premuto per i modificatori`}
+                aria-label={`Prossimo evento: ${roundEvent.title}. Tocca per ${isOpen ? 'chiudere' : 'vedere'} i modificatori`}
                 aria-describedby={isOpen ? 'next-event-details' : undefined}
                 aria-expanded={isOpen}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={closeDetails}
-                onPointerCancel={closeDetails}
-                onPointerLeave={() => {
-                    if (!isOpen) {
-                        clearHoldTimer()
-                    }
-                }}
+                onClick={() => setIsOpen((current) => !current)}
                 onKeyDown={handleKeyDown}
-                onKeyUp={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        closeDetails()
-                    }
-                }}
-                onContextMenu={(event) => event.preventDefault()}
             >
                 <EventArtwork roundEvent={roundEvent} />
                 <div className="next-event-v2-copy">
                     <strong>{roundEvent.title}</strong>
                     <span>{roundEvent.description}</span>
-                    <small>Tieni premuto per vedere le affinità</small>
+                    <small>Tocca per vedere le affinità</small>
                 </div>
                 {isOpen ? <NextEventDetails roundEvent={roundEvent} /> : null}
             </button>

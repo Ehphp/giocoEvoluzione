@@ -84,7 +84,7 @@ function App() {
 
         if (!isGameSnapshotPlayable(restored)) {
           clearStoredSession()
-          setErrorMessage('La partita salvata non e compatibile con questa versione. Crea una nuova partita.')
+          setErrorMessage('La partita salvata non è compatibile con questa versione. Crea una nuova partita.')
           setIsLoading(false)
 
           return
@@ -199,6 +199,14 @@ function App() {
       window.clearTimeout(timeoutId)
     }
   }, [snapshot?.game.id, snapshot?.game.status, snapshot?.currentRoundResult?.id, snapshot?.game.current_round, snapshot?.me?.id])
+
+  useEffect(() => {
+    const gameStatus = snapshot?.game.status
+
+    if (gameStatus && gameStatus !== 'WAITING' && gameStatus !== 'CHOOSING') {
+      setStatusMessage(null)
+    }
+  }, [snapshot?.game.status])
 
   const myScore = snapshot ? getPlayerScore(snapshot, snapshot.me) : 0
   const opponentScore = snapshot ? getPlayerScore(snapshot, snapshot.opponent) : 0
@@ -338,11 +346,10 @@ function App() {
 
       if (submittedSnapshot.game.game_mode === 'VS_BOT') {
         await settleVsBotRound(submittedSnapshot.game.id, submittedSnapshot.me?.id ?? snapshot.me.id, submittedSnapshot.game.current_round)
-        setStatusMessage('Scelta confermata. Il bot sta completando il round.')
         return true
       }
 
-      setStatusMessage('Scelta confermata. In attesa dell avversario.')
+      setStatusMessage('Scelta confermata. In attesa dell’avversario.')
       return true
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Invio azione non riuscito.')
@@ -393,17 +400,17 @@ function App() {
   return (
     <main className={`shell ${isChoosingScreen ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
       {isLoading ? (
-        <section className="panel centered-panel home-state-panel" aria-live="polite" aria-busy="true">
+        <section className="panel centered-panel home-state-panel" role="status" aria-live="polite" aria-busy="true">
           <span className="eyebrow">Connessione alla partita</span>
           <h1>Gioco Evoluzione</h1>
           <p className="lead">Preparazione sessione multiplayer in corso...</p>
         </section>
       ) : !hasSupabaseConfig ? (
         <section className="panel intro-panel home-state-panel">
-          <span className="eyebrow">MVP multiplayer 1v1</span>
+          <span className="eyebrow">Multiplayer 1v1</span>
           <h1>Gioco Evoluzione</h1>
           <p className="lead">
-            L app e pronta, ma per il multiplayer serve configurare Supabase prima di poter creare o entrare in una stanza.
+            L’app è pronta, ma per il multiplayer serve configurare Supabase prima di poter creare o entrare in una stanza.
           </p>
           <div className="message warning" role="alert" aria-live="assertive">
             Imposta <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong>, poi applica lo schema SQL e deploya la funzione <strong>resolve-round</strong>.
@@ -431,17 +438,17 @@ function App() {
             <>
               <header className="topbar">
                 <div>
-                  <span className="eyebrow">MVP multiplayer 1v1</span>
+                  <span className="eyebrow">Multiplayer 1v1</span>
                   <h1>Gioco Evoluzione</h1>
                 </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession}>
+                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
                   Esci
                 </button>
               </header>
 
-              {!isOnline ? <div className="message warning">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success">{statusMessage}</div> : null}
+              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
+              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
+              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
 
               <section className="stack-lg">
                 <div className="room-code-card">
@@ -456,8 +463,8 @@ function App() {
                 </div>
 
                 <div className="status-card">
-                  <strong>{snapshot.me?.nickname}</strong> e pronto.
-                  <p>In attesa dell avversario...</p>
+                  <strong>{snapshot.me?.nickname}</strong> è pronto.
+                  <p>In attesa dell’avversario...</p>
                 </div>
               </section>
             </>
@@ -473,17 +480,17 @@ function App() {
             <>
               <header className="topbar">
                 <div>
-                  <span className="eyebrow">MVP multiplayer 1v1</span>
+                  <span className="eyebrow">Multiplayer 1v1</span>
                   <h1>Gioco Evoluzione</h1>
                 </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession}>
+                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
                   Esci
                 </button>
               </header>
 
-              {!isOnline ? <div className="message warning">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success">{statusMessage}</div> : null}
+              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
+              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
+              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
 
               <RoundResultScreen
                 snapshot={snapshot}
@@ -496,17 +503,17 @@ function App() {
             <>
               <header className="topbar">
                 <div>
-                  <span className="eyebrow">MVP multiplayer 1v1</span>
+                  <span className="eyebrow">Multiplayer 1v1</span>
                   <h1>Gioco Evoluzione</h1>
                 </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession}>
+                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
                   Esci
                 </button>
               </header>
 
-              {!isOnline ? <div className="message warning">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success">{statusMessage}</div> : null}
+              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
+              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
+              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
 
               <FinalScreen snapshot={snapshot} myScore={myScore} opponentScore={opponentScore} result={snapshot.currentRoundResult} />
             </>
@@ -625,7 +632,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
   }
 
   return (
-    <section className="round-result-screen" aria-label="Risultato del round" onPointerDown={skipRevealAnimation}>
+    <section className="round-result-screen" aria-label="Risultato del round" aria-live="polite" onPointerDown={skipRevealAnimation}>
       <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
         <span className="eyebrow">Round {snapshot.game.current_round} · {roundEventLabel}</span>
         <h2>{outcomeTitle}</h2>
@@ -643,7 +650,24 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
           </p>
         </div>
         <p className="round-result-hero__subtitle">{winnerNickname ? `${winnerNickname} vince il round.` : 'Nessun vincitore nel round.'}</p>
-        {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l animazione</small> : null}
+        {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l’animazione</small> : null}
+      </div>
+
+      <div className="button-row round-result-screen__actions">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={onContinue}
+          aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
+          disabled={isBusy || snapshot.game.status === 'REVEALING'}
+        >
+          {continueLabel}
+        </button>
+        {snapshot.game.status === 'REVEALING' ? (
+          <span id="round-continue-reason" className="button-row__reason" role="status">
+            Disponibile al termine della rivelazione.
+          </span>
+        ) : null}
       </div>
 
       <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
@@ -671,12 +695,6 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
       </div>
 
       <p className={`round-result-explanation ${animationPhase < 3 ? 'is-hidden' : ''}`}>{explanation}</p>
-
-      <div className="button-row">
-        <button type="button" className="primary-button" onClick={onContinue} disabled={isBusy || snapshot.game.status === 'REVEALING'}>
-          {continueLabel}
-        </button>
-      </div>
     </section>
   )
 }

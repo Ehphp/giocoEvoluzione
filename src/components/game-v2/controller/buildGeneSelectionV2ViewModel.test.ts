@@ -208,22 +208,22 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const viewModel = build(createSnapshot(), { selectedGeneId: null })
 
         expect(viewModel.selectedGene).not.toBeNull()
-        expect(viewModel.selectedGeneId).toBe(viewModel.genes.at(-1)?.id)
+        expect(viewModel.selectedGeneId).toBe(viewModel.genes[0]?.id)
         expect(viewModel.selectedGeneId).toBe('FAT_RESERVES')
     })
 
-    it('produces all 10 genes ordered from weakest to strongest immediate USE', () => {
+    it('produces all 10 genes ordered from strongest to weakest immediate USE', () => {
         const snapshot = createSnapshot()
         const viewModel = build(snapshot)
 
         expect(viewModel.genes.length).toBe(10)
-        expect(viewModel.genes[0]?.traitType).toBe('WEBBED_LIMBS')
-        expect(viewModel.genes.at(-1)?.traitType).toBe('FAT_RESERVES')
+        expect(viewModel.genes[0]?.traitType).toBe('FAT_RESERVES')
+        expect(viewModel.genes.at(-1)?.traitType).toBe('WEBBED_LIMBS')
 
         const obtainableValues = viewModel.genes.map((gene) => (
             gene.usable ? gene.prediction?.useScore ?? Number.NEGATIVE_INFINITY : Number.NEGATIVE_INFINITY
         ))
-        expect(obtainableValues).toEqual([...obtainableValues].sort((a, b) => a - b))
+        expect(obtainableValues).toEqual([...obtainableValues].sort((a, b) => b - a))
     })
 
     it('uses level then stable alphabetical order to break equal-value ties', () => {
@@ -243,12 +243,12 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const strengthIndex = tiedValueGenes.findIndex((gene) => gene.traitType === 'STRENGTH')
         const adaptationIndex = tiedValueGenes.findIndex((gene) => gene.traitType === 'ADAPTATION')
 
-        expect(strengthIndex).toBeGreaterThan(adaptationIndex)
+        expect(strengthIndex).toBeLessThan(adaptationIndex)
 
         const levelZeroNames = tiedValueGenes
             .filter((gene) => gene.level === 0)
             .map((gene) => gene.name)
-        expect(levelZeroNames).toEqual([...levelZeroNames].sort((a, b) => b.localeCompare(a, 'it')))
+        expect(levelZeroNames).toEqual([...levelZeroNames].sort((a, b) => a.localeCompare(b, 'it')))
     })
 
     it('keeps all 10 genes available when event has no effects', () => {
@@ -371,7 +371,7 @@ describe('buildGeneSelectionV2ViewModel', () => {
 
         expect(viewModel.round.current).toBe(2)
         expect(viewModel.roundEvent.id).toBe('PROLONGED_ECLIPSE')
-        expect(viewModel.genes.at(-1)?.traitType).toBe('ADAPTATION')
+        expect(viewModel.genes[0]?.traitType).toBe('ADAPTATION')
     })
 
     it('reorders the slider and opens on the new best gene when the round changes', () => {

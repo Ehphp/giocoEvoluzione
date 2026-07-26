@@ -9,7 +9,11 @@ const OUTPUT_DIR = resolve('artifacts/mobile-layout-current')
 const VIEWPORTS = [
     { width: 360, height: 800 },
     { width: 390, height: 844 },
+    { width: 412, height: 915 },
     { width: 430, height: 932 },
+    { width: 768, height: 1024 },
+    { width: 844, height: 390 },
+    { width: 1440, height: 900 },
 ]
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
@@ -174,6 +178,89 @@ async function collectMetrics(send, viewport) {
     })()`)
 }
 
+async function collectHomeMetrics(send, viewport) {
+    return evaluate(send, `(() => {
+        const selectors = [
+            '.home-screen',
+            '.home-screen__header',
+            '.home-hero',
+            '.home-entry',
+            '#player-name',
+            '.home-entry__create',
+            '.home-entry__join',
+            '.home-screen__leave',
+        ]
+        const boxes = Object.fromEntries(selectors.map((selector) => {
+            const element = document.querySelector(selector)
+
+            if (!element) {
+                return [selector, null]
+            }
+
+            const rect = element.getBoundingClientRect()
+
+            return [selector, {
+                top: Math.round(rect.top * 10) / 10,
+                bottom: Math.round(rect.bottom * 10) / 10,
+                left: Math.round(rect.left * 10) / 10,
+                right: Math.round(rect.right * 10) / 10,
+                width: Math.round(rect.width * 10) / 10,
+                height: Math.round(rect.height * 10) / 10,
+                fullyVisible: rect.top >= 0 && rect.bottom <= window.innerHeight,
+            }]
+        }))
+
+        return {
+            requestedViewport: ${JSON.stringify(viewport)},
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            documentScrollHeight: document.documentElement.scrollHeight,
+            hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+            boxes,
+        }
+    })()`)
+}
+
+async function collectResultMetrics(send, viewport) {
+    return evaluate(send, `(() => {
+        const selectors = [
+            '.round-result-screen',
+            '.round-result-hero',
+            '.round-result-cards',
+            '.round-result-explanation',
+            '.round-result-screen .primary-button',
+        ]
+        const boxes = Object.fromEntries(selectors.map((selector) => {
+            const element = document.querySelector(selector)
+
+            if (!element) {
+                return [selector, null]
+            }
+
+            const rect = element.getBoundingClientRect()
+
+            return [selector, {
+                top: Math.round(rect.top * 10) / 10,
+                bottom: Math.round(rect.bottom * 10) / 10,
+                left: Math.round(rect.left * 10) / 10,
+                right: Math.round(rect.right * 10) / 10,
+                width: Math.round(rect.width * 10) / 10,
+                height: Math.round(rect.height * 10) / 10,
+                fullyVisible: rect.top >= 0 && rect.bottom <= window.innerHeight,
+            }]
+        }))
+
+        return {
+            requestedViewport: ${JSON.stringify(viewport)},
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            documentScrollHeight: document.documentElement.scrollHeight,
+            hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+            boxes,
+        }
+    })()`)
+}
+
 async function run() {
     await mkdir(OUTPUT_DIR, { recursive: true })
 
@@ -216,6 +303,30 @@ async function run() {
     await setViewport(send, VIEWPORTS[1])
     await send('Page.navigate', { url: APP_URL })
     await waitForSelector(send, '#player-name')
+
+    const homeResults = []
+
+    for (const viewport of VIEWPORTS) {
+        await setViewport(send, viewport)
+        await delay(150)
+
+        const screenshot = await send('Page.captureScreenshot', {
+            format: 'png',
+            fromSurface: true,
+            captureBeyondViewport: false,
+        })
+        const filename = `home-current-${viewport.width}x${viewport.height}.png`
+        await writeFile(join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'))
+        homeResults.push({ screenshot: filename, ...await collectHomeMetrics(send, viewport) })
+    }
+
+    await writeFile(
+        join(OUTPUT_DIR, 'home-metrics.json'),
+        `${JSON.stringify(homeResults, null, 2)}\n`,
+        'utf8',
+    )
+
+    await setViewport(send, VIEWPORTS[1])
 
     await evaluate(send, `(() => {
         const input = document.querySelector('#player-name')
@@ -271,6 +382,34 @@ async function run() {
             + `screenHeight=${result.screenScrollHeight}`,
         )
     }
+
+    await setViewport(send, VIEWPORTS[1])
+    await evaluate(send, `document.querySelector('.action-v2-btn--use')?.click()`)
+    await waitForSelector(send, '.round-result-screen', 30_000)
+    await delay(1_500)
+
+    const resultScreenResults = []
+
+    for (const viewport of VIEWPORTS) {
+        await setViewport(send, viewport)
+        await delay(150)
+        await evaluate(send, 'window.scrollTo(0, 0)')
+
+        const screenshot = await send('Page.captureScreenshot', {
+            format: 'png',
+            fromSurface: true,
+            captureBeyondViewport: false,
+        })
+        const filename = `result-current-${viewport.width}x${viewport.height}.png`
+        await writeFile(join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'))
+        resultScreenResults.push({ screenshot: filename, ...await collectResultMetrics(send, viewport) })
+    }
+
+    await writeFile(
+        join(OUTPUT_DIR, 'result-metrics.json'),
+        `${JSON.stringify(resultScreenResults, null, 2)}\n`,
+        'utf8',
+    )
 
     await send('Browser.close')
 }
