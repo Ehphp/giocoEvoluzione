@@ -1,0 +1,59 @@
+{
+  "methodology": {
+    "exact": true,
+    "opponent": "deterministic-immediate-greedy",
+    "sequences": 720,
+    "stateEncoding": "base-4 levels plus one cooldown slot",
+    "comparedStrategies": [
+      "optimal with level 3 available",
+      "optimal capped at level 2"
+    ]
+  },
+  "benchmark": {
+    "elapsedMs": 1195,
+    "memoizedStates": 1898640
+  },
+  "metrics": {
+    "wins": 532,
+    "draws": 188,
+    "losses": 0,
+    "roundTies": 490,
+    "level3Reached": 2,
+    "thirdEvolveRoundTotal": 10,
+    "thirdEvolveCount": 2,
+    "level3Uses": 2,
+    "optimalActions": {
+      "EVOLVE:AQUATIC": 624,
+      "USE:MOBILITY": 440,
+      "USE:AQUATIC": 739,
+      "USE:METABOLISM": 939,
+      "EVOLVE:METABOLISM": 500,
+      "EVOLVE:MOBILITY": 285,
+      "USE:SENSES": 316,
+      "EVOLVE:SENSES": 80,
+      "USE:RESILIENCE": 268,
+      "EVOLVE:RESILIENCE": 129
+    },
+    "pickRate": {
+      "AQUATIC": 1363,
+      "MOBILITY": 725,
+      "METABOLISM": 1439,
+      "SENSES": 396,
+      "RESILIENCE": 397
+    },
+    "memoizedStates": 1898640,
+    "matchScoreDistribution": {
+      "3-2": 480,
+      "4-2": 42,
+      "4-1": 10,
+      "3-3": 188
+    },
+    "thirdEvolveNecessary": 0,
+    "thirdEvolveNotNecessary": 2,
+    "level3ReachRate": 0.002777777777777778,
+    "averageThirdEvolveRound": 5,
+    "averageLevel3UsesAfterReach": 1,
+    "finalDrawRate": 0.2611111111111111,
+    "thirdEvolveNecessaryRate": 0
+  }
+}
