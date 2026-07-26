@@ -113,7 +113,8 @@ describe('round event deck', () => {
                 ['FAT_RESERVES', -1],
             ],
             NUTRIENT_COLLAPSE: [
-                ['FAT_RESERVES', 2],
+                ['METABOLISM', 2],
+                ['FAT_RESERVES', 1],
                 ['ADAPTATION', 1],
                 ['STRENGTH', -1],
             ],
@@ -144,5 +145,21 @@ describe('round event deck', () => {
             expect(event.effects.map((effect) => [effect.trait, effect.modifier])).toEqual(expectedEffects)
             expect(event.effects.every((effect) => effect.reason.trim().length > 0)).toBe(true)
         }
+    })
+
+    it('shares METABOLISM +2 across heat and nutrient events without changing the alternatives', () => {
+        const heatEffects = getRoundEventById('HEAT_SPIKE').effects
+        const nutrientEffects = getRoundEventById('NUTRIENT_COLLAPSE').effects
+
+        expect(heatEffects).toContainEqual(expect.objectContaining({
+            trait: 'METABOLISM',
+            modifier: 2,
+        }))
+        expect(nutrientEffects).toEqual([
+            expect.objectContaining({ trait: 'METABOLISM', modifier: 2 }),
+            expect.objectContaining({ trait: 'FAT_RESERVES', modifier: 1 }),
+            expect.objectContaining({ trait: 'ADAPTATION', modifier: 1 }),
+            expect.objectContaining({ trait: 'STRENGTH', modifier: -1 }),
+        ])
     })
 })

@@ -74,7 +74,8 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-nutrient-collapse',
         tags: ['placeholder', 'food', 'scarcity'],
         effects: [
-            { trait: 'FAT_RESERVES', modifier: 2, reason: 'Le riserve adipose sostengono la creatura durante la scarsita prolungata.' },
+            { trait: 'METABOLISM', modifier: 2, reason: 'Un metabolismo efficiente riduce il consumo energetico durante la scarsita nutritiva.' },
+            { trait: 'FAT_RESERVES', modifier: 1, reason: 'Le riserve adipose sostengono la creatura durante la scarsita prolungata.' },
             { trait: 'ADAPTATION', modifier: 1, reason: 'Plasticita utile per cambiare dieta rapidamente.' },
             { trait: 'STRENGTH', modifier: -1, reason: 'Mantenere massa muscolare richiede energia rara.' },
         ],

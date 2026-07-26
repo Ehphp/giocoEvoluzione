@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -31,6 +31,10 @@ type SimAction = {
     actionType: ActionType
 }
 
+function actionKeyForAudit(action: SimAction): string {
+    return `${action.actionType}:${action.trait}`
+}
+
 type StrategyContext = {
     roundNumber: number
     sequence: RoundEventDefinition[]
@@ -50,6 +54,7 @@ type PlayerGameStats = {
     score: number
     actions: SimAction[]
     values: number[]
+    cooldownBlockedBest: boolean[]
     levelsAfter: TraitCollection
 }
 
@@ -70,6 +75,7 @@ type Aggregate = {
     uses: number
     evolves: number
     matchRoundTies: number
+    cooldownBlockedBest: number
     valuesByRound: number[]
     decisivePointsByRound: number[]
     pivotalRounds: number[]
@@ -168,6 +174,24 @@ function chooseBestUse(
     })
 }
 
+function cooldownBlocksBestUse(
+    event: RoundEventDefinition,
+    traits: TraitCollection,
+): boolean {
+    const unrestrictedMaximum = Math.max(
+        ...TRAITS.map((trait) => actionValue(
+            event,
+            traits,
+            { trait, actionType: 'USE' },
+        )),
+    )
+    const legalMaximum = Math.max(
+        ...legalUses(traits).map((action) => actionValue(event, traits, action)),
+    )
+
+    return legalMaximum < unrestrictedMaximum
+}
+
 function topTraitsForEvent(event: RoundEventDefinition): TraitType[] {
     const maximum = Math.max(...TRAITS.map((trait) => eventContribution(event, trait)))
 
@@ -222,6 +246,120 @@ const immediateGreedy: Strategy = {
     label: 'USE col valore immediato massimo',
     choose(context) {
         return chooseBestUse(context.sequence[context.roundNumber - 1], context.selfTraits)
+    },
+}
+
+const principalGeneGreedy: Strategy = {
+    id: 'principal_gene_greedy',
+    label: 'Prova il gene +2; se in cooldown usa il migliore USE alternativo',
+    choose(context) {
+        const event = context.sequence[context.roundNumber - 1]
+        const principal = TRAITS.find(
+            (trait) =>
+                eventContribution(event, trait) === 2
+                && context.selfTraits[trait].cooldown === 0,
+        )
+
+        return principal
+            ? { trait: principal, actionType: 'USE' }
+            : chooseBestUse(event, context.selfTraits)
+    },
+}
+
+const oneEventLookaheadGreedy: Strategy = {
+    id: 'one_event_lookahead',
+    label: 'Massimizza valore corrente più il migliore USE del prossimo evento',
+    choose(context) {
+        const currentEvent = context.sequence[context.roundNumber - 1]
+        const nextEvent = context.sequence[context.roundNumber]
+        const actions = legalActions(context.selfTraits)
+
+        return actions.reduce((best, action) => {
+            const score = (candidate: SimAction) => {
+                const nextTraits = simulateOwnTransition(
+                    context.selfTraits,
+                    candidate,
+                )
+                const future = nextEvent
+                    ? actionValue(
+                        nextEvent,
+                        nextTraits,
+                        chooseBestUse(nextEvent, nextTraits),
+                    )
+                    : 0
+                return actionValue(currentEvent, context.selfTraits, candidate)
+                    + future
+            }
+            const candidateScore = score(action)
+            const bestScore = score(best)
+
+            return candidateScore > bestScore
+                ? action
+                : candidateScore < bestScore
+                    ? best
+                    : actionKeyForAudit(action).localeCompare(
+                        actionKeyForAudit(best),
+                    ) < 0
+                        ? action
+                        : best
+        })
+    },
+}
+
+const conserveMetabolism: Strategy = {
+    id: 'conserve_metabolism',
+    label: 'Conserva METABOLISM quando HEAT e NUTRIENT sono consecutivi',
+    choose(context) {
+        const currentEvent = context.sequence[context.roundNumber - 1]
+        const nextEvent = context.sequence[context.roundNumber]
+        const pairIsConsecutive =
+            (
+                currentEvent.id === 'HEAT_SPIKE'
+                && nextEvent?.id === 'NUTRIENT_COLLAPSE'
+            )
+            || (
+                currentEvent.id === 'NUTRIENT_COLLAPSE'
+                && nextEvent?.id === 'HEAT_SPIKE'
+            )
+
+        return chooseBestUse(
+            currentEvent,
+            context.selfTraits,
+            pairIsConsecutive ? ['METABOLISM'] : [],
+        )
+    },
+}
+
+const evolveNutrientAlternative: Strategy = {
+    id: 'evolve_nutrient_alternative',
+    label: 'Evolve FAT_RESERVES o ADAPTATION come alternativa nutritiva',
+    choose(context) {
+        const nutrientIndex = context.sequence.findIndex(
+            (event) => event.id === 'NUTRIENT_COLLAPSE',
+        )
+        const currentIndex = context.roundNumber - 1
+        const candidates: TraitType[] = ['FAT_RESERVES', 'ADAPTATION']
+        const alreadyInvested = candidates.some(
+            (trait) => context.selfTraits[trait].level > 0,
+        )
+
+        if (
+            !alreadyInvested
+            && currentIndex < nutrientIndex
+            && nutrientIndex - currentIndex <= 2
+        ) {
+            const trait = candidates.find(
+                (candidate) => isTraitEvolvable(context.selfTraits, candidate),
+            )
+            if (trait) {
+                return { trait, actionType: 'EVOLVE' }
+            }
+        }
+
+        return chooseBestUse(
+            context.sequence[currentIndex],
+            context.selfTraits,
+        )
     },
 }
 
@@ -417,9 +555,61 @@ const responseAware: Strategy = {
     },
 }
 
+let exactBestResponseActions:
+    | Map<string, SimAction[]>
+    | null = null
+
+function getExactBestResponseActions(): Map<string, SimAction[]> {
+    if (exactBestResponseActions) {
+        return exactBestResponseActions
+    }
+
+    const solverResultsPath = fileURLToPath(
+        new URL('../game-mechanics-solver/results.json', import.meta.url),
+    )
+    const parsed = JSON.parse(
+        readFileSync(solverResultsPath, 'utf8'),
+    ) as {
+        fullKnowledge: {
+            sequences: Array<{
+                events: string[]
+                trace: Array<{ optimizerAction: SimAction }>
+            }>
+        }
+    }
+    exactBestResponseActions = new Map(
+        parsed.fullKnowledge.sequences.map((solution) => [
+            solution.events.join('|'),
+            solution.trace.map((round) => ({ ...round.optimizerAction })),
+        ]),
+    )
+    return exactBestResponseActions
+}
+
+const exactBestResponseReplay: Strategy = {
+    id: 'exact_best_response_vs_greedy',
+    label: 'Best response esatta contro GREEDY immediata (percorso rigiocato)',
+    choose(context) {
+        const key = context.sequence.map((event) => event.id).join('|')
+        const action = getExactBestResponseActions()
+            .get(key)
+            ?.[context.roundNumber - 1]
+
+        if (!action) {
+            throw new Error(`Missing exact best response action for ${key}.`)
+        }
+
+        return action
+    },
+}
+
 const benchmarkStrategies: Strategy[] = [
     randomStrategy,
     immediateGreedy,
+    principalGeneGreedy,
+    oneEventLookaheadGreedy,
+    conserveMetabolism,
+    evolveNutrientAlternative,
     createFinalInvestmentStrategy(1),
     createFinalInvestmentStrategy(2),
     createFinalInvestmentStrategy(3),
@@ -428,6 +618,7 @@ const benchmarkStrategies: Strategy[] = [
     avoidPenalties,
     fullForesightGreedy,
     responseAware,
+    exactBestResponseReplay,
 ]
 
 function simulateGame(
@@ -448,10 +639,19 @@ function simulateGame(
     const player2Actions: SimAction[] = []
     const player1Values: number[] = []
     const player2Values: number[] = []
+    const player1CooldownBlockedBest: boolean[] = []
+    const player2CooldownBlockedBest: boolean[] = []
     const roundWinners: Array<1 | 2 | 0> = []
     const pointDeltas: Array<[number, number]> = []
 
     for (let roundNumber = 1; roundNumber <= TOTAL_ROUNDS; roundNumber += 1) {
+        const roundEvent = sequence[roundNumber - 1]
+        player1CooldownBlockedBest.push(
+            cooldownBlocksBestUse(roundEvent, player1Traits),
+        )
+        player2CooldownBlockedBest.push(
+            cooldownBlocksBestUse(roundEvent, player2Traits),
+        )
         const player1Action = player1Strategy.choose({
             roundNumber,
             sequence,
@@ -504,6 +704,7 @@ function simulateGame(
             score: player1Score,
             actions: player1Actions,
             values: player1Values,
+            cooldownBlockedBest: player1CooldownBlockedBest,
             levelsAfter: player1Traits,
         },
         player2: {
@@ -511,6 +712,7 @@ function simulateGame(
             score: player2Score,
             actions: player2Actions,
             values: player2Values,
+            cooldownBlockedBest: player2CooldownBlockedBest,
             levelsAfter: player2Traits,
         },
         roundWinners,
@@ -529,6 +731,7 @@ function emptyAggregate(): Aggregate {
         uses: 0,
         evolves: 0,
         matchRoundTies: 0,
+        cooldownBlockedBest: 0,
         valuesByRound: Array(TOTAL_ROUNDS).fill(0),
         decisivePointsByRound: Array(TOTAL_ROUNDS).fill(0),
         pivotalRounds: Array(TOTAL_ROUNDS).fill(0),
@@ -561,6 +764,9 @@ function addGameToAggregate(
         aggregate.evolves += action.actionType === 'EVOLVE' ? 1 : 0
         aggregate.traitSelections[action.trait] += 1
         aggregate.valuesByRound[roundIndex] += self.values[roundIndex]
+        aggregate.cooldownBlockedBest += self.cooldownBlockedBest[roundIndex]
+            ? 1
+            : 0
 
         if (game.roundWinners[roundIndex] === 0) {
             aggregate.matchRoundTies += 1
@@ -615,6 +821,9 @@ function summarize(aggregate: Aggregate) {
         avgScoreAgainst: roundNumber(aggregate.scoreAgainst / aggregate.games),
         avgUse: roundNumber(aggregate.uses / aggregate.games),
         avgEvolve: roundNumber(aggregate.evolves / aggregate.games),
+        cooldownBlockedBestPct: roundNumber(
+            aggregate.cooldownBlockedBest / totalActions * 100,
+        ),
         avgRoundValue: aggregate.valuesByRound.map((value) => roundNumber(value / aggregate.games)),
         roundTiePct: roundNumber(aggregate.matchRoundTies / totalActions * 100),
         traitSelectionPct: selectedTraits,
