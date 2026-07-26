@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { BASE_USE_VALUE } from '../../../shared/game-rules/catalog.ts'
 import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
 import { getRoundEventById, normalizeGeneCollection } from '../../../shared/game-rules/state.ts'
-import { ensureBotRoundAction } from '../../../src/game/vs-bot-round.ts'
+import { ensureBotRoundAction } from '../../../shared/game-rules/vs-bot-round.ts'
 import type { GeneCollection, GeneId } from '../../../shared/game-rules/types.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
