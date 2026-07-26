@@ -1,0 +1,287 @@
+[
+  {
+    "screenshot": "choice-current-360x800.png",
+    "requestedViewport": {
+      "width": 360,
+      "height": 800
+    },
+    "innerWidth": 360,
+    "innerHeight": 800,
+    "documentScrollHeight": 800,
+    "screenScrollHeight": 800,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 800,
+        "left": 10,
+        "right": 350,
+        "width": 340,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 0,
+        "bottom": 800,
+        "left": -4,
+        "right": 336,
+        "width": 340,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 169,
+        "bottom": 267,
+        "left": 6.8,
+        "right": 325.2,
+        "width": 318.4,
+        "height": 98,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 270,
+        "bottom": 335.9,
+        "left": 41.8,
+        "right": 290.2,
+        "width": 248.3,
+        "height": 65.8,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 281.9,
+        "bottom": 335.9,
+        "left": 41.8,
+        "right": 290.2,
+        "width": 248.3,
+        "height": 54,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 355,
+        "bottom": 594,
+        "left": 4,
+        "right": 328,
+        "width": 324,
+        "height": 239,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 602,
+        "bottom": 670,
+        "left": 4,
+        "right": 328,
+        "width": 324,
+        "height": 68,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 602,
+        "bottom": 670,
+        "left": 4,
+        "right": 161,
+        "width": 157,
+        "height": 68,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 602,
+        "bottom": 670,
+        "left": 171,
+        "right": 328,
+        "width": 157,
+        "height": 68,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-390x844.png",
+    "requestedViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "innerWidth": 390,
+    "innerHeight": 844,
+    "documentScrollHeight": 844,
+    "screenScrollHeight": 844,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 844,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 0,
+        "bottom": 844,
+        "left": -4,
+        "right": 366,
+        "width": 370,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 169,
+        "bottom": 267,
+        "left": 7.7,
+        "right": 354.3,
+        "width": 346.6,
+        "height": 98,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 270,
+        "bottom": 335.9,
+        "left": 45.8,
+        "right": 316.2,
+        "width": 270.4,
+        "height": 65.8,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 281.9,
+        "bottom": 335.9,
+        "left": 45.8,
+        "right": 316.2,
+        "width": 270.4,
+        "height": 54,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 359,
+        "bottom": 598,
+        "left": 4,
+        "right": 358,
+        "width": 354,
+        "height": 239,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 606,
+        "bottom": 674,
+        "left": 4,
+        "right": 358,
+        "width": 354,
+        "height": 68,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 606,
+        "bottom": 674,
+        "left": 4,
+        "right": 176,
+        "width": 172,
+        "height": 68,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 606,
+        "bottom": 674,
+        "left": 186,
+        "right": 358,
+        "width": 172,
+        "height": 68,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-430x932.png",
+    "requestedViewport": {
+      "width": 430,
+      "height": 932
+    },
+    "innerWidth": 430,
+    "innerHeight": 932,
+    "documentScrollHeight": 932,
+    "screenScrollHeight": 932,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 932,
+        "left": 10,
+        "right": 420,
+        "width": 410,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 0,
+        "bottom": 932,
+        "left": -4,
+        "right": 406,
+        "width": 410,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 185.6,
+        "bottom": 297.6,
+        "left": 8.9,
+        "right": 393.1,
+        "width": 384.2,
+        "height": 112,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 302.6,
+        "bottom": 395.9,
+        "left": 55,
+        "right": 347,
+        "width": 292,
+        "height": 93.3,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 323.9,
+        "bottom": 395.9,
+        "left": 55,
+        "right": 347,
+        "width": 292,
+        "height": 72,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 535.5,
+        "bottom": 830,
+        "left": 4,
+        "right": 398,
+        "width": 394,
+        "height": 294.5,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 842,
+        "bottom": 922,
+        "left": 4,
+        "right": 398,
+        "width": 394,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 842,
+        "bottom": 922,
+        "left": 4,
+        "right": 196,
+        "width": 192,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 842,
+        "bottom": 922,
+        "left": 206,
+        "right": 398,
+        "width": 192,
+        "height": 80,
+        "fullyVisible": true
+      }
+    }
+  }
+]
