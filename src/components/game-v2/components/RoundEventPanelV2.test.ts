@@ -9,7 +9,12 @@ const currentEvent: RoundEventV2 = {
     id: 'current',
     title: 'Evento corrente',
     description: 'Descrizione corrente',
-    effects: [],
+    effects: [
+        { id: 'current-p2', label: 'Forza', modifier: 2, value: '+2 Forza', tone: 'positive' },
+        { id: 'current-p1', label: 'Agilità', modifier: 1, value: '+1 Agilità', tone: 'positive' },
+        { id: 'current-n1', label: 'Mimetismo', modifier: -1, value: '-1 Mimetismo', tone: 'negative' },
+        { id: 'current-n2', label: 'Riserva adiposa', modifier: -2, value: '-2 Riserva adiposa', tone: 'negative' },
+    ],
 }
 
 const nextEvent: RoundEventV2 = {
@@ -56,6 +61,27 @@ describe('RoundEventPanelV2 next event preview', () => {
         expect(section?.textContent).toContain('Evento futuro')
         expect(card).not.toBeNull()
         expect(card?.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('opens the current event and exposes every impacted gene', () => {
+        const card = container.querySelector<HTMLButtonElement>('.event-v2-card')!
+
+        expect(card.getAttribute('aria-expanded')).toBe('false')
+        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+
+        const modifiers = [...container.querySelectorAll('.current-event-v2-popover .next-event-v2-modifier')]
+        expect(modifiers).toHaveLength(currentEvent.effects.length)
+        expect(modifiers.map((node) => node.textContent)).toEqual([
+            '+2Forza',
+            '+1Agilità',
+            '-1Mimetismo',
+            '-2Riserva adiposa',
+        ])
+        expect(card.getAttribute('aria-expanded')).toBe('true')
+
+        act(() => card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+        expect(container.querySelector('.current-event-v2-popover')).toBeNull()
+        expect(document.activeElement).toBe(card)
     })
 
     it('opens on tap, exposes every modifier, and closes on a second tap', () => {

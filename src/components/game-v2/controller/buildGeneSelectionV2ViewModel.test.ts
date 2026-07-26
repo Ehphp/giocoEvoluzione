@@ -126,6 +126,29 @@ describe('buildGeneSelectionV2ViewModel', () => {
         expect(viewModel.roundEvent.effects.length).toBeGreaterThan(0)
     })
 
+    it('maps every non-zero current event modifier with its gene label', () => {
+        const currentEvent = createEvent({
+            id: 'CURRENT_EVENT',
+            title: 'Evento attuale',
+            effects: [
+                { trait: 'STRENGTH', modifier: -1, reason: 'Test -1' },
+                { trait: 'RESISTANCE', modifier: 0, reason: 'Test 0' },
+                { trait: 'AGILITY', modifier: 1, reason: 'Test +1 agilità' },
+                { trait: 'PERCEPTION', modifier: 1, reason: 'Test +1 percezione' },
+                { trait: 'METABOLISM', modifier: 2, reason: 'Test +2' },
+            ],
+        })
+        const viewModel = build(createSnapshot({ currentRoundEvent: currentEvent }))
+
+        expect(viewModel.roundEvent.effects.map((effect) => [effect.modifier, effect.label])).toEqual([
+            [2, 'Respirazione efficiente'],
+            [1, 'Arti elastici'],
+            [1, 'Sensi acuti'],
+            [-1, 'Muscolatura compatta'],
+        ])
+        expect(viewModel.roundEvent.effects.some((effect) => effect.modifier === 0)).toBe(false)
+    })
+
     it('maps the next event and all of its non-zero modifiers in strategic order', () => {
         const nextEvent = createEvent({
             id: 'NEXT_EVENT',

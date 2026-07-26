@@ -398,6 +398,48 @@ async function run() {
     }
 
     await setViewport(send, VIEWPORTS[0])
+    await evaluate(send, `document.querySelector('.event-v2-card')?.click()`)
+    await delay(200)
+
+    const currentEventDetailsMetrics = await evaluate(send, `(() => {
+        const popover = document.querySelector('.current-event-v2-popover')
+        const rect = popover?.getBoundingClientRect()
+
+        return {
+            isOpen: document.querySelector('.event-v2-card')?.getAttribute('aria-expanded') === 'true',
+            compactEffectCount: document.querySelectorAll('.event-v2-effects .event-v2-chip').length,
+            detailedEffectCount: popover?.querySelectorAll('.next-event-v2-modifier').length ?? 0,
+            fullyVisible: rect
+                ? rect.top >= 0
+                    && rect.right <= window.innerWidth
+                    && rect.bottom <= window.innerHeight
+                    && rect.left >= 0
+                : false,
+            rect: rect ? {
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+            } : null,
+        }
+    })()`)
+    const currentEventDetailsScreenshot = await send('Page.captureScreenshot', {
+        format: 'png',
+        fromSurface: true,
+        captureBeyondViewport: false,
+    })
+    await writeFile(
+        join(OUTPUT_DIR, 'choice-current-event-details-360x800.png'),
+        Buffer.from(currentEventDetailsScreenshot.data, 'base64'),
+    )
+    await writeFile(
+        join(OUTPUT_DIR, 'choice-current-event-details-metrics.json'),
+        `${JSON.stringify(currentEventDetailsMetrics, null, 2)}\n`,
+        'utf8',
+    )
+    await evaluate(send, `document.querySelector('.event-v2-card')?.click()`)
+    await delay(100)
+
     await evaluate(send, `(() => {
         const cards = document.querySelectorAll('.selector-v2-card')
         cards[cards.length - 1]?.click()

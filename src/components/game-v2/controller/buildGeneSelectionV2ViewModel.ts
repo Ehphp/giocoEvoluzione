@@ -348,7 +348,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             current: snapshot.game.current_round,
             total: TOTAL_ROUNDS,
         },
-        roundEvent: mapRoundEvent(snapshot.currentRoundEvent!),
+        roundEvent: mapRoundEvent(snapshot.currentRoundEvent!, true),
         nextRoundEvent: snapshot.nextRoundEvent
             ? mapRoundEvent(snapshot.nextRoundEvent, true)
             : null,
