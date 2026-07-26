@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { normalizeTraitCollection } from '../../../src/game/config.ts'
+import { BASE_USE_VALUE, normalizeTraitCollection } from '../../../src/game/config.ts'
 import { buildPersistedRoundResolution } from '../../../src/game/persisted-round-resolution.ts'
 import { getRoundEventById } from '../../../src/game/round-events.ts'
 import { ensureBotRoundAction } from '../../../src/game/vs-bot-round.ts'
@@ -9,6 +9,15 @@ import type { TraitCollection, TraitType } from '../../../src/game/types.ts'
 // Only persistence and idempotent resolution orchestration remain local here.
 
 type TraitName = TraitType
+
+// Keep the production function's Deno-compatible rule manifest explicit.
+// Resolution itself delegates to the shared engine below; this guard prevents
+// an Edge deployment with a stale local rule copy.
+const EDGE_BASE_USE_VALUE = 1
+
+if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE) {
+    throw new Error(`Scoring rule mismatch: Edge BASE_USE_VALUE=${EDGE_BASE_USE_VALUE}, frontend BASE_USE_VALUE=${BASE_USE_VALUE}.`)
+}
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',

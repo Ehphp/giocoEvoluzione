@@ -50,6 +50,7 @@ export interface GeneCardV2 {
     disabledReason?: string
     prediction?: {
         useScore: number
+        baseContribution: number
         levelContribution: number
         eventContribution: number
         reasons: string[]

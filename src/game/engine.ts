@@ -90,7 +90,7 @@ function resolvePlayerAction(
     nextTraits[action.trait].cooldown = 1
 
     return {
-        roundValue: getTraitRoundValue(roundEvent, traits, action.trait),
+        roundValue: breakdown.total,
         breakdown,
         traits: nextTraits,
     }

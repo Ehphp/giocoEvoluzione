@@ -638,10 +638,28 @@ enabledDescribe('exact best response against productive GREEDY', () => {
       >
     }
     expect(Object.keys(tieBreaks.equivalenceClasses)).toHaveLength(4)
-    expect(tieBreaks.outcomeDependence).toBe(false)
-    Object.values(tieBreaks.equivalenceClasses).forEach((result) => {
-      expect(result.summary).toEqual(fullKnowledgeSummary)
+    // BASE_USE_VALUE makes USE strictly stronger relative to EVOLVE. The four
+    // deterministic GREEDY tie orders still have identical W/D/L outcomes, but
+    // one order changes the maximum achievable match differential (3 vs 4).
+    expect(tieBreaks.outcomeDependence).toBe(true)
+    const equivalenceSummaries = Object.values(tieBreaks.equivalenceClasses)
+      .map((result) => result.summary)
+    equivalenceSummaries.forEach((summary) => {
+      expect({
+        totalSequences: summary.totalSequences,
+        wins: summary.wins,
+        draws: summary.draws,
+        losses: summary.losses,
+      }).toEqual({
+        totalSequences: fullKnowledgeSummary.totalSequences,
+        wins: fullKnowledgeSummary.wins,
+        draws: fullKnowledgeSummary.draws,
+        losses: fullKnowledgeSummary.losses,
+      })
     })
+    expect(new Set(
+      equivalenceSummaries.map((summary) => summary.maximumDifferential),
+    )).toEqual(new Set([3, 4]))
   })
 
   it('writes a complete reproducible result artifact', () => {

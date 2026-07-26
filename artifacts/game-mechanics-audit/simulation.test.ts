@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
     EVENT_WEIGHT,
+    BASE_USE_VALUE,
     FINAL_ROUND_NUMBER,
     MAX_EFFECTIVE_TRAIT_LEVEL,
     TOTAL_ROUNDS,
@@ -121,7 +122,8 @@ function actionValue(event: RoundEventDefinition, traits: TraitCollection, actio
         return 0
     }
 
-    return eventContribution(event, action.trait)
+    return BASE_USE_VALUE
+        + eventContribution(event, action.trait)
         + Math.min(MAX_EFFECTIVE_TRAIT_LEVEL, traits[action.trait].level)
 }
 

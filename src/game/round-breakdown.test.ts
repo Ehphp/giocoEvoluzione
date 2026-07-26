@@ -22,6 +22,7 @@ describe('round breakdown', () => {
         })
 
         expect(result.winnerId).toBe('p1')
+        expect(result.player1.breakdown.baseContribution).toBe(1)
         expect(result.player1.breakdown.total).toBe(result.player1.roundValue)
         expect(result.player2.breakdown.total).toBe(result.player2.roundValue)
     })
@@ -57,6 +58,7 @@ describe('round breakdown', () => {
 
         expect(result.player1.roundValue).toBeGreaterThan(result.player2.roundValue)
         expect(result.player2.breakdown.actionType).toBe('EVOLVE')
+        expect(result.player2.breakdown.baseContribution).toBe(0)
         expect(result.player2.breakdown.total).toBe(0)
     })
 

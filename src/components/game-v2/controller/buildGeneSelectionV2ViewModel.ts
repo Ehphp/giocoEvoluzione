@@ -221,6 +221,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 prediction: prediction
                     ? {
                         useScore: prediction.total,
+                        baseContribution: prediction.baseContribution,
                         levelContribution: prediction.levelContribution,
                         eventContribution: prediction.eventContribution,
                         reasons: prediction.appliedEventEffects.map((effect) => effect.reason),

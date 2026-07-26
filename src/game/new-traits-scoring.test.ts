@@ -9,17 +9,17 @@ describe('scoring with expanded trait catalog', () => {
     const heat = getRoundEventById('HEAT_SPIKE')
     const predators = getRoundEventById('PREDATOR_PACK_MIGRATION')
 
-    it('positive +2 event modifier and level 0 gives value 2', () => {
+    it('positive +2 event modifier and level 0 gives value 3', () => {
         const traits = createInitialTraits()
 
-        expect(getTraitRoundValue(flood, traits, 'GRIP_CLAWS')).toBe(2)
+        expect(getTraitRoundValue(flood, traits, 'GRIP_CLAWS')).toBe(3)
     })
 
     it('negative event modifier with high level remains valid', () => {
         const traits = createInitialTraits()
         traits.AGILITY.level = 3
 
-        expect(getTraitRoundValue(flood, traits, 'AGILITY')).toBe(2)
+        expect(getTraitRoundValue(flood, traits, 'AGILITY')).toBe(3)
     })
 
     it('high level on neutral trait can beat favored trait', () => {
@@ -38,8 +38,8 @@ describe('scoring with expanded trait catalog', () => {
             player2Action: { playerId: 'p2', trait: 'METABOLISM', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(3)
-        expect(result.player2.roundValue).toBe(2)
+        expect(result.player1.roundValue).toBe(4)
+        expect(result.player2.roundValue).toBe(3)
         expect(result.winnerId).toBe('p1')
     })
 
@@ -59,8 +59,8 @@ describe('scoring with expanded trait catalog', () => {
             player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(2)
-        expect(result.player2.roundValue).toBe(2)
+        expect(result.player1.roundValue).toBe(3)
+        expect(result.player2.roundValue).toBe(3)
         expect(result.winnerId).toBeNull()
 
         secondary.CAMOUFLAGE.level = 2
@@ -75,8 +75,8 @@ describe('scoring with expanded trait catalog', () => {
             player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(3)
-        expect(result.player2.roundValue).toBe(2)
+        expect(result.player1.roundValue).toBe(4)
+        expect(result.player2.roundValue).toBe(3)
         expect(result.winnerId).toBe('p1')
     })
 
@@ -87,8 +87,8 @@ describe('scoring with expanded trait catalog', () => {
         three.CAMOUFLAGE.level = 3
         six.CAMOUFLAGE.level = 6
 
-        expect(getTraitRoundValue(predators, three, 'CAMOUFLAGE')).toBe(4)
-        expect(getTraitRoundValue(predators, six, 'CAMOUFLAGE')).toBe(4)
+        expect(getTraitRoundValue(predators, three, 'CAMOUFLAGE')).toBe(5)
+        expect(getTraitRoundValue(predators, six, 'CAMOUFLAGE')).toBe(5)
     })
 
     it('invalid level values are rejected (NaN, undefined, Infinity, negative)', () => {

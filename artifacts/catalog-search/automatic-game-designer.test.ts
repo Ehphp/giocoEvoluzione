@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { ROUND_EVENT_DEFINITIONS } from '../../src/game/round-events'
+import { BASE_USE_VALUE, EVENT_WEIGHT } from '../../src/game/config'
 import { TRAITS, type TraitType } from '../../src/game/types'
 
 type Matrix = number[][]
@@ -287,8 +288,9 @@ function actionValue(
 ): number {
   return actionType(action) === EVOLVE
     ? 0
-    : traitLevel(levelCode, actionTrait(action)) +
-        matrix[event][actionTrait(action)]
+    : BASE_USE_VALUE +
+        traitLevel(levelCode, actionTrait(action)) +
+        matrix[event][actionTrait(action)] * EVENT_WEIGHT
 }
 
 function roundDifferential(leftValue: number, rightValue: number): number {

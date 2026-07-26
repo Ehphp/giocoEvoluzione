@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import { BASE_USE_VALUE } from '../../../game/config'
 import type { GeneCardV2 } from '../types'
 
 type GeneSelectorPreviewV2Props = {
@@ -34,7 +35,8 @@ function formatContribution(value: number): string {
 
 function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
     const prediction = gene.prediction ?? {
-        useScore: gene.level,
+        useScore: BASE_USE_VALUE + gene.level,
+        baseContribution: BASE_USE_VALUE,
         levelContribution: gene.level,
         eventContribution: 0,
         reasons: [],
@@ -55,6 +57,7 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
                 </b>
             </div>
             <div className="selector-v2-popover__breakdown" aria-label="Calcolo del punteggio previsto">
+                <span>Base <strong>{formatContribution(prediction.baseContribution)}</strong></span>
                 <span>Livello <strong>{formatContribution(prediction.levelContribution)}</strong></span>
                 <span>Evento <strong>{formatContribution(prediction.eventContribution)}</strong></span>
             </div>

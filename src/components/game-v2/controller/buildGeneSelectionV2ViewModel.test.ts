@@ -174,13 +174,15 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
 
         expect(resistance?.prediction).toMatchObject({
-            useScore: 1,
+            useScore: 2,
+            baseContribution: 1,
             levelContribution: 0,
             eventContribution: 1,
         })
         expect(resistance?.prediction?.reasons[0]).toContain('particolato')
         expect(agility?.prediction).toMatchObject({
-            useScore: 1,
+            useScore: 2,
+            baseContribution: 1,
             levelContribution: 2,
             eventContribution: -1,
         })
@@ -237,13 +239,13 @@ describe('buildGeneSelectionV2ViewModel', () => {
         snapshot.me!.traits.CAMOUFLAGE.level = 0
 
         const viewModel = build(snapshot, { selectedGeneId: null })
-        const zeroValueGenes = viewModel.genes.filter((gene) => gene.usable && gene.prediction?.useScore === 0)
-        const strengthIndex = zeroValueGenes.findIndex((gene) => gene.traitType === 'STRENGTH')
-        const adaptationIndex = zeroValueGenes.findIndex((gene) => gene.traitType === 'ADAPTATION')
+        const tiedValueGenes = viewModel.genes.filter((gene) => gene.usable && gene.prediction?.useScore === 1)
+        const strengthIndex = tiedValueGenes.findIndex((gene) => gene.traitType === 'STRENGTH')
+        const adaptationIndex = tiedValueGenes.findIndex((gene) => gene.traitType === 'ADAPTATION')
 
         expect(strengthIndex).toBeGreaterThan(adaptationIndex)
 
-        const levelZeroNames = zeroValueGenes
+        const levelZeroNames = tiedValueGenes
             .filter((gene) => gene.level === 0)
             .map((gene) => gene.name)
         expect(levelZeroNames).toEqual([...levelZeroNames].sort((a, b) => b.localeCompare(a, 'it')))

@@ -1,4 +1,4 @@
-import { EVENT_WEIGHT, MAX_EFFECTIVE_TRAIT_LEVEL } from './config.ts'
+import { BASE_USE_VALUE, EVENT_WEIGHT, MAX_EFFECTIVE_TRAIT_LEVEL } from './config.ts'
 import { getRoundEventEffectsForTrait } from './round-events.ts'
 import type { ActionType, RoundEventDefinition, RoundValueBreakdown, TraitCollection, TraitState, TraitType } from './types.ts'
 
@@ -61,11 +61,13 @@ export function getValidatedTraitUseBreakdown(
     const { modifierTotal, appliedEventEffects } = getValidatedRoundEventModifier(roundEvent, trait)
     const traitState = getValidatedTraitState(traits, trait)
     const effectiveLevel = Math.min(traitState.level, MAX_EFFECTIVE_TRAIT_LEVEL)
+    const baseContribution = BASE_USE_VALUE
     const eventContribution = modifierTotal * EVENT_WEIGHT
     const levelContribution = effectiveLevel
 
     return {
         actionType: 'USE',
+        baseContribution,
         eventModifierTotal: modifierTotal,
         eventWeight: EVENT_WEIGHT,
         eventContribution,
@@ -73,7 +75,9 @@ export function getValidatedTraitUseBreakdown(
         originalLevel: traitState.level,
         effectiveLevel,
         levelContribution,
-        total: eventContribution + levelContribution,
+        // Negative totals remain valid by design: sufficiently severe event
+        // penalties can outweigh both the intrinsic USE value and gene level.
+        total: baseContribution + levelContribution + eventContribution,
     }
 }
 
@@ -92,6 +96,7 @@ export function getValidatedActionBreakdown(
     return {
         ...useBreakdown,
         actionType,
+        baseContribution: 0,
         eventContribution: 0,
         levelContribution: 0,
         total: 0,

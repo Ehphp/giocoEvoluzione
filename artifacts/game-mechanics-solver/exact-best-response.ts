@@ -1,5 +1,6 @@
 import {
     EVENT_WEIGHT,
+    BASE_USE_VALUE,
     MAX_EFFECTIVE_TRAIT_LEVEL,
     TOTAL_ROUNDS,
     TRAITS,
@@ -1158,6 +1159,7 @@ export function auditGreedyTieBreaks(
 
 export const solverRulesMetadata = {
     totalRounds: TOTAL_ROUNDS,
+    baseUseValue: BASE_USE_VALUE,
     eventWeight: EVENT_WEIGHT,
     maximumEffectiveTraitLevel: MAX_EFFECTIVE_TRAIT_LEVEL,
     eventIds: ROUND_EVENT_DEFINITIONS.map((event) => event.id),

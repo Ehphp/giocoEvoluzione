@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-07-26T11:34:52.602Z",
+    "generatedAt": "2026-07-26T13:27:55.947Z",
     "seedScheme": "LCG 1664525/1013904223; event seeds derived from fixed game index",
     "totalGames": 172000,
     "benchmarkGames": 60000,
@@ -29,23 +29,23 @@
   "benchmarkVsRandom": {
     "random": {
       "games": 4000,
-      "winPct": 35.35,
-      "lossPct": 36.5,
-      "drawPct": 28.15,
-      "avgScoreFor": 1.038,
-      "avgScoreAgainst": 1.074,
+      "winPct": 39.75,
+      "lossPct": 38,
+      "drawPct": 22.25,
+      "avgScoreFor": 1.81,
+      "avgScoreAgainst": 1.821,
       "avgUse": 2.929,
       "avgEvolve": 3.071,
-      "cooldownBlockedBestPct": 3.483,
+      "cooldownBlockedBestPct": 3.433,
       "avgRoundValue": [
-        0.137,
-        0.149,
-        0.182,
-        0.178,
-        0.22,
-        0.22
+        0.655,
+        0.633,
+        0.645,
+        0.641,
+        0.727,
+        0.742
       ],
-      "roundTiePct": 64.792,
+      "roundTiePct": 39.492,
       "traitSelectionPct": {
         "RESISTANCE": 10.42,
         "ADAPTATION": 10.22,
@@ -59,43 +59,43 @@
         "STRENGTH": 9.71
       },
       "decisivePointSharePct": [
-        15.408,
-        15.148,
-        16.071,
-        17.041,
-        18.154,
-        18.178
+        16.513,
+        16.54,
+        16.361,
+        16.224,
+        16.926,
+        17.436
       ],
       "pivotalRoundPct": [
-        16.9,
-        18.35,
-        18.55,
-        18.65,
-        20.9,
-        20.9
+        25.85,
+        26.7,
+        25.55,
+        26.3,
+        24.25,
+        26.5
       ],
-      "distinctWinningActionPatterns": 707,
-      "winningPatternEntropyBits": 9.466,
+      "distinctWinningActionPatterns": 795,
+      "winningPatternEntropyBits": 9.635,
       "topWinningActionPatterns": [
         {
           "signature": "U:CAMOUFLAGE>E:PERCEPTION>E:ADAPTATION>E:ADAPTATION>U:ADAPTATION>E:AGILITY",
-          "pctOfWins": 0.141
+          "pctOfWins": 0.126
+        },
+        {
+          "signature": "U:FAT_RESERVES>E:METABOLISM>U:WEBBED_LIMBS>U:GRIP_CLAWS>U:WEBBED_LIMBS>E:ADAPTATION",
+          "pctOfWins": 0.126
+        },
+        {
+          "signature": "E:ADAPTATION>U:STRENGTH>U:GRIP_CLAWS>E:FAT_RESERVES>E:AGILITY>U:STRENGTH",
+          "pctOfWins": 0.126
         },
         {
           "signature": "U:FAT_RESERVES>E:FAT_RESERVES>U:WEBBED_LIMBS>U:FAT_RESERVES>E:METABOLISM>U:GRIP_CLAWS",
-          "pctOfWins": 0.141
-        },
-        {
-          "signature": "U:PERCEPTION>E:PERCEPTION>U:ADAPTATION>E:ADAPTATION>E:GRIP_CLAWS>E:WEBBED_LIMBS",
-          "pctOfWins": 0.141
+          "pctOfWins": 0.126
         },
         {
           "signature": "U:AGILITY>E:ADAPTATION>E:METABOLISM>U:PERCEPTION>U:CAMOUFLAGE>U:FAT_RESERVES",
-          "pctOfWins": 0.141
-        },
-        {
-          "signature": "E:STRENGTH>E:ADAPTATION>E:RESISTANCE>U:RESISTANCE>E:RESISTANCE>U:AGILITY",
-          "pctOfWins": 0.141
+          "pctOfWins": 0.126
         }
       ]
     },
@@ -104,183 +104,39 @@
       "winPct": 100,
       "lossPct": 0,
       "drawPct": 0,
-      "avgScoreFor": 5.585,
-      "avgScoreAgainst": 0.067,
+      "avgScoreFor": 5.571,
+      "avgScoreAgainst": 0.07,
       "avgUse": 6,
       "avgEvolve": 0,
-      "cooldownBlockedBestPct": 5.75,
+      "cooldownBlockedBestPct": 6.442,
       "avgRoundValue": [
-        2,
-        1.947,
-        1.926,
-        1.931,
-        1.936,
-        1.915
+        3,
+        2.947,
+        2.925,
+        2.922,
+        2.926,
+        2.893
       ],
-      "roundTiePct": 5.808,
+      "roundTiePct": 5.992,
       "traitSelectionPct": {
         "METABOLISM": 28.12,
-        "WEBBED_LIMBS": 18.73,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "ADAPTATION": 2.63,
-        "STRENGTH": 0.53,
-        "GRIP_CLAWS": 0,
+        "ADAPTATION": 20.88,
+        "GRIP_CLAWS": 17.48,
+        "STRENGTH": 16.81,
+        "FAT_RESERVES": 16.67,
+        "AGILITY": 0.04,
+        "RESISTANCE": 0,
+        "PERCEPTION": 0,
         "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        16.854,
-        16.73,
-        16.624,
-        16.624,
-        16.571,
-        16.597
-      ],
-      "pivotalRoundPct": [
-        0,
-        0.05,
-        0,
-        0,
-        0.05,
-        0.05
-      ],
-      "distinctWinningActionPatterns": 419,
-      "winningPatternEntropyBits": 8.428,
-      "topWinningActionPatterns": [
-        {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.85
-        },
-        {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.8
-        },
-        {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 0.8
-        },
-        {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.75
-        },
-        {
-          "signature": "U:AGILITY>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.65
-        }
-      ]
-    },
-    "principal_gene_greedy": {
-      "games": 4000,
-      "winPct": 100,
-      "lossPct": 0,
-      "drawPct": 0,
-      "avgScoreFor": 5.585,
-      "avgScoreAgainst": 0.067,
-      "avgUse": 6,
-      "avgEvolve": 0,
-      "cooldownBlockedBestPct": 5.75,
-      "avgRoundValue": [
-        2,
-        1.947,
-        1.926,
-        1.931,
-        1.936,
-        1.915
-      ],
-      "roundTiePct": 5.808,
-      "traitSelectionPct": {
-        "METABOLISM": 28.12,
-        "WEBBED_LIMBS": 18.73,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "ADAPTATION": 2.63,
-        "STRENGTH": 0.53,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
-      },
-      "decisivePointSharePct": [
-        16.854,
-        16.73,
-        16.624,
-        16.624,
-        16.571,
-        16.597
-      ],
-      "pivotalRoundPct": [
-        0,
-        0.05,
-        0,
-        0,
-        0.05,
-        0.05
-      ],
-      "distinctWinningActionPatterns": 419,
-      "winningPatternEntropyBits": 8.428,
-      "topWinningActionPatterns": [
-        {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.85
-        },
-        {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.8
-        },
-        {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 0.8
-        },
-        {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.75
-        },
-        {
-          "signature": "U:AGILITY>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.65
-        }
-      ]
-    },
-    "one_event_lookahead": {
-      "games": 4000,
-      "winPct": 100,
-      "lossPct": 0,
-      "drawPct": 0,
-      "avgScoreFor": 5.375,
-      "avgScoreAgainst": 0.085,
-      "avgUse": 5.687,
-      "avgEvolve": 0.313,
-      "cooldownBlockedBestPct": 0,
-      "avgRoundValue": [
-        1.894,
-        1.928,
-        1.946,
-        1.943,
-        1.893,
-        2.082
-      ],
-      "roundTiePct": 9,
-      "traitSelectionPct": {
-        "METABOLISM": 33.33,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "WEBBED_LIMBS": 16.67,
-        "STRENGTH": 0,
-        "ADAPTATION": 0,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
-      },
-      "decisivePointSharePct": [
-        16.749,
-        16.502,
-        16.612,
-        16.603,
-        16.181,
-        17.353
+        16.754,
+        16.825,
+        16.798,
+        16.47,
+        16.639,
+        16.514
       ],
       "pivotalRoundPct": [
         0,
@@ -294,24 +150,168 @@
       "winningPatternEntropyBits": 8.181,
       "topWinningActionPatterns": [
         {
-          "signature": "U:WEBBED_LIMBS>U:RESISTANCE>U:PERCEPTION>E:METABOLISM>U:METABOLISM>U:AGILITY",
+          "signature": "U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
           "pctOfWins": 0.9
         },
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:GRIP_CLAWS>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.85
         },
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
+          "signature": "U:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
+          "signature": "U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH>U:ADAPTATION>U:FAT_RESERVES>U:METABOLISM",
           "pctOfWins": 0.75
+        }
+      ]
+    },
+    "principal_gene_greedy": {
+      "games": 4000,
+      "winPct": 100,
+      "lossPct": 0,
+      "drawPct": 0,
+      "avgScoreFor": 5.571,
+      "avgScoreAgainst": 0.07,
+      "avgUse": 6,
+      "avgEvolve": 0,
+      "cooldownBlockedBestPct": 6.442,
+      "avgRoundValue": [
+        3,
+        2.947,
+        2.925,
+        2.922,
+        2.926,
+        2.893
+      ],
+      "roundTiePct": 5.992,
+      "traitSelectionPct": {
+        "METABOLISM": 28.12,
+        "ADAPTATION": 20.88,
+        "GRIP_CLAWS": 17.48,
+        "STRENGTH": 16.81,
+        "FAT_RESERVES": 16.67,
+        "AGILITY": 0.04,
+        "RESISTANCE": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0,
+        "WEBBED_LIMBS": 0
+      },
+      "decisivePointSharePct": [
+        16.754,
+        16.825,
+        16.798,
+        16.47,
+        16.639,
+        16.514
+      ],
+      "pivotalRoundPct": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "distinctWinningActionPatterns": 342,
+      "winningPatternEntropyBits": 8.181,
+      "topWinningActionPatterns": [
+        {
+          "signature": "U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 0.9
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:GRIP_CLAWS>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH",
+          "pctOfWins": 0.85
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
+          "pctOfWins": 0.8
+        },
+        {
+          "signature": "U:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
+          "pctOfWins": 0.8
+        },
+        {
+          "signature": "U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH>U:ADAPTATION>U:FAT_RESERVES>U:METABOLISM",
+          "pctOfWins": 0.75
+        }
+      ]
+    },
+    "one_event_lookahead": {
+      "games": 4000,
+      "winPct": 100,
+      "lossPct": 0,
+      "drawPct": 0,
+      "avgScoreFor": 5.589,
+      "avgScoreAgainst": 0.063,
+      "avgUse": 6,
+      "avgEvolve": 0,
+      "cooldownBlockedBestPct": 1.042,
+      "avgRoundValue": [
+        2.947,
+        2.954,
+        2.937,
+        2.946,
+        2.924,
+        2.979
+      ],
+      "roundTiePct": 5.8,
+      "traitSelectionPct": {
+        "METABOLISM": 28.12,
+        "ADAPTATION": 21.88,
+        "STRENGTH": 16.67,
+        "GRIP_CLAWS": 16.67,
+        "FAT_RESERVES": 16.67,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0,
+        "WEBBED_LIMBS": 0
+      },
+      "decisivePointSharePct": [
+        16.711,
+        16.826,
+        16.835,
+        16.437,
+        16.569,
+        16.622
+      ],
+      "pivotalRoundPct": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "distinctWinningActionPatterns": 318,
+      "winningPatternEntropyBits": 8.068,
+      "topWinningActionPatterns": [
+        {
+          "signature": "U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 1.55
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:FAT_RESERVES>U:STRENGTH",
+          "pctOfWins": 1.1
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES>U:GRIP_CLAWS>U:STRENGTH",
+          "pctOfWins": 1
+        },
+        {
+          "signature": "U:GRIP_CLAWS>U:STRENGTH>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION",
+          "pctOfWins": 0.95
+        },
+        {
+          "signature": "U:STRENGTH>U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION",
+          "pctOfWins": 0.9
         }
       ]
     },
@@ -320,39 +320,39 @@
       "winPct": 100,
       "lossPct": 0,
       "drawPct": 0,
-      "avgScoreFor": 5.566,
-      "avgScoreAgainst": 0.065,
+      "avgScoreFor": 5.58,
+      "avgScoreAgainst": 0.069,
       "avgUse": 6,
       "avgEvolve": 0,
       "cooldownBlockedBestPct": 0,
       "avgRoundValue": [
-        1.947,
-        1.928,
-        1.933,
-        1.933,
-        1.908,
-        2
+        2.947,
+        2.928,
+        2.937,
+        2.936,
+        2.908,
+        3
       ],
-      "roundTiePct": 6.158,
+      "roundTiePct": 5.867,
       "traitSelectionPct": {
         "METABOLISM": 28.12,
-        "WEBBED_LIMBS": 18.66,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "ADAPTATION": 2.59,
-        "STRENGTH": 0.63,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "ADAPTATION": 20.84,
+        "STRENGTH": 17.19,
+        "GRIP_CLAWS": 16.67,
+        "FAT_RESERVES": 16.67,
+        "WEBBED_LIMBS": 0.52,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0
       },
       "decisivePointSharePct": [
-        16.908,
-        16.695,
-        16.606,
-        16.597,
-        16.446,
-        16.748
+        16.723,
+        16.794,
+        16.829,
+        16.457,
+        16.563,
+        16.634
       ],
       "pivotalRoundPct": [
         0,
@@ -362,532 +362,532 @@
         0,
         0
       ],
-      "distinctWinningActionPatterns": 419,
-      "winningPatternEntropyBits": 8.428,
+      "distinctWinningActionPatterns": 358,
+      "winningPatternEntropyBits": 8.231,
       "topWinningActionPatterns": [
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:GRIP_CLAWS>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.85
         },
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
+          "signature": "U:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
+          "signature": "U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH>U:ADAPTATION>U:FAT_RESERVES>U:METABOLISM",
           "pctOfWins": 0.75
         },
         {
-          "signature": "U:AGILITY>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
+          "signature": "U:GRIP_CLAWS>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES>U:STRENGTH",
           "pctOfWins": 0.65
         }
       ]
     },
     "evolve_nutrient_alternative": {
       "games": 4000,
-      "winPct": 100,
+      "winPct": 99.95,
       "lossPct": 0,
-      "drawPct": 0,
-      "avgScoreFor": 4.878,
-      "avgScoreAgainst": 0.145,
+      "drawPct": 0.05,
+      "avgScoreFor": 4.811,
+      "avgScoreAgainst": 0.425,
       "avgUse": 5.172,
       "avgEvolve": 0.828,
-      "cooldownBlockedBestPct": 1.217,
+      "cooldownBlockedBestPct": 5.75,
       "avgRoundValue": [
-        1.369,
-        1.654,
-        1.661,
-        1.611,
-        1.988,
-        1.988
+        2.054,
+        2.529,
+        2.51,
+        2.454,
+        3.059,
+        2.974
       ],
-      "roundTiePct": 16.275,
+      "roundTiePct": 12.733,
       "traitSelectionPct": {
-        "FAT_RESERVES": 30.4,
-        "METABOLISM": 18.68,
-        "AGILITY": 14.15,
-        "WEBBED_LIMBS": 14.11,
-        "PERCEPTION": 13.89,
-        "RESISTANCE": 8.58,
-        "STRENGTH": 0.19,
-        "ADAPTATION": 0,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0
+        "FAT_RESERVES": 29.64,
+        "METABOLISM": 26.23,
+        "ADAPTATION": 16.02,
+        "STRENGTH": 14.19,
+        "GRIP_CLAWS": 13.49,
+        "RESISTANCE": 0.42,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0,
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        13.954,
-        16.502,
-        16.184,
-        15.915,
-        18.692,
-        18.752
+        14.983,
+        16.711,
+        16.387,
+        16.014,
+        18.067,
+        17.838
       ],
       "pivotalRoundPct": [
-        0.1,
-        0.1,
-        0.05,
-        0.05,
-        0.1,
-        0.05
+        0.15,
+        0.4,
+        0.45,
+        0.15,
+        0.4,
+        0.3
       ],
-      "distinctWinningActionPatterns": 579,
-      "winningPatternEntropyBits": 8.957,
+      "distinctWinningActionPatterns": 566,
+      "winningPatternEntropyBits": 8.923,
       "topWinningActionPatterns": [
         {
-          "signature": "E:FAT_RESERVES>U:FAT_RESERVES>U:METABOLISM>U:WEBBED_LIMBS>U:FAT_RESERVES>U:AGILITY",
-          "pctOfWins": 0.7
-        },
-        {
-          "signature": "E:FAT_RESERVES>U:FAT_RESERVES>U:METABOLISM>U:WEBBED_LIMBS>U:AGILITY>U:PERCEPTION",
+          "signature": "E:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:FAT_RESERVES>U:STRENGTH",
           "pctOfWins": 0.65
         },
         {
-          "signature": "E:FAT_RESERVES>U:FAT_RESERVES>U:METABOLISM>U:AGILITY>U:WEBBED_LIMBS>U:PERCEPTION",
+          "signature": "E:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES>U:GRIP_CLAWS>U:STRENGTH",
+          "pctOfWins": 0.55
+        },
+        {
+          "signature": "U:STRENGTH>E:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES",
           "pctOfWins": 0.5
         },
         {
-          "signature": "U:WEBBED_LIMBS>E:FAT_RESERVES>U:METABOLISM>U:FAT_RESERVES>U:PERCEPTION>U:AGILITY",
+          "signature": "E:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES>U:STRENGTH",
           "pctOfWins": 0.5
         },
         {
-          "signature": "U:WEBBED_LIMBS>E:FAT_RESERVES>U:PERCEPTION>U:FAT_RESERVES>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.45
+          "signature": "U:GRIP_CLAWS>E:FAT_RESERVES>U:METABOLISM>U:FAT_RESERVES>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 0.5
         }
       ]
     },
     "final_gene_evolve_1": {
       "games": 4000,
-      "winPct": 100,
+      "winPct": 99.95,
       "lossPct": 0,
-      "drawPct": 0,
-      "avgScoreFor": 4.768,
-      "avgScoreAgainst": 0.166,
+      "drawPct": 0.05,
+      "avgScoreFor": 4.72,
+      "avgScoreAgainst": 0.485,
       "avgUse": 5,
       "avgEvolve": 1,
-      "cooldownBlockedBestPct": 2.683,
+      "cooldownBlockedBestPct": 3.242,
       "avgRoundValue": [
         0,
-        2.091,
-        2.018,
-        2.029,
-        1.851,
-        3
+        3.091,
+        2.997,
+        2.995,
+        2.861,
+        4
       ],
-      "roundTiePct": 17.775,
+      "roundTiePct": 13.258,
       "traitSelectionPct": {
-        "METABOLISM": 30.13,
-        "PERCEPTION": 18.37,
-        "AGILITY": 18.34,
-        "WEBBED_LIMBS": 16.11,
-        "RESISTANCE": 15.68,
-        "ADAPTATION": 1.16,
-        "STRENGTH": 0.21,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "METABOLISM": 30.51,
+        "ADAPTATION": 22.68,
+        "STRENGTH": 20.46,
+        "GRIP_CLAWS": 13.73,
+        "FAT_RESERVES": 12.46,
+        "WEBBED_LIMBS": 0.17,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0
       },
       "decisivePointSharePct": [
-        3.567,
-        19.357,
-        19.165,
-        19.195,
-        18.689,
-        20.026
+        8.521,
+        18.398,
+        18.273,
+        17.965,
+        17.927,
+        18.916
       ],
       "pivotalRoundPct": [
-        0,
         0.05,
-        0,
+        0.25,
+        0.2,
         0.05,
-        0.05,
-        0.1
+        0.1,
+        0.3
       ],
-      "distinctWinningActionPatterns": 387,
-      "winningPatternEntropyBits": 8.289,
+      "distinctWinningActionPatterns": 299,
+      "winningPatternEntropyBits": 7.876,
       "topWinningActionPatterns": [
         {
-          "signature": "E:PERCEPTION>U:AGILITY>U:RESISTANCE>U:METABOLISM>U:WEBBED_LIMBS>U:PERCEPTION",
-          "pctOfWins": 0.85
+          "signature": "E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
+          "pctOfWins": 2.101
         },
         {
-          "signature": "E:AGILITY>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.85
+          "signature": "E:METABOLISM>U:STRENGTH>U:GRIP_CLAWS>U:METABOLISM>U:ADAPTATION>U:METABOLISM",
+          "pctOfWins": 1.301
         },
         {
-          "signature": "E:AGILITY>U:RESISTANCE>U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:AGILITY",
-          "pctOfWins": 0.8
+          "signature": "E:METABOLISM>U:METABOLISM>U:GRIP_CLAWS>U:STRENGTH>U:ADAPTATION>U:METABOLISM",
+          "pctOfWins": 1.201
         },
         {
-          "signature": "E:AGILITY>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.8
+          "signature": "E:METABOLISM>U:STRENGTH>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:METABOLISM",
+          "pctOfWins": 1.151
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 0.8
+          "signature": "E:STRENGTH>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 1.101
         }
       ]
     },
     "final_gene_evolve_2": {
       "games": 4000,
-      "winPct": 99.7,
-      "lossPct": 0,
-      "drawPct": 0.3,
-      "avgScoreFor": 3.876,
-      "avgScoreAgainst": 0.296,
+      "winPct": 99.3,
+      "lossPct": 0.1,
+      "drawPct": 0.6,
+      "avgScoreFor": 3.792,
+      "avgScoreAgainst": 0.923,
       "avgUse": 4,
       "avgEvolve": 2,
-      "cooldownBlockedBestPct": 1.567,
+      "cooldownBlockedBestPct": 5.525,
       "avgRoundValue": [
         0,
         0,
-        2.16,
-        1.978,
-        1.857,
-        4
+        3.368,
+        2.994,
+        2.821,
+        5
       ],
-      "roundTiePct": 30.467,
+      "roundTiePct": 21.408,
       "traitSelectionPct": {
-        "METABOLISM": 33.48,
-        "PERCEPTION": 20.76,
-        "AGILITY": 19.07,
-        "RESISTANCE": 12.87,
-        "WEBBED_LIMBS": 11.9,
-        "ADAPTATION": 1.62,
-        "STRENGTH": 0.32,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "METABOLISM": 34.24,
+        "ADAPTATION": 23.03,
+        "STRENGTH": 19.44,
+        "FAT_RESERVES": 12.14,
+        "GRIP_CLAWS": 10.81,
+        "WEBBED_LIMBS": 0.33,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0
       },
       "decisivePointSharePct": [
-        4.219,
-        4.326,
-        22.711,
-        22.663,
-        22.148,
-        23.933
+        9.405,
+        9.31,
+        20.507,
+        19.849,
+        19.743,
+        21.185
       ],
       "pivotalRoundPct": [
-        0.1,
-        0.15,
-        0.95,
-        1.25,
-        0.65,
-        1.6
+        0.55,
+        0.55,
+        4.45,
+        3.7,
+        2.55,
+        5.4
       ],
-      "distinctWinningActionPatterns": 84,
-      "winningPatternEntropyBits": 6.159,
+      "distinctWinningActionPatterns": 78,
+      "winningPatternEntropyBits": 5.804,
       "topWinningActionPatterns": [
         {
-          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM",
-          "pctOfWins": 3.059
+          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:METABOLISM",
+          "pctOfWins": 5.539
         },
         {
-          "signature": "E:AGILITY>E:AGILITY>U:AGILITY>U:METABOLISM>U:WEBBED_LIMBS>U:AGILITY",
-          "pctOfWins": 2.959
+          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:STRENGTH>U:METABOLISM",
+          "pctOfWins": 4.381
         },
         {
-          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:WEBBED_LIMBS>U:PERCEPTION>U:METABOLISM",
-          "pctOfWins": 2.859
+          "signature": "E:STRENGTH>E:STRENGTH>U:STRENGTH>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 4.23
         },
         {
-          "signature": "E:METABOLISM>E:METABOLISM>U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:METABOLISM",
-          "pctOfWins": 2.859
+          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM",
+          "pctOfWins": 3.474
         },
         {
-          "signature": "E:PERCEPTION>E:PERCEPTION>U:RESISTANCE>U:PERCEPTION>U:METABOLISM>U:PERCEPTION",
-          "pctOfWins": 2.457
+          "signature": "E:METABOLISM>E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:FAT_RESERVES>U:METABOLISM",
+          "pctOfWins": 3.323
         }
       ]
     },
     "final_gene_evolve_3": {
       "games": 4000,
-      "winPct": 98.45,
-      "lossPct": 0.1,
-      "drawPct": 1.45,
-      "avgScoreFor": 3.047,
-      "avgScoreAgainst": 0.43,
+      "winPct": 88.45,
+      "lossPct": 1.05,
+      "drawPct": 10.5,
+      "avgScoreFor": 2.907,
+      "avgScoreAgainst": 1.329,
       "avgUse": 3,
       "avgEvolve": 3,
-      "cooldownBlockedBestPct": 13.917,
+      "cooldownBlockedBestPct": 14.675,
       "avgRoundValue": [
         0,
         0,
         0,
-        3.008,
-        1.918,
-        5
+        4.266,
+        2.918,
+        6
       ],
-      "roundTiePct": 42.042,
+      "roundTiePct": 29.4,
       "traitSelectionPct": {
         "METABOLISM": 37.84,
-        "AGILITY": 20.57,
-        "PERCEPTION": 20.46,
-        "RESISTANCE": 11.24,
-        "WEBBED_LIMBS": 9.16,
-        "ADAPTATION": 0.73,
-        "STRENGTH": 0,
-        "GRIP_CLAWS": 0,
+        "ADAPTATION": 21.82,
+        "STRENGTH": 20.57,
+        "FAT_RESERVES": 11.24,
+        "GRIP_CLAWS": 8.52,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
         "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        5.061,
-        5.191,
-        5.751,
-        28.382,
-        26.858,
-        28.756
+        10.47,
+        10.364,
+        10.163,
+        23.3,
+        22.096,
+        23.607
       ],
       "pivotalRoundPct": [
-        0.7,
-        0.8,
-        1.2,
-        7.6,
-        5.3,
-        8
+        10.15,
+        9.65,
+        9.95,
+        42.9,
+        39.25,
+        43.55
       ],
-      "distinctWinningActionPatterns": 21,
-      "winningPatternEntropyBits": 4.126,
+      "distinctWinningActionPatterns": 20,
+      "winningPatternEntropyBits": 3.989,
       "topWinningActionPatterns": [
         {
-          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:WEBBED_LIMBS>U:METABOLISM",
-          "pctOfWins": 11.783
+          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:METABOLISM",
+          "pctOfWins": 15.659
         },
         {
-          "signature": "E:AGILITY>E:AGILITY>E:AGILITY>U:AGILITY>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 8.735
+          "signature": "E:STRENGTH>E:STRENGTH>E:STRENGTH>U:STRENGTH>U:METABOLISM>U:STRENGTH",
+          "pctOfWins": 9.101
         },
         {
-          "signature": "E:PERCEPTION>E:PERCEPTION>E:PERCEPTION>U:PERCEPTION>U:METABOLISM>U:PERCEPTION",
-          "pctOfWins": 8.685
+          "signature": "E:ADAPTATION>E:ADAPTATION>E:ADAPTATION>U:ADAPTATION>U:METABOLISM>U:ADAPTATION",
+          "pctOfWins": 8.705
         },
         {
-          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 8.177
+          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:STRENGTH>U:METABOLISM",
+          "pctOfWins": 8.197
         },
         {
-          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 8.126
+          "signature": "E:METABOLISM>E:METABOLISM>E:METABOLISM>U:METABOLISM>U:FAT_RESERVES>U:METABOLISM",
+          "pctOfWins": 8.084
         }
       ]
     },
     "future_favorite": {
       "games": 4000,
-      "winPct": 99.95,
+      "winPct": 100,
       "lossPct": 0,
-      "drawPct": 0.05,
-      "avgScoreFor": 4.765,
-      "avgScoreAgainst": 0.176,
+      "drawPct": 0,
+      "avgScoreFor": 4.694,
+      "avgScoreAgainst": 0.512,
       "avgUse": 5,
       "avgEvolve": 1,
-      "cooldownBlockedBestPct": 5.3,
+      "cooldownBlockedBestPct": 8.575,
       "avgRoundValue": [
         0,
-        2.325,
-        2.137,
-        2.147,
-        2.152,
-        2.17
+        3.353,
+        3.04,
+        3.1,
+        3.104,
+        3.128
       ],
-      "roundTiePct": 17.65,
+      "roundTiePct": 13.225,
       "traitSelectionPct": {
-        "METABOLISM": 33.39,
-        "WEBBED_LIMBS": 17.72,
-        "PERCEPTION": 14.12,
-        "RESISTANCE": 13.68,
-        "AGILITY": 12.16,
-        "STRENGTH": 6.68,
-        "ADAPTATION": 2.24,
-        "GRIP_CLAWS": 0,
+        "METABOLISM": 39.21,
+        "STRENGTH": 22.21,
+        "ADAPTATION": 19.42,
+        "GRIP_CLAWS": 10.02,
+        "FAT_RESERVES": 7.95,
+        "AGILITY": 1.2,
+        "RESISTANCE": 0,
+        "PERCEPTION": 0,
         "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        3.562,
-        19.581,
-        19.257,
-        19.298,
-        19.085,
-        19.217
+        8.518,
+        18.679,
+        18.333,
+        18.122,
+        18.122,
+        18.227
       ],
       "pivotalRoundPct": [
-        0.05,
+        0,
+        0.4,
+        0.35,
         0.2,
         0.15,
-        0.05,
-        0.15,
-        0.1
+        0.2
       ],
-      "distinctWinningActionPatterns": 428,
-      "winningPatternEntropyBits": 8.455,
+      "distinctWinningActionPatterns": 221,
+      "winningPatternEntropyBits": 7.433,
       "topWinningActionPatterns": [
         {
-          "signature": "E:METABOLISM>U:METABOLISM>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:AGILITY",
-          "pctOfWins": 0.95
+          "signature": "E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
+          "pctOfWins": 2.85
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.85
+          "signature": "E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 2.05
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.8
+          "signature": "E:METABOLISM>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
+          "pctOfWins": 1.85
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 0.8
+          "signature": "E:METABOLISM>U:STRENGTH>U:METABOLISM>U:ADAPTATION>U:METABOLISM>U:ADAPTATION",
+          "pctOfWins": 1.45
         },
         {
-          "signature": "E:WEBBED_LIMBS>U:RESISTANCE>U:WEBBED_LIMBS>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY",
-          "pctOfWins": 0.75
+          "signature": "E:METABOLISM>U:METABOLISM>U:GRIP_CLAWS>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 1.45
         }
       ]
     },
     "next_event_evolver": {
       "games": 4000,
-      "winPct": 99.45,
-      "lossPct": 0,
-      "drawPct": 0.55,
-      "avgScoreFor": 3.116,
-      "avgScoreAgainst": 0.464,
+      "winPct": 91.15,
+      "lossPct": 0.05,
+      "drawPct": 8.8,
+      "avgScoreFor": 2.976,
+      "avgScoreAgainst": 1.31,
       "avgUse": 3,
       "avgEvolve": 3,
-      "cooldownBlockedBestPct": 2,
+      "cooldownBlockedBestPct": 2.325,
       "avgRoundValue": [
         0,
-        3,
+        4,
         0,
-        3.063,
+        4.064,
         0,
-        3.172
+        4.172
       ],
-      "roundTiePct": 40.333,
+      "roundTiePct": 28.575,
       "traitSelectionPct": {
-        "METABOLISM": 35.37,
-        "PERCEPTION": 17.83,
-        "AGILITY": 17.52,
-        "RESISTANCE": 15.2,
-        "WEBBED_LIMBS": 14.08,
-        "STRENGTH": 0,
-        "ADAPTATION": 0,
-        "GRIP_CLAWS": 0,
+        "METABOLISM": 35.51,
+        "ADAPTATION": 17.83,
+        "STRENGTH": 17.52,
+        "FAT_RESERVES": 15.06,
+        "GRIP_CLAWS": 14.08,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
         "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        4.916,
-        27.905,
-        5.587,
-        27.751,
-        6.201,
-        27.64
+        10.349,
+        23.311,
+        10.046,
+        23.136,
+        10.151,
+        23.008
       ],
       "pivotalRoundPct": [
-        0.45,
-        6.45,
-        0.5,
-        6.3,
-        0.5,
-        6.1
+        8.55,
+        40.9,
+        8.65,
+        40.4,
+        8.5,
+        39.95
       ],
       "distinctWinningActionPatterns": 72,
-      "winningPatternEntropyBits": 5.919,
+      "winningPatternEntropyBits": 5.921,
       "topWinningActionPatterns": [
         {
-          "signature": "E:RESISTANCE>U:RESISTANCE>E:METABOLISM>U:METABOLISM>E:AGILITY>U:AGILITY",
-          "pctOfWins": 3.067
+          "signature": "E:FAT_RESERVES>U:FAT_RESERVES>E:METABOLISM>U:METABOLISM>E:STRENGTH>U:STRENGTH",
+          "pctOfWins": 3.127
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>E:WEBBED_LIMBS>U:WEBBED_LIMBS>E:AGILITY>U:AGILITY",
-          "pctOfWins": 2.916
+          "signature": "E:METABOLISM>U:METABOLISM>E:ADAPTATION>U:ADAPTATION>E:METABOLISM>U:METABOLISM",
+          "pctOfWins": 2.907
         },
         {
-          "signature": "E:METABOLISM>U:METABOLISM>E:PERCEPTION>U:PERCEPTION>E:METABOLISM>U:METABOLISM",
-          "pctOfWins": 2.765
+          "signature": "E:METABOLISM>U:METABOLISM>E:FAT_RESERVES>U:FAT_RESERVES>E:STRENGTH>U:STRENGTH",
+          "pctOfWins": 2.798
         },
         {
-          "signature": "E:PERCEPTION>U:PERCEPTION>E:METABOLISM>U:METABOLISM>E:METABOLISM>U:METABOLISM",
-          "pctOfWins": 2.765
+          "signature": "E:METABOLISM>U:METABOLISM>E:GRIP_CLAWS>U:GRIP_CLAWS>E:STRENGTH>U:STRENGTH",
+          "pctOfWins": 2.798
         },
         {
-          "signature": "E:AGILITY>U:AGILITY>E:METABOLISM>U:METABOLISM>E:PERCEPTION>U:PERCEPTION",
-          "pctOfWins": 2.614
+          "signature": "E:ADAPTATION>U:ADAPTATION>E:METABOLISM>U:METABOLISM>E:METABOLISM>U:METABOLISM",
+          "pctOfWins": 2.633
         }
       ]
     },
     "avoid_penalties": {
       "games": 4000,
-      "winPct": 61.2,
-      "lossPct": 16.95,
-      "drawPct": 21.85,
-      "avgScoreFor": 1.673,
-      "avgScoreAgainst": 0.772,
+      "winPct": 86.1,
+      "lossPct": 4.9,
+      "drawPct": 9,
+      "avgScoreFor": 3.463,
+      "avgScoreAgainst": 1.002,
       "avgUse": 6,
       "avgEvolve": 0,
-      "cooldownBlockedBestPct": 7.858,
+      "cooldownBlockedBestPct": 8.25,
       "avgRoundValue": [
-        0.395,
-        0.389,
-        0.395,
-        0.41,
-        0.381,
-        0.404
+        1.278,
+        1.27,
+        1.284,
+        1.268,
+        1.262,
+        1.291
       ],
-      "roundTiePct": 59.258,
+      "roundTiePct": 25.583,
       "traitSelectionPct": {
-        "GRIP_CLAWS": 11.39,
-        "ADAPTATION": 11.09,
-        "RESISTANCE": 11.03,
-        "WEBBED_LIMBS": 10.8,
-        "CAMOUFLAGE": 10.76,
-        "PERCEPTION": 9.61,
-        "METABOLISM": 9.32,
-        "AGILITY": 9.29,
-        "STRENGTH": 9.19,
-        "FAT_RESERVES": 7.52
+        "ADAPTATION": 10.29,
+        "PERCEPTION": 10.15,
+        "GRIP_CLAWS": 10.11,
+        "RESISTANCE": 10.09,
+        "METABOLISM": 10.03,
+        "FAT_RESERVES": 9.96,
+        "AGILITY": 9.92,
+        "CAMOUFLAGE": 9.88,
+        "WEBBED_LIMBS": 9.8,
+        "STRENGTH": 9.78
       },
       "decisivePointSharePct": [
-        15.872,
-        16.138,
-        16.731,
-        17.284,
-        16.384,
-        17.591
+        16.293,
+        16.45,
+        16.629,
+        16.663,
+        16.999,
+        16.965
       ],
       "pivotalRoundPct": [
-        18,
-        18,
-        18.05,
-        19,
-        18.35,
-        19
+        15.45,
+        14.65,
+        14.7,
+        13.5,
+        15,
+        12.95
       ],
-      "distinctWinningActionPatterns": 1224,
-      "winningPatternEntropyBits": 10.257,
+      "distinctWinningActionPatterns": 1721,
+      "winningPatternEntropyBits": 10.749,
       "topWinningActionPatterns": [
         {
-          "signature": "U:STRENGTH>U:RESISTANCE>U:WEBBED_LIMBS>U:ADAPTATION>U:PERCEPTION>U:RESISTANCE",
-          "pctOfWins": 0.082
+          "signature": "U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:WEBBED_LIMBS>U:RESISTANCE>U:ADAPTATION",
+          "pctOfWins": 0.116
         },
         {
-          "signature": "U:METABOLISM>U:FAT_RESERVES>U:PERCEPTION>U:GRIP_CLAWS>U:METABOLISM>U:FAT_RESERVES",
-          "pctOfWins": 0.082
+          "signature": "U:RESISTANCE>U:STRENGTH>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION",
+          "pctOfWins": 0.058
+        },
+        {
+          "signature": "U:METABOLISM>U:FAT_RESERVES>U:AGILITY>U:CAMOUFLAGE>U:METABOLISM>U:FAT_RESERVES",
+          "pctOfWins": 0.058
         },
         {
           "signature": "U:PERCEPTION>U:ADAPTATION>U:CAMOUFLAGE>U:STRENGTH>U:CAMOUFLAGE>U:FAT_RESERVES",
-          "pctOfWins": 0.082
+          "pctOfWins": 0.058
         },
         {
-          "signature": "U:STRENGTH>U:CAMOUFLAGE>U:WEBBED_LIMBS>U:AGILITY>U:CAMOUFLAGE>U:STRENGTH",
-          "pctOfWins": 0.082
-        },
-        {
-          "signature": "U:ADAPTATION>U:WEBBED_LIMBS>U:METABOLISM>U:FAT_RESERVES>U:ADAPTATION>U:RESISTANCE",
-          "pctOfWins": 0.082
+          "signature": "U:RESISTANCE>U:FAT_RESERVES>U:WEBBED_LIMBS>U:GRIP_CLAWS>U:CAMOUFLAGE>U:GRIP_CLAWS",
+          "pctOfWins": 0.058
         }
       ]
     },
@@ -896,39 +896,39 @@
       "winPct": 100,
       "lossPct": 0,
       "drawPct": 0,
-      "avgScoreFor": 5.59,
-      "avgScoreAgainst": 0.064,
+      "avgScoreFor": 5.577,
+      "avgScoreAgainst": 0.065,
       "avgUse": 6,
       "avgEvolve": 0,
-      "cooldownBlockedBestPct": 4.683,
+      "cooldownBlockedBestPct": 4.675,
       "avgRoundValue": [
-        1.988,
-        1.947,
-        1.942,
-        1.946,
-        1.945,
-        1.918
+        2.994,
+        2.943,
+        2.939,
+        2.938,
+        2.954,
+        2.918
       ],
-      "roundTiePct": 5.775,
+      "roundTiePct": 5.958,
       "traitSelectionPct": {
         "METABOLISM": 28.12,
-        "WEBBED_LIMBS": 18.73,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "ADAPTATION": 3.16,
-        "STRENGTH": 0,
-        "GRIP_CLAWS": 0,
-        "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "ADAPTATION": 21.43,
+        "STRENGTH": 16.67,
+        "GRIP_CLAWS": 16.67,
+        "FAT_RESERVES": 16.67,
+        "WEBBED_LIMBS": 0.46,
+        "RESISTANCE": 0,
+        "AGILITY": 0,
+        "PERCEPTION": 0,
+        "CAMOUFLAGE": 0
       },
       "decisivePointSharePct": [
-        16.839,
-        16.742,
-        16.627,
-        16.636,
-        16.574,
-        16.583
+        16.766,
+        16.819,
+        16.783,
+        16.473,
+        16.606,
+        16.553
       ],
       "pivotalRoundPct": [
         0,
@@ -938,28 +938,28 @@
         0,
         0
       ],
-      "distinctWinningActionPatterns": 419,
-      "winningPatternEntropyBits": 8.428,
+      "distinctWinningActionPatterns": 336,
+      "winningPatternEntropyBits": 8.149,
       "topWinningActionPatterns": [
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
+          "signature": "U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 1.4
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:FAT_RESERVES>U:STRENGTH",
           "pctOfWins": 0.85
         },
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:GRIP_CLAWS>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH",
+          "pctOfWins": 0.85
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
+          "signature": "U:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
           "pctOfWins": 0.8
-        },
-        {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.75
-        },
-        {
-          "signature": "U:AGILITY>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.65
         }
       ]
     },
@@ -968,92 +968,92 @@
       "winPct": 100,
       "lossPct": 0,
       "drawPct": 0,
-      "avgScoreFor": 5.585,
-      "avgScoreAgainst": 0.067,
+      "avgScoreFor": 5.571,
+      "avgScoreAgainst": 0.07,
       "avgUse": 6,
       "avgEvolve": 0,
-      "cooldownBlockedBestPct": 5.75,
+      "cooldownBlockedBestPct": 6.45,
       "avgRoundValue": [
-        2,
-        1.947,
-        1.926,
-        1.931,
-        1.936,
-        1.915
+        3,
+        2.947,
+        2.925,
+        2.922,
+        2.926,
+        2.893
       ],
-      "roundTiePct": 5.808,
+      "roundTiePct": 5.992,
       "traitSelectionPct": {
         "METABOLISM": 28.12,
-        "WEBBED_LIMBS": 18.73,
-        "RESISTANCE": 16.67,
-        "AGILITY": 16.67,
-        "PERCEPTION": 16.67,
-        "ADAPTATION": 2.63,
-        "STRENGTH": 0.53,
-        "GRIP_CLAWS": 0,
+        "ADAPTATION": 20.88,
+        "GRIP_CLAWS": 17.47,
+        "STRENGTH": 16.81,
+        "FAT_RESERVES": 16.67,
+        "AGILITY": 0.05,
+        "RESISTANCE": 0,
+        "PERCEPTION": 0,
         "CAMOUFLAGE": 0,
-        "FAT_RESERVES": 0
+        "WEBBED_LIMBS": 0
       },
       "decisivePointSharePct": [
-        16.854,
-        16.73,
-        16.624,
-        16.624,
-        16.571,
-        16.597
+        16.754,
+        16.825,
+        16.798,
+        16.47,
+        16.639,
+        16.514
       ],
       "pivotalRoundPct": [
         0,
-        0.05,
         0,
         0,
-        0.05,
-        0.05
+        0,
+        0,
+        0
       ],
-      "distinctWinningActionPatterns": 419,
-      "winningPatternEntropyBits": 8.428,
+      "distinctWinningActionPatterns": 343,
+      "winningPatternEntropyBits": 8.184,
       "topWinningActionPatterns": [
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
+          "signature": "U:GRIP_CLAWS>U:FAT_RESERVES>U:ADAPTATION>U:METABOLISM>U:ADAPTATION>U:STRENGTH",
+          "pctOfWins": 0.9
+        },
+        {
+          "signature": "U:ADAPTATION>U:METABOLISM>U:GRIP_CLAWS>U:FAT_RESERVES>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.85
         },
         {
-          "signature": "U:PERCEPTION>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
+          "signature": "U:ADAPTATION>U:METABOLISM>U:FAT_RESERVES>U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:RESISTANCE>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
+          "signature": "U:FAT_RESERVES>U:METABOLISM>U:ADAPTATION>U:GRIP_CLAWS>U:STRENGTH>U:METABOLISM",
           "pctOfWins": 0.8
         },
         {
-          "signature": "U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
+          "signature": "U:GRIP_CLAWS>U:METABOLISM>U:STRENGTH>U:ADAPTATION>U:FAT_RESERVES>U:METABOLISM",
           "pctOfWins": 0.75
-        },
-        {
-          "signature": "U:AGILITY>U:PERCEPTION>U:WEBBED_LIMBS>U:METABOLISM>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.65
         }
       ]
     },
     "exact_best_response_vs_greedy": {
       "games": 4000,
-      "winPct": 99.95,
-      "lossPct": 0,
-      "drawPct": 0.05,
-      "avgScoreFor": 5.014,
-      "avgScoreAgainst": 0.143,
+      "winPct": 99.1,
+      "lossPct": 0.2,
+      "drawPct": 0.7,
+      "avgScoreFor": 4.329,
+      "avgScoreAgainst": 0.626,
       "avgUse": 5.233,
       "avgEvolve": 0.767,
       "cooldownBlockedBestPct": 0.317,
       "avgRoundValue": [
-        1.353,
-        1.778,
-        1.875,
-        2.079,
-        2.184,
-        2.372
+        1.522,
+        1.946,
+        2.001,
+        2.179,
+        2.347,
+        2.563
       ],
-      "roundTiePct": 14.042,
+      "roundTiePct": 17.417,
       "traitSelectionPct": {
         "METABOLISM": 35.55,
         "AGILITY": 17.58,
@@ -1067,43 +1067,43 @@
         "CAMOUFLAGE": 0
       },
       "decisivePointSharePct": [
-        13.592,
-        15.153,
-        16.491,
-        17.79,
-        18.371,
-        18.604
+        14.955,
+        15.943,
+        16.478,
+        17.265,
+        17.629,
+        17.73
       ],
       "pivotalRoundPct": [
-        0,
-        0.05,
-        0.1,
-        0.05,
-        0.15,
-        0.1
+        1.35,
+        3.05,
+        2.75,
+        2.6,
+        3.3,
+        3.05
       ],
-      "distinctWinningActionPatterns": 359,
-      "winningPatternEntropyBits": 8.241,
+      "distinctWinningActionPatterns": 358,
+      "winningPatternEntropyBits": 8.235,
       "topWinningActionPatterns": [
         {
           "signature": "U:WEBBED_LIMBS>U:RESISTANCE>U:PERCEPTION>E:AGILITY>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.9
+          "pctOfWins": 0.908
         },
         {
           "signature": "E:METABOLISM>U:METABOLISM>U:WEBBED_LIMBS>U:RESISTANCE>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.85
+          "pctOfWins": 0.858
         },
         {
           "signature": "E:METABOLISM>U:METABOLISM>U:RESISTANCE>U:WEBBED_LIMBS>U:METABOLISM>U:AGILITY",
-          "pctOfWins": 0.8
+          "pctOfWins": 0.807
         },
         {
           "signature": "E:METABOLISM>U:METABOLISM>U:PERCEPTION>U:WEBBED_LIMBS>U:AGILITY>U:METABOLISM",
-          "pctOfWins": 0.8
+          "pctOfWins": 0.807
         },
         {
           "signature": "E:METABOLISM>U:METABOLISM>U:AGILITY>U:PERCEPTION>U:RESISTANCE>U:METABOLISM",
-          "pctOfWins": 0.75
+          "pctOfWins": 0.757
         }
       ]
     }
@@ -1111,9 +1111,9 @@
   "roundRobin": {
     "random": {
       "random": {
-        "winPct": 37.25,
-        "drawPct": 27,
-        "lossPct": 35.75
+        "winPct": 37,
+        "drawPct": 22.75,
+        "lossPct": 40.25
       },
       "immediate_greedy": {
         "winPct": 0,
@@ -1147,28 +1147,28 @@
       },
       "final_gene_evolve_2": {
         "winPct": 0,
-        "drawPct": 0.25,
-        "lossPct": 99.75
+        "drawPct": 0.5,
+        "lossPct": 99.5
       },
       "final_gene_evolve_3": {
-        "winPct": 0,
-        "drawPct": 1,
-        "lossPct": 99
+        "winPct": 0.25,
+        "drawPct": 9.25,
+        "lossPct": 90.5
       },
       "future_favorite": {
         "winPct": 0,
-        "drawPct": 0,
-        "lossPct": 100
+        "drawPct": 0.25,
+        "lossPct": 99.75
       },
       "next_event_evolver": {
         "winPct": 0,
-        "drawPct": 0.75,
-        "lossPct": 99.25
+        "drawPct": 9.25,
+        "lossPct": 90.75
       },
       "avoid_penalties": {
-        "winPct": 17.5,
-        "drawPct": 21.25,
-        "lossPct": 61.25
+        "winPct": 5.25,
+        "drawPct": 8.5,
+        "lossPct": 86.25
       },
       "full_foresight_value": {
         "winPct": 0,
@@ -1182,8 +1182,8 @@
       },
       "exact_best_response_vs_greedy": {
         "winPct": 0,
-        "drawPct": 0,
-        "lossPct": 100
+        "drawPct": 1,
+        "lossPct": 99
       }
     },
     "immediate_greedy": {
@@ -1213,29 +1213,29 @@
         "lossPct": 2.75
       },
       "evolve_nutrient_alternative": {
-        "winPct": 58.5,
-        "drawPct": 39.75,
-        "lossPct": 1.75
+        "winPct": 41,
+        "drawPct": 56.25,
+        "lossPct": 2.75
       },
       "final_gene_evolve_1": {
-        "winPct": 11,
-        "drawPct": 50.25,
-        "lossPct": 38.75
+        "winPct": 12.5,
+        "drawPct": 58.75,
+        "lossPct": 28.75
       },
       "final_gene_evolve_2": {
-        "winPct": 75.75,
-        "drawPct": 23,
-        "lossPct": 1.25
+        "winPct": 65.75,
+        "drawPct": 32,
+        "lossPct": 2.25
       },
       "final_gene_evolve_3": {
-        "winPct": 94.25,
-        "drawPct": 5.75,
+        "winPct": 94.5,
+        "drawPct": 5.5,
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 15.75,
-        "drawPct": 38.5,
-        "lossPct": 45.75
+        "winPct": 17,
+        "drawPct": 43.25,
+        "lossPct": 39.75
       },
       "next_event_evolver": {
         "winPct": 0,
@@ -1258,9 +1258,9 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 29.5,
-        "lossPct": 70.5
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "principal_gene_greedy": {
@@ -1290,29 +1290,29 @@
         "lossPct": 2.75
       },
       "evolve_nutrient_alternative": {
-        "winPct": 58.5,
-        "drawPct": 39.75,
-        "lossPct": 1.75
+        "winPct": 41,
+        "drawPct": 56.25,
+        "lossPct": 2.75
       },
       "final_gene_evolve_1": {
-        "winPct": 11,
-        "drawPct": 50.25,
-        "lossPct": 38.75
+        "winPct": 12.5,
+        "drawPct": 58.75,
+        "lossPct": 28.75
       },
       "final_gene_evolve_2": {
-        "winPct": 75.75,
-        "drawPct": 23,
-        "lossPct": 1.25
+        "winPct": 65.75,
+        "drawPct": 32,
+        "lossPct": 2.25
       },
       "final_gene_evolve_3": {
-        "winPct": 94.25,
-        "drawPct": 5.75,
+        "winPct": 94.5,
+        "drawPct": 5.5,
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 15.75,
-        "drawPct": 38.5,
-        "lossPct": 45.75
+        "winPct": 17,
+        "drawPct": 43.25,
+        "lossPct": 39.75
       },
       "next_event_evolver": {
         "winPct": 0,
@@ -1335,9 +1335,9 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 29.5,
-        "lossPct": 70.5
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "one_event_lookahead": {
@@ -1362,34 +1362,34 @@
         "lossPct": 0
       },
       "conserve_metabolism": {
-        "winPct": 2.75,
-        "drawPct": 97.25,
+        "winPct": 0,
+        "drawPct": 100,
         "lossPct": 0
       },
       "evolve_nutrient_alternative": {
-        "winPct": 84.5,
-        "drawPct": 15.5,
+        "winPct": 42.5,
+        "drawPct": 57.5,
         "lossPct": 0
       },
       "final_gene_evolve_1": {
-        "winPct": 1.25,
-        "drawPct": 74.5,
-        "lossPct": 24.25
+        "winPct": 6,
+        "drawPct": 72.75,
+        "lossPct": 21.25
       },
       "final_gene_evolve_2": {
-        "winPct": 70.5,
-        "drawPct": 29.5,
+        "winPct": 67,
+        "drawPct": 33,
         "lossPct": 0
       },
       "final_gene_evolve_3": {
-        "winPct": 79.25,
-        "drawPct": 20.75,
+        "winPct": 99.5,
+        "drawPct": 0.5,
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 44,
-        "drawPct": 13.5,
-        "lossPct": 42.5
+        "winPct": 26,
+        "drawPct": 40.5,
+        "lossPct": 33.5
       },
       "next_event_evolver": {
         "winPct": 0,
@@ -1412,9 +1412,9 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 6.25,
-        "drawPct": 51.25,
-        "lossPct": 42.5
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "conserve_metabolism": {
@@ -1435,8 +1435,8 @@
       },
       "one_event_lookahead": {
         "winPct": 0,
-        "drawPct": 97.25,
-        "lossPct": 2.75
+        "drawPct": 100,
+        "lossPct": 0
       },
       "conserve_metabolism": {
         "winPct": 0,
@@ -1444,34 +1444,34 @@
         "lossPct": 0
       },
       "evolve_nutrient_alternative": {
-        "winPct": 61,
-        "drawPct": 39,
+        "winPct": 42.5,
+        "drawPct": 57.5,
         "lossPct": 0
       },
       "final_gene_evolve_1": {
-        "winPct": 0,
-        "drawPct": 67.5,
-        "lossPct": 32.5
+        "winPct": 3.25,
+        "drawPct": 75.5,
+        "lossPct": 21.25
       },
       "final_gene_evolve_2": {
-        "winPct": 78.75,
-        "drawPct": 21.25,
+        "winPct": 68.25,
+        "drawPct": 31.75,
         "lossPct": 0
       },
       "final_gene_evolve_3": {
-        "winPct": 98,
-        "drawPct": 2,
+        "winPct": 100,
+        "drawPct": 0,
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 44,
-        "drawPct": 13.5,
-        "lossPct": 42.5
+        "winPct": 34.25,
+        "drawPct": 32.25,
+        "lossPct": 33.5
       },
       "next_event_evolver": {
         "winPct": 0,
-        "drawPct": 98.5,
-        "lossPct": 1.5
+        "drawPct": 100,
+        "lossPct": 0
       },
       "avoid_penalties": {
         "winPct": 100,
@@ -1489,9 +1489,9 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 5,
-        "drawPct": 46.25,
-        "lossPct": 48.75
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "evolve_nutrient_alternative": {
@@ -1501,24 +1501,24 @@
         "lossPct": 0
       },
       "immediate_greedy": {
-        "winPct": 1.75,
-        "drawPct": 39.75,
-        "lossPct": 58.5
+        "winPct": 2.75,
+        "drawPct": 56.25,
+        "lossPct": 41
       },
       "principal_gene_greedy": {
-        "winPct": 1.75,
-        "drawPct": 39.75,
-        "lossPct": 58.5
+        "winPct": 2.75,
+        "drawPct": 56.25,
+        "lossPct": 41
       },
       "one_event_lookahead": {
         "winPct": 0,
-        "drawPct": 15.5,
-        "lossPct": 84.5
+        "drawPct": 57.5,
+        "lossPct": 42.5
       },
       "conserve_metabolism": {
         "winPct": 0,
-        "drawPct": 39,
-        "lossPct": 61
+        "drawPct": 57.5,
+        "lossPct": 42.5
       },
       "evolve_nutrient_alternative": {
         "winPct": 0,
@@ -1526,49 +1526,49 @@
         "lossPct": 0
       },
       "final_gene_evolve_1": {
-        "winPct": 0,
-        "drawPct": 29.75,
-        "lossPct": 70.25
+        "winPct": 2.25,
+        "drawPct": 54,
+        "lossPct": 43.75
       },
       "final_gene_evolve_2": {
-        "winPct": 32.75,
-        "drawPct": 54.75,
-        "lossPct": 12.5
+        "winPct": 37.25,
+        "drawPct": 42.75,
+        "lossPct": 20
       },
       "final_gene_evolve_3": {
-        "winPct": 47.75,
-        "drawPct": 52,
-        "lossPct": 0.25
+        "winPct": 63,
+        "drawPct": 31.5,
+        "lossPct": 5.5
       },
       "future_favorite": {
-        "winPct": 3.75,
-        "drawPct": 48.25,
-        "lossPct": 48
+        "winPct": 14.25,
+        "drawPct": 34.25,
+        "lossPct": 51.5
       },
       "next_event_evolver": {
-        "winPct": 0,
-        "drawPct": 55,
-        "lossPct": 45
+        "winPct": 4,
+        "drawPct": 72.75,
+        "lossPct": 23.25
       },
       "avoid_penalties": {
-        "winPct": 100,
+        "winPct": 99.75,
         "drawPct": 0,
-        "lossPct": 0
+        "lossPct": 0.25
       },
       "full_foresight_value": {
-        "winPct": 0,
-        "drawPct": 40.75,
-        "lossPct": 59.25
+        "winPct": 1.75,
+        "drawPct": 55.75,
+        "lossPct": 42.5
       },
       "response_aware": {
-        "winPct": 1.75,
-        "drawPct": 39.75,
-        "lossPct": 58.5
+        "winPct": 2.75,
+        "drawPct": 56.25,
+        "lossPct": 41
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0.25,
-        "drawPct": 18.5,
-        "lossPct": 81.25
+        "winPct": 71,
+        "drawPct": 29,
+        "lossPct": 0
       }
     },
     "final_gene_evolve_1": {
@@ -1578,29 +1578,29 @@
         "lossPct": 0
       },
       "immediate_greedy": {
-        "winPct": 38.75,
-        "drawPct": 50.25,
-        "lossPct": 11
+        "winPct": 28.75,
+        "drawPct": 58.75,
+        "lossPct": 12.5
       },
       "principal_gene_greedy": {
-        "winPct": 38.75,
-        "drawPct": 50.25,
-        "lossPct": 11
+        "winPct": 28.75,
+        "drawPct": 58.75,
+        "lossPct": 12.5
       },
       "one_event_lookahead": {
-        "winPct": 24.25,
-        "drawPct": 74.5,
-        "lossPct": 1.25
+        "winPct": 21.25,
+        "drawPct": 72.75,
+        "lossPct": 6
       },
       "conserve_metabolism": {
-        "winPct": 32.5,
-        "drawPct": 67.5,
-        "lossPct": 0
+        "winPct": 21.25,
+        "drawPct": 75.5,
+        "lossPct": 3.25
       },
       "evolve_nutrient_alternative": {
-        "winPct": 70.25,
-        "drawPct": 29.75,
-        "lossPct": 0
+        "winPct": 43.75,
+        "drawPct": 54,
+        "lossPct": 2.25
       },
       "final_gene_evolve_1": {
         "winPct": 0,
@@ -1608,81 +1608,81 @@
         "lossPct": 0
       },
       "final_gene_evolve_2": {
-        "winPct": 8.25,
-        "drawPct": 71.5,
-        "lossPct": 20.25
+        "winPct": 5,
+        "drawPct": 56,
+        "lossPct": 39
       },
       "final_gene_evolve_3": {
-        "winPct": 9.25,
-        "drawPct": 85.5,
-        "lossPct": 5.25
+        "winPct": 13.75,
+        "drawPct": 81.25,
+        "lossPct": 5
       },
       "future_favorite": {
-        "winPct": 27,
-        "drawPct": 53.25,
-        "lossPct": 19.75
+        "winPct": 14.25,
+        "drawPct": 70.25,
+        "lossPct": 15.5
       },
       "next_event_evolver": {
         "winPct": 0,
-        "drawPct": 97.25,
-        "lossPct": 2.75
+        "drawPct": 98.25,
+        "lossPct": 1.75
       },
       "avoid_penalties": {
-        "winPct": 100,
-        "drawPct": 0,
-        "lossPct": 0
-      },
-      "full_foresight_value": {
-        "winPct": 37.5,
-        "drawPct": 53,
-        "lossPct": 9.5
-      },
-      "response_aware": {
-        "winPct": 38.75,
-        "drawPct": 50.25,
-        "lossPct": 11
-      },
-      "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 69,
-        "lossPct": 31
-      }
-    },
-    "final_gene_evolve_2": {
-      "random": {
         "winPct": 99.75,
         "drawPct": 0.25,
         "lossPct": 0
       },
+      "full_foresight_value": {
+        "winPct": 27,
+        "drawPct": 60.25,
+        "lossPct": 12.75
+      },
+      "response_aware": {
+        "winPct": 28.75,
+        "drawPct": 58.75,
+        "lossPct": 12.5
+      },
+      "exact_best_response_vs_greedy": {
+        "winPct": 92.75,
+        "drawPct": 7.25,
+        "lossPct": 0
+      }
+    },
+    "final_gene_evolve_2": {
+      "random": {
+        "winPct": 99.5,
+        "drawPct": 0.5,
+        "lossPct": 0
+      },
       "immediate_greedy": {
-        "winPct": 1.25,
-        "drawPct": 23,
-        "lossPct": 75.75
+        "winPct": 2.25,
+        "drawPct": 32,
+        "lossPct": 65.75
       },
       "principal_gene_greedy": {
-        "winPct": 1.25,
-        "drawPct": 23,
-        "lossPct": 75.75
+        "winPct": 2.25,
+        "drawPct": 32,
+        "lossPct": 65.75
       },
       "one_event_lookahead": {
         "winPct": 0,
-        "drawPct": 29.5,
-        "lossPct": 70.5
+        "drawPct": 33,
+        "lossPct": 67
       },
       "conserve_metabolism": {
         "winPct": 0,
-        "drawPct": 21.25,
-        "lossPct": 78.75
+        "drawPct": 31.75,
+        "lossPct": 68.25
       },
       "evolve_nutrient_alternative": {
-        "winPct": 12.5,
-        "drawPct": 54.75,
-        "lossPct": 32.75
+        "winPct": 20,
+        "drawPct": 42.75,
+        "lossPct": 37.25
       },
       "final_gene_evolve_1": {
-        "winPct": 20.25,
-        "drawPct": 71.5,
-        "lossPct": 8.25
+        "winPct": 39,
+        "drawPct": 56,
+        "lossPct": 5
       },
       "final_gene_evolve_2": {
         "winPct": 0,
@@ -1691,79 +1691,79 @@
       },
       "final_gene_evolve_3": {
         "winPct": 0,
-        "drawPct": 9.25,
-        "lossPct": 90.75
+        "drawPct": 15.5,
+        "lossPct": 84.5
       },
       "future_favorite": {
-        "winPct": 18.25,
-        "drawPct": 35.25,
-        "lossPct": 46.5
+        "winPct": 29.5,
+        "drawPct": 27,
+        "lossPct": 43.5
       },
       "next_event_evolver": {
-        "winPct": 83,
-        "drawPct": 17,
+        "winPct": 85.5,
+        "drawPct": 14.5,
         "lossPct": 0
       },
       "avoid_penalties": {
-        "winPct": 99.25,
-        "drawPct": 0.75,
+        "winPct": 97.5,
+        "drawPct": 2.5,
         "lossPct": 0
       },
       "full_foresight_value": {
-        "winPct": 0.75,
-        "drawPct": 22.5,
-        "lossPct": 76.75
+        "winPct": 0,
+        "drawPct": 33.75,
+        "lossPct": 66.25
       },
       "response_aware": {
-        "winPct": 1.25,
-        "drawPct": 23,
-        "lossPct": 75.75
+        "winPct": 2.25,
+        "drawPct": 32,
+        "lossPct": 65.75
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 9.25,
-        "drawPct": 12.75,
-        "lossPct": 78
+        "winPct": 73.75,
+        "drawPct": 18.5,
+        "lossPct": 7.75
       }
     },
     "final_gene_evolve_3": {
       "random": {
-        "winPct": 99,
-        "drawPct": 1,
-        "lossPct": 0
+        "winPct": 90.5,
+        "drawPct": 9.25,
+        "lossPct": 0.25
       },
       "immediate_greedy": {
         "winPct": 0,
-        "drawPct": 5.75,
-        "lossPct": 94.25
+        "drawPct": 5.5,
+        "lossPct": 94.5
       },
       "principal_gene_greedy": {
         "winPct": 0,
-        "drawPct": 5.75,
-        "lossPct": 94.25
+        "drawPct": 5.5,
+        "lossPct": 94.5
       },
       "one_event_lookahead": {
         "winPct": 0,
-        "drawPct": 20.75,
-        "lossPct": 79.25
+        "drawPct": 0.5,
+        "lossPct": 99.5
       },
       "conserve_metabolism": {
         "winPct": 0,
-        "drawPct": 2,
-        "lossPct": 98
+        "drawPct": 0,
+        "lossPct": 100
       },
       "evolve_nutrient_alternative": {
-        "winPct": 0.25,
-        "drawPct": 52,
-        "lossPct": 47.75
+        "winPct": 5.5,
+        "drawPct": 31.5,
+        "lossPct": 63
       },
       "final_gene_evolve_1": {
-        "winPct": 5.25,
-        "drawPct": 85.5,
-        "lossPct": 9.25
+        "winPct": 5,
+        "drawPct": 81.25,
+        "lossPct": 13.75
       },
       "final_gene_evolve_2": {
-        "winPct": 90.75,
-        "drawPct": 9.25,
+        "winPct": 84.5,
+        "drawPct": 15.5,
         "lossPct": 0
       },
       "final_gene_evolve_3": {
@@ -1772,19 +1772,19 @@
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 1.75,
-        "drawPct": 60.75,
-        "lossPct": 37.5
+        "winPct": 3,
+        "drawPct": 47.5,
+        "lossPct": 49.5
       },
       "next_event_evolver": {
-        "winPct": 86.25,
-        "drawPct": 13.75,
+        "winPct": 77,
+        "drawPct": 23,
         "lossPct": 0
       },
       "avoid_penalties": {
-        "winPct": 94.25,
-        "drawPct": 5,
-        "lossPct": 0.75
+        "winPct": 24.5,
+        "drawPct": 64.75,
+        "lossPct": 10.75
       },
       "full_foresight_value": {
         "winPct": 0,
@@ -1793,60 +1793,60 @@
       },
       "response_aware": {
         "winPct": 0,
-        "drawPct": 5.75,
-        "lossPct": 94.25
+        "drawPct": 5.5,
+        "lossPct": 94.5
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 1.5,
-        "drawPct": 27.25,
-        "lossPct": 71.25
+        "winPct": 35,
+        "drawPct": 35.5,
+        "lossPct": 29.5
       }
     },
     "future_favorite": {
       "random": {
-        "winPct": 100,
-        "drawPct": 0,
+        "winPct": 99.75,
+        "drawPct": 0.25,
         "lossPct": 0
       },
       "immediate_greedy": {
-        "winPct": 45.75,
-        "drawPct": 38.5,
-        "lossPct": 15.75
+        "winPct": 39.75,
+        "drawPct": 43.25,
+        "lossPct": 17
       },
       "principal_gene_greedy": {
-        "winPct": 45.75,
-        "drawPct": 38.5,
-        "lossPct": 15.75
+        "winPct": 39.75,
+        "drawPct": 43.25,
+        "lossPct": 17
       },
       "one_event_lookahead": {
-        "winPct": 42.5,
-        "drawPct": 13.5,
-        "lossPct": 44
+        "winPct": 33.5,
+        "drawPct": 40.5,
+        "lossPct": 26
       },
       "conserve_metabolism": {
-        "winPct": 42.5,
-        "drawPct": 13.5,
-        "lossPct": 44
+        "winPct": 33.5,
+        "drawPct": 32.25,
+        "lossPct": 34.25
       },
       "evolve_nutrient_alternative": {
-        "winPct": 48,
-        "drawPct": 48.25,
-        "lossPct": 3.75
+        "winPct": 51.5,
+        "drawPct": 34.25,
+        "lossPct": 14.25
       },
       "final_gene_evolve_1": {
-        "winPct": 19.75,
-        "drawPct": 53.25,
-        "lossPct": 27
+        "winPct": 15.5,
+        "drawPct": 70.25,
+        "lossPct": 14.25
       },
       "final_gene_evolve_2": {
-        "winPct": 46.5,
-        "drawPct": 35.25,
-        "lossPct": 18.25
+        "winPct": 43.5,
+        "drawPct": 27,
+        "lossPct": 29.5
       },
       "final_gene_evolve_3": {
-        "winPct": 37.5,
-        "drawPct": 60.75,
-        "lossPct": 1.75
+        "winPct": 49.5,
+        "drawPct": 47.5,
+        "lossPct": 3
       },
       "future_favorite": {
         "winPct": 0,
@@ -1855,34 +1855,34 @@
       },
       "next_event_evolver": {
         "winPct": 0,
-        "drawPct": 56.75,
-        "lossPct": 43.25
+        "drawPct": 59.5,
+        "lossPct": 40.5
       },
       "avoid_penalties": {
-        "winPct": 100,
-        "drawPct": 0,
+        "winPct": 99.75,
+        "drawPct": 0.25,
         "lossPct": 0
       },
       "full_foresight_value": {
-        "winPct": 45.75,
-        "drawPct": 35.75,
-        "lossPct": 18.5
+        "winPct": 38.75,
+        "drawPct": 42.25,
+        "lossPct": 19
       },
       "response_aware": {
-        "winPct": 45.75,
-        "drawPct": 38.5,
-        "lossPct": 15.75
+        "winPct": 39.75,
+        "drawPct": 43.25,
+        "lossPct": 17
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 59.5,
-        "lossPct": 40.5
+        "winPct": 99.25,
+        "drawPct": 0.25,
+        "lossPct": 0.5
       }
     },
     "next_event_evolver": {
       "random": {
-        "winPct": 99.25,
-        "drawPct": 0.75,
+        "winPct": 90.75,
+        "drawPct": 9.25,
         "lossPct": 0
       },
       "immediate_greedy": {
@@ -1901,33 +1901,33 @@
         "lossPct": 0
       },
       "conserve_metabolism": {
-        "winPct": 1.5,
-        "drawPct": 98.5,
+        "winPct": 0,
+        "drawPct": 100,
         "lossPct": 0
       },
       "evolve_nutrient_alternative": {
-        "winPct": 45,
-        "drawPct": 55,
-        "lossPct": 0
+        "winPct": 23.25,
+        "drawPct": 72.75,
+        "lossPct": 4
       },
       "final_gene_evolve_1": {
-        "winPct": 2.75,
-        "drawPct": 97.25,
+        "winPct": 1.75,
+        "drawPct": 98.25,
         "lossPct": 0
       },
       "final_gene_evolve_2": {
         "winPct": 0,
-        "drawPct": 17,
-        "lossPct": 83
+        "drawPct": 14.5,
+        "lossPct": 85.5
       },
       "final_gene_evolve_3": {
         "winPct": 0,
-        "drawPct": 13.75,
-        "lossPct": 86.25
+        "drawPct": 23,
+        "lossPct": 77
       },
       "future_favorite": {
-        "winPct": 43.25,
-        "drawPct": 56.75,
+        "winPct": 40.5,
+        "drawPct": 59.5,
         "lossPct": 0
       },
       "next_event_evolver": {
@@ -1936,8 +1936,8 @@
         "lossPct": 0
       },
       "avoid_penalties": {
-        "winPct": 98.25,
-        "drawPct": 1.75,
+        "winPct": 25.5,
+        "drawPct": 74.5,
         "lossPct": 0
       },
       "full_foresight_value": {
@@ -1951,16 +1951,16 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 13.5,
-        "drawPct": 70.5,
-        "lossPct": 16
+        "winPct": 18.75,
+        "drawPct": 73.25,
+        "lossPct": 8
       }
     },
     "avoid_penalties": {
       "random": {
-        "winPct": 61.25,
-        "drawPct": 21.25,
-        "lossPct": 17.5
+        "winPct": 86.25,
+        "drawPct": 8.5,
+        "lossPct": 5.25
       },
       "immediate_greedy": {
         "winPct": 0,
@@ -1983,39 +1983,39 @@
         "lossPct": 100
       },
       "evolve_nutrient_alternative": {
-        "winPct": 0,
+        "winPct": 0.25,
         "drawPct": 0,
-        "lossPct": 100
+        "lossPct": 99.75
       },
       "final_gene_evolve_1": {
         "winPct": 0,
-        "drawPct": 0,
-        "lossPct": 100
+        "drawPct": 0.25,
+        "lossPct": 99.75
       },
       "final_gene_evolve_2": {
         "winPct": 0,
-        "drawPct": 0.75,
-        "lossPct": 99.25
+        "drawPct": 2.5,
+        "lossPct": 97.5
       },
       "final_gene_evolve_3": {
-        "winPct": 0.75,
-        "drawPct": 5,
-        "lossPct": 94.25
+        "winPct": 10.75,
+        "drawPct": 64.75,
+        "lossPct": 24.5
       },
       "future_favorite": {
         "winPct": 0,
-        "drawPct": 0,
-        "lossPct": 100
+        "drawPct": 0.25,
+        "lossPct": 99.75
       },
       "next_event_evolver": {
         "winPct": 0,
-        "drawPct": 1.75,
-        "lossPct": 98.25
+        "drawPct": 74.5,
+        "lossPct": 25.5
       },
       "avoid_penalties": {
-        "winPct": 41.5,
-        "drawPct": 20.25,
-        "lossPct": 38.25
+        "winPct": 43.75,
+        "drawPct": 20.75,
+        "lossPct": 35.5
       },
       "full_foresight_value": {
         "winPct": 0,
@@ -2028,9 +2028,9 @@
         "lossPct": 100
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 0,
-        "lossPct": 100
+        "winPct": 0.5,
+        "drawPct": 6.25,
+        "lossPct": 93.25
       }
     },
     "full_foresight_value": {
@@ -2060,19 +2060,19 @@
         "lossPct": 0
       },
       "evolve_nutrient_alternative": {
-        "winPct": 59.25,
-        "drawPct": 40.75,
-        "lossPct": 0
+        "winPct": 42.5,
+        "drawPct": 55.75,
+        "lossPct": 1.75
       },
       "final_gene_evolve_1": {
-        "winPct": 9.5,
-        "drawPct": 53,
-        "lossPct": 37.5
+        "winPct": 12.75,
+        "drawPct": 60.25,
+        "lossPct": 27
       },
       "final_gene_evolve_2": {
-        "winPct": 76.75,
-        "drawPct": 22.5,
-        "lossPct": 0.75
+        "winPct": 66.25,
+        "drawPct": 33.75,
+        "lossPct": 0
       },
       "final_gene_evolve_3": {
         "winPct": 96,
@@ -2080,9 +2080,9 @@
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 18.5,
-        "drawPct": 35.75,
-        "lossPct": 45.75
+        "winPct": 19,
+        "drawPct": 42.25,
+        "lossPct": 38.75
       },
       "next_event_evolver": {
         "winPct": 0,
@@ -2105,9 +2105,9 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 1.5,
-        "drawPct": 30.75,
-        "lossPct": 67.75
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "response_aware": {
@@ -2137,29 +2137,29 @@
         "lossPct": 2.75
       },
       "evolve_nutrient_alternative": {
-        "winPct": 58.5,
-        "drawPct": 39.75,
-        "lossPct": 1.75
+        "winPct": 41,
+        "drawPct": 56.25,
+        "lossPct": 2.75
       },
       "final_gene_evolve_1": {
-        "winPct": 11,
-        "drawPct": 50.25,
-        "lossPct": 38.75
+        "winPct": 12.5,
+        "drawPct": 58.75,
+        "lossPct": 28.75
       },
       "final_gene_evolve_2": {
-        "winPct": 75.75,
-        "drawPct": 23,
-        "lossPct": 1.25
+        "winPct": 65.75,
+        "drawPct": 32,
+        "lossPct": 2.25
       },
       "final_gene_evolve_3": {
-        "winPct": 94.25,
-        "drawPct": 5.75,
+        "winPct": 94.5,
+        "drawPct": 5.5,
         "lossPct": 0
       },
       "future_favorite": {
-        "winPct": 15.75,
-        "drawPct": 38.5,
-        "lossPct": 45.75
+        "winPct": 17,
+        "drawPct": 43.25,
+        "lossPct": 39.75
       },
       "next_event_evolver": {
         "winPct": 0,
@@ -2182,81 +2182,81 @@
         "lossPct": 0
       },
       "exact_best_response_vs_greedy": {
-        "winPct": 0,
-        "drawPct": 29.5,
-        "lossPct": 70.5
+        "winPct": 100,
+        "drawPct": 0,
+        "lossPct": 0
       }
     },
     "exact_best_response_vs_greedy": {
       "random": {
-        "winPct": 100,
-        "drawPct": 0,
+        "winPct": 99,
+        "drawPct": 1,
         "lossPct": 0
       },
       "immediate_greedy": {
-        "winPct": 70.5,
-        "drawPct": 29.5,
-        "lossPct": 0
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "principal_gene_greedy": {
-        "winPct": 70.5,
-        "drawPct": 29.5,
-        "lossPct": 0
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "one_event_lookahead": {
-        "winPct": 42.5,
-        "drawPct": 51.25,
-        "lossPct": 6.25
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "conserve_metabolism": {
-        "winPct": 48.75,
-        "drawPct": 46.25,
-        "lossPct": 5
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "evolve_nutrient_alternative": {
-        "winPct": 81.25,
-        "drawPct": 18.5,
-        "lossPct": 0.25
+        "winPct": 0,
+        "drawPct": 29,
+        "lossPct": 71
       },
       "final_gene_evolve_1": {
-        "winPct": 31,
-        "drawPct": 69,
-        "lossPct": 0
+        "winPct": 0,
+        "drawPct": 7.25,
+        "lossPct": 92.75
       },
       "final_gene_evolve_2": {
-        "winPct": 78,
-        "drawPct": 12.75,
-        "lossPct": 9.25
+        "winPct": 7.75,
+        "drawPct": 18.5,
+        "lossPct": 73.75
       },
       "final_gene_evolve_3": {
-        "winPct": 71.25,
-        "drawPct": 27.25,
-        "lossPct": 1.5
+        "winPct": 29.5,
+        "drawPct": 35.5,
+        "lossPct": 35
       },
       "future_favorite": {
-        "winPct": 40.5,
-        "drawPct": 59.5,
-        "lossPct": 0
+        "winPct": 0.5,
+        "drawPct": 0.25,
+        "lossPct": 99.25
       },
       "next_event_evolver": {
-        "winPct": 16,
-        "drawPct": 70.5,
-        "lossPct": 13.5
+        "winPct": 8,
+        "drawPct": 73.25,
+        "lossPct": 18.75
       },
       "avoid_penalties": {
-        "winPct": 100,
-        "drawPct": 0,
-        "lossPct": 0
+        "winPct": 93.25,
+        "drawPct": 6.25,
+        "lossPct": 0.5
       },
       "full_foresight_value": {
-        "winPct": 67.75,
-        "drawPct": 30.75,
-        "lossPct": 1.5
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "response_aware": {
-        "winPct": 70.5,
-        "drawPct": 29.5,
-        "lossPct": 0
+        "winPct": 0,
+        "drawPct": 0,
+        "lossPct": 100
       },
       "exact_best_response_vs_greedy": {
         "winPct": 0,
@@ -2273,26 +2273,26 @@
         "lossPct": 0
       },
       "final_gene_evolve_1": {
-        "winPct": 0,
-        "drawPct": 58.7,
-        "lossPct": 41.3
+        "winPct": 5.5,
+        "drawPct": 60.7,
+        "lossPct": 33.8
       },
       "final_gene_evolve_2": {
-        "winPct": 75.1,
-        "drawPct": 22.5,
-        "lossPct": 2.4
+        "winPct": 62.9,
+        "drawPct": 32.9,
+        "lossPct": 4.2
       },
       "final_gene_evolve_3": {
-        "winPct": 93.4,
-        "drawPct": 6.6,
+        "winPct": 93.9,
+        "drawPct": 6.1,
         "lossPct": 0
       }
     },
     "final_gene_evolve_1": {
       "final_gene_evolve_0": {
-        "winPct": 41.3,
-        "drawPct": 58.7,
-        "lossPct": 0
+        "winPct": 33.8,
+        "drawPct": 60.7,
+        "lossPct": 5.5
       },
       "final_gene_evolve_1": {
         "winPct": 0,
@@ -2300,26 +2300,26 @@
         "lossPct": 0
       },
       "final_gene_evolve_2": {
-        "winPct": 9,
-        "drawPct": 67.3,
-        "lossPct": 23.7
+        "winPct": 5.3,
+        "drawPct": 55.8,
+        "lossPct": 38.9
       },
       "final_gene_evolve_3": {
-        "winPct": 10.2,
-        "drawPct": 84.5,
-        "lossPct": 5.3
+        "winPct": 18.3,
+        "drawPct": 77.3,
+        "lossPct": 4.4
       }
     },
     "final_gene_evolve_2": {
       "final_gene_evolve_0": {
-        "winPct": 2.4,
-        "drawPct": 22.5,
-        "lossPct": 75.1
+        "winPct": 4.2,
+        "drawPct": 32.9,
+        "lossPct": 62.9
       },
       "final_gene_evolve_1": {
-        "winPct": 23.7,
-        "drawPct": 67.3,
-        "lossPct": 9
+        "winPct": 38.9,
+        "drawPct": 55.8,
+        "lossPct": 5.3
       },
       "final_gene_evolve_2": {
         "winPct": 0,
@@ -2328,24 +2328,24 @@
       },
       "final_gene_evolve_3": {
         "winPct": 0,
-        "drawPct": 10.2,
-        "lossPct": 89.8
+        "drawPct": 20.4,
+        "lossPct": 79.6
       }
     },
     "final_gene_evolve_3": {
       "final_gene_evolve_0": {
         "winPct": 0,
-        "drawPct": 6.6,
-        "lossPct": 93.4
+        "drawPct": 6.1,
+        "lossPct": 93.9
       },
       "final_gene_evolve_1": {
-        "winPct": 5.3,
-        "drawPct": 84.5,
-        "lossPct": 10.2
+        "winPct": 4.4,
+        "drawPct": 77.3,
+        "lossPct": 18.3
       },
       "final_gene_evolve_2": {
-        "winPct": 89.8,
-        "drawPct": 10.2,
+        "winPct": 79.6,
+        "drawPct": 20.4,
         "lossPct": 0
       },
       "final_gene_evolve_3": {
@@ -2356,9 +2356,9 @@
     }
   },
   "slotBalance": {
-    "slot1Wins": 54600,
-    "slot2Wins": 54600,
-    "matchDraws": 46800,
+    "slot1Wins": 54272,
+    "slot2Wins": 54272,
+    "matchDraws": 47456,
     "slot1PctOfDecisive": 50,
     "slot2PctOfDecisive": 50
   },
@@ -2367,104 +2367,104 @@
       "eventContributions": [
         0,
         0,
-        1,
+        2,
         0,
-        -1,
+        0,
         1
       ],
-      "total": 1,
+      "total": 3,
       "positiveEvents": 2,
-      "negativeEvents": 1
+      "negativeEvents": 0
     },
     "RESISTANCE": {
       "eventContributions": [
-        2,
+        1,
         0,
         0,
         0,
         0,
         0
       ],
-      "total": 2,
+      "total": 1,
       "positiveEvents": 1,
       "negativeEvents": 0
     },
     "AGILITY": {
       "eventContributions": [
+        -1,
         0,
-        0,
-        2,
+        1,
         0,
         0,
         -1
       ],
-      "total": 1,
+      "total": -1,
       "positiveEvents": 1,
-      "negativeEvents": 1
+      "negativeEvents": 2
     },
     "PERCEPTION": {
       "eventContributions": [
         -1,
-        2,
         0,
+        1,
         0,
         0,
         0
       ],
-      "total": 1,
+      "total": 0,
       "positiveEvents": 1,
       "negativeEvents": 1
     },
     "METABOLISM": {
       "eventContributions": [
-        0,
+        1,
         -1,
         0,
         2,
         2,
         0
       ],
-      "total": 3,
-      "positiveEvents": 2,
+      "total": 4,
+      "positiveEvents": 3,
       "negativeEvents": 1
     },
     "ADAPTATION": {
       "eventContributions": [
         0,
+        2,
         0,
-        0,
-        0,
+        1,
         1,
         0
       ],
-      "total": 1,
-      "positiveEvents": 1,
+      "total": 4,
+      "positiveEvents": 3,
       "negativeEvents": 0
     },
     "GRIP_CLAWS": {
       "eventContributions": [
         0,
+        1,
         0,
         0,
         0,
-        0,
-        1
+        2
       ],
-      "total": 1,
-      "positiveEvents": 1,
+      "total": 3,
+      "positiveEvents": 2,
       "negativeEvents": 0
     },
     "CAMOUFLAGE": {
       "eventContributions": [
         0,
-        1,
+        0,
         1,
         0,
         0,
         0
       ],
-      "total": 2,
-      "positiveEvents": 2,
+      "total": 1,
+      "positiveEvents": 1,
       "negativeEvents": 0
     },
     "WEBBED_LIMBS": {
@@ -2473,24 +2473,24 @@
         0,
         0,
         1,
-        0,
-        2
+        -1,
+        1
       ],
-      "total": 3,
+      "total": 1,
       "positiveEvents": 2,
-      "negativeEvents": 0
+      "negativeEvents": 1
     },
     "FAT_RESERVES": {
       "eventContributions": [
-        1,
+        2,
+        0,
         0,
         -1,
-        -1,
-        1,
-        0
+        0,
+        -1
       ],
       "total": 0,
-      "positiveEvents": 2,
+      "positiveEvents": 1,
       "negativeEvents": 2
     }
   }

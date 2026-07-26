@@ -9,6 +9,7 @@ export const FINAL_ROUND_NUMBER = 6
 export const FINAL_ROUND_POINTS = 1
 export const DEFAULT_ROUND_POINTS = 1
 export const EVENT_WEIGHT = ROUND_EVENT_WEIGHT
+export const BASE_USE_VALUE = 1
 export const MAX_EFFECTIVE_TRAIT_LEVEL = 3
 export const ROOM_CODE_LENGTH = 5
 

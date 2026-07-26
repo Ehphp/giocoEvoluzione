@@ -79,27 +79,27 @@ describe('frontend and persisted Edge resolution parity', () => {
             label: 'level 0 with +2 affinity',
             trait: 'FAT_RESERVES' as const,
             traits: createInitialTraits(),
-            expected: 2,
+            expected: 3,
         },
         {
             label: 'level 2 with neutral affinity',
             trait: 'STRENGTH' as const,
             traits: withTraitState('STRENGTH', { level: 2 }),
-            expected: 2,
+            expected: 3,
         },
         {
             label: 'level 1 with +1 affinity',
             trait: 'RESISTANCE' as const,
             traits: withTraitState('RESISTANCE', { level: 1 }),
-            expected: 2,
+            expected: 3,
         },
         {
             label: 'level 3 with +2 affinity',
             trait: 'FAT_RESERVES' as const,
             traits: withTraitState('FAT_RESERVES', { level: 3 }),
-            expected: 5,
+            expected: 6,
         },
-    ])('uses level + modifier for $label', ({ trait, traits, expected }) => {
+    ])('uses base + level + modifier for $label', ({ trait, traits, expected }) => {
         const { engineResult } = expectEngineAndPersistedParity(createInput({
             player1Traits: traits,
             player1Action: { playerId: 'p1', trait, actionType: 'USE' },

@@ -6,6 +6,7 @@ import { getRoundExplanation } from './round-result-explainer'
 function breakdown(overrides?: Partial<RoundValueBreakdown>): RoundValueBreakdown {
     return {
         actionType: 'USE',
+        baseContribution: 1,
         eventModifierTotal: 2,
         eventWeight: 2,
         eventContribution: 4,

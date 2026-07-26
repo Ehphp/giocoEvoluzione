@@ -11,11 +11,11 @@ const predators = getRoundEventById('PREDATOR_PACK_MIGRATION')
 const heatSpike = getRoundEventById('HEAT_SPIKE')
 
 describe('game engine', () => {
-    it('calculates trait value from event modifier plus level', () => {
+    it('calculates trait value from base USE plus event modifier and level', () => {
         const traits = createInitialTraits()
         traits.RESISTANCE.level = 2
 
-        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(3)
+        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(4)
     })
 
     it('keeps round resolution aligned with the shared validated helper', () => {

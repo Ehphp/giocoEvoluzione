@@ -80,6 +80,7 @@ export type TraitState = {
 
 export type RoundValueBreakdown = {
     actionType: ActionType
+    baseContribution: number
     eventModifierTotal: number
     eventWeight: number
     eventContribution: number

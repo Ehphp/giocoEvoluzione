@@ -56,8 +56,8 @@ describe('scoring audit scenarios', () => {
             player2Action: { trait: 'AGILITY', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(2)
-        expect(result.player2.roundValue).toBe(1)
+        expect(result.player1.roundValue).toBe(3)
+        expect(result.player2.roundValue).toBe(2)
         expect(result.winnerId).toBe('p1')
     })
 
@@ -68,8 +68,8 @@ describe('scoring audit scenarios', () => {
             player2Action: { trait: 'METABOLISM', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(-1)
-        expect(result.player2.roundValue).toBe(2)
+        expect(result.player1.roundValue).toBe(0)
+        expect(result.player2.roundValue).toBe(3)
         expect(result.winnerId).toBe('p2')
     })
 
@@ -82,8 +82,8 @@ describe('scoring audit scenarios', () => {
             player2Action: { trait: 'STRENGTH', actionType: 'USE' },
         })
 
-        expect(result.player1.roundValue).toBe(3)
-        expect(result.player2.roundValue).toBe(1)
+        expect(result.player1.roundValue).toBe(4)
+        expect(result.player2.roundValue).toBe(2)
         expect(result.winnerId).toBe('p1')
     })
 
