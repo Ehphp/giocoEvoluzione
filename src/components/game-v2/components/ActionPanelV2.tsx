@@ -76,15 +76,15 @@ export function ActionPanelV2({
     const useLabel = isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'
     const evolveLabel = isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : 'EVOLVI'
     const predictedPoints = selectedGene.prediction?.useScore
-    const eventContribution = selectedGene.prediction?.eventContribution ?? 0
-    const eventContributionLabel = `Evento ${eventContribution > 0 ? '+' : ''}${eventContribution}`
+    const eventModifier = selectedGene.prediction?.eventModifier ?? 0
+    const eventModifierLabel = `Evento ${eventModifier > 0 ? '+' : ''}${eventModifier}`
     const useValue = predictedPoints === undefined ? '— PT' : `${predictedPoints} PT`
     const evolveValue = canEvolve || isSubmitting ? `LV ${selectedGene.level + 1}` : 'MAX'
     const useSublabel = isSubmitting
         ? (selectedAction === 'USE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canUse
             ? (selectedGene.disabledReason ?? 'Non disponibile ora')
-            : eventContributionLabel
+            : eventModifierLabel
     const evolveSublabel = isSubmitting
         ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canEvolve

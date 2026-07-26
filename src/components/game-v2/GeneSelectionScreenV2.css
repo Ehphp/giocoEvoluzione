@@ -439,16 +439,11 @@
 .selector-v2-card.is-selected::after { content: 'i'; position: absolute; top: 5px; right: 5px; width: 17px; height: 17px; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--gene-accent) 58%, #fff); border-radius: 999px; background: color-mix(in srgb, var(--gene-accent) 76%, #29441f); color: #fff; font-family: Georgia, serif; font-size: 0.68rem; font-weight: 800; line-height: 1; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18); }
 .selector-v2-card.is-cooldown { border-style: dashed; filter: saturate(0.65); }
 .selector-v2-card:focus-visible { outline: 2px solid #3dbf8e; outline-offset: 2px; }
-.selector-v2-card--strength { --gene-accent: #e14e2e; }
-.selector-v2-card--resistance { --gene-accent: #2879cf; }
-.selector-v2-card--agility { --gene-accent: #66ba29; }
-.selector-v2-card--perception { --gene-accent: #8845c7; }
+.selector-v2-card--resilience { --gene-accent: #2879cf; }
+.selector-v2-card--mobility { --gene-accent: #66ba29; }
+.selector-v2-card--senses { --gene-accent: #8845c7; }
 .selector-v2-card--metabolism { --gene-accent: #ec9416; }
-.selector-v2-card--adaptation { --gene-accent: #3c9b8d; }
-.selector-v2-card--grip-claws { --gene-accent: #b76d36; }
-.selector-v2-card--camouflage { --gene-accent: #5e9a4a; }
-.selector-v2-card--webbed-limbs { --gene-accent: #398fc2; }
-.selector-v2-card--fat-reserves { --gene-accent: #d38b39; }
+.selector-v2-card--aquatic { --gene-accent: #398fc2; }
 .selector-v2-icon { position: relative; width: 44px; height: 44px; flex: 0 0 auto; overflow: hidden; display: grid; place-items: center; border: 2px solid color-mix(in srgb, var(--gene-accent) 58%, white); border-radius: 13px; background: color-mix(in srgb, var(--gene-accent) 13%, #fffaf0); }
 .selector-v2-card.is-selected .selector-v2-icon { width: 52px; height: 52px; }
 .selector-v2-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }

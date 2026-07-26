@@ -52,7 +52,7 @@ export interface GeneCardV2 {
         useScore: number
         baseContribution: number
         levelContribution: number
-        eventContribution: number
+        eventModifier: number
         reasons: string[]
     }
 }

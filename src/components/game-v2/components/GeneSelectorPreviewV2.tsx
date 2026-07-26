@@ -19,7 +19,7 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
         useScore: BASE_USE_VALUE + gene.level,
         baseContribution: BASE_USE_VALUE,
         levelContribution: gene.level,
-        eventContribution: 0,
+        eventModifier: 0,
         reasons: [],
     }
 
@@ -40,11 +40,11 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
             <div className="selector-v2-popover__breakdown" aria-label="Calcolo del punteggio previsto">
                 <span>Base <strong>{formatContribution(prediction.baseContribution)}</strong></span>
                 <span>Livello <strong>{formatContribution(prediction.levelContribution)}</strong></span>
-                <span>Evento <strong>{formatContribution(prediction.eventContribution)}</strong></span>
+                <span>Evento <strong>{formatContribution(prediction.eventModifier)}</strong></span>
             </div>
             <p>
                 {prediction.reasons[0]
-                    ?? (prediction.eventContribution === 0
+                    ?? (prediction.eventModifier === 0
                         ? 'Questo evento non modifica il rendimento del gene.'
                         : 'Il punteggio include il modificatore dell evento.')}
             </p>
@@ -77,9 +77,9 @@ function GeneCard({
     const [imageFailed, setImageFailed] = useState(false)
     const prediction = gene.prediction ?? {
         useScore: BASE_USE_VALUE + gene.level,
-        eventContribution: 0,
+        eventModifier: 0,
     }
-    const eventLabel = `Evento ${formatContribution(prediction.eventContribution)}`
+    const eventLabel = `Evento ${formatContribution(prediction.eventModifier)}`
 
     return (
         <button
@@ -114,7 +114,7 @@ function GeneCard({
                     <b>{gene.level}</b>
                 </span>
                 <span className="selector-v2-points">{prediction.useScore} PT</span>
-                <span className={`selector-v2-event-modifier ${prediction.eventContribution > 0 ? 'is-positive' : prediction.eventContribution < 0 ? 'is-negative' : 'is-neutral'}`}>
+                <span className={`selector-v2-event-modifier ${prediction.eventModifier > 0 ? 'is-positive' : prediction.eventModifier < 0 ? 'is-negative' : 'is-neutral'}`}>
                     {eventLabel}
                 </span>
             </div>

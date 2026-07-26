@@ -223,7 +223,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                         useScore: prediction.total,
                         baseContribution: prediction.baseContribution,
                         levelContribution: prediction.levelContribution,
-                        eventContribution: prediction.eventContribution,
+                        eventModifier: prediction.eventModifier,
                         reasons: prediction.appliedEventEffects.map((effect) => effect.reason),
                     }
                     : undefined,

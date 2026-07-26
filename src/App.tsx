@@ -736,7 +736,7 @@ function RoundBreakdownCard({
       {breakdown ? (
         <div className={`round-breakdown-card__math ${showContributions ? '' : 'is-hidden'}`}>
           <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
-          <p>Effetti evento {roundEventLabel}: {breakdown.eventModifierTotal} × {breakdown.eventWeight} = {breakdown.eventContribution}</p>
+          <p>Effetti evento {roundEventLabel}: {breakdown.eventModifier}</p>
           <p>Livello: +{breakdown.levelContribution}</p>
           {breakdown.originalLevel > breakdown.effectiveLevel ? (
             <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
