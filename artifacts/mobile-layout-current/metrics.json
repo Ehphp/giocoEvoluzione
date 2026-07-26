@@ -31,16 +31,16 @@
       },
       ".event-v2-card": {
         "top": 117.3,
-        "bottom": 226.8,
+        "bottom": 240.4,
         "left": 20,
         "right": 340,
         "width": 320,
-        "height": 109.5,
+        "height": 123.1,
         "fullyVisible": true
       },
       ".next-event-v2-section": {
-        "top": 229.8,
-        "bottom": 279.1,
+        "top": 243.4,
+        "bottom": 292.7,
         "left": 82.4,
         "right": 277.6,
         "width": 195.2,
@@ -48,8 +48,8 @@
         "fullyVisible": true
       },
       ".next-event-v2-card": {
-        "top": 241.1,
-        "bottom": 279.1,
+        "top": 254.7,
+        "bottom": 292.7,
         "left": 82.4,
         "right": 277.6,
         "width": 195.2,

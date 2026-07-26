@@ -383,6 +383,41 @@ async function run() {
         )
     }
 
+    await setViewport(send, VIEWPORTS[0])
+    await evaluate(send, `(() => {
+        const dots = document.querySelectorAll('.selector-v2-dot')
+        dots[dots.length - 1]?.click()
+    })()`)
+    await delay(250)
+
+    const lastGeneMetrics = await evaluate(send, `(() => {
+        const screen = document.querySelector('.gene-selection-screen')?.getBoundingClientRect()
+        const activeDot = document.querySelector('.selector-v2-dot[aria-current="true"]')
+
+        return {
+            innerWidth: window.innerWidth,
+            scrollX: window.scrollX,
+            documentScrollWidth: document.documentElement.scrollWidth,
+            screenLeft: screen?.left ?? null,
+            screenRight: screen?.right ?? null,
+            selectedLastGene: activeDot === document.querySelector('.selector-v2-dot:last-child'),
+        }
+    })()`)
+    const lastGeneScreenshot = await send('Page.captureScreenshot', {
+        format: 'png',
+        fromSurface: true,
+        captureBeyondViewport: false,
+    })
+    await writeFile(
+        join(OUTPUT_DIR, 'choice-last-gene-360x800.png'),
+        Buffer.from(lastGeneScreenshot.data, 'base64'),
+    )
+    await writeFile(
+        join(OUTPUT_DIR, 'choice-last-gene-metrics.json'),
+        `${JSON.stringify(lastGeneMetrics, null, 2)}\n`,
+        'utf8',
+    )
+
     await setViewport(send, VIEWPORTS[1])
     await evaluate(send, `document.querySelector('.action-v2-btn--use')?.click()`)
     await waitForSelector(send, '.round-result-screen', 30_000)

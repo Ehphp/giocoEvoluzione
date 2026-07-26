@@ -65,16 +65,16 @@
     },
     "innerWidth": 390,
     "innerHeight": 844,
-    "documentScrollHeight": 909,
+    "documentScrollHeight": 926,
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
         "top": 140.7,
-        "bottom": 899.9,
+        "bottom": 916.8,
         "left": 9,
         "right": 381,
         "width": 372,
-        "height": 759.3,
+        "height": 776.1,
         "fullyVisible": false
       },
       ".round-result-hero": {
@@ -97,11 +97,11 @@
       },
       ".round-result-explanation": {
         "top": 857.1,
-        "bottom": 895.9,
+        "bottom": 912.8,
         "left": 9,
         "right": 381,
         "width": 372,
-        "height": 38.8,
+        "height": 55.7,
         "fullyVisible": false
       },
       ".round-result-screen .primary-button": {
@@ -123,17 +123,17 @@
     },
     "innerWidth": 412,
     "innerHeight": 915,
-    "documentScrollHeight": 915,
+    "documentScrollHeight": 926,
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
         "top": 140.7,
-        "bottom": 906,
+        "bottom": 916.8,
         "left": 9,
         "right": 403,
         "width": 394,
-        "height": 765.3,
-        "fullyVisible": true
+        "height": 776.1,
+        "fullyVisible": false
       },
       ".round-result-hero": {
         "top": 140.7,
@@ -155,11 +155,11 @@
       },
       ".round-result-explanation": {
         "top": 857.1,
-        "bottom": 895.9,
+        "bottom": 912.8,
         "left": 9,
         "right": 403,
         "width": 394,
-        "height": 38.8,
+        "height": 55.7,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -213,11 +213,11 @@
       },
       ".round-result-explanation": {
         "top": 857.1,
-        "bottom": 895.9,
+        "bottom": 912.8,
         "left": 9,
         "right": 421,
         "width": 412,
-        "height": 38.8,
+        "height": 55.7,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -271,11 +271,11 @@
       },
       ".round-result-explanation": {
         "top": 560.2,
-        "bottom": 599,
+        "bottom": 615.9,
         "left": 167,
         "right": 601,
         "width": 434,
-        "height": 38.8,
+        "height": 55.7,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -387,11 +387,11 @@
       },
       ".round-result-explanation": {
         "top": 560.2,
-        "bottom": 599,
+        "bottom": 615.9,
         "left": 503,
         "right": 937,
         "width": 434,
-        "height": 38.8,
+        "height": 55.7,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {

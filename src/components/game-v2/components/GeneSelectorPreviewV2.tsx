@@ -72,7 +72,6 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
 
 function GeneCard({
     gene,
-    buttonRef,
     isSelected,
     isPredictionOpen,
     isSide,
@@ -80,7 +79,6 @@ function GeneCard({
     onClick,
 }: {
     gene: GeneCardV2
-    buttonRef: (element: HTMLButtonElement | null) => void
     isSelected: boolean
     isPredictionOpen: boolean
     isSide: boolean
@@ -91,7 +89,6 @@ function GeneCard({
 
     return (
         <button
-            ref={buttonRef}
             type="button"
             role="option"
             className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${isSide ? 'is-side' : ''} ${gene.usable ? '' : 'is-cooldown'}`}
@@ -134,7 +131,6 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
     const [isReordering, setIsReordering] = useState(false)
     const selectorRef = useRef<HTMLElement | null>(null)
     const previousOrderRef = useRef(genes.map((gene) => gene.id).join('|'))
-    const cardRefs = useRef(new Map<string, HTMLButtonElement>())
     const orderSignature = genes.map((gene) => gene.id).join('|')
     const visibleIndices = useMemo(() => {
         const visibleCount = Math.min(VISIBLE_CARD_COUNT, total)
@@ -175,16 +171,6 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
 
         return () => document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
     }, [previewGeneId])
-
-    useEffect(() => {
-        const selectedCard = cardRefs.current.get(selectedGeneId)
-
-        selectedCard?.scrollIntoView?.({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center',
-        })
-    }, [orderSignature, selectedGeneId])
 
     useEffect(() => {
         if (previousOrderRef.current === orderSignature) {
@@ -265,13 +251,6 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
                             <GeneCard
                                 key={gene.id}
                                 gene={gene}
-                                buttonRef={(element) => {
-                                    if (element) {
-                                        cardRefs.current.set(gene.id, element)
-                                    } else {
-                                        cardRefs.current.delete(gene.id)
-                                    }
-                                }}
                                 isSelected={geneIndex === selectedIndex}
                                 isPredictionOpen={gene.id === previewGeneId}
                                 isSide={geneIndex !== selectedIndex}
