@@ -3003,14 +3003,14 @@
 
 .selector-v2-icon,
 .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-icon {
-  width: 37px;
-  height: 37px;
+  width: 43px;
+  height: 43px;
   border-radius: 11px;
 }
 
 .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-icon {
-  width: 43px;
-  height: 43px;
+  width: 51px;
+  height: 51px;
 }
 
 .selector-v2-icon img { padding: 5px; }
@@ -3031,23 +3031,22 @@
   width: 100%;
   margin-top: auto;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 2px 3px;
 }
 
 .selector-v2-level {
   position: static;
-  height: 18px;
-  min-height: 18px;
-  padding: 2px 4px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-self: start;
   gap: 1px;
-  border: 1px solid rgba(68, 83, 62, 0.2);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.56);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #5a6856;
   transform: none;
 }
 
@@ -3056,8 +3055,8 @@
   transform: none;
 }
 
-.selector-v2-level small { font-size: 0.32rem; }
-.selector-v2-level b { font-size: 0.48rem; }
+.selector-v2-level small { font-size: 0.4rem; font-weight: 800; }
+.selector-v2-level b { font-size: 0.6rem; }
 
 .selector-v2-points {
   color: #244c20;
@@ -3073,7 +3072,7 @@
 }
 
 .selector-v2-event-modifier {
-  grid-column: 1;
+  grid-column: 1 / 3;
   overflow: hidden;
   color: #5b6856;
   font-size: 0.44rem;
