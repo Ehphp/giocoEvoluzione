@@ -3335,13 +3335,14 @@
 
 @media (min-width: 900px) and (min-height: 501px) {
   .gene-selection-screen {
-    width: min(100%, 1280px);
-    max-width: 1280px;
-    margin-inline: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 27px;
   }
 
   .screen-content {
-    grid-template-columns: minmax(320px, 430px) minmax(440px, 540px);
+    grid-template-columns: minmax(300px, 1fr) clamp(520px, 38vw, 720px);
     grid-template-rows: auto minmax(0, 1fr);
     justify-content: space-between;
     gap: 14px 24px;
@@ -3373,6 +3374,142 @@
     border: 1px solid rgba(255, 255, 255, 0.78);
     border-radius: 26px;
   }
+}
+
+@media (min-width: 1600px) and (min-height: 700px) {
+  .screen-content {
+    grid-template-columns: minmax(420px, 1fr) clamp(620px, 38vw, 760px);
+    gap: 18px 32px;
+    padding: 22px clamp(28px, 3vw, 64px) 30px;
+  }
+
+  .duel-v2-header {
+    min-height: 66px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 48px;
+    gap: 7px;
+    padding: 7px;
+    border-radius: 21px;
+  }
+
+  .duel-v2-card,
+  .duel-v2-card--player,
+  .duel-v2-card--opponent {
+    min-height: 50px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .duel-v2-card--opponent {
+    grid-template-columns: auto minmax(0, 1fr) 42px;
+  }
+
+  .duel-v2-avatar,
+  .duel-v2-card--opponent .duel-v2-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .duel-v2-role { font-size: 0.53rem; }
+  .duel-v2-name { font-size: 0.82rem; }
+  .duel-v2-status { font-size: 0.54rem; }
+  .duel-v2-score { min-width: 30px; min-height: 30px; font-size: 0.82rem; }
+  .round-v2-pill { min-width: 70px; min-height: 44px; }
+  .round-v2-pill strong { font-size: 0.92rem; }
+  .duel-v2-header .leave-button { width: 48px; min-height: 48px; }
+
+  .event-v2-stack {
+    top: 18px;
+    width: min(100%, 500px);
+  }
+
+  .event-v2-card {
+    min-height: 86px;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px;
+  }
+
+  .event-v2-art {
+    width: 62px;
+    min-height: 66px;
+  }
+
+  .event-v2-title { font-size: 0.94rem; }
+  .event-v2-chip { font-size: 0.56rem; }
+
+  .bottom-sheet {
+    padding: 13px;
+    border-radius: 30px;
+  }
+
+  .selector-v2-header { min-height: 21px; }
+  .selector-v2-header strong { font-size: 0.67rem; }
+  .selector-v2-carousel,
+  .selector-v2-rail { min-height: 158px; }
+
+  .selector-v2-card,
+  .selector-v2-card.is-side,
+  .selector-v2-rail > .selector-v2-card,
+  .selector-v2-rail > .selector-v2-card:first-child,
+  .selector-v2-rail > .selector-v2-card:last-child,
+  .selector-v2-rail > .selector-v2-card:nth-child(2),
+  .selector-v2-rail > .selector-v2-card:nth-child(4) {
+    height: 136px;
+    min-height: 136px;
+    padding: 10px 7px 8px;
+  }
+
+  .selector-v2-rail > .selector-v2-card.is-selected {
+    height: 151px;
+    min-height: 151px;
+    padding: 11px 8px 9px;
+  }
+
+  .selector-v2-icon,
+  .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .selector-v2-name,
+  .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-name {
+    font-size: 0.66rem;
+  }
+
+  .selector-v2-rail > .selector-v2-card.is-selected .selector-v2-name {
+    font-size: 0.76rem;
+  }
+
+  .action-panel-shell,
+  .action-panel-shell.is-actions,
+  .action-panel-shell.is-waiting,
+  .action-v2-panel,
+  .action-v2-btn,
+  .waiting-v2 {
+    height: 80px;
+    min-height: 80px;
+  }
+
+  .action-v2-btn {
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 9px 11px;
+    border-radius: 22px;
+  }
+
+  .action-v2-btn__icon,
+  .action-v2-btn--evolve .action-v2-btn__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .action-v2-btn__label { font-size: 0.88rem; }
+  .action-v2-btn__value { font-size: 0.94rem; }
+  .action-v2-btn__sublabel { font-size: 0.58rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

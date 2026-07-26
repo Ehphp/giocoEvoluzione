@@ -1,6 +1,3 @@
-import { CreatureVisual } from '../CreatureVisual'
-import { createInitialTraits } from '../../game/config'
-
 type HomeScreenProps = {
     nickname: string
     roomCode: string
@@ -16,8 +13,6 @@ type HomeScreenProps = {
     onJoinGame: () => void
     onLeaveSession: () => void
 }
-
-const HOME_HERO_TRAITS = createInitialTraits()
 
 export function HomeScreen({
     nickname,
@@ -42,14 +37,6 @@ export function HomeScreen({
                 <p className="home-screen__tagline">Evolvi. Adattati. Supera il tuo avversario.</p>
                 <p className="home-screen__subcopy">Scegli come evolvere la tua creatura e affronta un altro giocatore round dopo round.</p>
             </header>
-
-            <section className="home-hero" aria-label="Creatura di base">
-                <span className="home-hero__orb home-hero__orb--use" aria-hidden="true" />
-                <span className="home-hero__orb home-hero__orb--evolve" aria-hidden="true" />
-                <span className="home-hero__dot home-hero__dot--1" aria-hidden="true" />
-                <span className="home-hero__dot home-hero__dot--2" aria-hidden="true" />
-                <CreatureVisual traits={HOME_HERO_TRAITS} className="home-hero__creature" showCaption={false} playerName="Creatura iniziale" />
-            </section>
 
             {!isOnline ? (
                 <div className="message warning" role="alert" aria-live="assertive">

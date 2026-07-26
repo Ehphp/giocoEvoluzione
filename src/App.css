@@ -122,78 +122,6 @@
   line-height: 1.35;
 }
 
-.home-hero {
-  position: relative;
-  min-height: clamp(130px, 24vh, 200px);
-  border-radius: 24px;
-  padding: clamp(8px, 2vw, 14px);
-  background: linear-gradient(180deg, rgba(35, 68, 56, 0.9), rgba(25, 53, 43, 0.9));
-  border: 1px solid var(--game-border);
-  overflow: hidden;
-  animation: home-hero-in 260ms ease-out;
-}
-
-.home-hero__orb {
-  position: absolute;
-  width: clamp(70px, 18vw, 120px);
-  height: clamp(70px, 18vw, 120px);
-  border-radius: 999px;
-  opacity: 0.22;
-  pointer-events: none;
-}
-
-.home-hero__orb--use {
-  top: -14px;
-  left: -10px;
-  background: var(--game-use);
-}
-
-.home-hero__orb--evolve {
-  bottom: -22px;
-  right: -4px;
-  background: var(--game-evolve);
-}
-
-.home-hero__dot {
-  position: absolute;
-  border-radius: 999px;
-  background: rgba(245, 243, 232, 0.34);
-  pointer-events: none;
-}
-
-.home-hero__dot--1 {
-  width: 8px;
-  height: 8px;
-  top: 22%;
-  right: 17%;
-}
-
-.home-hero__dot--2 {
-  width: 6px;
-  height: 6px;
-  bottom: 25%;
-  left: 15%;
-}
-
-.home-hero__creature {
-  height: 100%;
-  align-content: center;
-}
-
-.home-hero__creature .creature-stage {
-  min-height: clamp(120px, 21vh, 174px);
-  background: radial-gradient(circle at top, rgba(98, 213, 207, 0.18), transparent 36%), linear-gradient(180deg, rgba(245, 243, 232, 0.18), rgba(245, 243, 232, 0.06));
-}
-
-.home-hero__creature .creature-visual__stage {
-  padding: clamp(8px, 2vw, 14px);
-}
-
-.home-hero__creature .creature-visual__image {
-  max-height: clamp(110px, 18vh, 160px);
-  max-width: clamp(150px, 42vw, 240px);
-}
-
 .home-entry {
   display: grid;
   gap: 10px;
@@ -310,18 +238,6 @@
   padding: 10px 12px;
   border-color: var(--game-border);
   color: var(--game-text-muted);
-}
-
-@keyframes home-hero-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .topbar {
@@ -2778,10 +2694,6 @@
     font-size: 0.76rem;
   }
 
-  .home-hero {
-    min-height: 116px;
-  }
-
   .home-entry {
     gap: 8px;
     padding: 10px;
@@ -2912,10 +2824,10 @@
 
   .home-screen {
     grid-template-columns: minmax(240px, 0.9fr) minmax(340px, 1.1fr);
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
     column-gap: clamp(14px, 2.4vw, 24px);
     row-gap: 14px;
-    align-items: start;
+    align-items: center;
   }
 
   .home-screen__header {
@@ -2923,15 +2835,9 @@
     grid-row: 1;
   }
 
-  .home-hero {
-    grid-column: 1;
-    grid-row: 2;
-    min-height: clamp(180px, 34vh, 300px);
-  }
-
   .home-entry {
     grid-column: 2;
-    grid-row: 1 / 3;
+    grid-row: 1;
     align-self: stretch;
   }
 
@@ -2982,19 +2888,6 @@
 
   .home-screen__subcopy {
     font-size: 0.72rem;
-  }
-
-  .home-hero {
-    min-height: 112px;
-    padding: 8px;
-  }
-
-  .home-hero__creature .creature-stage {
-    min-height: 94px;
-  }
-
-  .home-hero__creature .creature-visual__image {
-    max-height: 88px;
   }
 
   .home-entry {
@@ -3069,7 +2962,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-hero,
   .round-result-hero,
   .round-result-hero.is-revealing,
   .round-result-hero__values,
@@ -3111,7 +3003,6 @@
   .competitive-meter__segment,
   .home-entry__create,
   .home-entry__join,
-  .home-hero,
   .trait-selector__button,
   .action-dock__button,
   .phase-banner,
@@ -3953,6 +3844,12 @@
     url('/assets/game-ui/battle-scene-mobile.jpeg') center / cover;
 }
 
+.shell--home {
+  background:
+    linear-gradient(180deg, rgba(6, 28, 22, 0.3), rgba(6, 28, 22, 0.58)),
+    url('/assets/game-ui/battle-scene-mobile.jpeg') center 38% / cover no-repeat;
+}
+
 .app-panel--home,
 .app-panel--session:not(.app-panel--game) {
   width: min(100%, 460px);
@@ -3967,6 +3864,10 @@
   background: linear-gradient(180deg, rgba(8, 32, 25, 0.72), rgba(8, 29, 23, 0.84));
   box-shadow: 0 0 70px rgba(0, 0, 0, 0.42);
   color: var(--ui-cream-light);
+}
+
+.app-panel--home {
+  background: linear-gradient(180deg, rgba(7, 30, 24, 0.5), rgba(7, 28, 22, 0.7));
 }
 
 .home-screen {
@@ -3993,19 +3894,6 @@
 
 .home-screen__tagline { font-weight: 800; }
 .home-screen__subcopy { color: rgba(255, 250, 240, 0.72); }
-
-.home-hero {
-  min-height: clamp(150px, 26vh, 210px);
-  border: 1px solid var(--ui-border);
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(247, 240, 220, 0.78), rgba(247, 240, 220, 0.42));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 #fff;
-  backdrop-filter: blur(4px);
-}
-
-.home-hero__creature .creature-stage {
-  background: linear-gradient(180deg, rgba(255, 250, 240, 0.3), rgba(255, 250, 240, 0.06));
-}
 
 .home-entry {
   gap: 10px;
@@ -4215,9 +4103,6 @@
     display: none;
   }
 
-  .home-hero {
-    min-height: 126px;
-  }
 }
 
 @media (hover: none) and (pointer: coarse) {

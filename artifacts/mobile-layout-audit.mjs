@@ -14,6 +14,7 @@ const VIEWPORTS = [
     { width: 768, height: 1024 },
     { width: 844, height: 390 },
     { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
 ]
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
@@ -194,7 +195,6 @@ async function collectHomeMetrics(send, viewport) {
         const selectors = [
             '.home-screen',
             '.home-screen__header',
-            '.home-hero',
             '.home-entry',
             '#player-name',
             '.home-entry__create',
@@ -227,6 +227,9 @@ async function collectHomeMetrics(send, viewport) {
             innerHeight: window.innerHeight,
             documentScrollHeight: document.documentElement.scrollHeight,
             hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+            hasLegacyHero: document.querySelector('.home-hero') !== null,
+            usesBattleSceneBackground: getComputedStyle(document.querySelector('.shell--home'))
+                .backgroundImage.includes('battle-scene-mobile.jpeg'),
             boxes,
         }
     })()`)

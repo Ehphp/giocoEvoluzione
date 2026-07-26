@@ -828,44 +828,44 @@
       ".gene-selection-screen": {
         "top": 17,
         "bottom": 883,
-        "left": 80,
-        "right": 1360,
-        "width": 1280,
+        "left": 17,
+        "right": 1423,
+        "width": 1406,
         "height": 866,
         "fullyVisible": true
       },
       ".screen-content": {
         "top": 17,
         "bottom": 883,
-        "left": 80,
-        "right": 1360,
-        "width": 1280,
+        "left": 17,
+        "right": 1423,
+        "width": 1406,
         "height": 866,
         "fullyVisible": true
       },
       ".duel-v2-header": {
         "top": 35,
         "bottom": 91,
-        "left": 123.2,
-        "right": 1316.8,
-        "width": 1193.6,
+        "left": 60.2,
+        "right": 1379.8,
+        "width": 1319.6,
         "height": 56,
         "fullyVisible": true
       },
       ".scene-v2-stage": {
         "top": 105,
         "bottom": 859,
-        "left": 123.2,
-        "right": 553.2,
-        "width": 430,
+        "left": 60.2,
+        "right": 808.6,
+        "width": 748.4,
         "height": 754,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 119,
         "bottom": 189,
-        "left": 138.2,
-        "right": 538.2,
+        "left": 234.4,
+        "right": 634.4,
         "width": 400,
         "height": 70,
         "fullyVisible": true
@@ -873,8 +873,8 @@
       ".next-event-v2-section": {
         "top": 194,
         "bottom": 225,
-        "left": 248.2,
-        "right": 428.2,
+        "left": 344.4,
+        "right": 524.4,
         "width": 180,
         "height": 31,
         "fullyVisible": true
@@ -882,8 +882,8 @@
       ".next-event-v2-card": {
         "top": 194,
         "bottom": 225,
-        "left": 248.2,
-        "right": 428.2,
+        "left": 344.4,
+        "right": 524.4,
         "width": 180,
         "height": 31,
         "fullyVisible": true
@@ -891,8 +891,8 @@
       ".gene-selector-panel": {
         "top": 625,
         "bottom": 774,
-        "left": 807.8,
-        "right": 1305.8,
+        "left": 870.8,
+        "right": 1368.8,
         "width": 498,
         "height": 149,
         "fullyVisible": true
@@ -900,8 +900,8 @@
       ".selector-v2-carousel": {
         "top": 646,
         "bottom": 774,
-        "left": 807.8,
-        "right": 1305.8,
+        "left": 870.8,
+        "right": 1368.8,
         "width": 498,
         "height": 128,
         "fullyVisible": true
@@ -909,8 +909,8 @@
       ".selector-v2-rail": {
         "top": 646,
         "bottom": 774,
-        "left": 807.8,
-        "right": 2467.8,
+        "left": 870.8,
+        "right": 2530.8,
         "width": 1660,
         "height": 128,
         "fullyVisible": true
@@ -918,8 +918,8 @@
       ".action-v2-panel": {
         "top": 780,
         "bottom": 848,
-        "left": 807.8,
-        "right": 1305.8,
+        "left": 870.8,
+        "right": 1368.8,
         "width": 498,
         "height": 68,
         "fullyVisible": true
@@ -927,8 +927,8 @@
       ".action-v2-btn--use": {
         "top": 780,
         "bottom": 848,
-        "left": 807.8,
-        "right": 1115.6,
+        "left": 870.8,
+        "right": 1178.6,
         "width": 307.8,
         "height": 68,
         "fullyVisible": true
@@ -936,10 +936,145 @@
       ".action-v2-btn--evolve": {
         "top": 780,
         "bottom": 848,
-        "left": 1122.6,
-        "right": 1305.8,
+        "left": 1185.6,
+        "right": 1368.8,
         "width": 183.2,
         "height": 68,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "choice-current-1920x1080.png",
+    "requestedViewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "innerWidth": 1920,
+    "innerHeight": 1080,
+    "documentScrollHeight": 1080,
+    "screenScrollHeight": 1078,
+    "hasVerticalOverflow": false,
+    "sceneViewportRatio": 84.3,
+    "geneCardCount": 10,
+    "railStart": "0",
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 17,
+        "bottom": 1063,
+        "left": 17,
+        "right": 1903,
+        "width": 1886,
+        "height": 1046,
+        "fullyVisible": true
+      },
+      ".screen-content": {
+        "top": 17,
+        "bottom": 1063,
+        "left": 17,
+        "right": 1903,
+        "width": 1886,
+        "height": 1046,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 39,
+        "bottom": 105,
+        "left": 74.6,
+        "right": 1845.4,
+        "width": 1770.8,
+        "height": 66,
+        "fullyVisible": true
+      },
+      ".scene-v2-stage": {
+        "top": 123,
+        "bottom": 1033,
+        "left": 74.6,
+        "right": 1083.8,
+        "width": 1009.2,
+        "height": 910,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 141,
+        "bottom": 227,
+        "left": 329.2,
+        "right": 829.2,
+        "width": 500,
+        "height": 86,
+        "fullyVisible": true
+      },
+      ".next-event-v2-section": {
+        "top": 232,
+        "bottom": 263,
+        "left": 489.2,
+        "right": 669.2,
+        "width": 180,
+        "height": 31,
+        "fullyVisible": true
+      },
+      ".next-event-v2-card": {
+        "top": 232,
+        "bottom": 263,
+        "left": 489.2,
+        "right": 669.2,
+        "width": 180,
+        "height": 31,
+        "fullyVisible": true
+      },
+      ".gene-selector-panel": {
+        "top": 751,
+        "bottom": 933,
+        "left": 1339.4,
+        "right": 1831.4,
+        "width": 492,
+        "height": 182,
+        "fullyVisible": true
+      },
+      ".selector-v2-carousel": {
+        "top": 775,
+        "bottom": 933,
+        "left": 1339.4,
+        "right": 1831.4,
+        "width": 492,
+        "height": 158,
+        "fullyVisible": true
+      },
+      ".selector-v2-rail": {
+        "top": 775,
+        "bottom": 933,
+        "left": 1339.4,
+        "right": 2979.4,
+        "width": 1640,
+        "height": 158,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 939,
+        "bottom": 1019,
+        "left": 1339.4,
+        "right": 1831.4,
+        "width": 492,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 939,
+        "bottom": 1019,
+        "left": 1339.4,
+        "right": 1643.4,
+        "width": 304,
+        "height": 80,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 939,
+        "bottom": 1019,
+        "left": 1650.4,
+        "right": 1831.4,
+        "width": 181,
+        "height": 80,
         "fullyVisible": true
       }
     }
