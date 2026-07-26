@@ -24,9 +24,11 @@ describe('trait catalog integrity', () => {
         }
     })
 
-    it('every trait appears in at least one round event effect', () => {
+    it('every trait has at least one positive affinity in the event catalog', () => {
         const coveredTraits = new Set(
-            ROUND_EVENT_DEFINITIONS.flatMap((eventDefinition) => eventDefinition.effects.map((effect) => effect.trait)),
+            ROUND_EVENT_DEFINITIONS.flatMap((eventDefinition) => (
+                eventDefinition.effects.filter((effect) => effect.modifier > 0).map((effect) => effect.trait)
+            )),
         )
 
         for (const trait of TRAITS) {
@@ -34,7 +36,7 @@ describe('trait catalog integrity', () => {
         }
     })
 
-    it('normalizes legacy 6-trait state without overwriting existing values', () => {
+    it('normalizes legacy state and clamps stored levels above 3', () => {
         const legacyState = {
             STRENGTH: { level: 2, cooldown: 1 },
             RESISTANCE: { level: 1, cooldown: 0 },
@@ -47,7 +49,7 @@ describe('trait catalog integrity', () => {
         const normalized = normalizeTraitCollection(legacyState)
 
         expect(normalized.STRENGTH).toEqual({ level: 2, cooldown: 1 })
-        expect(normalized.METABOLISM).toEqual({ level: 4, cooldown: 0 })
+        expect(normalized.METABOLISM).toEqual({ level: 3, cooldown: 0 })
         expect(normalized.GRIP_CLAWS).toEqual({ level: 0, cooldown: 0 })
         expect(normalized.CAMOUFLAGE).toEqual({ level: 0, cooldown: 0 })
         expect(normalized.WEBBED_LIMBS).toEqual({ level: 0, cooldown: 0 })

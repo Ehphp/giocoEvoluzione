@@ -155,9 +155,9 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const agility = viewModel.genes.find((gene) => gene.traitType === 'AGILITY')
 
         expect(resistance?.prediction).toMatchObject({
-            useScore: 4,
+            useScore: 2,
             levelContribution: 0,
-            eventContribution: 4,
+            eventContribution: 2,
         })
         expect(resistance?.prediction?.reasons[0]).toContain('pelle isolante')
         expect(agility?.prediction).toMatchObject({
@@ -171,6 +171,16 @@ describe('buildGeneSelectionV2ViewModel', () => {
         const viewModel = build(createSnapshot())
 
         expect(viewModel.status).toBe('choosing')
+    })
+
+    it('disables EVOLVE when the selected gene is already at level 3', () => {
+        const snapshot = createSnapshot()
+        snapshot.me!.traits.AGILITY.level = 3
+        const viewModel = build(snapshot)
+
+        expect(viewModel.selectedGene?.traitType).toBe('AGILITY')
+        expect(viewModel.canEvolve).toBe(false)
+        expect(viewModel.canUse).toBe(true)
     })
 
     it('selects the first gene by default when no selectedGeneId is provided', () => {

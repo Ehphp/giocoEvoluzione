@@ -141,7 +141,7 @@ Il bot evolve quindi circa metà delle volte senza considerare evento, livello, 
 
 - `artifacts/game-mechanics-audit/simulation.test.ts`
 - `artifacts/game-mechanics-audit/vitest.config.ts`
-- risultati grezzi in `artifacts/game-mechanics-audit/results.json`
+- risultati grezzi baseline in `artifacts/game-mechanics-audit/results-before.json`
 
 La suite:
 

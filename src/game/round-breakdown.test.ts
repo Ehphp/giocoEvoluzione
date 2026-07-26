@@ -93,8 +93,8 @@ describe('round breakdown', () => {
         })
 
         expect(result.player1.breakdown.originalLevel).toBe(7)
-        expect(result.player1.breakdown.effectiveLevel).toBe(5)
-        expect(result.player1.breakdown.levelContribution).toBe(5)
+        expect(result.player1.breakdown.effectiveLevel).toBe(3)
+        expect(result.player1.breakdown.levelContribution).toBe(3)
         expect(result.player1.breakdown.total).toBe(result.player1.roundValue)
     })
 })

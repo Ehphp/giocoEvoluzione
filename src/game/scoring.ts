@@ -1,6 +1,6 @@
-import { EVENT_WEIGHT, MAX_EFFECTIVE_TRAIT_LEVEL } from './config'
-import { getRoundEventEffectsForTrait } from './round-events'
-import type { ActionType, RoundEventDefinition, RoundValueBreakdown, TraitCollection, TraitState, TraitType } from './types'
+import { EVENT_WEIGHT, MAX_EFFECTIVE_TRAIT_LEVEL } from './config.ts'
+import { getRoundEventEffectsForTrait } from './round-events.ts'
+import type { ActionType, RoundEventDefinition, RoundValueBreakdown, TraitCollection, TraitState, TraitType } from './types.ts'
 
 export function getValidatedRoundEventModifier(roundEvent: RoundEventDefinition, trait: TraitType): {
     modifierTotal: number

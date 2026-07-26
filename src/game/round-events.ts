@@ -1,6 +1,6 @@
-import type { RoundEventDefinition, RoundEventEffect, TraitType } from './types'
+import type { RoundEventDefinition, RoundEventEffect, TraitType } from './types.ts'
 
-export const ROUND_EVENT_WEIGHT = 2
+export const ROUND_EVENT_WEIGHT = 1
 
 export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
     {
@@ -14,8 +14,8 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         tags: ['placeholder', 'abrasion', 'air-quality'],
         effects: [
             { trait: 'RESISTANCE', modifier: 2, reason: 'La pelle isolante limita danni da particolato.' },
+            { trait: 'FAT_RESERVES', modifier: 1, reason: 'Le riserve energetiche sostengono il corpo durante l esposizione prolungata alla cenere.' },
             { trait: 'PERCEPTION', modifier: -1, reason: 'La cenere sospesa riduce lettura del territorio.' },
-            { trait: 'METABOLISM', modifier: -1, reason: 'Respirazione piu costosa in aria pesante.' },
         ],
     },
     {
@@ -30,7 +30,7 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         effects: [
             { trait: 'PERCEPTION', modifier: 2, reason: 'I sensi acuti mantengono vantaggio in scarsa luce.' },
             { trait: 'CAMOUFLAGE', modifier: 1, reason: 'L ombra diffusa migliora occultamento.' },
-            { trait: 'STRENGTH', modifier: -1, reason: 'Ingaggi diretti meno frequenti in buio profondo.' },
+            { trait: 'METABOLISM', modifier: -1, reason: 'Il buio prolungato altera i ritmi energetici piu efficienti alla luce.' },
         ],
     },
     {
@@ -44,7 +44,8 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         tags: ['placeholder', 'predators', 'threat'],
         effects: [
             { trait: 'AGILITY', modifier: 2, reason: 'La fuga rapida riduce esposizione agli inseguimenti.' },
-            { trait: 'CAMOUFLAGE', modifier: 2, reason: 'Mimetismo efficace contro pattugliamenti predatori.' },
+            { trait: 'CAMOUFLAGE', modifier: 1, reason: 'Il mimetismo riduce la probabilita di essere individuati dai predatori.' },
+            { trait: 'STRENGTH', modifier: 1, reason: 'La muscolatura compatta aiuta a respingere gli assalti ravvicinati.' },
             { trait: 'FAT_RESERVES', modifier: -1, reason: 'Maggiore massa penalizza cambi direzione rapidi.' },
         ],
     },
@@ -60,7 +61,7 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         effects: [
             { trait: 'METABOLISM', modifier: 2, reason: 'Gestione energetica piu efficiente sotto stress termico.' },
             { trait: 'WEBBED_LIMBS', modifier: 1, reason: 'Aree umide residue favoriscono mobilita anfibia.' },
-            { trait: 'FAT_RESERVES', modifier: -2, reason: 'Accumulo adiposo peggiora dissipazione del calore.' },
+            { trait: 'FAT_RESERVES', modifier: -1, reason: 'Accumulo adiposo peggiora dissipazione del calore.' },
         ],
     },
     {
@@ -73,7 +74,7 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         artKey: 'event-nutrient-collapse',
         tags: ['placeholder', 'food', 'scarcity'],
         effects: [
-            { trait: 'METABOLISM', modifier: 2, reason: 'Metabolismo efficiente mantiene attivita con poche risorse.' },
+            { trait: 'FAT_RESERVES', modifier: 2, reason: 'Le riserve adipose sostengono la creatura durante la scarsita prolungata.' },
             { trait: 'ADAPTATION', modifier: 1, reason: 'Plasticita utile per cambiare dieta rapidamente.' },
             { trait: 'STRENGTH', modifier: -1, reason: 'Mantenere massa muscolare richiede energia rara.' },
         ],
@@ -90,7 +91,8 @@ export const ROUND_EVENT_DEFINITIONS: RoundEventDefinition[] = [
         effects: [
             { trait: 'WEBBED_LIMBS', modifier: 2, reason: 'Gli arti palmati dominano i tratti sommersi.' },
             { trait: 'GRIP_CLAWS', modifier: 1, reason: 'Presa su appigli instabili durante la corrente.' },
-            { trait: 'STRENGTH', modifier: -1, reason: 'La forza frontale rende meno in acqua veloce.' },
+            { trait: 'STRENGTH', modifier: 1, reason: 'La forza aiuta a resistere alla spinta della corrente.' },
+            { trait: 'AGILITY', modifier: -1, reason: 'Movimenti elastici e leggeri perdono efficacia nell acqua impetuosa.' },
         ],
     },
 ]
@@ -105,7 +107,7 @@ export function getRoundEventById(roundEventId: string): RoundEventDefinition {
     const roundEvent = ROUND_EVENT_BY_ID[roundEventId]
 
     if (!roundEvent) {
-        throw new Error(`Unknown round event \"${roundEventId}\".`)
+        throw new Error(`Unknown round event "${roundEventId}".`)
     }
 
     return roundEvent

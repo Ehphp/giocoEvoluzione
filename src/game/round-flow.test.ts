@@ -18,6 +18,11 @@ describe('round flow with event sequence', () => {
             const roundEvent = getRoundEventForRound(sequence, roundNumber)
             const player1CanUseAgility = player1Traits.AGILITY.cooldown === 0
             const player1ActionType = player1CanUseAgility ? 'USE' : 'EVOLVE'
+            const player2Action = player2Traits.RESISTANCE.level < 3
+                ? { playerId: 'p2', trait: 'RESISTANCE' as TraitType, actionType: 'EVOLVE' as const }
+                : player2Traits.RESISTANCE.cooldown === 0
+                    ? { playerId: 'p2', trait: 'RESISTANCE' as TraitType, actionType: 'USE' as const }
+                    : { playerId: 'p2', trait: 'STRENGTH' as TraitType, actionType: 'USE' as const }
 
             expect(roundEvent).not.toBeNull()
 
@@ -29,7 +34,7 @@ describe('round flow with event sequence', () => {
                 player1Traits,
                 player2Traits,
                 player1Action: { playerId: 'p1', trait: 'AGILITY', actionType: player1ActionType },
-                player2Action: { playerId: 'p2', trait: 'RESISTANCE', actionType: 'EVOLVE' },
+                player2Action,
             })
 
             player1Traits = resolution.player1.traits
@@ -40,10 +45,10 @@ describe('round flow with event sequence', () => {
 
         expect(player1Score + player2Score).toBeGreaterThanOrEqual(0)
         expect(player1Traits.AGILITY.level).toBeGreaterThanOrEqual(0)
-        expect(player2Traits.RESISTANCE.level).toBe(TOTAL_ROUNDS)
+        expect(player2Traits.RESISTANCE.level).toBe(3)
     })
 
-    it('awards 2 points on final round advancement', () => {
+    it('awards 1 point on final round advancement', () => {
         const sequence = [
             'VOLCANIC_ASH_WAVE',
             'PROLONGED_ECLIPSE',
@@ -66,8 +71,8 @@ describe('round flow with event sequence', () => {
             player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
         })
 
-        expect(resolution.awardedPoints).toBe(2)
-        expect(resolution.player1ScoreDelta).toBe(2)
+        expect(resolution.awardedPoints).toBe(1)
+        expect(resolution.player1ScoreDelta).toBe(1)
     })
 
     it('completes a full VS_BOT loop across all rounds without invalid bot actions', () => {

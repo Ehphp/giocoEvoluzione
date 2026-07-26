@@ -1,15 +1,15 @@
-import { TRAITS as TRAIT_TYPES, type TraitCollection, type TraitType } from './types'
-import { TRAIT_CATALOG } from './traits-catalog'
-import { generateRoundEventSequence as generateRoundEventSequenceFromCatalog, ROUND_EVENT_WEIGHT } from './round-events'
+import { TRAITS as TRAIT_TYPES, type TraitCollection, type TraitType } from './types.ts'
+import { TRAIT_CATALOG } from './traits-catalog.ts'
+import { generateRoundEventSequence as generateRoundEventSequenceFromCatalog, ROUND_EVENT_WEIGHT } from './round-events.ts'
 
 export const TRAITS = TRAIT_TYPES
 
 export const TOTAL_ROUNDS = 6
 export const FINAL_ROUND_NUMBER = 6
-export const FINAL_ROUND_POINTS = 2
+export const FINAL_ROUND_POINTS = 1
 export const DEFAULT_ROUND_POINTS = 1
 export const EVENT_WEIGHT = ROUND_EVENT_WEIGHT
-export const MAX_EFFECTIVE_TRAIT_LEVEL = 5
+export const MAX_EFFECTIVE_TRAIT_LEVEL = 3
 export const ROOM_CODE_LENGTH = 5
 
 export const TRAIT_LABELS: Record<TraitType, string> = TRAITS.reduce((labels, trait) => {
@@ -96,12 +96,15 @@ export function normalizeTraitCollection(traits: PartialTraitCollection | null |
             continue
         }
 
-        if (typeof state.level === 'number') {
-            normalized[trait].level = state.level
+        if (typeof state.level === 'number' && Number.isFinite(state.level)) {
+            normalized[trait].level = Math.min(
+                MAX_EFFECTIVE_TRAIT_LEVEL,
+                Math.max(0, Math.trunc(state.level)),
+            )
         }
 
-        if (typeof state.cooldown === 'number') {
-            normalized[trait].cooldown = state.cooldown
+        if (typeof state.cooldown === 'number' && Number.isFinite(state.cooldown)) {
+            normalized[trait].cooldown = Math.max(0, Math.trunc(state.cooldown))
         }
     }
 

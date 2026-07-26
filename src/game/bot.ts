@@ -1,4 +1,5 @@
 import { TRAITS } from './types.ts'
+import { isTraitEvolvable } from './engine.ts'
 import type { ActionType, TraitCollection, TraitType } from './types.ts'
 
 export type BotRoundAction = {
@@ -10,7 +11,9 @@ export function getLegalBotActions(traits: TraitCollection): BotRoundAction[] {
     const actions: BotRoundAction[] = []
 
     for (const trait of TRAITS) {
-        actions.push({ trait, actionType: 'EVOLVE' })
+        if (isTraitEvolvable(traits, trait)) {
+            actions.push({ trait, actionType: 'EVOLVE' })
+        }
 
         if (traits[trait].cooldown === 0) {
             actions.push({ trait, actionType: 'USE' })

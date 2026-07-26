@@ -2,19 +2,28 @@ import {
     DEFAULT_ROUND_POINTS,
     FINAL_ROUND_NUMBER,
     FINAL_ROUND_POINTS,
-} from './config'
-import { getValidatedActionBreakdown, getValidatedTraitRoundValue, getValidatedTraitState } from './scoring'
+    MAX_EFFECTIVE_TRAIT_LEVEL,
+} from './config.ts'
+import { getValidatedActionBreakdown, getValidatedTraitRoundValue, getValidatedTraitState } from './scoring.ts'
 import type {
     PlayerRoundAction,
     ResolveRoundInput,
     RoundResolution,
     TraitCollection,
     TraitType,
-} from './types'
+} from './types.ts'
 
 function cloneTraits(traits: TraitCollection): TraitCollection {
     return Object.fromEntries(
-        Object.entries(traits).map(([trait, state]) => [trait, { ...state }]),
+        Object.entries(traits).map(([trait, state]) => [
+            trait,
+            {
+                ...state,
+                level: Number.isFinite(state.level)
+                    ? Math.min(state.level, MAX_EFFECTIVE_TRAIT_LEVEL)
+                    : state.level,
+            },
+        ]),
     ) as TraitCollection
 }
 
@@ -24,6 +33,10 @@ export function getRoundPoints(roundNumber: number): number {
 
 export function isTraitUsable(traits: TraitCollection, trait: TraitType): boolean {
     return traits[trait].cooldown === 0
+}
+
+export function isTraitEvolvable(traits: TraitCollection, trait: TraitType): boolean {
+    return traits[trait].level < MAX_EFFECTIVE_TRAIT_LEVEL
 }
 
 export function getTraitRoundValue(
@@ -54,7 +67,14 @@ function resolvePlayerAction(
     const nextTraits = tickCooldowns(traits)
 
     if (action.actionType === 'EVOLVE') {
-        nextTraits[action.trait].level += 1
+        if (!isTraitEvolvable(traits, action.trait)) {
+            throw new Error(`Trait ${action.trait} is already at the maximum level and cannot evolve.`)
+        }
+
+        nextTraits[action.trait].level = Math.min(
+            MAX_EFFECTIVE_TRAIT_LEVEL,
+            nextTraits[action.trait].level + 1,
+        )
 
         return {
             roundValue: 0,

@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import {
+    EVENT_WEIGHT,
     FINAL_ROUND_NUMBER,
+    MAX_EFFECTIVE_TRAIT_LEVEL,
     TOTAL_ROUNDS,
     TRAITS,
     createInitialTraits,
 } from '../../src/game/config'
-import { resolveRound } from '../../src/game/engine'
+import { getRoundPoints, isTraitEvolvable, resolveRound } from '../../src/game/engine'
 import {
     generateRoundEventSequence,
     getRoundEventById,
@@ -105,7 +107,7 @@ function cloneTraits(traits: TraitCollection): TraitCollection {
 
 function eventContribution(event: RoundEventDefinition, trait: TraitType): number {
     return getRoundEventEffectsForTrait(event, trait)
-        .reduce((sum, effect) => sum + effect.modifier * 2, 0)
+        .reduce((sum, effect) => sum + effect.modifier * EVENT_WEIGHT, 0)
 }
 
 function actionValue(event: RoundEventDefinition, traits: TraitCollection, action: SimAction): number {
@@ -113,14 +115,17 @@ function actionValue(event: RoundEventDefinition, traits: TraitCollection, actio
         return 0
     }
 
-    return eventContribution(event, action.trait) + Math.min(5, traits[action.trait].level)
+    return eventContribution(event, action.trait)
+        + Math.min(MAX_EFFECTIVE_TRAIT_LEVEL, traits[action.trait].level)
 }
 
 function legalActions(traits: TraitCollection): SimAction[] {
     const actions: SimAction[] = []
 
     for (const trait of TRAITS) {
-        actions.push({ trait, actionType: 'EVOLVE' })
+        if (isTraitEvolvable(traits, trait)) {
+            actions.push({ trait, actionType: 'EVOLVE' })
+        }
 
         if (traits[trait].cooldown === 0) {
             actions.push({ trait, actionType: 'USE' })
@@ -194,7 +199,7 @@ function weightedRemainingAffinity(
 ): number {
     return sequence.slice(roundNumber).reduce((sum, event, offset) => {
         const futureRound = roundNumber + offset + 1
-        const pointWeight = futureRound === FINAL_ROUND_NUMBER ? 2 : 1
+        const pointWeight = getRoundPoints(futureRound)
         return sum + Math.max(0, eventContribution(event, trait)) * pointWeight
     }, 0)
 }
@@ -254,7 +259,7 @@ const futureFavorite: Strategy = {
                     : best
             ))
 
-            if (weightedRemainingAffinity(context.sequence, context.roundNumber, trait) >= 6) {
+            if (weightedRemainingAffinity(context.sequence, context.roundNumber, trait) > 0) {
                 return { trait, actionType: 'EVOLVE' }
             }
         }
@@ -263,7 +268,23 @@ const futureFavorite: Strategy = {
     },
 }
 
-const finalRoundMaximizer = createFinalInvestmentStrategy(5)
+const nextEventEvolver: Strategy = {
+    id: 'next_event_evolver',
+    label: 'Nei round dispari evolve un gene principale del prossimo evento',
+    choose(context) {
+        if (context.roundNumber < FINAL_ROUND_NUMBER && context.roundNumber % 2 === 1) {
+            const nextEvent = context.sequence[context.roundNumber]
+            const trait = topTraitsForEvent(nextEvent)
+                .find((candidate) => isTraitEvolvable(context.selfTraits, candidate))
+
+            if (trait) {
+                return { trait, actionType: 'EVOLVE' }
+            }
+        }
+
+        return chooseBestUse(context.sequence[context.roundNumber - 1], context.selfTraits)
+    },
+}
 
 const avoidPenalties: Strategy = {
     id: 'avoid_penalties',
@@ -290,7 +311,10 @@ function simulateOwnTransition(traits: TraitCollection, action: SimAction): Trai
     }
 
     if (action.actionType === 'EVOLVE') {
-        next[action.trait].level += 1
+        next[action.trait].level = Math.min(
+            MAX_EFFECTIVE_TRAIT_LEVEL,
+            next[action.trait].level + 1,
+        )
     } else {
         next[action.trait].cooldown = 1
     }
@@ -317,7 +341,7 @@ function chooseFullForesightAction(context: StrategyContext): SimAction {
 
         const event = context.sequence[roundIndex]
         const roundNumber = roundIndex + 1
-        const pointWeight = roundNumber === FINAL_ROUND_NUMBER ? 2 : 1
+        const pointWeight = getRoundPoints(roundNumber)
         // This strategy is deliberately the requested "full-sequence greedy":
         // it optimizes the complete weighted USE schedule and cooldown rotation,
         // but does not model the opponent or invest with EVOLVE.
@@ -364,7 +388,7 @@ const responseAware: Strategy = {
     label: 'Massimizza l’esito atteso contro tutte le risposte legali',
     choose(context) {
         const event = context.sequence[context.roundNumber - 1]
-        const points = context.roundNumber === FINAL_ROUND_NUMBER ? 2 : 1
+        const points = getRoundPoints(context.roundNumber)
         const ownActions = legalActions(context.selfTraits)
         const opponentActions = legalActions(context.opponentTraits)
         let bestAction = ownActions[0]
@@ -400,7 +424,7 @@ const benchmarkStrategies: Strategy[] = [
     createFinalInvestmentStrategy(2),
     createFinalInvestmentStrategy(3),
     futureFavorite,
-    finalRoundMaximizer,
+    nextEventEvolver,
     avoidPenalties,
     fullForesightGreedy,
     responseAware,
@@ -697,8 +721,11 @@ auditDescribe('game mechanics audit simulation', () => {
         }
 
         const evolutionLadder: Record<string, Record<string, { winPct: number; drawPct: number; lossPct: number }>> = {}
-        const ladderStrategies = Array.from({ length: 6 }, (_, evolutions) => createFinalInvestmentStrategy(evolutions))
-        const ladderGamesPerPair = 500
+        const ladderStrategies = Array.from(
+            { length: MAX_EFFECTIVE_TRAIT_LEVEL + 1 },
+            (_, evolutions) => createFinalInvestmentStrategy(evolutions),
+        )
+        const ladderGamesPerPair = 1_000
 
         for (const strategy of ladderStrategies) {
             evolutionLadder[strategy.id] = {}

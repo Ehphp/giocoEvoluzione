@@ -7,6 +7,7 @@ import {
     getRoundEventForRound,
     ROUND_EVENT_DEFINITIONS,
 } from './round-events'
+import { TRAITS } from './types'
 
 function makeDeterministicRandom(seed = 42): () => number {
     let state = seed >>> 0
@@ -86,5 +87,62 @@ describe('round event deck', () => {
         const playerTwoView = getRoundEventForRound(sequence, 4)
 
         expect(playerOneView?.id).toBe(playerTwoView?.id)
+    })
+
+    it('keeps stable event and trait IDs with the controlled affinity matrix', () => {
+        const expectedMatrix = {
+            VOLCANIC_ASH_WAVE: [
+                ['RESISTANCE', 2],
+                ['FAT_RESERVES', 1],
+                ['PERCEPTION', -1],
+            ],
+            PROLONGED_ECLIPSE: [
+                ['PERCEPTION', 2],
+                ['CAMOUFLAGE', 1],
+                ['METABOLISM', -1],
+            ],
+            PREDATOR_PACK_MIGRATION: [
+                ['AGILITY', 2],
+                ['CAMOUFLAGE', 1],
+                ['STRENGTH', 1],
+                ['FAT_RESERVES', -1],
+            ],
+            HEAT_SPIKE: [
+                ['METABOLISM', 2],
+                ['WEBBED_LIMBS', 1],
+                ['FAT_RESERVES', -1],
+            ],
+            NUTRIENT_COLLAPSE: [
+                ['FAT_RESERVES', 2],
+                ['ADAPTATION', 1],
+                ['STRENGTH', -1],
+            ],
+            FLASH_FLOOD: [
+                ['WEBBED_LIMBS', 2],
+                ['GRIP_CLAWS', 1],
+                ['STRENGTH', 1],
+                ['AGILITY', -1],
+            ],
+        } as const
+
+        expect(ROUND_EVENT_DEFINITIONS.map((event) => event.id)).toEqual(Object.keys(expectedMatrix))
+        expect(TRAITS).toEqual([
+            'STRENGTH',
+            'RESISTANCE',
+            'AGILITY',
+            'PERCEPTION',
+            'METABOLISM',
+            'ADAPTATION',
+            'GRIP_CLAWS',
+            'CAMOUFLAGE',
+            'WEBBED_LIMBS',
+            'FAT_RESERVES',
+        ])
+
+        for (const [eventId, expectedEffects] of Object.entries(expectedMatrix)) {
+            const event = getRoundEventById(eventId)
+            expect(event.effects.map((effect) => [effect.trait, effect.modifier])).toEqual(expectedEffects)
+            expect(event.effects.every((effect) => effect.reason.trim().length > 0)).toBe(true)
+        }
     })
 })

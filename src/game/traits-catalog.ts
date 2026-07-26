@@ -1,4 +1,4 @@
-import type { TraitType } from './types'
+import type { TraitType } from './types.ts'
 
 export type TraitCatalogEntry = {
     id: TraitType

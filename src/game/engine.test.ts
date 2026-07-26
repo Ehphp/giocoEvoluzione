@@ -15,7 +15,7 @@ describe('game engine', () => {
         const traits = createInitialTraits()
         traits.RESISTANCE.level = 2
 
-        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(6)
+        expect(getTraitRoundValue(volcanicAsh, traits, 'RESISTANCE')).toBe(4)
     })
 
     it('keeps round resolution aligned with the shared validated helper', () => {
@@ -163,7 +163,7 @@ describe('game engine', () => {
         expect(result.player2ScoreDelta).toBe(0)
     })
 
-    it('assigns double points in the sixth round', () => {
+    it('assigns exactly one point in the sixth round', () => {
         const result = resolveRound({
             roundNumber: 6,
             roundEvent: volcanicAsh,
@@ -183,9 +183,62 @@ describe('game engine', () => {
             },
         })
 
-        expect(result.awardedPoints).toBe(2)
-        expect(result.player1ScoreDelta).toBe(2)
+        expect(result.awardedPoints).toBe(1)
+        expect(result.player1ScoreDelta).toBe(1)
         expect(result.player2ScoreDelta).toBe(0)
+    })
+
+    it('evolves from level 2 to level 3 without exceeding the stored cap', () => {
+        const traits = createInitialTraits()
+        traits.METABOLISM.level = 2
+
+        const result = resolveRound({
+            roundNumber: 2,
+            roundEvent: heatSpike,
+            player1Id: 'p1',
+            player2Id: 'p2',
+            player1Traits: traits,
+            player2Traits: createInitialTraits(),
+            player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
+        })
+
+        expect(result.player1.roundValue).toBe(0)
+        expect(result.player1.traits.METABOLISM.level).toBe(3)
+    })
+
+    it('rejects EVOLVE when the selected trait is already at level 3', () => {
+        const traits = createInitialTraits()
+        traits.METABOLISM.level = 3
+
+        expect(() => resolveRound({
+            roundNumber: 2,
+            roundEvent: heatSpike,
+            player1Id: 'p1',
+            player2Id: 'p2',
+            player1Traits: traits,
+            player2Traits: createInitialTraits(),
+            player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' },
+            player2Action: { playerId: 'p2', trait: 'STRENGTH', actionType: 'USE' },
+        })).toThrow(/maximum level/i)
+    })
+
+    it('assigns one point in every round', () => {
+        for (let roundNumber = 1; roundNumber <= 6; roundNumber += 1) {
+            const result = resolveRound({
+                roundNumber,
+                roundEvent: volcanicAsh,
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Traits: createInitialTraits(),
+                player2Traits: createInitialTraits(),
+                player1Action: { playerId: 'p1', trait: 'RESISTANCE', actionType: 'USE' },
+                player2Action: { playerId: 'p2', trait: 'AGILITY', actionType: 'USE' },
+            })
+
+            expect(result.awardedPoints).toBe(1)
+            expect(result.player1ScoreDelta).toBe(1)
+        }
     })
 
     it('blocks double resolution of the same round', () => {

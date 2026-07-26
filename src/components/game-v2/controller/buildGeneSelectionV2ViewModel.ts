@@ -1,5 +1,5 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
-import { isTraitUsable } from '../../../game/engine'
+import { isTraitEvolvable, isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { getValidatedTraitUseBreakdown } from '../../../game/scoring'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
@@ -261,7 +261,11 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     }
 
     const canSelectGenes = status === 'choosing' || status === 'error'
-    const canEvolve = Boolean(selectedGene) && (status === 'choosing' || status === 'error')
+    const canEvolve = Boolean(
+        selectedGene
+        && snapshot.me
+        && isTraitEvolvable(snapshot.me.traits, selectedGene.traitType),
+    ) && (status === 'choosing' || status === 'error')
     const canUse = Boolean(selectedGene?.usable) && (status === 'choosing' || status === 'error')
 
     const submittedAction = snapshot.myCurrentAction

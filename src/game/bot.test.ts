@@ -4,9 +4,10 @@ import { createInitialTraits } from './config'
 import { getLegalBotActions, selectRandomBotAction } from './bot'
 
 describe('bot action selection', () => {
-    it('exposes only legal USE actions and always exposes EVOLVE', () => {
+    it('exposes only legal USE and EVOLVE actions', () => {
         const traits = createInitialTraits()
         traits.AGILITY.cooldown = 1
+        traits.RESISTANCE.level = 3
 
         const actions = getLegalBotActions(traits)
 
@@ -14,6 +15,7 @@ describe('bot action selection', () => {
         expect(actions).toContainEqual({ trait: 'STRENGTH', actionType: 'USE' })
         expect(actions).toContainEqual({ trait: 'AGILITY', actionType: 'EVOLVE' })
         expect(actions).not.toContainEqual({ trait: 'AGILITY', actionType: 'USE' })
+        expect(actions).not.toContainEqual({ trait: 'RESISTANCE', actionType: 'EVOLVE' })
     })
 
     it('selects the first legal action when random returns zero', () => {
