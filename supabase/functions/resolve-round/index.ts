@@ -1,14 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { BASE_USE_VALUE, normalizeTraitCollection } from '../../../src/game/config.ts'
-import { buildPersistedRoundResolution } from '../../../src/game/persisted-round-resolution.ts'
-import { getRoundEventById } from '../../../src/game/round-events.ts'
+import { BASE_USE_VALUE } from '../../../shared/game-rules/catalog.ts'
+import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
+import { getRoundEventById, normalizeGeneCollection } from '../../../shared/game-rules/state.ts'
 import { ensureBotRoundAction } from '../../../src/game/vs-bot-round.ts'
-import type { TraitCollection, TraitType } from '../../../src/game/types.ts'
+import type { GeneCollection, GeneId } from '../../../shared/game-rules/types.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
 
-type TraitName = TraitType
+type TraitName = GeneId
 
 // Keep the production function's Deno-compatible rule manifest explicit.
 // Resolution itself delegates to the shared engine below; this guard prevents
@@ -40,8 +40,8 @@ async function applyStoredResolution(
     player2Id: string,
     resolutionData: Record<string, unknown>,
 ) {
-    const player1TraitsAfter = normalizeTraitCollection(resolutionData.player1TraitsAfter as TraitCollection)
-    const player2TraitsAfter = normalizeTraitCollection(resolutionData.player2TraitsAfter as TraitCollection)
+    const player1TraitsAfter = normalizeGeneCollection(resolutionData.player1TraitsAfter as GeneCollection)
+    const player2TraitsAfter = normalizeGeneCollection(resolutionData.player2TraitsAfter as GeneCollection)
     const player1ScoreAfter = Number(resolutionData.player1ScoreAfter ?? 0)
     const player2ScoreAfter = Number(resolutionData.player2ScoreAfter ?? 0)
     const statusAfter = String(resolutionData.statusAfter ?? 'REVEALING')
@@ -194,7 +194,7 @@ Deno.serve(async (request) => {
                         gameId,
                         roundNumber,
                         playerId: String(botPlayer.id),
-                        traits: normalizeTraitCollection(botPlayer.traits as TraitCollection),
+                        traits: normalizeGeneCollection(botPlayer.traits as GeneCollection),
                     },
                 )
 
@@ -238,8 +238,8 @@ Deno.serve(async (request) => {
             player2Id: String(player2.id),
             player1Score: Number(gameData.player_1_score ?? 0),
             player2Score: Number(gameData.player_2_score ?? 0),
-            player1Traits: normalizeTraitCollection(player1.traits as TraitCollection),
-            player2Traits: normalizeTraitCollection(player2.traits as TraitCollection),
+            player1Traits: normalizeGeneCollection(player1.traits as GeneCollection),
+            player2Traits: normalizeGeneCollection(player2.traits as GeneCollection),
             player1Action: {
                 playerId: String(player1.id),
                 trait: player1ActionRow.trait as TraitName,
