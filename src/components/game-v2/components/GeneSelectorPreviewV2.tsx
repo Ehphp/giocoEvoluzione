@@ -109,10 +109,6 @@ function GeneCard({
             </div>
             <strong className="selector-v2-name">{gene.name}</strong>
             <div className="selector-v2-meta">
-                <span className="selector-v2-level">
-                    <small>LV</small>
-                    <b>{gene.level}</b>
-                </span>
                 <span className="selector-v2-points">{prediction.useScore} PT</span>
                 <span className={`selector-v2-event-modifier ${prediction.eventModifier > 0 ? 'is-positive' : prediction.eventModifier < 0 ? 'is-negative' : 'is-neutral'}`}>
                     {eventLabel}
