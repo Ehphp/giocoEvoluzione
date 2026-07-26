@@ -81,6 +81,7 @@ const totals = {
     wins: 0, draws: 0, losses: 0, roundTies: 0, level3Reached: 0, thirdEvolveRoundTotal: 0, thirdEvolveCount: 0, level3Uses: 0,
     optimalActions: {} as Record<string, number>, pickRate: {} as Record<string, number>, memoizedStates: 0,
     matchScoreDistribution: {} as Record<string, number>, thirdEvolveNecessary: 0, thirdEvolveNotNecessary: 0,
+    valuesByGene: {} as Record<string, { sum: number; count: number }>, valuesByEvent: {} as Record<string, { sum: number; count: number }>,
 }
 for (const sequence of sequences) {
     const result = solve(sequence)
@@ -100,6 +101,14 @@ for (const sequence of sequences) {
         const gene = GENE_IDS[entry.action.trait]!
         totals.optimalActions[key] = (totals.optimalActions[key] ?? 0) + 1
         totals.pickRate[gene] = (totals.pickRate[gene] ?? 0) + 1
+        const geneValues = totals.valuesByGene[gene] ?? { sum: 0, count: 0 }
+        geneValues.sum += entry.ownValue
+        geneValues.count += 1
+        totals.valuesByGene[gene] = geneValues
+        const eventValues = totals.valuesByEvent[sequence[entry.round - 1]!] ?? { sum: 0, count: 0 }
+        eventValues.sum += entry.ownValue
+        eventValues.count += 1
+        totals.valuesByEvent[sequence[entry.round - 1]!] = eventValues
         if (entry.ownValue === entry.rivalValue) totals.roundTies += 1
         if (entry.action.actionType === 'EVOLVE' && entry.levelBefore === 2 && !reached) {
             reached = true
@@ -131,6 +140,8 @@ const report = {
         averageLevel3UsesAfterReach: totals.level3Reached ? totals.level3Uses / totals.level3Reached : 0,
         finalDrawRate: totals.draws / sequences.length,
         thirdEvolveNecessaryRate: totals.thirdEvolveCount ? totals.thirdEvolveNecessary / totals.thirdEvolveCount : 0,
+        valuesByGene: Object.fromEntries(Object.entries(totals.valuesByGene).map(([gene, values]) => [gene, { ...values, average: values.sum / values.count }])),
+        valuesByEvent: Object.fromEntries(Object.entries(totals.valuesByEvent).map(([eventId, values]) => [eventId, { ...values, average: values.sum / values.count }])),
     },
 }
 const output = resolve(import.meta.dirname, '../artifacts/audit')

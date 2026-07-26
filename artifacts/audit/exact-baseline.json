@@ -10,7 +10,7 @@
     ]
   },
   "benchmark": {
-    "elapsedMs": 1195,
+    "elapsedMs": 1233,
     "memoizedStates": 1898640
   },
   "metrics": {
@@ -50,6 +50,65 @@
     },
     "thirdEvolveNecessary": 0,
     "thirdEvolveNotNecessary": 2,
+    "valuesByGene": {
+      "AQUATIC": {
+        "sum": 2897,
+        "count": 1363,
+        "average": 2.1254585473220837
+      },
+      "MOBILITY": {
+        "sum": 1616,
+        "count": 725,
+        "average": 2.228965517241379
+      },
+      "METABOLISM": {
+        "sum": 3599,
+        "count": 1439,
+        "average": 2.5010423905489922
+      },
+      "SENSES": {
+        "sum": 1016,
+        "count": 396,
+        "average": 2.5656565656565657
+      },
+      "RESILIENCE": {
+        "sum": 933,
+        "count": 397,
+        "average": 2.350125944584383
+      }
+    },
+    "valuesByEvent": {
+      "VOLCANIC_ASH_WAVE": {
+        "sum": 1168,
+        "count": 720,
+        "average": 1.6222222222222222
+      },
+      "PROLONGED_ECLIPSE": {
+        "sum": 1139,
+        "count": 720,
+        "average": 1.5819444444444444
+      },
+      "PREDATOR_PACK_MIGRATION": {
+        "sum": 1348,
+        "count": 720,
+        "average": 1.8722222222222222
+      },
+      "HEAT_SPIKE": {
+        "sum": 2093,
+        "count": 720,
+        "average": 2.9069444444444446
+      },
+      "NUTRIENT_COLLAPSE": {
+        "sum": 2086,
+        "count": 720,
+        "average": 2.897222222222222
+      },
+      "FLASH_FLOOD": {
+        "sum": 2227,
+        "count": 720,
+        "average": 3.0930555555555554
+      }
+    },
     "level3ReachRate": 0.002777777777777778,
     "averageThirdEvolveRound": 5,
     "averageLevel3UsesAfterReach": 1,

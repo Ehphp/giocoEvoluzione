@@ -14,6 +14,8 @@ const lines = [
     `- Livello 3: raggiunto in ${metrics.level3Reached}/${methodology.sequences} sequenze (${(metrics.level3ReachRate * 100).toFixed(2)}%), round medio ${metrics.averageThirdEvolveRound ?? 'n/a'}, usi successivi medi ${metrics.averageLevel3UsesAfterReach.toFixed(2)}.`,
     `- Confronto con tetto al livello 2: ${metrics.thirdEvolveNecessary} terze evoluzioni hanno aumentato il risultato ottimo; ${metrics.thirdEvolveNotNecessary} non lo hanno aumentato.`,
     `- Azioni ottime: ${Object.entries(metrics.optimalActions).map(([action, count]) => `${action}=${count}`).join(', ')}.`,
+    `- Valori per gene (somma/media): ${Object.entries(metrics.valuesByGene).map(([gene, values]: [string, any]) => `${gene}=${values.sum}/${values.average.toFixed(2)}`).join(', ')}.`,
+    `- Valori per evento (somma/media): ${Object.entries(metrics.valuesByEvent).map(([eventId, values]: [string, any]) => `${eventId}=${values.sum}/${values.average.toFixed(2)}`).join(', ')}.`,
     '',
     '## Esito',
     '',
