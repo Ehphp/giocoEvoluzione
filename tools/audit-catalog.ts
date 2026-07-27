@@ -15,20 +15,18 @@ export function candidateFromMatrix(id: string, modifiers: number[][]): Candidat
 export function validateCandidate(modifiers: readonly (readonly number[])[]): string[] {
     const errors: string[] = []
     if (modifiers.length !== 6 || modifiers.some((row) => row.length !== GENE_COUNT)) return ['matrix-shape']
-    const totals = new Int8Array(GENE_COUNT), positives = new Int8Array(GENE_COUNT), negatives = new Int8Array(GENE_COUNT), primaries = new Int8Array(GENE_COUNT)
+    const distributions = Array.from({ length: GENE_COUNT }, () => new Int8Array(5))
     for (const row of modifiers) {
-        let plusTwo = 0, plusOne = 0, minusOne = 0
         for (let gene = 0; gene < GENE_COUNT; gene += 1) {
             const value = row[gene]!
-            if (value === 2) plusTwo += 1
-            if (value === 1) plusOne += 1
-            if (value === -1) minusOne += 1
-            if (value < -1 || value > 2) errors.push('modifier-range')
-            totals[gene] += value; if (value > 0) positives[gene] += 1; if (value < 0) negatives[gene] += 1; if (value === 2) primaries[gene] += 1
+            if (value < -1 || value > 3) errors.push('modifier-range')
+            distributions[gene]![value + 1] += 1
         }
-        if (plusTwo !== 1 || plusOne > 2 || minusOne < 1 || minusOne > 3) errors.push('event-invariant')
     }
-    for (let gene = 0; gene < GENE_COUNT; gene += 1) if (totals[gene] < 0 || totals[gene] > 2 || positives[gene] < 2 || positives[gene] > 3 || negatives[gene] < 2 || negatives[gene] > 3 || primaries[gene] > 2) errors.push('gene-invariant')
+    for (let gene = 0; gene < GENE_COUNT; gene += 1) {
+        const distribution = distributions[gene]!
+        if (distribution[0] !== 2 || distribution[1] !== 1 || distribution[2] !== 1 || distribution[3] !== 1 || distribution[4] !== 1) errors.push('gene-invariant')
+    }
     return errors
 }
 // Two-event swaps preserve each gene's total; the static validator keeps only

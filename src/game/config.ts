@@ -1,4 +1,4 @@
-import { GENE_CATALOG } from '../../shared/game-rules/catalog.ts'
+import { BASE_USE_VALUE as SHARED_BASE_USE_VALUE, GENE_CATALOG, LEVEL_BONUS as SHARED_LEVEL_BONUS, MAX_TRAIT_LEVEL as SHARED_MAX_TRAIT_LEVEL } from '../../shared/game-rules/catalog.ts'
 import { createInitialGenes, generateRoundEventSequence, getGeneLabel, normalizeGeneCollection } from '../../shared/game-rules/state.ts'
 import { GENE_IDS, type GeneCollection, type GeneId } from '../../shared/game-rules/types.ts'
 
@@ -7,8 +7,9 @@ export const TOTAL_ROUNDS = 6
 export const FINAL_ROUND_NUMBER = 6
 export const FINAL_ROUND_POINTS = 1
 export const DEFAULT_ROUND_POINTS = 1
-export const BASE_USE_VALUE = 1
-export const MAX_TRAIT_LEVEL = 3
+export const BASE_USE_VALUE = SHARED_BASE_USE_VALUE
+export const MAX_TRAIT_LEVEL = SHARED_MAX_TRAIT_LEVEL
+export const LEVEL_BONUS = SHARED_LEVEL_BONUS
 export const ROOM_CODE_LENGTH = 5
 export const TRAIT_LABELS: Record<GeneId, string> = Object.fromEntries(GENE_IDS.map((gene) => [gene, getGeneLabel(gene)])) as Record<GeneId, string>
 export const CREATURE_ASSETS = {

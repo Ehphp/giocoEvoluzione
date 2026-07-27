@@ -1,4 +1,4 @@
-import { BASE_USE_VALUE, GENE_IDS, MAX_TRAIT_LEVEL, createInitialGenes, getLegalBotActions, getRoundEventById, resolveRound, type GeneId } from '../shared/game-rules/index.ts'
+import { BASE_USE_VALUE, GENE_IDS, LEVEL_BONUS, MAX_TRAIT_LEVEL, createInitialGenes, getLegalBotActions, getRoundEventById, resolveRound, type GeneId } from '../shared/game-rules/index.ts'
 
 export const GENE_COUNT = GENE_IDS.length
 export const ACTION_COUNT = GENE_COUNT * 2
@@ -15,7 +15,7 @@ export const isEvolve = (action: AuditAction) => (action & 1) === 1
 export function encodeState(levelBits = 0, cooldown: number = COOLDOWN_NONE): number { return levelBits | (cooldown << LEVEL_BITS) }
 export function levelBitsOf(state: number): number { return state & ((1 << LEVEL_BITS) - 1) }
 export function cooldownOf(state: number): number { return state >> LEVEL_BITS }
-export function getLevel(state: number, gene: number): number { return (state >> (gene * 2)) & 3 }
+export function getLevel(state: number, gene: number): number { return Math.min((state >> (gene * 2)) & 3, MAX_TRAIT_LEVEL) }
 export function actionKey(action: AuditAction): string { return `${isEvolve(action) ? 'EVOLVE' : 'USE'}:${GENE_IDS[actionGene(action)]}` }
 export function geneId(action: AuditAction): GeneId { return GENE_IDS[actionGene(action)]! }
 
@@ -30,14 +30,14 @@ export const eventIndexById = Object.fromEntries(eventIds.map((id, index) => [id
 for (let eventIndex = 0; eventIndex < eventIds.length; eventIndex += 1) {
     const event = getRoundEventById(eventIds[eventIndex]!)
     for (let gene = 0; gene < GENE_COUNT; gene += 1) for (let level = 0; level <= MAX_TRAIT_LEVEL; level += 1) {
-        useValueByEventGeneLevel[(eventIndex * GENE_COUNT + gene) * 4 + level] = BASE_USE_VALUE + level + event.modifiers[GENE_IDS[gene]!]
+        useValueByEventGeneLevel[(eventIndex * GENE_COUNT + gene) * 4 + level] = BASE_USE_VALUE + LEVEL_BONUS[level]! + event.modifiers[GENE_IDS[gene]!]
     }
 }
 for (let bits = 0; bits < (1 << LEVEL_BITS); bits += 1) for (let cooldown = 0; cooldown <= COOLDOWN_NONE; cooldown += 1) {
     const state = encodeState(bits, cooldown)
     let count = 0
     for (let gene = 0; gene < GENE_COUNT; gene += 1) {
-        const level = (bits >> (gene * 2)) & 3
+        const level = getLevel(bits, gene)
         levelByStateGene[state * GENE_COUNT + gene] = level
         if (gene !== cooldown) {
             const action = USE(gene)
@@ -60,7 +60,7 @@ export function buildUseValueTable(modifiers: readonly (readonly number[])[]): I
     if (modifiers.length !== eventIds.length || modifiers.some((row) => row.length !== GENE_COUNT)) throw new Error('Invalid candidate modifier matrix.')
     const values = new Int8Array(useValueByEventGeneLevel.length)
     for (let event = 0; event < eventIds.length; event += 1) for (let gene = 0; gene < GENE_COUNT; gene += 1) for (let level = 0; level <= MAX_TRAIT_LEVEL; level += 1) {
-        values[(event * GENE_COUNT + gene) * 4 + level] = BASE_USE_VALUE + level + modifiers[event]![gene]!
+        values[(event * GENE_COUNT + gene) * 4 + level] = BASE_USE_VALUE + LEVEL_BONUS[level]! + modifiers[event]![gene]!
     }
     return values
 }

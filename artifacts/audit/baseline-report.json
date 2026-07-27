@@ -1,104 +1,106 @@
 {
-  "ruleVersion": "five-genes-v1",
-  "fitnessVersion": "five-genes-fitness-v1",
+  "ruleVersion": "five-genes-v2",
+  "fitnessVersion": "five-genes-fitness-v2",
   "exact": {
     "methodology": {
       "exact": true,
-      "ruleVersion": "five-genes-v1",
+      "ruleVersion": "five-genes-v2",
       "opponent": "deterministic-immediate-greedy",
       "sequences": 720,
-      "stateEncoding": "ten level bits plus three cooldown bits",
+      "stateEncoding": "ten level bits (0-2) plus three cooldown bits",
       "scope": "exact best response to fixed greedy policy; not simultaneous-game equilibrium"
     },
     "benchmark": {
-      "elapsedMs": 328,
-      "statesVisited": 1041840,
-      "cacheHits": 3088080,
-      "cacheMisses": 1041840,
-      "heapUsedBytes": 10758632
+      "elapsedMs": 288,
+      "statesVisited": 858240,
+      "cacheHits": 2749680,
+      "cacheMisses": 858240,
+      "heapUsedBytes": 10735344
     },
     "metrics": {
-      "wins": 532,
-      "draws": 188,
+      "wins": 687,
+      "draws": 33,
       "losses": 0,
-      "finalDrawRate": 0.2611111111111111,
-      "roundTies": 497,
-      "level3Reached": 2,
-      "level3ReachRate": 0.002777777777777778,
-      "level3Uses": 2,
-      "thirdEvolveNecessary": 0,
-      "thirdEvolveNotNecessary": 2,
+      "finalDrawRate": 0.04583333333333333,
+      "roundTies": 490,
+      "level2Reached": 46,
+      "level2ReachRate": 0.06388888888888888,
+      "level2Uses": 82,
+      "secondEvolveNecessary": 1,
+      "secondEvolveNotNecessary": 45,
+      "orderOutcomeSpread": 4,
       "actionCounts": {
-        "USE:RESILIENCE": 268,
-        "EVOLVE:RESILIENCE": 129,
-        "USE:MOBILITY": 450,
-        "EVOLVE:MOBILITY": 288,
-        "USE:SENSES": 311,
-        "EVOLVE:SENSES": 79,
-        "USE:METABOLISM": 965,
-        "EVOLVE:METABOLISM": 514,
-        "USE:AQUATIC": 707,
-        "EVOLVE:AQUATIC": 609
+        "USE:RESILIENCE": 89,
+        "EVOLVE:RESILIENCE": 43,
+        "USE:MOBILITY": 807,
+        "EVOLVE:MOBILITY": 358,
+        "USE:SENSES": 635,
+        "EVOLVE:SENSES": 236,
+        "USE:METABOLISM": 743,
+        "EVOLVE:METABOLISM": 360,
+        "USE:AQUATIC": 614,
+        "EVOLVE:AQUATIC": 435
       },
       "pickRate": {
-        "0": 0.09189814814814815,
-        "1": 0.17083333333333334,
-        "2": 0.09027777777777778,
-        "3": 0.3423611111111111,
-        "4": 0.30462962962962964
+        "0": 0.030555555555555555,
+        "1": 0.26967592592592593,
+        "2": 0.20162037037037037,
+        "3": 0.2553240740740741,
+        "4": 0.24282407407407408
       },
       "matchScoreDistribution": {
-        "3-2": 488,
-        "4-2": 35,
-        "4-1": 9,
-        "3-3": 188
+        "3-2": 451,
+        "4-2": 195,
+        "4-1": 39,
+        "5-1": 2,
+        "3-3": 33
       },
       "valuesByGene": {
         "0": {
-          "sum": 933,
-          "average": 2.350125944584383
+          "sum": 395,
+          "average": 2.992424242424242
         },
         "1": {
-          "sum": 1649,
-          "average": 2.234417344173442
+          "sum": 3409,
+          "average": 2.9261802575107296
         },
         "2": {
-          "sum": 1000,
-          "average": 2.5641025641025643
+          "sum": 2749,
+          "average": 3.156142365097589
         },
         "3": {
-          "sum": 3721,
-          "average": 2.5158891142663964
+          "sum": 3235,
+          "average": 2.9329102447869446
         },
         "4": {
-          "sum": 2784,
-          "average": 2.115501519756839
+          "sum": 2893,
+          "average": 2.757864632983794
         }
       },
       "valuesByEvent": {
         "VOLCANIC_ASH_WAVE": {
-          "sum": 1168,
-          "average": 1.6222222222222222
+          "sum": 2245,
+          "average": 3.1180555555555554
         },
         "PROLONGED_ECLIPSE": {
-          "sum": 1135,
-          "average": 1.5763888888888888
+          "sum": 1943,
+          "average": 2.698611111111111
         },
         "PREDATOR_PACK_MIGRATION": {
-          "sum": 1369,
-          "average": 1.9013888888888888
+          "sum": 2141,
+          "average": 2.973611111111111
         },
         "HEAT_SPIKE": {
-          "sum": 2130,
-          "average": 2.9583333333333335
+          "sum": 2340,
+          "average": 3.25
         },
         "NUTRIENT_COLLAPSE": {
-          "sum": 2104,
-          "average": 2.922222222222222
+          "sum": 1860,
+          "average": 2.5833333333333335
         },
         "FLASH_FLOOD": {
-          "sum": 2181,
-          "average": 3.029166666666667
+          "sum": 2152,
+          "average": 2.988888888888889
         }
       }
     }
@@ -109,14 +111,47 @@
     "policies": [
       "greedy",
       "evolve-first",
-      "anti-cooldown"
+      "anti-cooldown",
+      "future-value-evolve"
     ],
     "wins": {
-      "greedy": 1440,
+      "greedy": 2012,
       "evolve-first": 0,
-      "anti-cooldown": 720
+      "anti-cooldown": 915,
+      "future-value-evolve": 1077
     },
-    "ties": 0,
-    "methodology": "deterministic policy tournament; not a stochastic population estimate"
+    "winRates": {
+      "greedy": 0.9314814814814815,
+      "evolve-first": 0,
+      "anti-cooldown": 0.4236111111111111,
+      "future-value-evolve": 0.4986111111111111
+    },
+    "winShares": {
+      "greedy": 0.5024975024975025,
+      "evolve-first": 0,
+      "anti-cooldown": 0.22852147852147853,
+      "future-value-evolve": 0.268981018981019
+    },
+    "evolveRates": {
+      "greedy": 0,
+      "evolve-first": 1,
+      "anti-cooldown": 0,
+      "future-value-evolve": 0.5324074074074074
+    },
+    "ties": 316,
+    "methodology": "deterministic policy tournament; future-value-evolve knows the remaining event order and evolves only when expected later gains exceed this round cost"
+  },
+  "acceptance": {
+    "maxGenePickRate": 0.26967592592592593,
+    "maxPolicyWinRate": 0.9314814814814815,
+    "maxPolicyWinShare": 0.5024975024975025,
+    "evolveRate": 0.3314814814814815,
+    "orderOutcomeSpread": 4,
+    "passes": {
+      "geneBalance": true,
+      "policyBalance": true,
+      "evolveUsedButNotAutomatic": true,
+      "eventOrderMatters": true
+    }
   }
 }

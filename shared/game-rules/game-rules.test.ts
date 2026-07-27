@@ -10,29 +10,30 @@ describe('five-gene rules', () => {
     it('locks the production candidate matrix and its audit signature', () => {
         const matrix = ROUND_EVENT_DEFINITIONS.map((event) => GENE_IDS.map((gene) => event.modifiers[gene]))
         expect(matrix).toEqual([
-            [2, -1, -1, 1, 0], [-1, 1, 2, -1, -1], [0, 2, 1, -1, -1],
-            [-1, -1, 0, 2, -1], [-1, 1, 0, 2, 1], [1, -1, -1, -1, 2],
+            [3, 3, -1, 0, 0], [2, 1, 3, -1, -1], [1, -1, 2, 2, -1],
+            [-1, 0, 1, 3, 2], [0, 2, -1, -1, 1], [-1, -1, 0, 1, 3],
         ])
-        expect(PRODUCTION_CATALOG_AUDIT.catalogSignature).toBe('4cd8c1192bee4f69')
-        expect(PRODUCTION_CATALOG_AUDIT.candidateId).toBe('candidate-0032')
+        expect(PRODUCTION_CATALOG_AUDIT.catalogSignature).toBe('28340e8792d8a0b6')
+        expect(PRODUCTION_CATALOG_AUDIT.candidateId).toBe('balanced-level-v2')
         expect(PRODUCTION_CATALOG_AUDIT.validatedSequences).toBe(720)
     })
 
-    it('scores USE as base plus level plus direct event modifier', () => {
+    it('scores USE with the explicit level-bonus table and direct event modifier', () => {
         const genes = createInitialGenes()
         genes.RESILIENCE.level = 2
-        expect(getValidatedGeneUseBreakdown(getRoundEventById('VOLCANIC_ASH_WAVE'), genes, 'RESILIENCE').total).toBe(5)
+        expect(getValidatedGeneUseBreakdown(getRoundEventById('HEAT_SPIKE'), genes, 'RESILIENCE').total).toBe(3)
+        expect(getValidatedGeneUseBreakdown(getRoundEventById('HEAT_SPIKE'), createInitialGenes(), 'METABOLISM').total).toBe(4)
     })
 
-    it('applies cooldown, evolves to cap three, and rejects illegal actions', () => {
+    it('applies cooldown, evolves to cap two, and rejects illegal actions', () => {
         let genes = createInitialGenes()
-        for (let roundNumber = 1; roundNumber <= 3; roundNumber += 1) {
+        for (let roundNumber = 1; roundNumber <= 2; roundNumber += 1) {
             const result = resolveRound({ roundNumber, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'EVOLVE' } })
             genes = result.player1.traits
         }
-        expect(genes.METABOLISM.level).toBe(3)
-        expect(() => resolveRound({ roundNumber: 4, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })).toThrow(/maximum level/i)
-        const used = resolveRound({ roundNumber: 4, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })
+        expect(genes.METABOLISM.level).toBe(2)
+        expect(() => resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })).toThrow(/maximum level/i)
+        const used = resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })
         expect(used.player1.traits.METABOLISM.cooldown).toBe(1)
     })
 })

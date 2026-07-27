@@ -1,8 +1,9 @@
 // This stays local to the Edge Function so its deployed bot policy does not
 // depend on frontend modules. Keep it semantically aligned with shared/game-rules/bot.ts.
 const EDGE_GENE_IDS = ['RESILIENCE', 'MOBILITY', 'SENSES', 'METABOLISM', 'AQUATIC'] as const
-const EDGE_MAX_TRAIT_LEVEL = 3
+const EDGE_MAX_TRAIT_LEVEL = 2
 const EDGE_BASE_USE_VALUE = 1
+const EDGE_LEVEL_BONUS = [0, 1, 3] as const
 
 type EdgeGeneId = (typeof EDGE_GENE_IDS)[number]
 type EdgeGeneCollection = Record<EdgeGeneId, { level: number; cooldown: number }>
@@ -35,7 +36,7 @@ function getEvolveProbability(roundNumber: number): number {
 }
 
 function getTraitRoundValue(roundEvent: EdgeRoundEvent, traits: EdgeGeneCollection, trait: EdgeGeneId): number {
-    return EDGE_BASE_USE_VALUE + traits[trait].level + roundEvent.modifiers[trait]
+    return EDGE_BASE_USE_VALUE + EDGE_LEVEL_BONUS[Math.min(traits[trait].level, EDGE_MAX_TRAIT_LEVEL)]! + roundEvent.modifiers[trait]
 }
 
 function selectBestUseTrait(traits: EdgeGeneCollection, roundEvent: EdgeRoundEvent, random: () => number): EdgeGeneId {

@@ -42,7 +42,7 @@ describe('bot action policy', () => {
         const traits = createInitialGenes()
         traits.METABOLISM.cooldown = 1
         const action = selectBotAction({ traits, roundEvent: getRoundEventById('HEAT_SPIKE'), roundNumber: 1, random: scriptedRandom(0.5, 0) })
-        expect(action).toEqual({ trait: 'SENSES', actionType: 'USE' })
+        expect(action).toEqual({ trait: 'AQUATIC', actionType: 'USE' })
     })
 
     it('uses injected random selection among equally valuable usable genes', () => {
@@ -70,7 +70,7 @@ describe('bot action policy', () => {
 
     it('does not evolve a gene at its maximum level', () => {
         const traits = createInitialGenes()
-        traits.RESILIENCE.level = 3
+        traits.RESILIENCE.level = 2
         const action = selectBotAction({ traits, roundEvent: getRoundEventById('HEAT_SPIKE'), roundNumber: 1, random: scriptedRandom(0.1, 0) })
         expect(action).toEqual({ trait: 'MOBILITY', actionType: 'EVOLVE' })
     })
@@ -84,7 +84,7 @@ describe('bot action policy', () => {
 
     it('falls back to the best USE when no gene can evolve', () => {
         const traits = createInitialGenes()
-        for (const trait of Object.values(traits)) trait.level = 3
+        for (const trait of Object.values(traits)) trait.level = 2
         const action = selectBotAction({ traits, roundEvent: getRoundEventById('HEAT_SPIKE'), roundNumber: 1, random: scriptedRandom(0.1, 0) })
         expect(action).toEqual({ trait: 'METABOLISM', actionType: 'USE' })
     })
@@ -92,7 +92,7 @@ describe('bot action policy', () => {
     it('throws explicitly when no action is legal', () => {
         const traits = createInitialGenes()
         for (const trait of Object.values(traits)) {
-            trait.level = 3
+            trait.level = 2
             trait.cooldown = 1
         }
         expect(() => selectBotAction({ traits, roundEvent: getRoundEventById('HEAT_SPIKE'), roundNumber: 1, random: () => 0 })).toThrow(/no legal bot actions/i)

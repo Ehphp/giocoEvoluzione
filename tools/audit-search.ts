@@ -31,7 +31,7 @@ export function screenCandidate(candidate: CandidateCatalog, sequences = determi
     if (errors.length) return { candidate, approximate: true, accepted: false, pruned: true, sequences: 0, fitness: 0, breakdown: {}, raw: { structuralErrors: errors.length } }
     const values = candidateUseValues(candidate); const picks = new Int32Array(5); let actions = 0, evolves = 0, cooldownUses = 0, draws = 0, nonLosses = 0, outcomeTotal = 0, actionMask = 0, minOutcome = 9, maxOutcome = -9
     for (let index = 0; index < sequences.length; index += 1) {
-        const solved = solveExactSequence(sequences[index]!, 3, values); outcomeTotal += solved.outcome; minOutcome = Math.min(minOutcome, solved.outcome); maxOutcome = Math.max(maxOutcome, solved.outcome)
+        const solved = solveExactSequence(sequences[index]!, undefined, values); outcomeTotal += solved.outcome; minOutcome = Math.min(minOutcome, solved.outcome); maxOutcome = Math.max(maxOutcome, solved.outcome)
         if (solved.outcome >= 0) nonLosses += 1
         for (const entry of solved.trace) { actions += 1; actionMask |= 1 << entry.action; picks[actionGene(entry.action)] += 1; if (isEvolve(entry.action)) evolves += 1; if (!isEvolve(entry.action) && (entry.state >> 10) !== 5) cooldownUses += 1; if (entry.ownValue === entry.rivalValue) draws += 1 }
         // Win/non-loss rate is bounded above by treating every remaining sequence as a non-loss.

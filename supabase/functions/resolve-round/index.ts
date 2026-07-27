@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { BASE_USE_VALUE } from '../../../shared/game-rules/catalog.ts'
+import { BASE_USE_VALUE, LEVEL_BONUS, MAX_TRAIT_LEVEL } from '../../../shared/game-rules/catalog.ts'
 import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
 import { getRoundEventById, normalizeGeneCollection } from '../../../shared/game-rules/state.ts'
 import type { GeneCollection, GeneId } from '../../../shared/game-rules/types.ts'
@@ -14,9 +14,11 @@ type TraitName = GeneId
 // Resolution itself delegates to the shared engine below; this guard prevents
 // an Edge deployment with a stale local rule copy.
 const EDGE_BASE_USE_VALUE = 1
+const EDGE_MAX_TRAIT_LEVEL = 2
+const EDGE_LEVEL_BONUS = [0, 1, 3] as const
 
-if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE) {
-    throw new Error(`Scoring rule mismatch: Edge BASE_USE_VALUE=${EDGE_BASE_USE_VALUE}, frontend BASE_USE_VALUE=${BASE_USE_VALUE}.`)
+if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_MAX_TRAIT_LEVEL !== MAX_TRAIT_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',')) {
+    throw new Error('Scoring rule mismatch between Edge and shared game rules.')
 }
 
 const CORS_HEADERS = {

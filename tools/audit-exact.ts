@@ -86,16 +86,16 @@ export type ExactAudit = {
 export function auditBaselineExact(sequences = generateSequences(), values?: Int8Array): ExactAudit {
     const startedAt = performance.now()
     const totals = {
-        wins: 0, draws: 0, losses: 0, roundTies: 0, level3Reached: 0, level3Uses: 0, thirdEvolveNecessary: 0, thirdEvolveNotNecessary: 0,
+        wins: 0, draws: 0, losses: 0, roundTies: 0, level2Reached: 0, level2Uses: 0, secondEvolveNecessary: 0, secondEvolveNotNecessary: 0,
         actionCounts: new Int32Array(ACTION_COUNT), pickCounts: new Int32Array(GENE_COUNT), valuesByGene: new Int32Array(GENE_COUNT), valuesByEvent: new Int32Array(6),
-        statesVisited: 0, cacheHits: 0, cacheMisses: 0, matchScoreDistribution: new Map<string, number>(),
+        statesVisited: 0, cacheHits: 0, cacheMisses: 0, minimumOutcome: 9, maximumOutcome: -9, matchScoreDistribution: new Map<string, number>(),
     }
     for (const sequence of sequences) {
         const result = solveExactSequence(sequence, MAX_TRAIT_LEVEL, values)
         totals.statesVisited += result.statesVisited; totals.cacheHits += result.cacheHits; totals.cacheMisses += result.cacheMisses
         let ownPoints = 0
         let opponentPoints = 0
-        let reachedLevel3 = false
+        let reachedLevel2 = false
         for (let round = 0; round < ROUND_COUNT; round += 1) {
             const entry = result.trace[round]!
             const gene = actionGene(entry.action)
@@ -103,30 +103,33 @@ export function auditBaselineExact(sequences = generateSequences(), values?: Int
             if (entry.ownValue === entry.rivalValue) totals.roundTies += 1
             if (entry.ownValue > entry.rivalValue) ownPoints += 1
             if (entry.ownValue < entry.rivalValue) opponentPoints += 1
-            if (isEvolve(entry.action) && getLevel(entry.state, gene) === 2) reachedLevel3 = true
-            if (!isEvolve(entry.action) && getLevel(entry.state, gene) === 3) totals.level3Uses += 1
+            if (isEvolve(entry.action) && getLevel(entry.state, gene) === 1) reachedLevel2 = true
+            if (!isEvolve(entry.action) && getLevel(entry.state, gene) === 2) totals.level2Uses += 1
         }
         if (ownPoints > opponentPoints) totals.wins += 1
         else if (ownPoints === opponentPoints) totals.draws += 1
         else totals.losses += 1
         const scoreKey = `${ownPoints}-${opponentPoints}`
         totals.matchScoreDistribution.set(scoreKey, (totals.matchScoreDistribution.get(scoreKey) ?? 0) + 1)
-        if (reachedLevel3) {
-            totals.level3Reached += 1
-            const capped = solveExactSequence(sequence, 2, values)
-            if (result.outcome > capped.outcome) totals.thirdEvolveNecessary += 1
-            else totals.thirdEvolveNotNecessary += 1
+        totals.minimumOutcome = Math.min(totals.minimumOutcome, result.outcome)
+        totals.maximumOutcome = Math.max(totals.maximumOutcome, result.outcome)
+        if (reachedLevel2) {
+            totals.level2Reached += 1
+            const capped = solveExactSequence(sequence, 1, values)
+            if (result.outcome > capped.outcome) totals.secondEvolveNecessary += 1
+            else totals.secondEvolveNotNecessary += 1
         }
     }
     const actionCounts = Object.fromEntries([...Array(ACTION_COUNT).keys()].map((action) => [actionKey(action), totals.actionCounts[action]!]))
     const pickRate = Object.fromEntries([...Array(GENE_COUNT).keys()].map((gene) => [String(gene), totals.pickCounts[gene]! / (sequences.length * ROUND_COUNT)]))
     return {
-        methodology: { exact: true, ruleVersion: AUDIT_RULE_VERSION, opponent: 'deterministic-immediate-greedy', sequences: sequences.length, stateEncoding: 'ten level bits plus three cooldown bits', scope: 'exact best response to fixed greedy policy; not simultaneous-game equilibrium' },
+        methodology: { exact: true, ruleVersion: AUDIT_RULE_VERSION, opponent: 'deterministic-immediate-greedy', sequences: sequences.length, stateEncoding: 'ten level bits (0-2) plus three cooldown bits', scope: 'exact best response to fixed greedy policy; not simultaneous-game equilibrium' },
         benchmark: { elapsedMs: Math.round(performance.now() - startedAt), statesVisited: totals.statesVisited, cacheHits: totals.cacheHits, cacheMisses: totals.cacheMisses, heapUsedBytes: process.memoryUsage().heapUsed },
         metrics: {
             wins: totals.wins, draws: totals.draws, losses: totals.losses, finalDrawRate: totals.draws / sequences.length, roundTies: totals.roundTies,
-            level3Reached: totals.level3Reached, level3ReachRate: totals.level3Reached / sequences.length, level3Uses: totals.level3Uses,
-            thirdEvolveNecessary: totals.thirdEvolveNecessary, thirdEvolveNotNecessary: totals.thirdEvolveNotNecessary,
+            level2Reached: totals.level2Reached, level2ReachRate: totals.level2Reached / sequences.length, level2Uses: totals.level2Uses,
+            secondEvolveNecessary: totals.secondEvolveNecessary, secondEvolveNotNecessary: totals.secondEvolveNotNecessary,
+            orderOutcomeSpread: totals.maximumOutcome - totals.minimumOutcome,
             actionCounts, pickRate, matchScoreDistribution: Object.fromEntries(totals.matchScoreDistribution),
             valuesByGene: Object.fromEntries([...Array(GENE_COUNT).keys()].map((gene) => [String(gene), { sum: totals.valuesByGene[gene]!, average: totals.valuesByGene[gene]! / Math.max(1, totals.pickCounts[gene]!) }])),
             valuesByEvent: Object.fromEntries(eventIds.map((eventId, event) => [eventId, { sum: totals.valuesByEvent[event]!, average: totals.valuesByEvent[event]! / sequences.length }])),

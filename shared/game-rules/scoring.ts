@@ -1,4 +1,4 @@
-import { BASE_USE_VALUE, MAX_TRAIT_LEVEL } from './catalog.ts'
+import { BASE_USE_VALUE, LEVEL_BONUS, MAX_TRAIT_LEVEL } from './catalog.ts'
 import type { ActionType, GeneCollection, GeneId, RoundEventDefinition, RoundValueBreakdown } from './types.ts'
 
 export function getValidatedGeneState(genes: GeneCollection, gene: GeneId) {
@@ -14,10 +14,11 @@ export function getValidatedGeneUseBreakdown(roundEvent: RoundEventDefinition, g
     const eventModifier = roundEvent.modifiers[gene]
     if (!Number.isFinite(eventModifier)) throw new Error(`Invalid event modifier for gene "${gene}" in "${roundEvent.id}".`)
     const effectiveLevel = Math.min(state.level, MAX_TRAIT_LEVEL)
+    const levelContribution = LEVEL_BONUS[effectiveLevel]!
     const appliedEventEffects = roundEvent.effects.filter((effect) => effect.trait === gene).map((effect) => ({ ...effect, contribution: effect.modifier }))
     return {
-        actionType: 'USE', baseContribution: BASE_USE_VALUE, eventModifier, levelContribution: effectiveLevel,
-        originalLevel: state.level, effectiveLevel, total: BASE_USE_VALUE + effectiveLevel + eventModifier, appliedEventEffects,
+        actionType: 'USE', baseContribution: BASE_USE_VALUE, eventModifier, levelContribution,
+        originalLevel: state.level, effectiveLevel, total: BASE_USE_VALUE + levelContribution + eventModifier, appliedEventEffects,
     }
 }
 

@@ -1,5 +1,5 @@
-export const AUDIT_RULE_VERSION = 'five-genes-v1'
-export const AUDIT_FITNESS_VERSION = 'five-genes-fitness-v1'
+export const AUDIT_RULE_VERSION = 'five-genes-v2'
+export const AUDIT_FITNESS_VERSION = 'five-genes-fitness-v2'
 export const AUDIT_SEED = 0x5eed2026
 
 export const SCREENING_CONFIG = {
@@ -25,11 +25,11 @@ export const FITNESS_CONFIG = {
         orderRobustness: 0.08,
     },
     targets: {
-        maximumPickConcentration: 0.42,
+        maximumPickConcentration: 0.30,
         minimumEvolveRate: 0.08,
         minimumCooldownForcedChoices: 0.05,
         drawRate: 0.25,
-        maximumPolicyWinRate: 0.72,
+        maximumPolicyWinRate: 0.60,
         maximumOrderSpread: 0.22,
     },
 } as const

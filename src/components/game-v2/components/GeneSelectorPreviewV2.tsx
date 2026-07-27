@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { BASE_USE_VALUE } from '../../../game/config'
+import { BASE_USE_VALUE, LEVEL_BONUS, MAX_TRAIT_LEVEL } from '../../../game/config'
 import type { GeneCardV2 } from '../types'
 
 type GeneSelectorPreviewV2Props = {
@@ -16,9 +16,9 @@ function formatContribution(value: number): string {
 
 function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
     const prediction = gene.prediction ?? {
-        useScore: BASE_USE_VALUE + gene.level,
+        useScore: BASE_USE_VALUE + LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!,
         baseContribution: BASE_USE_VALUE,
-        levelContribution: gene.level,
+        levelContribution: LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!,
         eventModifier: 0,
         reasons: [],
     }
@@ -76,7 +76,7 @@ function GeneCard({
 }) {
     const [imageFailed, setImageFailed] = useState(false)
     const prediction = gene.prediction ?? {
-        useScore: BASE_USE_VALUE + gene.level,
+        useScore: BASE_USE_VALUE + LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!,
         eventModifier: 0,
     }
     const eventLabel = `Evento ${formatContribution(prediction.eventModifier)}`
