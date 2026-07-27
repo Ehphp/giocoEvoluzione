@@ -2,8 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { BASE_USE_VALUE } from '../../../shared/game-rules/catalog.ts'
 import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
 import { getRoundEventById, normalizeGeneCollection } from '../../../shared/game-rules/state.ts'
-import { ensureBotRoundAction } from '../../../shared/game-rules/vs-bot-round.ts'
 import type { GeneCollection, GeneId } from '../../../shared/game-rules/types.ts'
+import { selectEdgeBotAction } from './bot-policy.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
@@ -31,6 +31,41 @@ function json(body: unknown, status = 200) {
         status,
         headers: CORS_HEADERS,
     })
+}
+
+async function ensureEdgeBotRoundAction(
+    supabaseAdmin: ReturnType<typeof createClient>,
+    input: { gameId: string; roundNumber: number; playerId: string; traits: GeneCollection; roundEvent: ReturnType<typeof getRoundEventById> },
+) {
+    const botAction = selectEdgeBotAction({
+        traits: input.traits,
+        roundEvent: input.roundEvent,
+        roundNumber: input.roundNumber,
+    })
+    try {
+        const { error } = await supabaseAdmin.from('round_actions').insert({
+            game_id: input.gameId,
+            round_number: input.roundNumber,
+            player_id: input.playerId,
+            trait: botAction.trait,
+            action_type: botAction.actionType,
+        })
+        if (error) throw error
+    } catch (error) {
+        const maybeError = error as { code?: string; message?: string }
+        if (maybeError.code !== '23505') throw new Error(maybeError.message ?? 'Impossibile creare l azione del bot.')
+    }
+
+    const { data: storedAction, error } = await supabaseAdmin
+        .from('round_actions')
+        .select('*')
+        .eq('game_id', input.gameId)
+        .eq('round_number', input.roundNumber)
+        .eq('player_id', input.playerId)
+        .maybeSingle()
+    if (error) throw new Error(error.message)
+    if (!storedAction) throw new Error('Impossibile recuperare l azione del bot.')
+    return storedAction
 }
 
 async function applyStoredResolution(
@@ -161,53 +196,17 @@ Deno.serve(async (request) => {
         }
 
         const roundEvent = getRoundEventById(roundEventId)
-        const nextRoundEventId = String(gameData.round_event_sequence?.[roundNumber] ?? '')
-        const nextRoundEvent = nextRoundEventId ? getRoundEventById(nextRoundEventId) : null
-
         if (gameMode === 'VS_BOT') {
             const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
 
             if (botPlayer && (!actionsData || !actionsData.some((action) => action.player_id === botPlayer.id))) {
-                await ensureBotRoundAction(
-                    {
-                        insertRoundAction: async (input) => {
-                            const { error } = await supabaseAdmin.from('round_actions').insert({
-                                game_id: input.gameId,
-                                round_number: input.roundNumber,
-                                player_id: input.playerId,
-                                trait: input.trait,
-                                action_type: input.actionType,
-                            })
-
-                            if (error) {
-                                throw error
-                            }
-                        },
-                        getRoundAction: async (currentGameId, currentRoundNumber, playerId) => {
-                            const { data, error } = await supabaseAdmin
-                                .from('round_actions')
-                                .select('*')
-                                .eq('game_id', currentGameId)
-                                .eq('round_number', currentRoundNumber)
-                                .eq('player_id', playerId)
-                                .maybeSingle()
-
-                            if (error) {
-                                throw error
-                            }
-
-                            return data
-                        },
-                    },
-                    {
-                        gameId,
-                        roundNumber,
-                        playerId: String(botPlayer.id),
-                        traits: normalizeGeneCollection(botPlayer.traits as GeneCollection),
-                        roundEvent,
-                        nextRoundEvent,
-                    },
-                )
+                await ensureEdgeBotRoundAction(supabaseAdmin, {
+                    gameId,
+                    roundNumber,
+                    playerId: String(botPlayer.id),
+                    traits: normalizeGeneCollection(botPlayer.traits as GeneCollection),
+                    roundEvent,
+                })
 
                 const { data: refreshedActionsData, error: refreshedActionsError } = await supabaseAdmin
                     .from('round_actions')

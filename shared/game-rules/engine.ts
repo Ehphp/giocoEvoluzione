@@ -1,11 +1,12 @@
 import { COOLDOWN_ROUNDS, MAX_TRAIT_LEVEL, ROUND_WIN_POINTS, TOTAL_ROUNDS } from './catalog.ts'
-import { getValidatedActionBreakdown } from './scoring.ts'
-import type { GeneCollection, GeneId, PlayerRoundAction, ResolveRoundInput, RoundResolution } from './types.ts'
+import { getValidatedActionBreakdown, getValidatedGeneUseBreakdown } from './scoring.ts'
+import type { GeneCollection, GeneId, PlayerRoundAction, ResolveRoundInput, RoundEventDefinition, RoundResolution } from './types.ts'
 
 function cloneGenes(genes: GeneCollection): GeneCollection { return Object.fromEntries(Object.entries(genes).map(([gene, state]) => [gene, { ...state, level: Math.min(state.level, MAX_TRAIT_LEVEL) }])) as GeneCollection }
 export function isGeneUsable(genes: GeneCollection, gene: GeneId): boolean { return genes[gene].cooldown === 0 }
 export function isGeneEvolvable(genes: GeneCollection, gene: GeneId): boolean { return genes[gene].level < MAX_TRAIT_LEVEL }
 export function getRoundPoints(roundNumber: number): number { return roundNumber >= 1 && roundNumber <= TOTAL_ROUNDS ? ROUND_WIN_POINTS : 0 }
+export function getTraitRoundValue(roundEvent: RoundEventDefinition, genes: GeneCollection, gene: GeneId): number { return getValidatedGeneUseBreakdown(roundEvent, genes, gene).total }
 
 function resolvePlayerAction(input: ResolveRoundInput, genes: GeneCollection, action: PlayerRoundAction) {
     const breakdown = getValidatedActionBreakdown(input.roundEvent, genes, action.trait, action.actionType)
