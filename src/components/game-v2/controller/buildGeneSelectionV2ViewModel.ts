@@ -99,15 +99,16 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
-function buildRoundEventEffects(roundEvent: RoundEventDefinition, includeAll = false): RoundEventEffectV2[] {
+export function buildRoundEventEffects(roundEvent: RoundEventDefinition, includeAll = false): RoundEventEffectV2[] {
     const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
     if (includeAll) {
-        const modifierOrder = new Map([[2, 0], [1, 1], [-1, 2], [-2, 3]])
-
         return effects
             .filter((effect) => effect.modifier !== 0)
             .sort((a, b) => (
-                (modifierOrder.get(a.modifier) ?? 4) - (modifierOrder.get(b.modifier) ?? 4)
+                // Show every bonus before the malus, independently of the
+                // magnitude defined by a future event (for example +3).
+                (Number(b.modifier > 0) - Number(a.modifier > 0))
+                || (a.modifier > 0 ? b.modifier - a.modifier : a.modifier - b.modifier)
                 || TRAIT_LABELS[a.trait].localeCompare(TRAIT_LABELS[b.trait], 'it')
             ))
             .map((effect) => ({
