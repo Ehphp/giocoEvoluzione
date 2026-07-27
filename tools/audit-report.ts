@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { AUDIT_FITNESS_VERSION, AUDIT_RULE_VERSION, AUDIT_SEED } from './audit-config.ts'
-import { COOLDOWN_NONE, actionGene, actionValue, generateSequences, getLegalActions, isEvolve, nextState, type AuditAction } from './audit-core.ts'
+import { ACCEPTANCE_CONFIG, AUDIT_FITNESS_VERSION, AUDIT_RULE_VERSION, AUDIT_SEED } from './audit-config.ts'
+import { COOLDOWN_NONE, GENE_COUNT, actionGene, actionValue, generateSequences, getLegalActions, getLevel, isEvolve, nextState, type AuditAction } from './audit-core.ts'
 import { auditBaselineExact } from './audit-exact.ts'
 
 type Policy = { id: string; choose: (sequence: readonly number[], round: number, state: number) => AuditAction }
@@ -47,8 +47,21 @@ const futureValueEvolve: Policy = { id: 'future-value-evolve', choose(sequence, 
     return bestEvolution >= 0 && bestGain > roundCost ? bestEvolution : currentUse
 } }
 
+// Models a human who deliberately invests in two evolutions while there is
+// enough future information to exploit them, then plays the best USE value.
+const twoEvolutionPlan: Policy = { id: 'two-evolution-plan', choose(sequence, round, state) {
+    const investedLevels = Array.from({ length: GENE_COUNT }, (_, gene) => getLevel(state, gene)).reduce((total, level) => total + level, 0)
+    if (investedLevels >= 2 || round >= 4) return bestUse(sequence[round]!, state)
+    const evolutions = [...getLegalActions(state)].filter(isEvolve)
+    if (!evolutions.length) return bestUse(sequence[round]!, state)
+    return evolutions.sort((left, right) => {
+        const futureValue = (action: AuditAction) => sequence.slice(round + 1).reduce((total, event) => total + actionValue(event, nextState(state, action), bestUse(event, nextState(state, action))), 0)
+        return futureValue(right) - futureValue(left) || rank(left) - rank(right)
+    })[0]!
+} }
+
 function tournament() {
-    const policies = [greedy, evolveFirst, antiCooldown, futureValueEvolve]
+    const policies = [greedy, evolveFirst, antiCooldown, futureValueEvolve, twoEvolutionPlan]
     const sequences = generateSequences()
     const wins = Object.fromEntries(policies.map((policy) => [policy.id, 0])) as Record<string, number>
     const actionCounts = Object.fromEntries(policies.map((policy) => [policy.id, { total: 0, evolves: 0 }])) as Record<string, { total: number; evolves: number }>
@@ -103,10 +116,10 @@ const report = {
     acceptance: {
         ...acceptance,
         passes: {
-            geneBalance: acceptance.maxGenePickRate <= 0.30,
-            policyBalance: acceptance.maxPolicyWinShare <= 0.60,
-            evolveUsedButNotAutomatic: acceptance.evolveRate >= 0.08 && acceptance.evolveRate < 0.50,
-            eventOrderMatters: acceptance.orderOutcomeSpread > 0,
+            geneBalance: acceptance.maxGenePickRate <= ACCEPTANCE_CONFIG.maximumGenePickRate,
+            policyBalance: acceptance.maxPolicyWinShare <= ACCEPTANCE_CONFIG.maximumPolicyWinShare,
+            evolveUsedButNotAutomatic: acceptance.evolveRate >= ACCEPTANCE_CONFIG.minimumEvolveRate && acceptance.evolveRate < ACCEPTANCE_CONFIG.maximumEvolveRate,
+            eventOrderMatters: acceptance.orderOutcomeSpread >= ACCEPTANCE_CONFIG.minimumOrderOutcomeSpread,
         },
     },
 }

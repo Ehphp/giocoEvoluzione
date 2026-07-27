@@ -10,6 +10,14 @@ export const SCREENING_CONFIG = {
     maximumCandidates: 30,
 } as const
 
+export const ACCEPTANCE_CONFIG = {
+    maximumGenePickRate: 0.30,
+    maximumPolicyWinShare: 0.60,
+    minimumEvolveRate: 0.08,
+    maximumEvolveRate: 0.50,
+    minimumOrderOutcomeSpread: 1,
+} as const
+
 // The categories are intentionally disjoint: raw metrics remain available to
 // detect correlations instead of counting the same symptom twice.
 export const FITNESS_CONFIG = {

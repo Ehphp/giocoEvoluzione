@@ -14,6 +14,7 @@
     "audit:core": "node --experimental-strip-types tools/audit-core-check.ts",
     "audit:exact": "node --experimental-strip-types tools/audit-exact.ts",
     "audit:report": "node --experimental-strip-types tools/audit-report.ts",
+    "audit:acceptance": "node --experimental-strip-types tools/audit-acceptance.ts",
     "audit:search": "node --experimental-strip-types tools/audit-search.ts",
     "audit:search:full": "node --experimental-strip-types tools/audit-search.ts --full",
     "audit:bench": "node --experimental-strip-types tools/audit-bench.ts"

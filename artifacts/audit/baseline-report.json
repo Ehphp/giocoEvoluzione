@@ -11,11 +11,11 @@
       "scope": "exact best response to fixed greedy policy; not simultaneous-game equilibrium"
     },
     "benchmark": {
-      "elapsedMs": 288,
+      "elapsedMs": 304,
       "statesVisited": 858240,
       "cacheHits": 2749680,
       "cacheMisses": 858240,
-      "heapUsedBytes": 10735344
+      "heapUsedBytes": 10788440
     },
     "metrics": {
       "wins": 687,
@@ -112,39 +112,44 @@
       "greedy",
       "evolve-first",
       "anti-cooldown",
-      "future-value-evolve"
+      "future-value-evolve",
+      "two-evolution-plan"
     ],
     "wins": {
-      "greedy": 2012,
+      "greedy": 2449,
       "evolve-first": 0,
-      "anti-cooldown": 915,
-      "future-value-evolve": 1077
+      "anti-cooldown": 918,
+      "future-value-evolve": 1163,
+      "two-evolution-plan": 1773
     },
     "winRates": {
-      "greedy": 0.9314814814814815,
+      "greedy": 0.8503472222222223,
       "evolve-first": 0,
-      "anti-cooldown": 0.4236111111111111,
-      "future-value-evolve": 0.4986111111111111
+      "anti-cooldown": 0.31875,
+      "future-value-evolve": 0.40381944444444445,
+      "two-evolution-plan": 0.615625
     },
     "winShares": {
-      "greedy": 0.5024975024975025,
+      "greedy": 0.38854513723623674,
       "evolve-first": 0,
-      "anti-cooldown": 0.22852147852147853,
-      "future-value-evolve": 0.268981018981019
+      "anti-cooldown": 0.1456449309852451,
+      "future-value-evolve": 0.18451531016976044,
+      "two-evolution-plan": 0.28129462160875773
     },
     "evolveRates": {
       "greedy": 0,
       "evolve-first": 1,
       "anti-cooldown": 0,
-      "future-value-evolve": 0.5324074074074074
+      "future-value-evolve": 0.5324074074074074,
+      "two-evolution-plan": 0.3333333333333333
     },
-    "ties": 316,
+    "ties": 897,
     "methodology": "deterministic policy tournament; future-value-evolve knows the remaining event order and evolves only when expected later gains exceed this round cost"
   },
   "acceptance": {
     "maxGenePickRate": 0.26967592592592593,
-    "maxPolicyWinRate": 0.9314814814814815,
-    "maxPolicyWinShare": 0.5024975024975025,
+    "maxPolicyWinRate": 0.8503472222222223,
+    "maxPolicyWinShare": 0.38854513723623674,
     "evolveRate": 0.3314814814814815,
     "orderOutcomeSpread": 4,
     "passes": {

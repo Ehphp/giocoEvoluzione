@@ -5,6 +5,7 @@ import { HomeScreen } from './components/home/HomeScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
+import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
 import { getRoundEventById } from './game/round-events'
 import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
@@ -31,6 +32,8 @@ import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSessio
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 
 type ResolutionData = {
+  ruleVersion?: string
+  catalogSignature?: string
   awardedPoints?: number
   player1PointsAwarded?: number
   player2PointsAwarded?: number
@@ -571,6 +574,8 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
   const player2Action = resolutionData?.player2Action
   const player1Breakdown = resolutionData?.player1Breakdown
   const player2Breakdown = resolutionData?.player2Breakdown
+  const hasCurrentRuleVersion = resolutionData?.ruleVersion === RULE_VERSION
+    && resolutionData.catalogSignature === PRODUCTION_CATALOG_AUDIT.catalogSignature
   const myResolvedAction = player1Action?.playerId === snapshot.me?.id ? player1Action : player2Action
   const opponentResolvedAction = player1Action?.playerId === snapshot.opponent?.id ? player1Action : player2Action
   const myBreakdown = iAmPlayer1 ? player1Breakdown : player2Breakdown
@@ -671,6 +676,11 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
       </div>
 
       <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
+        {!hasCurrentRuleVersion ? (
+          <p className="round-breakdown-card__legacy" role="status">
+            Risultato calcolato con regole non riconosciute. Distribuisci la Edge Function aggiornata e avvia una nuova partita.
+          </p>
+        ) : null}
         <RoundBreakdownCard
           title={snapshot.me?.nickname ?? 'Tu'}
           action={myResolvedAction}

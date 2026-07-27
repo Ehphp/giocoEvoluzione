@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GENE_IDS, PRODUCTION_CATALOG_AUDIT, ROUND_EVENT_DEFINITIONS, createInitialGenes, getRoundEventById, getValidatedGeneUseBreakdown, resolveRound, validateCatalog } from './index.ts'
+import { GENE_IDS, PRODUCTION_CATALOG_AUDIT, ROUND_EVENT_DEFINITIONS, RULE_VERSION, buildPersistedRoundResolution, createInitialGenes, getRoundEventById, getValidatedGeneUseBreakdown, resolveRound, validateCatalog } from './index.ts'
 
 describe('five-gene rules', () => {
     it('validates the approved event matrix with explicit zero signs', () => {
@@ -35,5 +35,15 @@ describe('five-gene rules', () => {
         expect(() => resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })).toThrow(/maximum level/i)
         const used = resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })
         expect(used.player1.traits.METABOLISM.cooldown).toBe(1)
+    })
+
+    it('persists the rule version and catalog signature with each resolved round', () => {
+        const resolution = buildPersistedRoundResolution({
+            roundNumber: 1, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Score: 0, player2Score: 0,
+            player1Traits: createInitialGenes(), player2Traits: createInitialGenes(),
+            player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' }, startedAt: null,
+        })
+        expect(resolution.resolution_data.ruleVersion).toBe(RULE_VERSION)
+        expect(resolution.resolution_data.catalogSignature).toBe(PRODUCTION_CATALOG_AUDIT.catalogSignature)
     })
 })

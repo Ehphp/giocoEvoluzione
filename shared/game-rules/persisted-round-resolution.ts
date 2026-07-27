@@ -1,8 +1,10 @@
-import { TOTAL_ROUNDS } from './catalog.ts'
+import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION, TOTAL_ROUNDS } from './catalog.ts'
 import { resolveRound } from './engine.ts'
 import type { PlayerRoundAction, RoundEventDefinition, RoundValueBreakdown, GeneCollection } from './types.ts'
 
 export type PersistedRoundResolutionData = {
+    ruleVersion: string
+    catalogSignature: string
     awardedPoints: number
     roundEventId: string
     player1Action: PlayerRoundAction
@@ -35,6 +37,7 @@ export function buildPersistedRoundResolution(params: {
     return {
         player_1_value: resolution.player1.roundValue, player_2_value: resolution.player2.roundValue, winner_id: resolution.winnerId,
         resolution_data: {
+            ruleVersion: RULE_VERSION, catalogSignature: PRODUCTION_CATALOG_AUDIT.catalogSignature,
             awardedPoints: resolution.awardedPoints, roundEventId: params.roundEvent.id, player1Action: params.player1Action, player2Action: params.player2Action,
             player1Breakdown: resolution.player1.breakdown, player2Breakdown: resolution.player2.breakdown,
             player1PointsAwarded: resolution.player1ScoreDelta, player2PointsAwarded: resolution.player2ScoreDelta,
