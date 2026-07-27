@@ -1,0 +1,15 @@
+{
+  "ruleVersion": "five-genes-v1",
+  "fitnessVersion": "five-genes-fitness-v1",
+  "candidateId": "candidate-0032",
+  "catalogSignature": "4cd8c1192bee4f69",
+  "auditSeed": 1592598566,
+  "validatedSequences": 720,
+  "geneOrder": ["RESILIENCE", "MOBILITY", "SENSES", "METABOLISM", "AQUATIC"],
+  "eventOrder": ["VOLCANIC_ASH_WAVE", "PROLONGED_ECLIPSE", "PREDATOR_PACK_MIGRATION", "HEAT_SPIKE", "NUTRIENT_COLLAPSE", "FLASH_FLOOD"],
+  "matrix": [[2, -1, -1, 1, 0], [-1, 1, 2, -1, -1], [0, 2, 1, -1, -1], [-1, -1, 0, 2, -1], [-1, 1, 0, 2, 1], [1, -1, -1, -1, 2]],
+  "exactFitness": 0.7772685185185185,
+  "baselineComparison": {"exactFitness": 0.7772685185185185, "fitnessDelta": 0, "note": "The previous baseline is exactly tied under the all-permutations fitness; candidate-0032 still ranks first among the five promoted candidates."},
+  "exactBreakdown": {"geneBalance": 1, "decisionDepth": 1, "evolveUtility": 1, "cooldownRelevance": 1, "futureInformation": 0.6770833333333333, "drawRate": 0.46018518518518525, "policyDominance": 0.5, "orderRobustness": 0},
+  "rawMetrics": {"pickConcentration": 0.3423611111111111, "actionDiversity": 1, "evolveRate": 0.3747685185185185, "cooldownRelevance": 0.3664351851851852, "drawRate": 0.1150462962962963, "futureInformationAdvantage": 0.13541666666666666, "orderSpread": 0.25}
+}

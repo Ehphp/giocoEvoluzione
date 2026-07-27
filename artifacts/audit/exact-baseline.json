@@ -1,118 +1,102 @@
 {
   "methodology": {
     "exact": true,
+    "ruleVersion": "five-genes-v1",
     "opponent": "deterministic-immediate-greedy",
     "sequences": 720,
-    "stateEncoding": "base-4 levels plus one cooldown slot",
-    "comparedStrategies": [
-      "optimal with level 3 available",
-      "optimal capped at level 2"
-    ]
+    "stateEncoding": "ten level bits plus three cooldown bits",
+    "scope": "exact best response to fixed greedy policy; not simultaneous-game equilibrium"
   },
   "benchmark": {
-    "elapsedMs": 1233,
-    "memoizedStates": 1898640
+    "elapsedMs": 314,
+    "statesVisited": 1041840,
+    "cacheHits": 3088080,
+    "cacheMisses": 1041840,
+    "heapUsedBytes": 10672336
   },
   "metrics": {
     "wins": 532,
     "draws": 188,
     "losses": 0,
-    "roundTies": 490,
+    "finalDrawRate": 0.2611111111111111,
+    "roundTies": 497,
     "level3Reached": 2,
-    "thirdEvolveRoundTotal": 10,
-    "thirdEvolveCount": 2,
+    "level3ReachRate": 0.002777777777777778,
     "level3Uses": 2,
-    "optimalActions": {
-      "EVOLVE:AQUATIC": 624,
-      "USE:MOBILITY": 440,
-      "USE:AQUATIC": 739,
-      "USE:METABOLISM": 939,
-      "EVOLVE:METABOLISM": 500,
-      "EVOLVE:MOBILITY": 285,
-      "USE:SENSES": 316,
-      "EVOLVE:SENSES": 80,
-      "USE:RESILIENCE": 268,
-      "EVOLVE:RESILIENCE": 129
-    },
-    "pickRate": {
-      "AQUATIC": 1363,
-      "MOBILITY": 725,
-      "METABOLISM": 1439,
-      "SENSES": 396,
-      "RESILIENCE": 397
-    },
-    "memoizedStates": 1898640,
-    "matchScoreDistribution": {
-      "3-2": 480,
-      "4-2": 42,
-      "4-1": 10,
-      "3-3": 188
-    },
     "thirdEvolveNecessary": 0,
     "thirdEvolveNotNecessary": 2,
+    "actionCounts": {
+      "USE:RESILIENCE": 268,
+      "EVOLVE:RESILIENCE": 129,
+      "USE:MOBILITY": 450,
+      "EVOLVE:MOBILITY": 288,
+      "USE:SENSES": 311,
+      "EVOLVE:SENSES": 79,
+      "USE:METABOLISM": 965,
+      "EVOLVE:METABOLISM": 514,
+      "USE:AQUATIC": 707,
+      "EVOLVE:AQUATIC": 609
+    },
+    "pickRate": {
+      "0": 0.09189814814814815,
+      "1": 0.17083333333333334,
+      "2": 0.09027777777777778,
+      "3": 0.3423611111111111,
+      "4": 0.30462962962962964
+    },
+    "matchScoreDistribution": {
+      "4-2": 35,
+      "3-2": 488,
+      "4-1": 9,
+      "3-3": 188
+    },
     "valuesByGene": {
-      "AQUATIC": {
-        "sum": 2897,
-        "count": 1363,
-        "average": 2.1254585473220837
-      },
-      "MOBILITY": {
-        "sum": 1616,
-        "count": 725,
-        "average": 2.228965517241379
-      },
-      "METABOLISM": {
-        "sum": 3599,
-        "count": 1439,
-        "average": 2.5010423905489922
-      },
-      "SENSES": {
-        "sum": 1016,
-        "count": 396,
-        "average": 2.5656565656565657
-      },
-      "RESILIENCE": {
+      "0": {
         "sum": 933,
-        "count": 397,
         "average": 2.350125944584383
+      },
+      "1": {
+        "sum": 1649,
+        "average": 2.234417344173442
+      },
+      "2": {
+        "sum": 1000,
+        "average": 2.5641025641025643
+      },
+      "3": {
+        "sum": 3721,
+        "average": 2.5158891142663964
+      },
+      "4": {
+        "sum": 2784,
+        "average": 2.115501519756839
       }
     },
     "valuesByEvent": {
       "VOLCANIC_ASH_WAVE": {
         "sum": 1168,
-        "count": 720,
         "average": 1.6222222222222222
       },
       "PROLONGED_ECLIPSE": {
-        "sum": 1139,
-        "count": 720,
-        "average": 1.5819444444444444
+        "sum": 1135,
+        "average": 1.5763888888888888
       },
       "PREDATOR_PACK_MIGRATION": {
-        "sum": 1348,
-        "count": 720,
-        "average": 1.8722222222222222
+        "sum": 1369,
+        "average": 1.9013888888888888
       },
       "HEAT_SPIKE": {
-        "sum": 2093,
-        "count": 720,
-        "average": 2.9069444444444446
+        "sum": 2104,
+        "average": 2.922222222222222
       },
       "NUTRIENT_COLLAPSE": {
-        "sum": 2086,
-        "count": 720,
-        "average": 2.897222222222222
+        "sum": 2130,
+        "average": 2.9583333333333335
       },
       "FLASH_FLOOD": {
-        "sum": 2227,
-        "count": 720,
-        "average": 3.0930555555555554
+        "sum": 2181,
+        "average": 3.029166666666667
       }
-    },
-    "level3ReachRate": 0.002777777777777778,
-    "averageThirdEvolveRound": 5,
-    "averageLevel3UsesAfterReach": 1,
-    "finalDrawRate": 0.2611111111111111,
-    "thirdEvolveNecessaryRate": 0
+    }
   }
 }

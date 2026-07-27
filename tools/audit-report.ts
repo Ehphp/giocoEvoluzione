@@ -1,28 +1,26 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { AUDIT_FITNESS_VERSION, AUDIT_RULE_VERSION, AUDIT_SEED } from './audit-config.ts'
+import { COOLDOWN_NONE, actionGene, actionValue, generateSequences, getLegalActions, isEvolve, nextState, type AuditAction } from './audit-core.ts'
+import { auditBaselineExact } from './audit-exact.ts'
 
-const output = resolve(import.meta.dirname, '../artifacts/audit')
-const baseline = JSON.parse(readFileSync(resolve(output, 'exact-baseline.json'), 'utf8'))
-const { benchmark, methodology, metrics } = baseline
-const lines = [
-    '# Audit baseline — five genes',
-    '',
-    `- Metodo: ricerca esatta su ${methodology.sequences} permutazioni, contro ${methodology.opponent}.`,
-    `- Tempo: ${benchmark.elapsedMs} ms; stati memoizzati: ${benchmark.memoizedStates}.`,
-    `- Esiti: ${metrics.wins} vittorie, ${metrics.draws} pareggi, ${metrics.losses} sconfitte (${(metrics.finalDrawRate * 100).toFixed(2)}% pareggi).`,
-    `- Pareggi di round: ${metrics.roundTies}; distribuzione punteggi finali: ${Object.entries(metrics.matchScoreDistribution).map(([score, count]) => `${score}=${count}`).join(', ')}.`,
-    `- Livello 3: raggiunto in ${metrics.level3Reached}/${methodology.sequences} sequenze (${(metrics.level3ReachRate * 100).toFixed(2)}%), round medio ${metrics.averageThirdEvolveRound ?? 'n/a'}, usi successivi medi ${metrics.averageLevel3UsesAfterReach.toFixed(2)}.`,
-    `- Confronto con tetto al livello 2: ${metrics.thirdEvolveNecessary} terze evoluzioni hanno aumentato il risultato ottimo; ${metrics.thirdEvolveNotNecessary} non lo hanno aumentato.`,
-    `- Azioni ottime: ${Object.entries(metrics.optimalActions).map(([action, count]) => `${action}=${count}`).join(', ')}.`,
-    `- Valori per gene (somma/media): ${Object.entries(metrics.valuesByGene).map(([gene, values]: [string, any]) => `${gene}=${values.sum}/${values.average.toFixed(2)}`).join(', ')}.`,
-    `- Valori per evento (somma/media): ${Object.entries(metrics.valuesByEvent).map(([eventId, values]: [string, any]) => `${eventId}=${values.sum}/${values.average.toFixed(2)}`).join(', ')}.`,
-    '',
-    '## Esito',
-    '',
-    benchmark.elapsedMs <= 3000
-        ? 'Il baseline esatto rispetta il budget di 3 secondi.'
-        : 'Il baseline esatto supera il budget di 3 secondi: serve ottimizzazione prima di trattarlo come gate.',
-    'Non sono state modificate automaticamente né la matrice né le soglie: il report descrive soltanto il baseline.',
-]
+type Policy = { id: string; choose: (event: number, state: number) => AuditAction }
+const rank = (action: number) => (isEvolve(action) ? 0 : 5) + actionGene(action)
+const greedy: Policy = { id: 'greedy', choose(event, state) { let best = -1, value = -99; for (const action of getLegalActions(state)) if (!isEvolve(action) && (actionValue(event, state, action) > value || (actionValue(event, state, action) === value && rank(action) < rank(best)))) { best = action; value = actionValue(event, state, action) } return best } }
+const evolveFirst: Policy = { id: 'evolve-first', choose(event, state) { for (const action of getLegalActions(state)) if (isEvolve(action)) return action; return greedy.choose(event, state) } }
+const antiCooldown: Policy = { id: 'anti-cooldown', choose(event, state) { const actions = [...getLegalActions(state)].filter((action) => !isEvolve(action)); return actions.sort((left, right) => actionGene(left) - actionGene(right) || actionValue(event, state, right) - actionValue(event, state, left))[0] ?? greedy.choose(event, state) } }
+function tournament() {
+    const policies = [greedy, evolveFirst, antiCooldown]; const sequences = generateSequences(); const wins = Object.fromEntries(policies.map((policy) => [policy.id, 0])) as Record<string, number>; let ties = 0
+    for (const sequence of sequences) for (let left = 0; left < policies.length; left += 1) for (let right = left + 1; right < policies.length; right += 1) {
+        let leftState = COOLDOWN_NONE << 10, rightState = COOLDOWN_NONE << 10, leftScore = 0, rightScore = 0
+        for (const event of sequence) { const leftAction = policies[left]!.choose(event, leftState), rightAction = policies[right]!.choose(event, rightState); const leftValue = actionValue(event, leftState, leftAction), rightValue = actionValue(event, rightState, rightAction); if (leftValue > rightValue) leftScore += 1; if (rightValue > leftValue) rightScore += 1; leftState = nextState(leftState, leftAction); rightState = nextState(rightState, rightAction) }
+        if (leftScore === rightScore) ties += 1; else wins[leftScore > rightScore ? policies[left]!.id : policies[right]!.id] += 1
+    }
+    return { seed: AUDIT_SEED, sequences: sequences.length, policies: policies.map((policy) => policy.id), wins, ties, methodology: 'deterministic policy tournament; not a stochastic population estimate' }
+}
+const exact = auditBaselineExact(); const policyTournament = tournament(); const output = resolve(import.meta.dirname, '../artifacts/audit'); mkdirSync(output, { recursive: true })
+const report = { ruleVersion: AUDIT_RULE_VERSION, fitnessVersion: AUDIT_FITNESS_VERSION, exact, policyTournament }
+writeFileSync(resolve(output, 'baseline-report.json'), `${JSON.stringify(report, null, 2)}\n`)
+const lines = ['# Audit baseline — five genes', '', `- Regole: ${AUDIT_RULE_VERSION}; fitness: ${AUDIT_FITNESS_VERSION}.`, `- Esatto (best response contro greedy): ${exact.benchmark.elapsedMs} ms, ${exact.benchmark.statesVisited} stati visitati, cache ${exact.benchmark.cacheHits}/${exact.benchmark.cacheMisses} hit/miss.`, `- Torneo policy seeded (${policyTournament.sequences} ordini): ${Object.entries(policyTournament.wins).map(([id, wins]) => `${id}=${wins}`).join(', ')}; pareggi=${policyTournament.ties}.`, '', 'Le metriche esatte e il torneo sono distinti: nessuno dei due modifica il catalogo produttivo o costituisce una raccomandazione definitiva.']
 writeFileSync(resolve(output, 'baseline-report.md'), `${lines.join('\n')}\n`)
-console.log(lines.slice(0, 8).join('\n'))
+console.log(lines.join('\n'))

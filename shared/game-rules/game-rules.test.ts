@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { ROUND_EVENT_DEFINITIONS, createInitialGenes, getRoundEventById, getValidatedGeneUseBreakdown, resolveRound, validateCatalog } from './index.ts'
+import { GENE_IDS, PRODUCTION_CATALOG_AUDIT, ROUND_EVENT_DEFINITIONS, createInitialGenes, getRoundEventById, getValidatedGeneUseBreakdown, resolveRound, validateCatalog } from './index.ts'
 
 describe('five-gene rules', () => {
     it('validates the approved event matrix with explicit zero signs', () => {
         expect(validateCatalog()).toEqual([])
         expect(ROUND_EVENT_DEFINITIONS).toHaveLength(6)
+    })
+
+    it('locks the production candidate matrix and its audit signature', () => {
+        const matrix = ROUND_EVENT_DEFINITIONS.map((event) => GENE_IDS.map((gene) => event.modifiers[gene]))
+        expect(matrix).toEqual([
+            [2, -1, -1, 1, 0], [-1, 1, 2, -1, -1], [0, 2, 1, -1, -1],
+            [-1, -1, 0, 2, -1], [-1, 1, 0, 2, 1], [1, -1, -1, -1, 2],
+        ])
+        expect(PRODUCTION_CATALOG_AUDIT.catalogSignature).toBe('4cd8c1192bee4f69')
+        expect(PRODUCTION_CATALOG_AUDIT.candidateId).toBe('candidate-0032')
+        expect(PRODUCTION_CATALOG_AUDIT.validatedSequences).toBe(720)
     })
 
     it('scores USE as base plus level plus direct event modifier', () => {
