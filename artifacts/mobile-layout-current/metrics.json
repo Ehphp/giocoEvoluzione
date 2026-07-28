@@ -10,9 +10,9 @@
     "documentScrollHeight": 800,
     "screenScrollHeight": 848,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 63.1,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "sceneViewportRatio": 50.2,
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -44,11 +44,11 @@
       },
       ".scene-v2-stage": {
         "top": 66,
-        "bottom": 571,
+        "bottom": 467.7,
         "left": 17,
         "right": 343,
         "width": 326,
-        "height": 505,
+        "height": 401.7,
         "fullyVisible": true
       },
       ".event-v2-card": {
@@ -79,8 +79,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 584,
-        "bottom": 723,
+        "top": 480.7,
+        "bottom": 619.7,
         "left": 20,
         "right": 340,
         "width": 320,
@@ -88,8 +88,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 605,
-        "bottom": 723,
+        "top": 501.7,
+        "bottom": 619.7,
         "left": 20,
         "right": 340,
         "width": 320,
@@ -97,11 +97,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 605,
-        "bottom": 723,
-        "left": 20,
-        "right": 1086.7,
-        "width": 1066.7,
+        "top": 501.7,
+        "bottom": 619.7,
+        "left": -86.7,
+        "right": 446.7,
+        "width": 533.3,
         "height": 118,
         "fullyVisible": true
       },
@@ -145,9 +145,9 @@
     "documentScrollHeight": 844,
     "screenScrollHeight": 895,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 62.9,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "sceneViewportRatio": 50.7,
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -179,11 +179,11 @@
       },
       ".scene-v2-stage": {
         "top": 68,
-        "bottom": 599,
+        "bottom": 495.7,
         "left": 17,
         "right": 373,
         "width": 356,
-        "height": 531,
+        "height": 427.7,
         "fullyVisible": true
       },
       ".event-v2-card": {
@@ -214,8 +214,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 614,
-        "bottom": 763,
+        "top": 510.7,
+        "bottom": 659.7,
         "left": 20,
         "right": 370,
         "width": 350,
@@ -223,8 +223,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 635,
-        "bottom": 763,
+        "top": 531.7,
+        "bottom": 659.7,
         "left": 20,
         "right": 370,
         "width": 350,
@@ -232,11 +232,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 635,
-        "bottom": 763,
-        "left": 20,
-        "right": 1186.7,
-        "width": 1166.7,
+        "top": 531.7,
+        "bottom": 659.7,
+        "left": -96.7,
+        "right": 486.7,
+        "width": 583.3,
         "height": 128,
         "fullyVisible": true
       },
@@ -280,9 +280,9 @@
     "documentScrollHeight": 915,
     "screenScrollHeight": 970,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 65.8,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "sceneViewportRatio": 54.5,
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -314,11 +314,11 @@
       },
       ".scene-v2-stage": {
         "top": 68,
-        "bottom": 670,
+        "bottom": 566.7,
         "left": 17,
         "right": 395,
         "width": 378,
-        "height": 602,
+        "height": 498.7,
         "fullyVisible": true
       },
       ".event-v2-card": {
@@ -349,8 +349,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 685,
-        "bottom": 834,
+        "top": 581.7,
+        "bottom": 730.7,
         "left": 20,
         "right": 392,
         "width": 372,
@@ -358,8 +358,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 706,
-        "bottom": 834,
+        "top": 602.7,
+        "bottom": 730.7,
         "left": 20,
         "right": 392,
         "width": 372,
@@ -367,11 +367,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 706,
-        "bottom": 834,
-        "left": 20,
-        "right": 1260,
-        "width": 1240,
+        "top": 602.7,
+        "bottom": 730.7,
+        "left": -104,
+        "right": 516,
+        "width": 620,
         "height": 128,
         "fullyVisible": true
       },
@@ -415,9 +415,9 @@
     "documentScrollHeight": 932,
     "screenScrollHeight": 988,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 66.4,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "sceneViewportRatio": 55.3,
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -449,11 +449,11 @@
       },
       ".scene-v2-stage": {
         "top": 68,
-        "bottom": 687,
+        "bottom": 583.7,
         "left": 17,
         "right": 413,
         "width": 396,
-        "height": 619,
+        "height": 515.7,
         "fullyVisible": true
       },
       ".event-v2-card": {
@@ -484,8 +484,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 702,
-        "bottom": 851,
+        "top": 598.7,
+        "bottom": 747.7,
         "left": 20,
         "right": 410,
         "width": 390,
@@ -493,8 +493,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 723,
-        "bottom": 851,
+        "top": 619.7,
+        "bottom": 747.7,
         "left": 20,
         "right": 410,
         "width": 390,
@@ -502,11 +502,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 723,
-        "bottom": 851,
-        "left": 20,
-        "right": 1320,
-        "width": 1300,
+        "top": 619.7,
+        "bottom": 747.7,
+        "left": -110,
+        "right": 540,
+        "width": 650,
         "height": 128,
         "fullyVisible": true
       },
@@ -550,9 +550,9 @@
     "documentScrollHeight": 1024,
     "screenScrollHeight": 990,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 66.1,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "sceneViewportRatio": 56,
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -584,11 +584,11 @@
       },
       ".scene-v2-stage": {
         "top": 85,
-        "bottom": 762,
+        "bottom": 658.7,
         "left": 24,
         "right": 744,
         "width": 720,
-        "height": 677,
+        "height": 573.7,
         "fullyVisible": true
       },
       ".event-v2-card": {
@@ -619,8 +619,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 777,
-        "bottom": 926,
+        "top": 673.7,
+        "bottom": 822.7,
         "left": 27,
         "right": 741,
         "width": 714,
@@ -628,8 +628,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 798,
-        "bottom": 926,
+        "top": 694.7,
+        "bottom": 822.7,
         "left": 27,
         "right": 741,
         "width": 714,
@@ -637,11 +637,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 798,
-        "bottom": 926,
-        "left": 27,
-        "right": 2407,
-        "width": 2380,
+        "top": 694.7,
+        "bottom": 822.7,
+        "left": -211,
+        "right": 979,
+        "width": 1190,
         "height": 128,
         "fullyVisible": true
       },
@@ -686,8 +686,8 @@
     "screenScrollHeight": 376,
     "hasVerticalOverflow": false,
     "sceneViewportRatio": 78.2,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -754,8 +754,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 83.5,
-        "bottom": 232.5,
+        "top": 31.8,
+        "bottom": 180.8,
         "left": 387.8,
         "right": 820,
         "width": 432.3,
@@ -763,8 +763,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 104.5,
-        "bottom": 232.5,
+        "top": 52.8,
+        "bottom": 180.8,
         "left": 387.8,
         "right": 820,
         "width": 432.3,
@@ -772,17 +772,17 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 104.5,
-        "bottom": 232.5,
-        "left": 387.8,
-        "right": 1828.6,
-        "width": 1440.8,
+        "top": 52.8,
+        "bottom": 180.8,
+        "left": 243.7,
+        "right": 964.1,
+        "width": 720.4,
         "height": 128,
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 238.5,
-        "bottom": 306.5,
+        "top": 290.2,
+        "bottom": 358.2,
         "left": 387.8,
         "right": 820,
         "width": 432.3,
@@ -790,8 +790,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 238.5,
-        "bottom": 306.5,
+        "top": 290.2,
+        "bottom": 358.2,
         "left": 387.8,
         "right": 654.3,
         "width": 266.6,
@@ -799,8 +799,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 238.5,
-        "bottom": 306.5,
+        "top": 290.2,
+        "bottom": 358.2,
         "left": 661.3,
         "right": 820,
         "width": 158.7,
@@ -821,8 +821,8 @@
     "screenScrollHeight": 898,
     "hasVerticalOverflow": false,
     "sceneViewportRatio": 83.8,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -889,8 +889,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 625,
-        "bottom": 774,
+        "top": 521.7,
+        "bottom": 670.7,
         "left": 870.8,
         "right": 1368.8,
         "width": 498,
@@ -898,8 +898,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 646,
-        "bottom": 774,
+        "top": 542.7,
+        "bottom": 670.7,
         "left": 870.8,
         "right": 1368.8,
         "width": 498,
@@ -907,11 +907,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 646,
-        "bottom": 774,
-        "left": 870.8,
-        "right": 2530.8,
-        "width": 1660,
+        "top": 542.7,
+        "bottom": 670.7,
+        "left": 704.8,
+        "right": 1534.8,
+        "width": 830,
         "height": 128,
         "fullyVisible": true
       },
@@ -956,8 +956,8 @@
     "screenScrollHeight": 1078,
     "hasVerticalOverflow": false,
     "sceneViewportRatio": 84.3,
-    "geneCardCount": 10,
-    "railStart": "0",
+    "geneCardCount": 5,
+    "railStart": "1",
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -1024,8 +1024,8 @@
         "fullyVisible": true
       },
       ".gene-selector-panel": {
-        "top": 751,
-        "bottom": 933,
+        "top": 647.7,
+        "bottom": 829.7,
         "left": 1339.4,
         "right": 1831.4,
         "width": 492,
@@ -1033,8 +1033,8 @@
         "fullyVisible": true
       },
       ".selector-v2-carousel": {
-        "top": 775,
-        "bottom": 933,
+        "top": 671.7,
+        "bottom": 829.7,
         "left": 1339.4,
         "right": 1831.4,
         "width": 492,
@@ -1042,11 +1042,11 @@
         "fullyVisible": true
       },
       ".selector-v2-rail": {
-        "top": 775,
-        "bottom": 933,
-        "left": 1339.4,
-        "right": 2979.4,
-        "width": 1640,
+        "top": 671.7,
+        "bottom": 829.7,
+        "left": 1175.4,
+        "right": 1995.4,
+        "width": 820,
         "height": 158,
         "fullyVisible": true
       },

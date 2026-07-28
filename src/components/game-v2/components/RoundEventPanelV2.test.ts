@@ -28,12 +28,7 @@ const nextEvent: RoundEventV2 = {
     ],
 }
 
-function dispatchPointer(element: Element, type: string) {
-    const event = new Event(type, { bubbles: true, cancelable: true })
-    element.dispatchEvent(event)
-}
-
-describe('RoundEventPanelV2 next event preview', () => {
+describe('RoundEventPanelV2 compact module', () => {
     let container: HTMLDivElement
     let root: Root
 
@@ -42,10 +37,7 @@ describe('RoundEventPanelV2 next event preview', () => {
         document.body.append(container)
         root = createRoot(container)
         act(() => {
-            root.render(createElement(RoundEventPanelV2, {
-                roundEvent: currentEvent,
-                nextRoundEvent: nextEvent,
-            }))
+            root.render(createElement(RoundEventPanelV2, { roundEvent: currentEvent, nextRoundEvent: nextEvent }))
         })
     })
 
@@ -54,67 +46,37 @@ describe('RoundEventPanelV2 next event preview', () => {
         container.remove()
     })
 
-    it('keeps the next event visible in a dedicated compact card', () => {
-        const section = container.querySelector('[aria-label="Prossimo evento"]')
-        const card = container.querySelector('.next-event-v2-card')
+    it('keeps current and next event in one compact module', () => {
+        const module = container.querySelector('.event-v2-stack')
+        const current = container.querySelector<HTMLButtonElement>('.event-v2-card')
+        const next = container.querySelector<HTMLButtonElement>('.event-v2-next-trigger')
 
-        expect(section?.textContent).toContain('Evento futuro')
-        expect(card).not.toBeNull()
-        expect(card?.getAttribute('aria-expanded')).toBe('false')
+        expect(module?.textContent).toContain('Evento corrente')
+        expect(module?.textContent).toContain('Evento futuro')
+        expect(current?.getAttribute('aria-expanded')).toBe('false')
+        expect(next?.getAttribute('aria-expanded')).toBe('false')
     })
 
-    it('opens the current event and exposes every impacted gene', () => {
-        const card = container.querySelector<HTMLButtonElement>('.event-v2-card')!
+    it('opens every current-event modifier and returns focus after Escape', () => {
+        const current = container.querySelector<HTMLButtonElement>('.event-v2-card')!
 
-        expect(card.getAttribute('aria-expanded')).toBe('false')
-        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+        act(() => current.click())
+        expect(container.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(currentEvent.effects.length)
+        expect(current.getAttribute('aria-expanded')).toBe('true')
 
-        const modifiers = [...container.querySelectorAll('.current-event-v2-popover .next-event-v2-modifier')]
-        expect(modifiers).toHaveLength(currentEvent.effects.length)
-        expect(modifiers.map((node) => node.textContent)).toEqual([
-            '+2Forza',
-            '+1Agilità',
-            '-1Mimetismo',
-            '-2Riserva adiposa',
-        ])
-        expect(card.getAttribute('aria-expanded')).toBe('true')
-
-        act(() => card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
-        expect(container.querySelector('.current-event-v2-popover')).toBeNull()
-        expect(document.activeElement).toBe(card)
+        act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+        expect(container.querySelector('.event-v2-popover')).toBeNull()
+        expect(document.activeElement).toBe(current)
     })
 
-    it('opens on tap, exposes every modifier, and closes on a second tap', () => {
-        const card = container.querySelector('.next-event-v2-card')!
+    it('opens next-event details without creating a second large event card', () => {
+        const next = container.querySelector<HTMLButtonElement>('.event-v2-next-trigger')!
 
-        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-        const modifiers = [...container.querySelectorAll('.next-event-v2-modifier b')].map((node) => node.textContent)
-        expect(modifiers).toEqual(['+2', '+1', '-1'])
-        expect(card.getAttribute('aria-expanded')).toBe('true')
+        act(() => next.click())
+        expect(container.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(nextEvent.effects.length)
+        expect(next.getAttribute('aria-expanded')).toBe('true')
 
-        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-        expect(container.querySelector('.next-event-v2-popover')).toBeNull()
-        expect(card.getAttribute('aria-expanded')).toBe('false')
-    })
-
-    it('closes the preview with Escape and returns focus to its trigger', () => {
-        const card = container.querySelector<HTMLButtonElement>('.next-event-v2-card')!
-
-        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-        expect(container.querySelector('.next-event-v2-popover')).not.toBeNull()
-
-        act(() => card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
-        expect(container.querySelector('.next-event-v2-popover')).toBeNull()
-        expect(document.activeElement).toBe(card)
-    })
-
-    it('closes the preview when the player taps outside', () => {
-        const card = container.querySelector('.next-event-v2-card')!
-
-        act(() => card.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-        expect(container.querySelector('.next-event-v2-popover')).not.toBeNull()
-
-        act(() => dispatchPointer(document.body, 'pointerdown'))
-        expect(container.querySelector('.next-event-v2-popover')).toBeNull()
+        act(() => next.click())
+        expect(container.querySelector('.event-v2-popover')).toBeNull()
     })
 })

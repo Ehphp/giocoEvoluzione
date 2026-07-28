@@ -138,15 +138,15 @@ async function collectMetrics(send, viewport) {
     return evaluate(send, `(() => {
         const selectors = [
             '.gene-selection-screen',
-            '.screen-content',
+            '.game-frame',
             '.duel-v2-header',
-            '.scene-v2-stage',
+            '.arena-stage',
+            '.event-v2-stack',
             '.event-v2-card',
-            '.next-event-v2-section',
-            '.next-event-v2-card',
-            '.gene-selector-panel',
-            '.selector-v2-carousel',
-            '.selector-v2-rail',
+            '.event-v2-next-trigger',
+            '.decision-dock',
+            '.selector-v2-grid',
+            '.natural-advantage-v2',
             '.action-v2-panel',
             '.action-v2-btn--use',
             '.action-v2-btn--evolve',
@@ -179,15 +179,42 @@ async function collectMetrics(send, viewport) {
             screenScrollHeight: document.querySelector('.gene-selection-screen')?.scrollHeight ?? null,
             hasVerticalOverflow: document.documentElement.scrollHeight > window.innerHeight,
             sceneViewportRatio: (() => {
-                const scene = document.querySelector('.scene-v2-stage')?.getBoundingClientRect()
+                const scene = document.querySelector('.arena-stage')?.getBoundingClientRect()
                 return scene ? Math.round((scene.height / window.innerHeight) * 1000) / 10 : null
             })(),
             geneCardCount: document.querySelectorAll('.selector-v2-card').length,
-            railStart: document.querySelector('.selector-v2-rail')?.style.getPropertyValue('--rail-start') ?? null,
+            fiveGenesFullyVisible: [...document.querySelectorAll('.selector-v2-card')].length === 5
+                && [...document.querySelectorAll('.selector-v2-card')].every((card) => {
+                    const rect = card.getBoundingClientRect()
+                    return rect.left >= 0 && rect.right <= window.innerWidth && rect.top >= 0 && rect.bottom <= window.innerHeight
+                }),
+            eventDoesNotCoverDock: (() => {
+                const event = document.querySelector('.event-v2-stack')?.getBoundingClientRect()
+                const dock = document.querySelector('.decision-dock')?.getBoundingClientRect()
+                return Boolean(event && dock && event.bottom <= dock.top)
+            })(),
+            arenaHasUsefulHeight: (document.querySelector('.arena-stage')?.getBoundingClientRect().height ?? 0) > 0,
             scrollY: window.scrollY,
             boxes,
         }
     })()`)
+}
+
+function assertViewportMetrics(result) {
+    const useButton = result.boxes['.action-v2-btn--use']
+    const evolveButton = result.boxes['.action-v2-btn--evolve']
+    const failures = []
+
+    if (result.hasVerticalOverflow) failures.push('overflow verticale')
+    if (!result.fiveGenesFullyVisible) failures.push('cinque geni non completamente visibili')
+    if (!result.eventDoesNotCoverDock) failures.push('evento sovrapposto al dock')
+    if (!result.arenaHasUsefulHeight) failures.push('arena senza altezza utile')
+    if (!useButton?.fullyVisible) failures.push('USA non completamente visibile')
+    if (!evolveButton?.fullyVisible) failures.push('EVOLVI non completamente visibile')
+
+    if (failures.length) {
+        throw new Error(`${result.innerWidth}x${result.innerHeight}: ${failures.join(', ')}`)
+    }
 }
 
 async function collectHomeMetrics(send, viewport) {
@@ -366,7 +393,7 @@ async function run() {
     for (const viewport of VIEWPORTS) {
         await setViewport(send, viewport)
         await delay(250)
-        await evaluate(send, `document.querySelector('[data-testid="gene-v2-scroll-container"]')?.scrollTo(0, 0)`)
+        await evaluate(send, 'window.scrollTo(0, 0)')
 
         const screenshot = await send('Page.captureScreenshot', {
             format: 'png',
@@ -377,6 +404,7 @@ async function run() {
         await writeFile(join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'))
 
         const metrics = await collectMetrics(send, viewport)
+        assertViewportMetrics(metrics)
         results.push({ screenshot: filename, ...metrics })
     }
 
@@ -395,7 +423,7 @@ async function run() {
             + `EVOLVI=${evolveButton?.fullyVisible ? 'visible' : 'hidden'}, `
             + `overflow=${result.hasVerticalOverflow ? 'yes' : 'no'}, `
             + `scene=${result.sceneViewportRatio}%, `
-            + `genes=${result.geneCardCount}, `
+            + `genes=${result.geneCardCount}, fullyVisible=${result.fiveGenesFullyVisible ? 'yes' : 'no'}, `
             + `screenHeight=${result.screenScrollHeight}`,
         )
     }
@@ -405,13 +433,13 @@ async function run() {
     await delay(200)
 
     const currentEventDetailsMetrics = await evaluate(send, `(() => {
-        const popover = document.querySelector('.current-event-v2-popover')
+        const popover = document.querySelector('.event-v2-popover')
         const rect = popover?.getBoundingClientRect()
 
         return {
             isOpen: document.querySelector('.event-v2-card')?.getAttribute('aria-expanded') === 'true',
             compactEffectCount: document.querySelectorAll('.event-v2-effects .event-v2-chip').length,
-            detailedEffectCount: popover?.querySelectorAll('.next-event-v2-modifier').length ?? 0,
+            detailedEffectCount: popover?.querySelectorAll('.event-v2-modifier').length ?? 0,
             fullyVisible: rect
                 ? rect.top >= 0
                     && rect.right <= window.innerWidth
@@ -453,7 +481,6 @@ async function run() {
         const screen = document.querySelector('.gene-selection-screen')?.getBoundingClientRect()
         const cards = document.querySelectorAll('.selector-v2-card')
         const selectedCard = document.querySelector('.selector-v2-card[aria-selected="true"]')
-        const rail = document.querySelector('.selector-v2-rail')
         const selectedRect = selectedCard?.getBoundingClientRect()
         const selectedStyle = selectedCard ? getComputedStyle(selectedCard) : null
 
@@ -465,8 +492,10 @@ async function run() {
             screenRight: screen?.right ?? null,
             selectedLastGene: selectedCard === cards[cards.length - 1],
             geneCardCount: cards.length,
-            railStart: rail?.style.getPropertyValue('--rail-start') ?? null,
-            railTransform: rail ? getComputedStyle(rail).transform : null,
+            allGenesFullyVisible: [...cards].every((card) => {
+                const rect = card.getBoundingClientRect()
+                return rect.left >= 0 && rect.right <= window.innerWidth
+            }),
             selectedCardRect: selectedRect ? {
                 top: selectedRect.top,
                 bottom: selectedRect.bottom,

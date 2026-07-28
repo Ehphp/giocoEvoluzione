@@ -5,14 +5,14 @@
   "screenLeft": 10,
   "screenRight": 350,
   "selectedLastGene": true,
-  "geneCardCount": 10,
-  "railStart": "7",
-  "railTransform": "matrix(1, 0, 0, 1, -746.659, 0)",
+  "geneCardCount": 5,
+  "railStart": "2",
+  "railTransform": "matrix(1, 0, 0, 1, -213.331, 0)",
   "selectedCardRect": {
-    "top": 607.5,
-    "bottom": 720.5,
-    "left": 236.24688720703125,
-    "right": 336.90313720703125
+    "top": 504.171875,
+    "bottom": 617.171875,
+    "left": 242.2937469482422,
+    "right": 330.95001220703125
   },
   "selectedCardOpacity": "1",
   "selectedCardVisibility": "visible",

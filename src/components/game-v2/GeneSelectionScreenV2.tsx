@@ -89,15 +89,15 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             <SceneFallback />
             <div className="frame-scene-overlay frame-scene-overlay--top" aria-hidden="true" />
             <div className="frame-scene-overlay frame-scene-overlay--bottom" aria-hidden="true" />
-            <div className="screen-content" data-testid="gene-v2-scroll-container">
+            <div className="game-frame" data-testid="gene-v2-scroll-container">
                 {viewModel.status === 'invalid' ? (
-                    <div className="screen-main screen-main--centered">
+                    <div className="game-state game-state--centered">
                         <InvalidSessionMessage reason={viewModel.invalidReason} onLeaveSession={onLeaveSession} />
                     </div>
                 ) : null}
 
                 {viewModel.status === 'loading' ? (
-                    <div className="screen-main screen-main--centered">
+                    <div className="game-state game-state--centered">
                         <section className="state-message" aria-live="polite">
                             <strong>Caricamento in corso...</strong>
                             <p>Sto preparando i dati del round.</p>
@@ -107,21 +107,23 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
 
                 {hasRenderableContent ? (
                     <>
-                        <DuelHeaderV2
-                            player={viewModel.player}
-                            opponent={viewModel.opponent}
-                            round={viewModel.round}
-                            onLeaveSession={onLeaveSession}
-                        />
+                        <header className="game-hud">
+                            <DuelHeaderV2
+                                player={viewModel.player}
+                                opponent={viewModel.opponent}
+                                round={viewModel.round}
+                                onLeaveSession={onLeaveSession}
+                            />
+                        </header>
 
-                        <div className="scene-v2-stage">
+                        <main className="arena-stage">
                             <RoundEventPanelV2
                                 roundEvent={viewModel.roundEvent}
                                 nextRoundEvent={viewModel.nextRoundEvent}
                             />
-                        </div>
+                        </main>
 
-                        <div className="bottom-sheet">
+                        <section className="decision-dock" aria-label="Scelta adattamento e azioni">
                             {viewModel.genes.length > 0 ? (
                                 <div className="gene-selector-panel">
                                     <GeneSelectorPreviewV2
@@ -157,7 +159,7 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                     />
                                 )}
                             </div>
-                        </div>
+                        </section>
                     </>
                 ) : null}
             </div>
