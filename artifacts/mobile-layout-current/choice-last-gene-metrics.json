@@ -6,13 +6,12 @@
   "screenRight": 350,
   "selectedLastGene": true,
   "geneCardCount": 5,
-  "railStart": "2",
-  "railTransform": "matrix(1, 0, 0, 1, -213.331, 0)",
+  "allGenesFullyVisible": true,
   "selectedCardRect": {
-    "top": 504.171875,
-    "bottom": 617.171875,
-    "left": 242.2937469482422,
-    "right": 330.95001220703125
+    "top": 579.90625,
+    "bottom": 680.171875,
+    "left": 279.1875,
+    "right": 339.984375
   },
   "selectedCardOpacity": "1",
   "selectedCardVisibility": "visible",

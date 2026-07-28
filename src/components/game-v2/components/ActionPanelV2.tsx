@@ -89,7 +89,7 @@ export function ActionPanelV2({
         ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canEvolve
             ? 'Livello massimo raggiunto'
-            : `Valore fisso 1 · porta al livello ${selectedGene.level + 1}`
+            : `LV ${selectedGene.level} → ${selectedGene.level + 1}`
 
     return (
         <section

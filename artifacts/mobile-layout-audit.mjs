@@ -191,7 +191,12 @@ async function collectMetrics(send, viewport) {
             eventDoesNotCoverDock: (() => {
                 const event = document.querySelector('.event-v2-stack')?.getBoundingClientRect()
                 const dock = document.querySelector('.decision-dock')?.getBoundingClientRect()
-                return Boolean(event && dock && event.bottom <= dock.top)
+                return Boolean(event && dock && (
+                    event.right <= dock.left
+                    || dock.right <= event.left
+                    || event.bottom <= dock.top
+                    || dock.bottom <= event.top
+                ))
             })(),
             arenaHasUsefulHeight: (document.querySelector('.arena-stage')?.getBoundingClientRect().height ?? 0) > 0,
             scrollY: window.scrollY,
