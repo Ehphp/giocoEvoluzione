@@ -2935,6 +2935,13 @@
   will-change: transform;
 }
 
+/* The selector uses the current adaptation ids for its modifier classes. */
+.selector-v2-card--ferocity { --gene-accent: #c7603d; }
+.selector-v2-card--armor { --gene-accent: #477fb9; }
+.selector-v2-card--agility { --gene-accent: #66ba29; }
+.selector-v2-card--senses { --gene-accent: #8845c7; }
+.selector-v2-card--camouflage { --gene-accent: #2d9ac4; }
+
 .selector-v2-card,
 .selector-v2-card.is-side,
 .selector-v2-rail > .selector-v2-card,
