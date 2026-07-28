@@ -3994,6 +3994,119 @@
   padding-bottom: 4px;
 }
 
+/* The result is part of the same duel scene: it blocks the choice controls
+   while keeping the battlefield visible behind a focused, scrollable layer. */
+.round-result-modal {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  overflow: hidden;
+  background: rgba(4, 18, 14, 0.58);
+  backdrop-filter: blur(5px);
+  animation: round-result-modal-enter 180ms ease-out;
+}
+
+.round-result-modal .round-result-screen {
+  width: min(100%, 580px);
+  max-height: 100%;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(18, 45, 35, 0.96), rgba(10, 29, 22, 0.97));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  outline: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.round-result-modal .round-result-hero {
+  gap: 4px;
+  padding: 12px;
+}
+
+.round-result-modal .round-result-hero h2 {
+  font-size: 1.12rem;
+}
+
+.round-result-modal .round-result-hero__values {
+  gap: 6px;
+}
+
+.round-result-modal .round-result-hero__values p {
+  padding: 7px;
+}
+
+.round-result-modal .round-result-hero__values strong {
+  font-size: 1.25rem;
+}
+
+.round-result-modal .round-result-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.round-result-modal .round-breakdown-card {
+  gap: 6px;
+  padding: 9px;
+}
+
+.round-breakdown-card__details {
+  color: var(--ui-cream-muted);
+  font-size: 0.7rem;
+}
+
+.round-breakdown-card__details summary {
+  width: fit-content;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.round-breakdown-card__details.is-hidden {
+  opacity: 0;
+}
+
+.round-breakdown-card__details .round-breakdown-card__math {
+  margin-top: 6px;
+}
+
+.round-result-modal .round-result-explanation {
+  padding: 9px 10px;
+}
+
+.round-result-modal .round-result-screen__actions {
+  justify-content: stretch;
+}
+
+.round-result-modal .round-result-screen__actions .primary-button {
+  flex: 1 1 auto;
+}
+
+@keyframes round-result-modal-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .round-result-modal {
+    align-items: end;
+    padding: 8px;
+  }
+
+  .round-result-modal .round-result-screen {
+    max-height: calc(100dvh - 16px);
+    padding: 10px;
+    border-radius: 22px;
+  }
+
+  .round-result-modal .round-result-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .round-result-hero {
   padding: 14px;
   border: 1px solid var(--ui-border);

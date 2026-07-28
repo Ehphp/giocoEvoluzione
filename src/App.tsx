@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import './App.css'
 import { HomeScreen } from './components/home/HomeScreen'
@@ -216,7 +216,9 @@ function App() {
 
   const myScore = snapshot ? getPlayerScore(snapshot, snapshot.me) : 0
   const opponentScore = snapshot ? getPlayerScore(snapshot, snapshot.opponent) : 0
-  const isChoosingScreen = snapshot?.game.status === 'CHOOSING'
+  const isGameScreen = snapshot?.game.status === 'CHOOSING'
+    || snapshot?.game.status === 'REVEALING'
+    || snapshot?.game.status === 'ROUND_RESULT'
   const resolutionData = useMemo(
     () => (snapshot?.currentRoundResult?.resolution_data as ResolutionData | undefined) ?? undefined,
     [snapshot?.currentRoundResult?.resolution_data],
@@ -404,7 +406,7 @@ function App() {
   }
 
   return (
-    <main className={`shell ${isChoosingScreen ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
+    <main className={`shell ${isGameScreen ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
       {isLoading ? (
         <section className="panel centered-panel home-state-panel" role="status" aria-live="polite" aria-busy="true">
           <span className="eyebrow">Connessione alla partita</span>
@@ -423,7 +425,7 @@ function App() {
           </div>
         </section>
       ) : (
-        <section className={`panel app-panel ${isChoosingScreen ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
+        <section className={`panel app-panel ${isGameScreen ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot ? (
             <HomeScreen
               nickname={nickname}
@@ -474,37 +476,18 @@ function App() {
                 </div>
               </section>
             </>
-          ) : snapshot.game.status === 'CHOOSING' ? (
+          ) : isGameScreen ? (
             <ConnectedGeneSelectionScreenV2
               snapshot={snapshot}
               myScore={myScore}
               opponentScore={opponentScore}
               onSubmitAction={handleSubmitAction}
               onLeaveSession={handleLeaveSession}
+              resolutionData={resolutionData}
+              onContinue={() => void handleAdvanceRound()}
+              isBusy={isBusy}
+              errorMessage={errorMessage}
             />
-          ) : snapshot.game.status === 'REVEALING' || snapshot.game.status === 'ROUND_RESULT' ? (
-            <>
-              <header className="topbar">
-                <div>
-                  <span className="eyebrow">Multiplayer 1v1</span>
-                  <h1>Gioco Evoluzione</h1>
-                </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
-                  Esci
-                </button>
-              </header>
-
-              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
-
-              <RoundResultScreen
-                snapshot={snapshot}
-                resolutionData={resolutionData}
-                onContinue={() => void handleAdvanceRound()}
-                isBusy={isBusy}
-              />
-            </>
           ) : (
             <>
               <header className="topbar">
@@ -536,9 +519,23 @@ type ConnectedGeneSelectionScreenV2Props = {
   opponentScore: number
   onSubmitAction: (actionType: 'USE' | 'EVOLVE', trait: TraitType) => Promise<boolean>
   onLeaveSession: () => void
+  resolutionData: ResolutionData | undefined
+  onContinue: () => void
+  isBusy: boolean
+  errorMessage: string | null
 }
 
-function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSubmitAction, onLeaveSession }: ConnectedGeneSelectionScreenV2Props) {
+function ConnectedGeneSelectionScreenV2({
+  snapshot,
+  myScore,
+  opponentScore,
+  onSubmitAction,
+  onLeaveSession,
+  resolutionData,
+  onContinue,
+  isBusy,
+  errorMessage,
+}: ConnectedGeneSelectionScreenV2Props) {
   const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
@@ -547,30 +544,45 @@ function ConnectedGeneSelectionScreenV2({ snapshot, myScore, opponentScore, onSu
       return onSubmitAction(actionType, trait)
     },
   })
+  const isResolutionOpen = snapshot.game.status === 'REVEALING' || snapshot.game.status === 'ROUND_RESULT'
 
   return (
-    <GeneSelectionScreenV2
-      viewModel={viewModel}
-      onSelectGene={onSelectGene}
-      onUseGene={onUseGene}
-      onEvolveGene={onEvolveGene}
-      onLeaveSession={onLeaveSession}
-    />
+    <>
+      <GeneSelectionScreenV2
+        viewModel={viewModel}
+        onSelectGene={onSelectGene}
+        onUseGene={onUseGene}
+        onEvolveGene={onEvolveGene}
+        onLeaveSession={onLeaveSession}
+        isInteractionLocked={isResolutionOpen}
+      />
+      {isResolutionOpen ? (
+        <RoundResultModal
+          snapshot={snapshot}
+          resolutionData={resolutionData}
+          onContinue={onContinue}
+          isBusy={isBusy}
+          errorMessage={errorMessage}
+        />
+      ) : null}
+    </>
   )
 }
 
-type RoundResultScreenProps = {
+type RoundResultModalProps = {
   snapshot: GameSnapshot
   resolutionData: ResolutionData | undefined
   onContinue: () => void
   isBusy: boolean
+  errorMessage: string | null
 }
 
-function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: RoundResultScreenProps) {
+function RoundResultModal({ snapshot, resolutionData, onContinue, isBusy, errorMessage }: RoundResultModalProps) {
   const result = snapshot.currentRoundResult
   const roundEvent = snapshot.currentRoundEvent
   const roundEventLabel = getRoundEventLabel(roundEvent)
   const [animationPhase, setAnimationPhase] = useState(snapshot.game.status === 'REVEALING' ? 0 : 3)
+  const contentRef = useRef<HTMLElement>(null)
   const iAmPlayer1 = snapshot.me?.slot === 1
   const winnerNickname = snapshot.players.find((player) => player.id === result?.winner_id)?.nickname ?? null
   const player1Action = resolutionData?.player1Action
@@ -635,14 +647,29 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
     }
   }, [snapshot.game.status, snapshot.currentRoundResult?.id])
 
+  useEffect(() => {
+    contentRef.current?.focus()
+  }, [snapshot.currentRoundResult?.id])
+
   function skipRevealAnimation() {
     setAnimationPhase(3)
   }
 
   return (
-    <section className="round-result-screen" aria-label="Risultato del round" aria-live="polite" onPointerDown={skipRevealAnimation}>
+    <div
+      className="round-result-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Risultato del round"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+        }
+      }}
+    >
+      <section ref={contentRef} className="round-result-screen" aria-live="polite" onPointerDown={skipRevealAnimation} tabIndex={-1}>
       <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
-        <span className="eyebrow">Round {snapshot.game.current_round} · {roundEventLabel}</span>
+        <span className="eyebrow">Esito round {snapshot.game.current_round} · {roundEventLabel}</span>
         <h2>{outcomeTitle}</h2>
         <div
           className={`round-result-hero__values ${animationPhase < 1 ? 'is-hidden' : ''}`}
@@ -661,22 +688,7 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
         {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l’animazione</small> : null}
       </div>
 
-      <div className="button-row round-result-screen__actions">
-        <button
-          type="button"
-          className="primary-button"
-          onClick={onContinue}
-          aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
-          disabled={isBusy || snapshot.game.status === 'REVEALING'}
-        >
-          {continueLabel}
-        </button>
-        {snapshot.game.status === 'REVEALING' ? (
-          <span id="round-continue-reason" className="button-row__reason" role="status">
-            Disponibile al termine della rivelazione.
-          </span>
-        ) : null}
-      </div>
+      {errorMessage ? <p className="message error" role="alert">{errorMessage}</p> : null}
 
       <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
         {!hasCurrentRuleVersion ? (
@@ -708,7 +720,25 @@ function RoundResultScreen({ snapshot, resolutionData, onContinue, isBusy }: Rou
       </div>
 
       <p className={`round-result-explanation ${animationPhase < 3 ? 'is-hidden' : ''}`}>{explanation}</p>
-    </section>
+
+      <div className="button-row round-result-screen__actions">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={onContinue}
+          aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
+          disabled={isBusy || snapshot.game.status === 'REVEALING'}
+        >
+          {continueLabel}
+        </button>
+        {snapshot.game.status === 'REVEALING' ? (
+          <span id="round-continue-reason" className="button-row__reason" role="status">
+            Disponibile al termine della rivelazione.
+          </span>
+        ) : null}
+      </div>
+      </section>
+    </div>
   )
 }
 
@@ -735,7 +765,9 @@ function RoundBreakdownCard({
   showTotal,
   isMe = false,
 }: RoundBreakdownCardProps) {
-  const actionLabel = action?.actionType ?? 'N/D'
+  const actionLabel = action
+    ? action.actionType === 'USE' ? 'USA' : 'EVOLVI'
+    : 'N/D'
   const traitLabel = action ? getTraitLabel(action.trait) : 'N/D'
 
   return (
@@ -747,24 +779,27 @@ function RoundBreakdownCard({
       </header>
 
       {breakdown ? (
-        <div className={`round-breakdown-card__math ${showContributions ? '' : 'is-hidden'}`}>
-          <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
-          <p>Crisi ambientale {roundEventLabel}: {breakdown.eventModifier}</p>
-          <p>Livello: +{breakdown.levelContribution}</p>
-          <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
-          {breakdown.originalLevel > breakdown.effectiveLevel ? (
-            <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
-          ) : (
-            <p>Livello effettivo: {breakdown.effectiveLevel}</p>
-          )}
-        </div>
+        <details className={`round-breakdown-card__details ${showContributions ? '' : 'is-hidden'}`}>
+          <summary>Dettaglio calcolo</summary>
+          <div className="round-breakdown-card__math">
+            <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
+            <p>Crisi ambientale {roundEventLabel}: {breakdown.eventModifier}</p>
+            <p>Livello: +{breakdown.levelContribution}</p>
+            <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
+            {breakdown.originalLevel > breakdown.effectiveLevel ? (
+              <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
+            ) : (
+              <p>Livello effettivo: {breakdown.effectiveLevel}</p>
+            )}
+          </div>
+        </details>
       ) : (
         <p className="round-breakdown-card__legacy">Dettaglio calcolo non disponibile per questo risultato storico.</p>
       )}
 
       <footer>
-        <strong className={showTotal ? 'is-highlighted' : ''}>Totale: {total}</strong>
-        <span>Punti round: +{awardedPoints}</span>
+        <strong className={showTotal ? 'is-highlighted' : ''}>{total} valore</strong>
+        <span>+{awardedPoints} punti</span>
       </footer>
     </article>
   )

@@ -15,6 +15,7 @@ type GeneSelectionScreenV2Props = {
     onUseGene: () => Promise<void>
     onEvolveGene: () => Promise<void>
     onLeaveSession: () => void
+    isInteractionLocked?: boolean
 }
 
 function SceneFallback() {
@@ -63,14 +64,19 @@ function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; on
     )
 }
 
-export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession }: GeneSelectionScreenV2Props) {
+export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEvolveGene, onLeaveSession, isInteractionLocked = false }: GeneSelectionScreenV2Props) {
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
     const hasRenderableContent = viewModel.status !== 'invalid' && viewModel.status !== 'loading'
 
     return (
-        <section className="gene-selection-screen" aria-label="Schermata scelta gene">
+        <section
+            className={`gene-selection-screen ${isInteractionLocked ? 'is-interaction-locked' : ''}`}
+            aria-label="Schermata scelta gene"
+            aria-hidden={isInteractionLocked || undefined}
+            inert={isInteractionLocked}
+        >
             <img
                 className="frame-scene-image"
                 src={GAME_SELECTION_ASSETS.battleScene}
