@@ -17,7 +17,13 @@
     "audit:acceptance": "node --experimental-strip-types tools/audit-acceptance.ts",
     "audit:search": "node --experimental-strip-types tools/audit-search.ts",
     "audit:search:full": "node --experimental-strip-types tools/audit-search.ts --full",
-    "audit:bench": "node --experimental-strip-types tools/audit-bench.ts"
+    "audit:bench": "node --experimental-strip-types tools/audit-bench.ts",
+    "audit:metagame": "node --experimental-strip-types tools/audit-metagame.ts",
+    "audit:evolution": "node --experimental-strip-types tools/audit-evolution.ts",
+    "audit:evolve:compare": "node --experimental-strip-types tools/audit-evolve-compare.ts",
+    "audit:heuristic": "node --experimental-strip-types tools/audit-heuristic-validation.ts",
+    "audit:evolution:quick": "node --experimental-strip-types tools/audit-evolution.ts --quick",
+    "audit:evolution:deep": "node --experimental-strip-types tools/audit-evolution.ts --deep"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",

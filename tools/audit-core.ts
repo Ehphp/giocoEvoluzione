@@ -1,4 +1,4 @@
-import { ADAPTATION_IDS, BASE_USE_VALUE, EVOLVE_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, createInitialAdaptations, getLegalBotActions, getRoundEventById, resolveRound, type AdaptationId } from '../shared/game-rules/index.ts'
+import { ADAPTATION_IDS, BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, createInitialAdaptations, getLegalBotActions, getRoundEventById, resolveRound, type AdaptationId } from '../shared/game-rules/index.ts'
 
 export const GENE_COUNT = ADAPTATION_IDS.length
 export const ACTION_COUNT = GENE_COUNT * 2
@@ -54,7 +54,7 @@ for (let bits = 0; bits < (1 << LEVEL_BITS); bits += 1) for (let cooldown = 0; c
 }
 
 export function actionValue(eventIndex: number, state: number, action: AuditAction): number {
-    return isEvolve(action) ? EVOLVE_VALUE : useValueByEventGeneLevel[(eventIndex * GENE_COUNT + actionGene(action)) * 4 + levelByStateGene[state * GENE_COUNT + actionGene(action)]!]!
+    return isEvolve(action) ? EVOLVE_ROUND_VALUE : useValueByEventGeneLevel[(eventIndex * GENE_COUNT + actionGene(action)) * 4 + levelByStateGene[state * GENE_COUNT + actionGene(action)]!]!
 }
 export function buildUseValueTable(modifiers: readonly (readonly number[])[]): Int8Array {
     if (modifiers.length !== eventIds.length || modifiers.some((row) => row.length !== GENE_COUNT)) throw new Error('Invalid candidate modifier matrix.')
@@ -65,7 +65,7 @@ export function buildUseValueTable(modifiers: readonly (readonly number[])[]): I
     return values
 }
 export function actionValueFromTable(values: Int8Array, eventIndex: number, state: number, action: AuditAction): number {
-    return isEvolve(action) ? EVOLVE_VALUE : values[(eventIndex * GENE_COUNT + actionGene(action)) * 4 + levelByStateGene[state * GENE_COUNT + actionGene(action)]!]!
+    return isEvolve(action) ? EVOLVE_ROUND_VALUE : values[(eventIndex * GENE_COUNT + actionGene(action)) * 4 + levelByStateGene[state * GENE_COUNT + actionGene(action)]!]!
 }
 export function nextState(state: number, action: AuditAction): number { return nextStateByStateAction[state * ACTION_COUNT + action]! }
 export function getLegalActions(state: number): Int8Array { return legalActionByStateSlot.subarray(state * ACTION_COUNT, state * ACTION_COUNT + legalActionCount[state]!) }

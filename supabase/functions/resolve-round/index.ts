@@ -37,12 +37,13 @@ function json(body: unknown, status = 200) {
 
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: ReturnType<typeof createClient>,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById> },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById>; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
         roundEvent: input.roundEvent,
         roundNumber: input.roundNumber,
+        difficulty: input.difficulty,
     })
     try {
         const { error } = await supabaseAdmin.from('round_actions').insert({
@@ -212,6 +213,8 @@ Deno.serve(async (request) => {
                     playerId: String(botPlayer.id),
                     traits: normalizeAdaptationCollection(botPlayer.traits as AdaptationCollection),
                     roundEvent,
+                    nextRoundEvent: roundNumber < TOTAL_ROUNDS ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? '')) : null,
+                    difficulty: (['EASY', 'NORMAL', 'HARD'].includes(String((gameData as Record<string, unknown>).bot_difficulty)) ? String((gameData as Record<string, unknown>).bot_difficulty) : 'NORMAL') as 'EASY' | 'NORMAL' | 'HARD',
                 })
 
                 const { data: refreshedActionsData, error: refreshedActionsError } = await supabaseAdmin

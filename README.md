@@ -25,7 +25,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 1. Crea un progetto Supabase.
 2. Apri SQL Editor.
-3. Per il reset distruttivo dell ambiente di sviluppo, esegui nell ordine: `supabase/migrations/202607260001_reset_mvp_5_genes.sql`, `supabase/schema.sql`, poi `supabase/generated/game-rules.sql`.
+3. Per il reset distruttivo dell ambiente di sviluppo, esegui nell ordine: `supabase/migrations/202607260001_reset_mvp_5_genes.sql`, `supabase/schema.sql`, `supabase/generated/game-rules.sql`, poi `supabase/migrations/202607280001_bot_difficulty.sql`.
 4. Lo schema abilita anche la publication Realtime per `games`, `players`, `round_actions` e `round_results`.
 5. Se stai usando un progetto già esistente, verifica comunque in Database > Replication che le quattro tabelle siano presenti.
 
@@ -81,4 +81,14 @@ Apri l indirizzo di rete mostrato da Vite sui due telefoni collegati alla stessa
 npm test
 npm run build
 npm run dev
+npm run audit:metagame
+npm run audit:evolution
 ```
+
+## Bot e audit
+
+- Le regole restano in `shared/game-rules`; `simulateMatch` richiama direttamente `resolveRound` e `resolveMatchOutcome`.
+- Le policy disponibili sono `random`, `greedy-use`, `evolve-first`, `heuristic`, `lookahead-2` e policy parametriche usate dall'audit.
+- La difficoltà partita contro bot è persistita: facile usa `random`, normale `heuristic`, difficile `lookahead-2`. Il lookahead considera azioni simultanee plausibili dell'avversario, non la sua scelta segreta.
+- `npm run audit:metagame` genera `artifacts/audit/metagame.json` e `.md` con torneo seeded, statistiche, anomalie ed esempi riproducibili.
+- `npm run audit:evolution` confronta lookahead 2/3/4 e la ricerca completa negli ultimi tre round; produce regret immediato di `EVOLVE`, controfattuali e metriche per gene in `artifacts/audit/evolution.*`.

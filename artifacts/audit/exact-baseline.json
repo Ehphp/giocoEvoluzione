@@ -1,101 +1,104 @@
 {
   "methodology": {
     "exact": true,
-    "ruleVersion": "five-genes-v1",
+    "ruleVersion": "five-genes-v2",
     "opponent": "deterministic-immediate-greedy",
     "sequences": 720,
-    "stateEncoding": "ten level bits plus three cooldown bits",
+    "stateEncoding": "ten level bits (0-2) plus three cooldown bits",
     "scope": "exact best response to fixed greedy policy; not simultaneous-game equilibrium"
   },
   "benchmark": {
-    "elapsedMs": 314,
-    "statesVisited": 1041840,
-    "cacheHits": 3088080,
-    "cacheMisses": 1041840,
-    "heapUsedBytes": 10672336
+    "elapsedMs": 808,
+    "statesVisited": 858240,
+    "cacheHits": 2749680,
+    "cacheMisses": 858240,
+    "heapUsedBytes": 9384368
   },
   "metrics": {
-    "wins": 532,
-    "draws": 188,
+    "wins": 687,
+    "draws": 33,
     "losses": 0,
-    "finalDrawRate": 0.2611111111111111,
-    "roundTies": 497,
-    "level3Reached": 2,
-    "level3ReachRate": 0.002777777777777778,
-    "level3Uses": 2,
-    "thirdEvolveNecessary": 0,
-    "thirdEvolveNotNecessary": 2,
+    "finalDrawRate": 0.04583333333333333,
+    "roundTies": 526,
+    "level2Reached": 52,
+    "level2ReachRate": 0.07222222222222222,
+    "level2Uses": 90,
+    "secondEvolveNecessary": 1,
+    "secondEvolveNotNecessary": 51,
+    "orderOutcomeSpread": 4,
     "actionCounts": {
-      "USE:RESILIENCE": 268,
-      "EVOLVE:RESILIENCE": 129,
-      "USE:MOBILITY": 450,
-      "EVOLVE:MOBILITY": 288,
-      "USE:SENSES": 311,
-      "EVOLVE:SENSES": 79,
-      "USE:METABOLISM": 965,
-      "EVOLVE:METABOLISM": 514,
-      "USE:AQUATIC": 707,
-      "EVOLVE:AQUATIC": 609
+      "USE:FEROCITY": 78,
+      "EVOLVE:FEROCITY": 36,
+      "USE:ARMOR": 795,
+      "EVOLVE:ARMOR": 375,
+      "USE:AGILITY": 640,
+      "EVOLVE:AGILITY": 246,
+      "USE:SENSES": 743,
+      "EVOLVE:SENSES": 363,
+      "USE:CAMOUFLAGE": 601,
+      "EVOLVE:CAMOUFLAGE": 443
     },
     "pickRate": {
-      "0": 0.09189814814814815,
-      "1": 0.17083333333333334,
-      "2": 0.09027777777777778,
-      "3": 0.3423611111111111,
-      "4": 0.30462962962962964
+      "0": 0.02638888888888889,
+      "1": 0.2708333333333333,
+      "2": 0.2050925925925926,
+      "3": 0.25601851851851853,
+      "4": 0.24166666666666667
     },
     "matchScoreDistribution": {
-      "4-2": 35,
-      "3-2": 488,
-      "4-1": 9,
-      "3-3": 188
+      "3-2": 451,
+      "4-2": 177,
+      "4-1": 39,
+      "5-1": 2,
+      "3-1": 18,
+      "3-3": 33
     },
     "valuesByGene": {
       "0": {
-        "sum": 933,
-        "average": 2.350125944584383
+        "sum": 417,
+        "average": 3.6578947368421053
       },
       "1": {
-        "sum": 1649,
-        "average": 2.234417344173442
+        "sum": 4155,
+        "average": 3.551282051282051
       },
       "2": {
-        "sum": 1000,
-        "average": 2.5641025641025643
+        "sum": 3269,
+        "average": 3.6896162528216703
       },
       "3": {
-        "sum": 3721,
-        "average": 2.5158891142663964
+        "sum": 3964,
+        "average": 3.5840867992766725
       },
       "4": {
-        "sum": 2784,
-        "average": 2.115501519756839
+        "sum": 3750,
+        "average": 3.5919540229885056
       }
     },
     "valuesByEvent": {
       "VOLCANIC_ASH_WAVE": {
-        "sum": 1168,
-        "average": 1.6222222222222222
+        "sum": 2735,
+        "average": 3.798611111111111
       },
       "PROLONGED_ECLIPSE": {
-        "sum": 1135,
-        "average": 1.5763888888888888
+        "sum": 2549,
+        "average": 3.540277777777778
       },
       "PREDATOR_PACK_MIGRATION": {
-        "sum": 1369,
-        "average": 1.9013888888888888
+        "sum": 2485,
+        "average": 3.451388888888889
       },
       "HEAT_SPIKE": {
-        "sum": 2104,
-        "average": 2.922222222222222
+        "sum": 2803,
+        "average": 3.8930555555555557
       },
       "NUTRIENT_COLLAPSE": {
-        "sum": 2130,
-        "average": 2.9583333333333335
+        "sum": 2258,
+        "average": 3.136111111111111
       },
       "FLASH_FLOOD": {
-        "sum": 2181,
-        "average": 3.029166666666667
+        "sum": 2725,
+        "average": 3.7847222222222223
       }
     }
   }

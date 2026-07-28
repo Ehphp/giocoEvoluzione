@@ -4,9 +4,9 @@ export type RoundExplanationInput = { roundEventTitle: string | null; meWon: boo
 export function getRoundExplanation(input: RoundExplanationInput): string {
     const eventName = input.roundEventTitle ?? 'l evento del round'
     if (!input.myBreakdown || !input.opponentBreakdown) return 'Risultato storico: dettagli di calcolo non disponibili per questo round.'
-    if (input.meActionType === 'EVOLVE' && input.opponentActionType === 'EVOLVE') return 'Entrambi avete evoluto un adattamento: ciascuno ottiene il valore fisso di 1.'
-    if (input.meActionType === 'EVOLVE') return 'Hai evoluto un adattamento: il suo valore fisso è 1, senza crisi ambientale né vantaggio naturale.'
-    if (input.opponentActionType === 'EVOLVE') return 'L avversario ha evoluto un adattamento: valore fisso 1, senza crisi ambientale né vantaggio naturale.'
+    if (input.meActionType === 'EVOLVE' && input.opponentActionType === 'EVOLVE') return 'Entrambi avete evoluto un adattamento: ciascuno ottiene il valore fisso di 2.'
+    if (input.meActionType === 'EVOLVE') return 'Hai evoluto un adattamento: il suo valore fisso è 2, senza crisi ambientale né vantaggio naturale.'
+    if (input.opponentActionType === 'EVOLVE') return 'L avversario ha evoluto un adattamento: valore fisso 2, senza crisi ambientale né vantaggio naturale.'
     if (input.meWon === null) return 'Entrambi i geni hanno prodotto lo stesso valore.'
     const winner = input.meWon ? input.myBreakdown : input.opponentBreakdown
     const loser = input.meWon ? input.opponentBreakdown : input.myBreakdown

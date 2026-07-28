@@ -1,0 +1,4085 @@
+{
+  "seed": 1592598566,
+  "decisions": 126,
+  "methodology": "Heuristic is evaluated on states reached against deterministic greedy-use, param-matchup and evolve-first. Lookahead-3 receives remaining events only in this offline audit; this is not a simultaneous-game equilibrium.",
+  "heuristicComponentsAverage": {
+    "immediateValue": 17.76984126984127,
+    "matchup": 0.8642857142857163,
+    "level": 0.8333333333333334,
+    "cooldown": -3.5317460317460316,
+    "evolution": 4.357142857142857,
+    "remainingRounds": 5.26190476190476,
+    "scorePressure": 1.344444444444445,
+    "decisiveRound": 1.2523809523809513
+  },
+  "doubleCountCheck": "EVOLVE immediateValue is exactly EVOLVE_ROUND_VALUE; evolution is only the next-visible-event level gain. They are separate terms and not the same value counted twice.",
+  "disagreement": {
+    "lookahead2": {
+      "same": {
+        "frequency": 0.6666666666666666,
+        "count": 84,
+        "observedRoundDelta": 83,
+        "averageObservedRoundDelta": 0.9880952380952381
+      },
+      "EVOLVE → USE": {
+        "frequency": 0.1984126984126984,
+        "count": 25,
+        "observedRoundDelta": -24,
+        "averageObservedRoundDelta": -0.96
+      },
+      "USE → USE different": {
+        "frequency": 0.06349206349206349,
+        "count": 8,
+        "observedRoundDelta": -1,
+        "averageObservedRoundDelta": -0.125
+      },
+      "EVOLVE → EVOLVE different": {
+        "frequency": 0.05555555555555555,
+        "count": 7,
+        "observedRoundDelta": -8,
+        "averageObservedRoundDelta": -1.1428571428571428
+      },
+      "USE → EVOLVE": {
+        "frequency": 0.015873015873015872,
+        "count": 2,
+        "observedRoundDelta": -2,
+        "averageObservedRoundDelta": -1
+      }
+    },
+    "lookahead3": {
+      "same": {
+        "frequency": 0.6349206349206349,
+        "count": 80,
+        "observedRoundDelta": 68,
+        "averageObservedRoundDelta": 0.85
+      },
+      "EVOLVE → USE": {
+        "frequency": 0.19047619047619047,
+        "count": 24,
+        "observedRoundDelta": -22,
+        "averageObservedRoundDelta": -0.9166666666666666
+      },
+      "USE → USE different": {
+        "frequency": 0.07142857142857142,
+        "count": 9,
+        "observedRoundDelta": -4,
+        "averageObservedRoundDelta": -0.4444444444444444
+      },
+      "EVOLVE → EVOLVE different": {
+        "frequency": 0.06349206349206349,
+        "count": 8,
+        "observedRoundDelta": -8,
+        "averageObservedRoundDelta": -1
+      },
+      "USE → EVOLVE": {
+        "frequency": 0.03968253968253968,
+        "count": 5,
+        "observedRoundDelta": 14,
+        "averageObservedRoundDelta": 2.8
+      }
+    }
+  },
+  "examples": [
+    {
+      "seed": 1592598618,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 2,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 6 round residui."
+      },
+      "lookahead3": {
+        "trait": "SENSES",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 446."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 1.6124999999999998,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -1,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.1125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": -0.1375,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 2,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 6 round residui."
+      },
+      "lookahead3": {
+        "trait": "SENSES",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 446."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 1.6124999999999998,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -1,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.1125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.4,
+          "reason": "Investimento futuro 1 con 6 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": -0.1375,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 5,
+      "score": "1-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 3 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 406."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.75,
+          "reason": "Investimento futuro 2 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.42857142857142855,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 3.4124999999999996,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 1,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 0.1125,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": -0.8875,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 5,
+      "score": "1-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 3 round residui."
+      },
+      "lookahead3": {
+        "trait": "FEROCITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 406."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.75,
+          "reason": "Investimento futuro 2 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.42857142857142855,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 3.4124999999999996,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 1,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 0.1125,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0999999999999996,
+          "reason": "Investimento futuro 1 con 3 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 0.8571428571428571,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": -0.8875,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598620,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "evolve-first",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-2",
+      "outcome": null
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 3,
+      "score": "0-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 415."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.715,
+          "reason": "Investimento futuro 2 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.7142857142857143,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.55,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3.5625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.5625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 0.3125,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 3,
+      "score": "0-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 415."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.715,
+          "reason": "Investimento futuro 2 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.7142857142857143,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.55,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3.5625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.5625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.165,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 0.3125,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598620,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "evolve-first",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 438."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.5900000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": -0.91,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-2",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 450."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.3400000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 2.84,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": -0.15999999999999998,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598618,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-use",
+      "round": 3,
+      "score": "1-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 362."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.85,
+          "reason": "Investimento futuro 2 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.7142857142857143,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.3875,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 2.8625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.1125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 0,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 450."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.3400000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 2.84,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": -0.15999999999999998,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 3,
+      "score": "1-1",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 362."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.85,
+          "reason": "Investimento futuro 2 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.7142857142857143,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.3875,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 2.8625,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.1125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 0,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598620,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "evolve-first",
+      "round": 1,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 7 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 450."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.3400000000000001,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 2.84,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": -0.15999999999999998,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.5,
+          "reason": "Investimento futuro 1 con 7 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 2,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.09,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-2",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598620,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "evolve-first",
+      "round": 3,
+      "score": "1-0",
+      "heuristic": {
+        "trait": "FEROCITY",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 359."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.85,
+          "reason": "Investimento futuro 2 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.7142857142857143,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.41,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 2.84,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3.09,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 0.09000000000000001,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.2,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-4",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598595,
+      "events": [
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "PREDATOR_PACK_MIGRATION",
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE"
+      ],
+      "opponent": "greedy-use",
+      "round": 3,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 1 con 5 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 359."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 2.1125,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": -0.6375,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3.1125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 3,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3,
+          "reason": "Investimento futuro 1 con 5 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.4285714285714286,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "right"
+    },
+    {
+      "seed": 1592598595,
+      "events": [
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "PREDATOR_PACK_MIGRATION",
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE"
+      ],
+      "opponent": "greedy-use",
+      "round": 4,
+      "score": "0-1",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Investimento futuro 2 con 4 round residui."
+      },
+      "lookahead3": {
+        "trait": "ARMOR",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 450."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0649999999999995,
+          "reason": "Investimento futuro 1 con 4 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 0.8125,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0649999999999995,
+          "reason": "Investimento futuro 1 con 4 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "USE"
+          },
+          "score": 3.3125,
+          "reason": "Valore 3, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0649999999999995,
+          "reason": "Investimento futuro 1 con 4 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 0.45,
+          "reason": "Valore 0, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 0,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.665,
+          "reason": "Investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 2,
+            "remainingRounds": 0.5714285714285714,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 1.6125,
+          "reason": "Valore 1, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0.25,
+            "level": 1,
+            "cooldown": -1,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.0649999999999995,
+          "reason": "Investimento futuro 1 con 4 round residui.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 1,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": -0.3,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.5625,
+          "reason": "Valore 2, matchup e costo cooldown valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "cooldown": 0,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 1,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "2-3",
+      "outcome": "right"
+    }
+  ],
+  "elapsedMs": 11227
+}

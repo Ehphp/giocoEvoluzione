@@ -4,7 +4,8 @@ export const RULE_VERSION = 'adaptations-best-of-seven-v1'
 export const TOTAL_ROUNDS = 7
 export const WINS_TO_WIN = 4
 export const BASE_USE_VALUE = 1
-export const EVOLVE_VALUE = 1
+/** Fixed round value of EVOLVE; event and matchup modifiers never apply. */
+export const EVOLVE_ROUND_VALUE = 2
 export const MAX_ADAPTATION_LEVEL = 2
 export const LEVEL_BONUS = [0, 1, 3] as const
 export const COOLDOWN_ROUNDS = 1

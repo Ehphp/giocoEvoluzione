@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { MAX_TRAIT_LEVEL } from '../shared/game-rules/index.ts'
+import { MAX_ADAPTATION_LEVEL } from '../shared/game-rules/index.ts'
 import { AUDIT_RULE_VERSION } from './audit-config.ts'
 import { ACTION_COUNT, COOLDOWN_NONE, GENE_COUNT, STATE_CAPACITY, actionGene, actionKey, actionValue, actionValueFromTable, eventIds, generateSequences, getLegalActions, getLevel, isEvolve, legalActionCount, nextState, type AuditAction } from './audit-core.ts'
 
@@ -25,7 +25,7 @@ function greedyAction(eventIndex: number, state: number, values?: Int8Array): Au
     return best
 }
 
-export function solveExactSequence(sequence: readonly number[], maxLevel = MAX_TRAIT_LEVEL, values?: Int8Array): ExactSolve {
+export function solveExactSequence(sequence: readonly number[], maxLevel = MAX_ADAPTATION_LEVEL, values?: Int8Array): ExactSolve {
     const opponentStates = new Int16Array(ROUND_COUNT)
     const opponentActions = new Int8Array(ROUND_COUNT)
     const opponentValues = new Int8Array(ROUND_COUNT)
@@ -91,7 +91,7 @@ export function auditBaselineExact(sequences = generateSequences(), values?: Int
         statesVisited: 0, cacheHits: 0, cacheMisses: 0, minimumOutcome: 9, maximumOutcome: -9, matchScoreDistribution: new Map<string, number>(),
     }
     for (const sequence of sequences) {
-        const result = solveExactSequence(sequence, MAX_TRAIT_LEVEL, values)
+        const result = solveExactSequence(sequence, MAX_ADAPTATION_LEVEL, values)
         totals.statesVisited += result.statesVisited; totals.cacheHits += result.cacheHits; totals.cacheMisses += result.cacheMisses
         let ownPoints = 0
         let opponentPoints = 0

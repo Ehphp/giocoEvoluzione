@@ -1,0 +1,1117 @@
+{
+  "seed": 1592598566,
+  "sequences": [
+    [
+      "PROLONGED_ECLIPSE",
+      "PREDATOR_PACK_MIGRATION",
+      "VOLCANIC_ASH_WAVE",
+      "NUTRIENT_COLLAPSE",
+      "FLASH_FLOOD",
+      "HEAT_SPIKE",
+      "PROLONGED_ECLIPSE"
+    ],
+    [
+      "NUTRIENT_COLLAPSE",
+      "PROLONGED_ECLIPSE",
+      "VOLCANIC_ASH_WAVE",
+      "HEAT_SPIKE",
+      "PREDATOR_PACK_MIGRATION",
+      "FLASH_FLOOD",
+      "NUTRIENT_COLLAPSE"
+    ],
+    [
+      "NUTRIENT_COLLAPSE",
+      "PROLONGED_ECLIPSE",
+      "PREDATOR_PACK_MIGRATION",
+      "VOLCANIC_ASH_WAVE",
+      "FLASH_FLOOD",
+      "HEAT_SPIKE",
+      "NUTRIENT_COLLAPSE"
+    ]
+  ],
+  "methodology": "Round-robin over deterministic production simulation. Every ordered pairing uses 3 seeded event orders × 2 seeds; lookahead assumes a uniform distribution over legal simultaneous rival actions and never receives the current secret action.",
+  "policies": [
+    "random",
+    "greedy-use",
+    "evolve-first",
+    "heuristic",
+    "lookahead-2",
+    "param-evolve-1",
+    "param-matchup",
+    "param-evolve-behind"
+  ],
+  "summary": {
+    "random": {
+      "wins": 0,
+      "draws": 12,
+      "losses": 84,
+      "leftWins": 0,
+      "rightWins": 0,
+      "actions": 522,
+      "uses": 296,
+      "evolves": 226,
+      "genes": {
+        "FEROCITY": 98,
+        "ARMOR": 120,
+        "AGILITY": 76,
+        "SENSES": 120,
+        "CAMOUFLAGE": 108
+      },
+      "levels": 226,
+      "matches": 96,
+      "winRate": 0,
+      "scoreRate": 0.0625,
+      "positionWinRate": {
+        "left": 0,
+        "right": 0
+      },
+      "useRate": 0.5670498084291188,
+      "evolveRate": 0.4329501915708812,
+      "geneFrequency": {
+        "FEROCITY": 0.18773946360153257,
+        "ARMOR": 0.22988505747126436,
+        "AGILITY": 0.14559386973180077,
+        "SENSES": 0.22988505747126436,
+        "CAMOUFLAGE": 0.20689655172413793
+      },
+      "averageFinalLevel": 2.3541666666666665,
+      "actionConcentration": 0.22988505747126436
+    },
+    "greedy-use": {
+      "wins": 36,
+      "draws": 22,
+      "losses": 38,
+      "leftWins": 18,
+      "rightWins": 18,
+      "actions": 628,
+      "uses": 628,
+      "evolves": 0,
+      "genes": {
+        "FEROCITY": 48,
+        "ARMOR": 182,
+        "AGILITY": 142,
+        "SENSES": 154,
+        "CAMOUFLAGE": 102
+      },
+      "levels": 0,
+      "matches": 96,
+      "winRate": 0.375,
+      "scoreRate": 0.4895833333333333,
+      "positionWinRate": {
+        "left": 0.375,
+        "right": 0.375
+      },
+      "useRate": 1,
+      "evolveRate": 0,
+      "geneFrequency": {
+        "FEROCITY": 0.07643312101910828,
+        "ARMOR": 0.2898089171974522,
+        "AGILITY": 0.22611464968152867,
+        "SENSES": 0.24522292993630573,
+        "CAMOUFLAGE": 0.1624203821656051
+      },
+      "averageFinalLevel": 0,
+      "actionConcentration": 0.2898089171974522
+    },
+    "evolve-first": {
+      "wins": 40,
+      "draws": 18,
+      "losses": 38,
+      "leftWins": 20,
+      "rightWins": 20,
+      "actions": 648,
+      "uses": 456,
+      "evolves": 192,
+      "genes": {
+        "FEROCITY": 106,
+        "ARMOR": 156,
+        "AGILITY": 80,
+        "SENSES": 128,
+        "CAMOUFLAGE": 178
+      },
+      "levels": 192,
+      "matches": 96,
+      "winRate": 0.4166666666666667,
+      "scoreRate": 0.5104166666666666,
+      "positionWinRate": {
+        "left": 0.4166666666666667,
+        "right": 0.4166666666666667
+      },
+      "useRate": 0.7037037037037037,
+      "evolveRate": 0.2962962962962963,
+      "geneFrequency": {
+        "FEROCITY": 0.16358024691358025,
+        "ARMOR": 0.24074074074074073,
+        "AGILITY": 0.12345679012345678,
+        "SENSES": 0.19753086419753085,
+        "CAMOUFLAGE": 0.27469135802469136
+      },
+      "averageFinalLevel": 2,
+      "actionConcentration": 0.27469135802469136
+    },
+    "heuristic": {
+      "wins": 40,
+      "draws": 14,
+      "losses": 42,
+      "leftWins": 20,
+      "rightWins": 20,
+      "actions": 654,
+      "uses": 480,
+      "evolves": 174,
+      "genes": {
+        "FEROCITY": 110,
+        "ARMOR": 146,
+        "AGILITY": 150,
+        "SENSES": 112,
+        "CAMOUFLAGE": 136
+      },
+      "levels": 174,
+      "matches": 96,
+      "winRate": 0.4166666666666667,
+      "scoreRate": 0.4895833333333333,
+      "positionWinRate": {
+        "left": 0.4166666666666667,
+        "right": 0.4166666666666667
+      },
+      "useRate": 0.7339449541284404,
+      "evolveRate": 0.26605504587155965,
+      "geneFrequency": {
+        "FEROCITY": 0.16819571865443425,
+        "ARMOR": 0.22324159021406728,
+        "AGILITY": 0.22935779816513763,
+        "SENSES": 0.1712538226299694,
+        "CAMOUFLAGE": 0.20795107033639143
+      },
+      "averageFinalLevel": 1.8125,
+      "actionConcentration": 0.22935779816513763
+    },
+    "lookahead-2": {
+      "wins": 62,
+      "draws": 34,
+      "losses": 0,
+      "leftWins": 31,
+      "rightWins": 31,
+      "actions": 630,
+      "uses": 584,
+      "evolves": 46,
+      "genes": {
+        "FEROCITY": 118,
+        "ARMOR": 142,
+        "AGILITY": 146,
+        "SENSES": 128,
+        "CAMOUFLAGE": 96
+      },
+      "levels": 46,
+      "matches": 96,
+      "winRate": 0.6458333333333334,
+      "scoreRate": 0.8229166666666666,
+      "positionWinRate": {
+        "left": 0.6458333333333334,
+        "right": 0.6458333333333334
+      },
+      "useRate": 0.926984126984127,
+      "evolveRate": 0.07301587301587302,
+      "geneFrequency": {
+        "FEROCITY": 0.1873015873015873,
+        "ARMOR": 0.2253968253968254,
+        "AGILITY": 0.23174603174603176,
+        "SENSES": 0.20317460317460317,
+        "CAMOUFLAGE": 0.1523809523809524
+      },
+      "averageFinalLevel": 0.4791666666666667,
+      "actionConcentration": 0.23174603174603176
+    },
+    "param-evolve-1": {
+      "wins": 38,
+      "draws": 20,
+      "losses": 38,
+      "leftWins": 19,
+      "rightWins": 19,
+      "actions": 632,
+      "uses": 536,
+      "evolves": 96,
+      "genes": {
+        "FEROCITY": 230,
+        "ARMOR": 102,
+        "AGILITY": 88,
+        "SENSES": 114,
+        "CAMOUFLAGE": 98
+      },
+      "levels": 96,
+      "matches": 96,
+      "winRate": 0.3958333333333333,
+      "scoreRate": 0.5,
+      "positionWinRate": {
+        "left": 0.3958333333333333,
+        "right": 0.3958333333333333
+      },
+      "useRate": 0.8481012658227848,
+      "evolveRate": 0.1518987341772152,
+      "geneFrequency": {
+        "FEROCITY": 0.3639240506329114,
+        "ARMOR": 0.16139240506329114,
+        "AGILITY": 0.13924050632911392,
+        "SENSES": 0.18037974683544303,
+        "CAMOUFLAGE": 0.1550632911392405
+      },
+      "averageFinalLevel": 1,
+      "actionConcentration": 0.3639240506329114
+    },
+    "param-matchup": {
+      "wins": 38,
+      "draws": 38,
+      "losses": 20,
+      "leftWins": 19,
+      "rightWins": 19,
+      "actions": 634,
+      "uses": 634,
+      "evolves": 0,
+      "genes": {
+        "FEROCITY": 64,
+        "ARMOR": 166,
+        "AGILITY": 146,
+        "SENSES": 152,
+        "CAMOUFLAGE": 106
+      },
+      "levels": 0,
+      "matches": 96,
+      "winRate": 0.3958333333333333,
+      "scoreRate": 0.59375,
+      "positionWinRate": {
+        "left": 0.3958333333333333,
+        "right": 0.3958333333333333
+      },
+      "useRate": 1,
+      "evolveRate": 0,
+      "geneFrequency": {
+        "FEROCITY": 0.10094637223974763,
+        "ARMOR": 0.2618296529968454,
+        "AGILITY": 0.2302839116719243,
+        "SENSES": 0.23974763406940064,
+        "CAMOUFLAGE": 0.167192429022082
+      },
+      "averageFinalLevel": 0,
+      "actionConcentration": 0.2618296529968454
+    },
+    "param-evolve-behind": {
+      "wins": 36,
+      "draws": 30,
+      "losses": 30,
+      "leftWins": 18,
+      "rightWins": 18,
+      "actions": 616,
+      "uses": 556,
+      "evolves": 60,
+      "genes": {
+        "FEROCITY": 94,
+        "ARMOR": 182,
+        "AGILITY": 130,
+        "SENSES": 134,
+        "CAMOUFLAGE": 76
+      },
+      "levels": 60,
+      "matches": 96,
+      "winRate": 0.375,
+      "scoreRate": 0.53125,
+      "positionWinRate": {
+        "left": 0.375,
+        "right": 0.375
+      },
+      "useRate": 0.9025974025974026,
+      "evolveRate": 0.09740259740259741,
+      "geneFrequency": {
+        "FEROCITY": 0.1525974025974026,
+        "ARMOR": 0.29545454545454547,
+        "AGILITY": 0.21103896103896103,
+        "SENSES": 0.21753246753246752,
+        "CAMOUFLAGE": 0.12337662337662338
+      },
+      "averageFinalLevel": 0.625,
+      "actionConcentration": 0.29545454545454547
+    }
+  },
+  "headToHead": [
+    {
+      "left": "random",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "random",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "random",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "greedy-use",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "greedy-use",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "greedy-use",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "greedy-use",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 4,
+      "draws": 0
+    },
+    {
+      "left": "greedy-use",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 3,
+      "draws": 3
+    },
+    {
+      "left": "greedy-use",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "greedy-use",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "greedy-use",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "evolve-first",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "evolve-first",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "evolve-first",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "evolve-first",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 4,
+      "rightWins": 2,
+      "draws": 0
+    },
+    {
+      "left": "evolve-first",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 5,
+      "draws": 1
+    },
+    {
+      "left": "evolve-first",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "evolve-first",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "evolve-first",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 4,
+      "rightWins": 2,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 4,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "heuristic",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 5,
+      "rightWins": 1,
+      "draws": 0
+    },
+    {
+      "left": "heuristic",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "heuristic",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 1,
+      "rightWins": 5,
+      "draws": 0
+    },
+    {
+      "left": "lookahead-2",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "lookahead-2",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 0,
+      "draws": 3
+    },
+    {
+      "left": "lookahead-2",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 5,
+      "rightWins": 0,
+      "draws": 1
+    },
+    {
+      "left": "lookahead-2",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "lookahead-2",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "lookahead-2",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "lookahead-2",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 0,
+      "draws": 4
+    },
+    {
+      "left": "lookahead-2",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 0,
+      "draws": 3
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 1,
+      "rightWins": 5,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 6,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 2,
+      "rightWins": 3,
+      "draws": 1
+    },
+    {
+      "left": "param-evolve-1",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 4,
+      "rightWins": 1,
+      "draws": 1
+    },
+    {
+      "left": "param-matchup",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "param-matchup",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-matchup",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-matchup",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-matchup",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 2,
+      "draws": 4
+    },
+    {
+      "left": "param-matchup",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 2,
+      "draws": 1
+    },
+    {
+      "left": "param-matchup",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    },
+    {
+      "left": "param-matchup",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 1,
+      "rightWins": 0,
+      "draws": 5
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "random",
+      "matches": 6,
+      "leftWins": 6,
+      "rightWins": 0,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "greedy-use",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "evolve-first",
+      "matches": 6,
+      "leftWins": 3,
+      "rightWins": 3,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "heuristic",
+      "matches": 6,
+      "leftWins": 5,
+      "rightWins": 1,
+      "draws": 0
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "lookahead-2",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 3,
+      "draws": 3
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "param-evolve-1",
+      "matches": 6,
+      "leftWins": 1,
+      "rightWins": 4,
+      "draws": 1
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "param-matchup",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 1,
+      "draws": 5
+    },
+    {
+      "left": "param-evolve-behind",
+      "right": "param-evolve-behind",
+      "matches": 6,
+      "leftWins": 0,
+      "rightWins": 0,
+      "draws": 6
+    }
+  ],
+  "metrics": {
+    "tiebreaks": 36,
+    "endReasons": {
+      "DRAW": 94,
+      "CLINCH": 134,
+      "SCORE": 120,
+      "ROUND_VALUE_TIEBREAK": 36
+    },
+    "distinctPolicyDrawRate": 0.13690476190476192,
+    "decidedEarly": 156,
+    "decidedByRound": {
+      "4": 26,
+      "5": 76,
+      "6": 54
+    },
+    "averageFinalMargin": 1.640625,
+    "matchups": 324,
+    "decisiveMatchups": 188,
+    "matchupDetail": {
+      "SENSES>CAMOUFLAGE": {
+        "frequency": 94,
+        "decisive": 50,
+        "bonusTotal": 94
+      },
+      "FEROCITY>ARMOR": {
+        "frequency": 142,
+        "decisive": 104,
+        "bonusTotal": 142
+      },
+      "ARMOR>AGILITY": {
+        "frequency": 22,
+        "decisive": 8,
+        "bonusTotal": 22
+      },
+      "AGILITY>SENSES": {
+        "frequency": 54,
+        "decisive": 24,
+        "bonusTotal": 54
+      },
+      "CAMOUFLAGE>FEROCITY": {
+        "frequency": 12,
+        "decisive": 2,
+        "bonusTotal": 12
+      }
+    },
+    "evolutionByGene": {
+      "FEROCITY": 276,
+      "ARMOR": 176,
+      "AGILITY": 82,
+      "SENSES": 102,
+      "CAMOUFLAGE": 158
+    },
+    "evolutionByRound": {
+      "1": 298,
+      "2": 190,
+      "3": 46,
+      "4": 106,
+      "5": 84,
+      "6": 46,
+      "7": 24
+    },
+    "elapsedMs": 6484,
+    "lookahead": {
+      "statesVisited": 20624,
+      "cacheHits": 0,
+      "cacheMisses": 20624
+    }
+  },
+  "anomalies": [],
+  "regressions": [
+    {
+      "policy": "lookahead-2",
+      "previous": 0.5208333333333334,
+      "current": 0.6458333333333334
+    }
+  ],
+  "examples": [
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814767586,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "0-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814758611,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "1-2"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814767437,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "0-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814758524,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "1-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814767272,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "1-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1814758809,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "greedy-use",
+      "score": "0-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528894806,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "1-3"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528903271,
+      "events": [
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "NUTRIENT_COLLAPSE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "PROLONGED_ECLIPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "0-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528894969,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "2-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528903368,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE",
+        "PREDATOR_PACK_MIGRATION",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "1-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528894492,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "1-4"
+    },
+    {
+      "reason": "Win rate iniziale anomalo",
+      "seed": 1528903469,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "PROLONGED_ECLIPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "VOLCANIC_ASH_WAVE",
+        "FLASH_FLOOD",
+        "HEAT_SPIKE",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "leftPolicy": "random",
+      "rightPolicy": "evolve-first",
+      "score": "1-4"
+    }
+  ]
+}

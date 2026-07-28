@@ -24,6 +24,7 @@ describe('HomeScreen', () => {
             root.render(createElement(HomeScreen, {
                 nickname: '',
                 roomCode: '',
+                botDifficulty: 'NORMAL',
                 isOnline: true,
                 errorMessage: null,
                 statusMessage: null,
@@ -31,6 +32,7 @@ describe('HomeScreen', () => {
                 busyAction: null,
                 onNicknameChange: vi.fn(),
                 onRoomCodeChange: vi.fn(),
+                onBotDifficultyChange: vi.fn(),
                 onCreateGame: vi.fn(),
                 onCreateBotGame: vi.fn(),
                 onJoinGame: vi.fn(),

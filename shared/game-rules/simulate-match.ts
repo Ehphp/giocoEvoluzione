@@ -1,0 +1,48 @@
+import { TOTAL_ROUNDS } from './catalog.ts'
+import { resolveRound } from './engine.ts'
+import { resolveMatchOutcome, type StoredRoundValue } from './match.ts'
+import { createInitialAdaptations, getRoundEventById } from './state.ts'
+import { createSeededRandom, getLegalBotActions, type BotPolicy, type BotRoundAction, type OfflineBotPolicy, type PublicRoundHistory } from './bot-policies.ts'
+import type { AdaptationCollection, EnvironmentalCrisisDefinition } from './types.ts'
+
+export type SimulatedMatchState = { leftScore: number; rightScore: number; leftAdaptations: AdaptationCollection; rightAdaptations: AdaptationCollection; roundNumber: number }
+export type SimulatedRound = PublicRoundHistory & { event: EnvironmentalCrisisDefinition; winnerId: 'left' | 'right' | null; leftScoreBefore: number; rightScoreBefore: number; leftAdaptationsBefore: AdaptationCollection; rightAdaptationsBefore: AdaptationCollection; leftBreakdown: ReturnType<typeof resolveRound>['player1']['breakdown']; rightBreakdown: ReturnType<typeof resolveRound>['player2']['breakdown']; leftReason?: string; rightReason?: string }
+export type SimulateMatchInput = { leftPolicy: BotPolicy; rightPolicy: BotPolicy; eventSequence: readonly string[]; seed: number; initialState?: Partial<SimulatedMatchState>; priorRoundValues?: StoredRoundValue[]; trace?: boolean; offline?: boolean }
+export type SimulatedMatchReport = { winner: 'left' | 'right' | null; finalScore: { left: number; right: number }; rounds: number; tiebreak: boolean; endReason: string | null; finalAdaptations: { left: AdaptationCollection; right: AdaptationCollection }; trace: SimulatedRound[] }
+
+function cloneAdaptations(value: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(value).map(([trait, state]) => [trait, { ...state }])) as AdaptationCollection }
+function hashPolicyId(value: string): number { let hash = 2166136261; for (let index = 0; index < value.length; index += 1) { hash ^= value.charCodeAt(index); hash = Math.imul(hash, 16777619) } return hash >>> 0 }
+/** A policy keeps its deterministic stream after a left/right swap. */
+function randomForPolicy(seed: number, policyId: string, roundNumber: number): () => number { return createSeededRandom(seed ^ hashPolicyId(policyId) ^ Math.imul(roundNumber, 0x9e3779b9)) }
+function actionFor(policy: BotPolicy, input: { side: 'left' | 'right'; state: SimulatedMatchState; event: EnvironmentalCrisisDefinition; nextEvent: EnvironmentalCrisisDefinition | null; remainingEvents: EnvironmentalCrisisDefinition[]; history: PublicRoundHistory[]; random: () => number; offline: boolean }): ReturnType<BotPolicy['selectAction']> {
+    const own = input.side === 'left' ? input.state.leftAdaptations : input.state.rightAdaptations
+    const opponent = input.side === 'left' ? input.state.rightAdaptations : input.state.leftAdaptations
+    const context = { roundNumber: input.state.roundNumber, ownScore: input.side === 'left' ? input.state.leftScore : input.state.rightScore, opponentScore: input.side === 'left' ? input.state.rightScore : input.state.leftScore, adaptations: cloneAdaptations(own), publicOpponentAdaptations: cloneAdaptations(opponent), roundEvent: input.event, nextRoundEvent: input.nextEvent, publicHistory: input.history, legalActions: getLegalBotActions(own), random: input.random }
+    const privileged = policy as OfflineBotPolicy
+    const decision = input.offline && privileged.selectPrivilegedAction ? privileged.selectPrivilegedAction({ ...context, remainingEvents: input.remainingEvents }) : policy.selectAction(context)
+    const legal = getLegalBotActions(own)
+    if (!legal.some((action) => action.trait === decision.trait && action.actionType === decision.actionType)) throw new Error(`Policy ${policy.id} returned an illegal action.`)
+    return decision
+}
+/** Pure deterministic adapter around the same resolveRound/resolveMatchOutcome used in production. */
+export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
+    if (!input.eventSequence.length) throw new Error('simulateMatch requires at least one event.')
+    const state: SimulatedMatchState = { leftScore: input.initialState?.leftScore ?? 0, rightScore: input.initialState?.rightScore ?? 0, leftAdaptations: cloneAdaptations(input.initialState?.leftAdaptations ?? createInitialAdaptations()), rightAdaptations: cloneAdaptations(input.initialState?.rightAdaptations ?? createInitialAdaptations()), roundNumber: input.initialState?.roundNumber ?? 1 }
+    const history: PublicRoundHistory[] = []; const values: StoredRoundValue[] = [...(input.priorRoundValues ?? [])]; const trace: SimulatedRound[] = []
+    let outcome = resolveMatchOutcome({ player1Id: 'left', player2Id: 'right', player1Score: state.leftScore, player2Score: state.rightScore, resolvedRoundNumber: Math.max(0, state.roundNumber - 1), storedRoundValues: values })
+    while (!outcome.finished && state.roundNumber <= TOTAL_ROUNDS) {
+        const event = getRoundEventById(input.eventSequence[(state.roundNumber - 1) % input.eventSequence.length]!)
+        const nextEvent = state.roundNumber < TOTAL_ROUNDS ? getRoundEventById(input.eventSequence[state.roundNumber % input.eventSequence.length]!) : null
+        const remainingEvents = Array.from({ length: TOTAL_ROUNDS - state.roundNumber + 1 }, (_, index) => getRoundEventById(input.eventSequence[(state.roundNumber - 1 + index) % input.eventSequence.length]!))
+        const leftScoreBefore = state.leftScore; const rightScoreBefore = state.rightScore; const leftAdaptationsBefore = cloneAdaptations(state.leftAdaptations); const rightAdaptationsBefore = cloneAdaptations(state.rightAdaptations)
+        const leftDecision = actionFor(input.leftPolicy, { side: 'left', state, event, nextEvent, remainingEvents, history, random: randomForPolicy(input.seed, input.leftPolicy.id, state.roundNumber), offline: input.offline ?? false })
+        const rightDecision = actionFor(input.rightPolicy, { side: 'right', state, event, nextEvent, remainingEvents, history, random: randomForPolicy(input.seed, input.rightPolicy.id, state.roundNumber), offline: input.offline ?? false })
+        const resolution = resolveRound({ roundNumber: state.roundNumber, roundEvent: event, player1Id: 'left', player2Id: 'right', player1Traits: state.leftAdaptations, player2Traits: state.rightAdaptations, player1Action: { playerId: 'left', ...leftDecision }, player2Action: { playerId: 'right', ...rightDecision } })
+        state.leftScore += resolution.player1ScoreDelta; state.rightScore += resolution.player2ScoreDelta; state.leftAdaptations = resolution.player1.traits; state.rightAdaptations = resolution.player2.traits
+        const publicRound = { roundNumber: state.roundNumber, eventId: event.id, leftAction: leftDecision as BotRoundAction, rightAction: rightDecision as BotRoundAction, leftValue: resolution.player1.roundValue, rightValue: resolution.player2.roundValue }
+        history.push(publicRound); values.push({ player1Value: resolution.player1.roundValue, player2Value: resolution.player2.roundValue })
+        if (input.trace) trace.push({ ...publicRound, event, winnerId: resolution.winnerId as 'left' | 'right' | null, leftScoreBefore, rightScoreBefore, leftAdaptationsBefore, rightAdaptationsBefore, leftBreakdown: resolution.player1.breakdown, rightBreakdown: resolution.player2.breakdown, leftReason: leftDecision.reason, rightReason: rightDecision.reason })
+        outcome = resolveMatchOutcome({ player1Id: 'left', player2Id: 'right', player1Score: state.leftScore, player2Score: state.rightScore, resolvedRoundNumber: state.roundNumber, storedRoundValues: values }); state.roundNumber += 1
+    }
+    return { winner: outcome.winnerId as 'left' | 'right' | null, finalScore: { left: state.leftScore, right: state.rightScore }, rounds: history.length, tiebreak: outcome.reason === 'ROUND_VALUE_TIEBREAK', endReason: outcome.reason, finalAdaptations: { left: state.leftAdaptations, right: state.rightAdaptations }, trace }
+}

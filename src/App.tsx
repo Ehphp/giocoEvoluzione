@@ -62,6 +62,7 @@ function App() {
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
   const [nickname, setNickname] = useState('')
   const [roomCode, setRoomCode] = useState('')
+  const [botDifficulty, setBotDifficulty] = useState<'EASY' | 'NORMAL' | 'HARD'>('NORMAL')
   const [isBusy, setIsBusy] = useState(false)
   const [busyAction, setBusyAction] = useState<BusyAction>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -290,7 +291,7 @@ function App() {
 
     try {
       const playerId = createPlayerId()
-      const created = await createVsBotGame({ nickname, playerId })
+       const created = await createVsBotGame({ nickname, playerId, difficulty: botDifficulty })
       saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code })
       setSnapshot(created)
     } catch (error) {
@@ -429,14 +430,16 @@ function App() {
           {!snapshot ? (
             <HomeScreen
               nickname={nickname}
-              roomCode={roomCode}
+               roomCode={roomCode}
+               botDifficulty={botDifficulty}
               isOnline={isOnline}
               errorMessage={errorMessage}
               statusMessage={statusMessage}
               isBusy={isBusy}
               busyAction={busyAction}
               onNicknameChange={setNickname}
-              onRoomCodeChange={(value) => setRoomCode(value.toUpperCase())}
+               onRoomCodeChange={(value) => setRoomCode(value.toUpperCase())}
+               onBotDifficultyChange={setBotDifficulty}
               onCreateGame={() => void handleCreateGame()}
               onCreateBotGame={() => void handleCreateBotGame()}
               onJoinGame={() => void handleJoinGame()}

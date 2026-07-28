@@ -1,6 +1,7 @@
 type HomeScreenProps = {
     nickname: string
     roomCode: string
+    botDifficulty: 'EASY' | 'NORMAL' | 'HARD'
     isOnline: boolean
     errorMessage: string | null
     statusMessage: string | null
@@ -8,6 +9,7 @@ type HomeScreenProps = {
     busyAction: 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
     onNicknameChange: (value: string) => void
     onRoomCodeChange: (value: string) => void
+    onBotDifficultyChange: (value: 'EASY' | 'NORMAL' | 'HARD') => void
     onCreateGame: () => void
     onCreateBotGame: () => void
     onJoinGame: () => void
@@ -17,6 +19,7 @@ type HomeScreenProps = {
 export function HomeScreen({
     nickname,
     roomCode,
+    botDifficulty,
     isOnline,
     errorMessage,
     statusMessage,
@@ -24,6 +27,7 @@ export function HomeScreen({
     busyAction,
     onNicknameChange,
     onRoomCodeChange,
+    onBotDifficultyChange,
     onCreateGame,
     onCreateBotGame,
     onJoinGame,
@@ -74,6 +78,12 @@ export function HomeScreen({
                     <small>Genera un codice da condividere</small>
                 </button>
 
+                <label className="field home-entry__field" htmlFor="bot-difficulty">
+                    <span>Difficoltà bot</span>
+                    <select id="bot-difficulty" value={botDifficulty} onChange={(event) => onBotDifficultyChange(event.target.value as 'EASY' | 'NORMAL' | 'HARD')}>
+                        <option value="EASY">Facile — casuale</option><option value="NORMAL">Normale — euristico</option><option value="HARD">Difficile — lookahead</option>
+                    </select>
+                </label>
                 <button type="button" className="secondary-button home-entry__create" onClick={onCreateBotGame} disabled={isBusy}>
                     <span>{busyAction === 'CREATE_BOT' ? 'CREAZIONE...' : 'Gioca contro il bot'}</span>
                     <small>Avvio immediato con avversario automatico</small>

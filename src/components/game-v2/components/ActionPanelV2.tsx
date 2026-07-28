@@ -79,7 +79,7 @@ export function ActionPanelV2({
     const eventModifier = selectedGene.prediction?.eventModifier ?? 0
     const eventModifierLabel = `Evento ${eventModifier > 0 ? '+' : ''}${eventModifier}`
     const useValue = predictedPoints === undefined ? '— PT' : `${predictedPoints} PT`
-    const evolveValue = '1 PT'
+    const evolveValue = '2 PT'
     const useSublabel = isSubmitting
         ? (selectedAction === 'USE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canUse

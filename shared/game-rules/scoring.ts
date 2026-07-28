@@ -1,4 +1,4 @@
-import { BASE_USE_VALUE, EVOLVE_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE } from './catalog.ts'
+import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE } from './catalog.ts'
 import type { ActionType, AdaptationCollection, AdaptationId, EnvironmentalCrisisDefinition, RoundValueBreakdown } from './types.ts'
 
 export function getValidatedAdaptationState(adaptations: AdaptationCollection, adaptation: AdaptationId) {
@@ -24,5 +24,5 @@ export function getValidatedAdaptationUseBreakdown(roundEvent: EnvironmentalCris
 export function getValidatedActionBreakdown(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId, actionType: ActionType, matchupBonus = 0): RoundValueBreakdown {
     if (actionType === 'USE') return getValidatedAdaptationUseBreakdown(roundEvent, adaptations, adaptation, matchupBonus)
     const state = getValidatedAdaptationState(adaptations, adaptation)
-    return { actionType: 'EVOLVE', baseContribution: EVOLVE_VALUE, levelContribution: 0, eventModifier: 0, matchupBonus: 0, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: EVOLVE_VALUE, appliedEventEffects: [] }
+    return { actionType: 'EVOLVE', baseContribution: EVOLVE_ROUND_VALUE, levelContribution: 0, eventModifier: 0, matchupBonus: 0, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: EVOLVE_ROUND_VALUE, appliedEventEffects: [] }
 }

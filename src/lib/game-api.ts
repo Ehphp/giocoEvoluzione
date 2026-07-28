@@ -16,6 +16,7 @@ export type GameRecord = {
     id: string
     room_code: string
     game_mode: GameMode
+    bot_difficulty: 'EASY' | 'NORMAL' | 'HARD'
     status: GameStatus
     current_round: number
     world_id: string
@@ -124,6 +125,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
         id: String(data.id),
         room_code: String(data.room_code),
         game_mode: (data.game_mode as GameMode) ?? 'PVP',
+        bot_difficulty: (['EASY', 'NORMAL', 'HARD'].includes(String(data.bot_difficulty)) ? data.bot_difficulty : 'NORMAL') as 'EASY' | 'NORMAL' | 'HARD',
         status: data.status as GameStatus,
         current_round: Number(data.current_round),
         world_id: String(data.world_id ?? DEFAULT_WORLD_ID),
@@ -375,12 +377,13 @@ export async function createGame(input: { nickname: string; playerId: string }):
     throw new Error('Impossibile generare un codice stanza valido. Riprova.')
 }
 
-export async function createVsBotGame(input: { nickname: string; playerId: string }): Promise<GameSnapshot> {
+export async function createVsBotGame(input: { nickname: string; playerId: string; difficulty: 'EASY' | 'NORMAL' | 'HARD' }): Promise<GameSnapshot> {
     const supabase = requireSupabase()
 
     const { data, error } = await supabase.rpc('create_vs_bot_game', {
         p_nickname: input.nickname.trim(),
         p_player_id: input.playerId,
+        p_bot_difficulty: input.difficulty,
     })
 
     if (error) {

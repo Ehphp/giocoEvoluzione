@@ -45,6 +45,7 @@ describe('action and waiting states', () => {
         })
 
         expect(container.querySelector('.action-v2-btn--use')?.textContent).toContain('USA')
+        expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('2 PT')
         expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('LV 0 → 1')
     })
 
