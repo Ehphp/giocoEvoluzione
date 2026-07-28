@@ -147,7 +147,9 @@
 .duel-v2-role { overflow: hidden; color: rgba(255, 255, 255, 0.76); font-size: 0.54rem; letter-spacing: 0.08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .duel-v2-name { overflow: hidden; color: #fff; font-size: 0.84rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
 .duel-v2-status { overflow: hidden; color: rgba(255, 255, 255, 0.78); font-size: 0.56rem; text-overflow: ellipsis; white-space: nowrap; }
-.duel-v2-score { min-width: 34px; min-height: 32px; padding: 3px 5px; display: inline-grid; place-items: center; border: 1px solid rgba(255, 255, 255, 0.38); border-radius: 11px; background: rgba(0, 0, 0, 0.27); color: #fff; font-size: 0.8rem; font-weight: 850; }
+.duel-v2-score { min-width: 34px; min-height: 32px; padding: 3px 5px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 1px solid rgba(255, 255, 255, 0.38); border-radius: 11px; background: rgba(0, 0, 0, 0.27); color: #fff; font-size: 0.8rem; font-weight: 850; line-height: 1; }
+.duel-v2-score strong { font: inherit; }
+.duel-v2-score small { color: rgba(255, 255, 255, 0.76); font-size: 0.52rem; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
 .duel-v2-vs { width: 36px; height: 36px; display: grid; place-items: center; border: 2px solid rgba(255, 255, 255, 0.72); border-radius: 999px; background: linear-gradient(180deg, #ffa92f, #e06918); box-shadow: 0 5px 14px rgba(0, 0, 0, 0.3); color: #fff; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.04em; }
 
 /* Round and event */

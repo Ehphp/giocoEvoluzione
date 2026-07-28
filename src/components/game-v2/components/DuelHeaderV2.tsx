@@ -40,16 +40,21 @@ function PlayerCard({
     role: string
     variant: 'player' | 'opponent'
 }) {
+    const scoreLabel = `Punteggio round ${player.score}${player.roundValueTotal === null ? '' : `, valore totale ${player.roundValueTotal}`}`
+
     return (
-        <article className={`duel-v2-card duel-v2-card--${variant}`} aria-label={`${role} ${player.name}, punteggio ${player.score}`}>
+        <article className={`duel-v2-card duel-v2-card--${variant}`} aria-label={`${role} ${player.name}, ${scoreLabel.toLowerCase()}`}>
             <Avatar name={player.name} avatarUrl={player.avatarUrl} />
             <div className="duel-v2-copy">
                 <span className="duel-v2-role">{role}</span>
                 <strong className="duel-v2-name" title={player.name}>{player.name}</strong>
                 <small className="duel-v2-status">{statusLabel(player.status)}</small>
             </div>
-            <span className="duel-v2-score" aria-label={`Punteggio ${player.score}`}>
-                {player.score}
+            <span className="duel-v2-score" aria-label={scoreLabel}>
+                <strong>{player.score}</strong>
+                {player.roundValueTotal !== null ? (
+                    <small title="Valore totale dei round, usato per il tiebreak">Σ {player.roundValueTotal}</small>
+                ) : null}
             </span>
         </article>
     )

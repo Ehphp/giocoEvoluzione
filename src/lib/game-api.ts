@@ -75,6 +75,7 @@ export type GameSnapshot = {
     actionsSubmitted: number
     myCurrentAction: RoundActionRecord | null
     currentRoundResult: RoundResultRecord | null
+    roundResults: RoundResultRecord[]
 }
 
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -277,18 +278,20 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
         throw new Error(myActionError.message)
     }
 
-    const { data: roundResultData, error: roundResultError } = await supabase
+    const { data: roundResultsData, error: roundResultsError } = await supabase
         .from('round_results')
         .select('*')
         .eq('game_id', gameId)
-        .eq('round_number', game.current_round)
-        .maybeSingle()
+        .order('round_number')
 
-    if (roundResultError) {
-        throw new Error(roundResultError.message)
+    if (roundResultsError) {
+        throw new Error(roundResultsError.message)
     }
 
-    if (game.status === 'CHOOSING' && (count ?? 0) >= 2 && !roundResultData) {
+    const roundResults = (roundResultsData ?? []).map((entry) => mapRoundResultRecord(entry))
+    const currentRoundResult = roundResults.find((result) => result.round_number === game.current_round) ?? null
+
+    if (game.status === 'CHOOSING' && (count ?? 0) >= 2 && !currentRoundResult) {
         // Self-heal stuck rounds by retrying idempotent resolution.
         void maybeResolveRound(gameId, game.current_round).catch(() => undefined)
     }
@@ -304,7 +307,8 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
         nextRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round + 1),
         actionsSubmitted: count ?? 0,
         myCurrentAction: myActionData ? mapRoundActionRecord(myActionData) : null,
-        currentRoundResult: roundResultData ? mapRoundResultRecord(roundResultData) : null,
+        currentRoundResult,
+        roundResults,
     }
 }
 

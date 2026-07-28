@@ -152,6 +152,17 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
     return picked
 }
 
+function getRoundValueTotal(snapshot: GameSnapshot, slot: 1 | 2): number | null {
+    if (!snapshot.roundResults.length) {
+        return null
+    }
+
+    return snapshot.roundResults.reduce(
+        (total, result) => total + (slot === 1 ? result.player_1_value : result.player_2_value),
+        0,
+    )
+}
+
 function mapRoundEvent(roundEvent: RoundEventDefinition, includeAllEffects = false) {
     return {
         id: roundEvent.id,
@@ -268,6 +279,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 id: 'unknown',
                 name: 'Tu',
                 score: 0,
+                roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
                 status: 'choosing',
             },
@@ -275,6 +287,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 id: 'unknown-opponent',
                 name: 'Avversario',
                 score: 0,
+                roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
                 status: 'choosing',
             },
@@ -334,6 +347,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             id: me.id,
             name: me.nickname,
             score: input.myScore,
+            roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
@@ -341,6 +355,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             id: opponent?.id ?? 'opponent-pending',
             name: opponent?.nickname ?? 'In attesa',
             score: input.opponentScore,
+            roundValueTotal: opponent ? getRoundValueTotal(snapshot, opponent.slot) : null,
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
             status: resolvePlayerStatus(opponentHasSubmitted, opponent?.connected ?? false),
         },

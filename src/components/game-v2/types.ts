@@ -14,6 +14,7 @@ export interface DuelPlayerV2 {
     id: string
     name: string
     score: number
+    roundValueTotal: number | null
     avatarUrl?: string
     status: DuelPlayerStatusV2
 }
