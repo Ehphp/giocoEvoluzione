@@ -21,10 +21,17 @@ export function NaturalAdvantageV2({ selectedGene }: NaturalAdvantageV2Props) {
 
     return (
         <section className="natural-advantage-v2" aria-label={`Vantaggio naturale di ${selectedGene.name}`}>
-            <div className="natural-advantage-v2__summary">
-                <strong>{selectedGene.name}</strong>
-                <span>{selectedGene.prediction?.useScore ?? 0} PT</span>
-                <span>LV {selectedGene.level}</span>
+            <div className="natural-advantage-v2__identity">
+                <span className="natural-advantage-v2__icon" aria-hidden="true">
+                    {selectedGene.imageUrl ? (
+                        <img src={selectedGene.imageUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} />
+                    ) : null}
+                </span>
+                <div className="natural-advantage-v2__summary">
+                    <strong>{selectedGene.name}</strong>
+                    <span>{selectedGene.prediction?.useScore ?? 0} PT</span>
+                    <span>LV {selectedGene.level}</span>
+                </div>
             </div>
             <p className="natural-advantage-v2__matchup">
                 <span className="natural-advantage-v2__strong">Forte contro <b>{TRAIT_LABELS[strongAgainst]} +1</b></span>
