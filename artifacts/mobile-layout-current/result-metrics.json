@@ -11,17 +11,17 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 289.2,
+        "top": 306.1,
         "bottom": 792,
         "left": 8,
         "right": 352,
         "width": 344,
-        "height": 502.8,
+        "height": 485.9,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 300.2,
-        "bottom": 510.5,
+        "top": 317.1,
+        "bottom": 527.3,
         "left": 19,
         "right": 341,
         "width": 322,
@@ -29,8 +29,8 @@
         "fullyVisible": true
       },
       ".round-result-cards": {
-        "top": 520.5,
-        "bottom": 654.9,
+        "top": 537.3,
+        "bottom": 671.8,
         "left": 19,
         "right": 341,
         "width": 322,
@@ -38,12 +38,12 @@
         "fullyVisible": true
       },
       ".round-result-explanation": {
-        "top": 664.9,
+        "top": 681.8,
         "bottom": 718.6,
         "left": 19,
         "right": 341,
         "width": 322,
-        "height": 53.7,
+        "height": 36.8,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -69,17 +69,17 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 333.2,
+        "top": 350.1,
         "bottom": 836,
         "left": 8,
         "right": 382,
         "width": 374,
-        "height": 502.8,
+        "height": 485.9,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 344.2,
-        "bottom": 554.5,
+        "top": 361.1,
+        "bottom": 571.3,
         "left": 19,
         "right": 371,
         "width": 352,
@@ -87,8 +87,8 @@
         "fullyVisible": true
       },
       ".round-result-cards": {
-        "top": 564.5,
-        "bottom": 698.9,
+        "top": 581.3,
+        "bottom": 715.8,
         "left": 19,
         "right": 371,
         "width": 352,
@@ -96,12 +96,12 @@
         "fullyVisible": true
       },
       ".round-result-explanation": {
-        "top": 708.9,
+        "top": 725.8,
         "bottom": 762.6,
         "left": 19,
         "right": 371,
         "width": 352,
-        "height": 53.7,
+        "height": 36.8,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -127,17 +127,17 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 404.2,
+        "top": 421.1,
         "bottom": 907,
         "left": 8,
         "right": 404,
         "width": 396,
-        "height": 502.8,
+        "height": 485.9,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 415.2,
-        "bottom": 625.5,
+        "top": 432.1,
+        "bottom": 642.3,
         "left": 19,
         "right": 393,
         "width": 374,
@@ -145,8 +145,8 @@
         "fullyVisible": true
       },
       ".round-result-cards": {
-        "top": 635.5,
-        "bottom": 769.9,
+        "top": 652.3,
+        "bottom": 786.8,
         "left": 19,
         "right": 393,
         "width": 374,
@@ -154,12 +154,12 @@
         "fullyVisible": true
       },
       ".round-result-explanation": {
-        "top": 779.9,
+        "top": 796.8,
         "bottom": 833.6,
         "left": 19,
         "right": 393,
         "width": 374,
-        "height": 53.7,
+        "height": 36.8,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
@@ -185,17 +185,17 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 421.2,
+        "top": 438.1,
         "bottom": 924,
         "left": 8,
         "right": 422,
         "width": 414,
-        "height": 502.8,
+        "height": 485.9,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 432.2,
-        "bottom": 642.5,
+        "top": 449.1,
+        "bottom": 659.3,
         "left": 19,
         "right": 411,
         "width": 392,
@@ -203,8 +203,8 @@
         "fullyVisible": true
       },
       ".round-result-cards": {
-        "top": 652.5,
-        "bottom": 786.9,
+        "top": 669.3,
+        "bottom": 803.8,
         "left": 19,
         "right": 411,
         "width": 392,
@@ -212,12 +212,12 @@
         "fullyVisible": true
       },
       ".round-result-explanation": {
-        "top": 796.9,
+        "top": 813.8,
         "bottom": 850.6,
         "left": 19,
         "right": 411,
         "width": 392,
-        "height": 53.7,
+        "height": 36.8,
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {

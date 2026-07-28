@@ -1,12 +1,12 @@
 {
   "isOpen": true,
-  "compactEffectCount": 5,
-  "detailedEffectCount": 5,
+  "compactEffectCount": 4,
+  "detailedEffectCount": 4,
   "fullyVisible": true,
   "rect": {
     "top": 163,
     "right": 328,
-    "bottom": 349.578125,
+    "bottom": 310.765625,
     "left": 32
   }
 }
