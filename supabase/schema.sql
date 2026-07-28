@@ -9,7 +9,7 @@ create table public.games (
   id uuid primary key default gen_random_uuid(), room_code text not null unique,
   game_mode text not null default 'PVP' check (game_mode in ('PVP', 'VS_BOT')),
   status text not null check (status in ('WAITING', 'CHOOSING', 'REVEALING', 'ROUND_RESULT', 'FINISHED')),
-  current_round integer not null default 1 check (current_round between 1 and 6),
+  current_round integer not null default 1 check (current_round between 1 and 7),
   world_id text not null default 'AURELIA_PRIME', round_event_sequence jsonb not null,
   player_1_id text, player_2_id text, player_1_score integer not null default 0, player_2_score integer not null default 0,
   winner_id text, started_at timestamptz, finished_at timestamptz, rematch_count integer not null default 0,
@@ -22,16 +22,26 @@ create table public.players (
 );
 create table public.round_actions (
   id uuid primary key default gen_random_uuid(), game_id uuid not null references public.games(id) on delete cascade,
-  round_number integer not null check (round_number between 1 and 6), player_id text not null references public.players(id) on delete cascade,
+  round_number integer not null check (round_number between 1 and 7), player_id text not null references public.players(id) on delete cascade,
   trait text not null, action_type text not null check (action_type in ('USE', 'EVOLVE')), created_at timestamptz not null default timezone('utc', now()),
   unique (game_id, round_number, player_id)
 );
 create table public.round_results (
   id uuid primary key default gen_random_uuid(), game_id uuid not null references public.games(id) on delete cascade,
-  round_number integer not null check (round_number between 1 and 6), player_1_value integer not null, player_2_value integer not null,
+  round_number integer not null check (round_number between 1 and 7), player_1_value integer not null, player_2_value integer not null,
   winner_id text, resolution_data jsonb not null default '{}'::jsonb, created_at timestamptz not null default timezone('utc', now()), unique (game_id, round_number)
 );
 create trigger games_set_updated_at before update on public.games for each row execute function public.set_updated_at();
+
+create or replace function public.prevent_closed_round_action()
+returns trigger language plpgsql as $$
+declare current_status text; current_number integer;
+begin
+  select status, current_round into current_status, current_number from public.games where id = new.game_id;
+  if current_status <> 'CHOOSING' or new.round_number <> current_number then raise exception 'round is not open'; end if;
+  return new;
+end; $$;
+create trigger round_actions_only_for_open_round before insert on public.round_actions for each row execute function public.prevent_closed_round_action();
 
 alter table public.games enable row level security; alter table public.players enable row level security;
 alter table public.round_actions enable row level security; alter table public.round_results enable row level security;

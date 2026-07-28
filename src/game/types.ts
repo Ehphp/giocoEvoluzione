@@ -1,23 +1,2 @@
-export {
-    ACTION_TYPES,
-    GAME_MODES,
-    GAME_STATUSES,
-    GENE_IDS as TRAITS,
-    PLAYER_TYPES,
-} from '../../shared/game-rules/types.ts'
-export type {
-    ActionType,
-    EventEffect as RoundEventEffect,
-    GameMode,
-    GameStatus,
-    GeneCollection as TraitCollection,
-    GeneId as TraitType,
-    GeneState as TraitState,
-    PlayerRoundAction,
-    PlayerType,
-    ResolveRoundInput,
-    RoundEventDefinition,
-    RoundResolution,
-    RoundValueBreakdown,
-    WorldDefinition,
-} from '../../shared/game-rules/types.ts'
+export { ACTION_TYPES, GAME_MODES, GAME_STATUSES, ADAPTATION_IDS as TRAITS, PLAYER_TYPES } from '../../shared/game-rules/types.ts'
+export type { ActionType, EnvironmentalCrisisEffect as RoundEventEffect, GameMode, GameStatus, AdaptationCollection as TraitCollection, AdaptationId as TraitType, AdaptationState as TraitState, PlayerRoundAction, PlayerType, ResolveRoundInput, EnvironmentalCrisisDefinition as RoundEventDefinition, RoundResolution, RoundValueBreakdown, WorldDefinition } from '../../shared/game-rules/types.ts'

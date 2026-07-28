@@ -1,49 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { GENE_IDS, PRODUCTION_CATALOG_AUDIT, ROUND_EVENT_DEFINITIONS, RULE_VERSION, buildPersistedRoundResolution, createInitialGenes, getRoundEventById, getValidatedGeneUseBreakdown, resolveRound, validateCatalog } from './index.ts'
+import { TOTAL_ROUNDS, buildPersistedRoundResolution, createInitialAdaptations, getNaturalAdvantageBonus, getRoundEventById, getValidatedActionBreakdown, resolveMatchOutcome, resolveRound } from './index.ts'
 
-describe('five-gene rules', () => {
-    it('validates the approved event matrix with explicit zero signs', () => {
-        expect(validateCatalog()).toEqual([])
-        expect(ROUND_EVENT_DEFINITIONS).toHaveLength(6)
+const crisis = getRoundEventById('HEAT_SPIKE')
+const action = (playerId: string, trait: 'FEROCITY' | 'ARMOR' | 'AGILITY' | 'SENSES' | 'CAMOUFLAGE', actionType: 'USE' | 'EVOLVE') => ({ playerId, trait, actionType })
+const round = (overrides: Partial<Parameters<typeof resolveRound>[0]> = {}) => resolveRound({ roundNumber: 1, roundEvent: crisis, player1Id: 'p1', player2Id: 'p2', player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(), player1Action: action('p1', 'FEROCITY', 'USE'), player2Action: action('p2', 'ARMOR', 'USE'), ...overrides })
+
+describe('best-of-seven adaptation rules', () => {
+    it('EVOLVE produces exactly one and ignores crisis and natural advantage', () => {
+        const adaptations = createInitialAdaptations(); adaptations.FEROCITY.cooldown = 1
+        const breakdown = getValidatedActionBreakdown(crisis, adaptations, 'FEROCITY', 'EVOLVE', 1)
+        expect(breakdown).toMatchObject({ total: 1, baseContribution: 1, levelContribution: 0, eventModifier: 0, matchupBonus: 0 })
+        expect(round({ player1Traits: adaptations, player1Action: action('p1', 'FEROCITY', 'EVOLVE') }).player1.roundValue).toBe(1)
     })
-
-    it('locks the production candidate matrix and its audit signature', () => {
-        const matrix = ROUND_EVENT_DEFINITIONS.map((event) => GENE_IDS.map((gene) => event.modifiers[gene]))
-        expect(matrix).toEqual([
-            [3, 3, -1, 0, 0], [2, 1, 3, -1, -1], [1, -1, 2, 2, -1],
-            [-1, 0, 1, 3, 2], [0, 2, -1, -1, 1], [-1, -1, 0, 1, 3],
-        ])
-        expect(PRODUCTION_CATALOG_AUDIT.catalogSignature).toBe('28340e8792d8a0b6')
-        expect(PRODUCTION_CATALOG_AUDIT.candidateId).toBe('balanced-level-v2')
-        expect(PRODUCTION_CATALOG_AUDIT.validatedSequences).toBe(720)
+    it('applies natural advantage only to the correct USE side, never to neutral or EVOLVE', () => {
+        expect(getNaturalAdvantageBonus(action('p1', 'FEROCITY', 'USE'), action('p2', 'ARMOR', 'USE'))).toBe(1)
+        expect(getNaturalAdvantageBonus(action('p1', 'ARMOR', 'USE'), action('p2', 'FEROCITY', 'USE'))).toBe(0)
+        expect(getNaturalAdvantageBonus(action('p1', 'FEROCITY', 'USE'), action('p2', 'AGILITY', 'USE'))).toBe(0)
+        expect(getNaturalAdvantageBonus(action('p1', 'FEROCITY', 'USE'), action('p2', 'ARMOR', 'EVOLVE'))).toBe(0)
     })
-
-    it('scores USE with the explicit level-bonus table and direct event modifier', () => {
-        const genes = createInitialGenes()
-        genes.RESILIENCE.level = 2
-        expect(getValidatedGeneUseBreakdown(getRoundEventById('HEAT_SPIKE'), genes, 'RESILIENCE').total).toBe(3)
-        expect(getValidatedGeneUseBreakdown(getRoundEventById('HEAT_SPIKE'), createInitialGenes(), 'METABOLISM').total).toBe(4)
+    it('ends immediately at four round wins', () => {
+        const result = buildPersistedRoundResolution({ roundNumber: 4, roundEvent: crisis, player1Id: 'p1', player2Id: 'p2', player1Score: 3, player2Score: 0, player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(), player1Action: action('p1', 'SENSES', 'USE'), player2Action: action('p2', 'FEROCITY', 'EVOLVE'), priorRoundValues: [], startedAt: null })
+        expect(result.resolution_data.statusAfter).toBe('FINISHED'); expect(result.resolution_data.winnerIdAfter).toBe('p1'); expect(result.resolution_data.matchEndReason).toBe('CLINCH')
     })
-
-    it('applies cooldown, evolves to cap two, and rejects illegal actions', () => {
-        let genes = createInitialGenes()
-        for (let roundNumber = 1; roundNumber <= 2; roundNumber += 1) {
-            const result = resolveRound({ roundNumber, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'EVOLVE' } })
-            genes = result.player1.traits
-        }
-        expect(genes.METABOLISM.level).toBe(2)
-        expect(() => resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'EVOLVE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })).toThrow(/maximum level/i)
-        const used = resolveRound({ roundNumber: 3, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Traits: genes, player2Traits: createInitialGenes(), player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' } })
-        expect(used.player1.traits.METABOLISM.cooldown).toBe(1)
-    })
-
-    it('persists the rule version and catalog signature with each resolved round', () => {
-        const resolution = buildPersistedRoundResolution({
-            roundNumber: 1, roundEvent: getRoundEventById('HEAT_SPIKE'), player1Id: 'p1', player2Id: 'p2', player1Score: 0, player2Score: 0,
-            player1Traits: createInitialGenes(), player2Traits: createInitialGenes(),
-            player1Action: { playerId: 'p1', trait: 'METABOLISM', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'AQUATIC', actionType: 'USE' }, startedAt: null,
-        })
-        expect(resolution.resolution_data.ruleVersion).toBe(RULE_VERSION)
-        expect(resolution.resolution_data.catalogSignature).toBe(PRODUCTION_CATALOG_AUDIT.catalogSignature)
+    it('can reach round seven and resolves score then stored-value tiebreak', () => {
+        expect(TOTAL_ROUNDS).toBe(7)
+        const tiebreak = resolveMatchOutcome({ player1Id: 'p1', player2Id: 'p2', player1Score: 3, player2Score: 3, resolvedRoundNumber: 7, storedRoundValues: [{ player1Value: 2, player2Value: 1 }, { player1Value: 1, player2Value: 1 }] })
+        expect(tiebreak).toMatchObject({ finished: true, winnerId: 'p1', reason: 'ROUND_VALUE_TIEBREAK' })
+        const draw = resolveMatchOutcome({ player1Id: 'p1', player2Id: 'p2', player1Score: 3, player2Score: 3, resolvedRoundNumber: 7, storedRoundValues: [{ player1Value: 2, player2Value: 2 }] })
+        expect(draw).toMatchObject({ finished: true, winnerId: null, reason: 'DRAW' })
     })
 })

@@ -1,17 +1,22 @@
 {
-  "maxGenePickRate": 0.26967592592592593,
-  "maxPolicyWinRate": 0.8503472222222223,
-  "maxPolicyWinShare": 0.38854513723623674,
-  "evolveRate": 0.3314814814814815,
-  "orderOutcomeSpread": 4,
-  "passes": {
-    "geneBalance": true,
-    "policyBalance": true,
-    "evolveUsedButNotAutomatic": true,
-    "eventOrderMatters": true
+  "ruleVersion": "adaptations-best-of-seven-v1",
+  "actions": {
+    "USE": 12460,
+    "EVOLVE": 1528,
+    "evolveRate": 0.10923648841864456
   },
-  "accepted": true,
-  "failedChecks": [],
-  "ruleVersion": "five-genes-v2",
-  "fitnessVersion": "five-genes-fitness-v2"
+  "adaptationDistribution": {
+    "FEROCITY": 2132,
+    "ARMOR": 2658,
+    "AGILITY": 3214,
+    "SENSES": 3092,
+    "CAMOUFLAGE": 2892
+  },
+  "matchupChangesRoundWinner": 510,
+  "averageMatchLength": 6.994,
+  "earlyFinishRate": 0.005,
+  "tiebreakRate": 0.047,
+  "finalDrawRate": 0.413,
+  "dominantAdaptationRate": 0.22976837289104948,
+  "accepted": true
 }

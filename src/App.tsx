@@ -41,6 +41,9 @@ type ResolutionData = {
   player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
   player1Breakdown?: RoundValueBreakdown
   player2Breakdown?: RoundValueBreakdown
+  matchEndReason?: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null
+  player1RoundValueTotal?: number
+  player2RoundValueTotal?: number
 }
 
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
@@ -746,8 +749,9 @@ function RoundBreakdownCard({
       {breakdown ? (
         <div className={`round-breakdown-card__math ${showContributions ? '' : 'is-hidden'}`}>
           <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
-          <p>Effetti evento {roundEventLabel}: {breakdown.eventModifier}</p>
+          <p>Crisi ambientale {roundEventLabel}: {breakdown.eventModifier}</p>
           <p>Livello: +{breakdown.levelContribution}</p>
+          <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
           {breakdown.originalLevel > breakdown.effectiveLevel ? (
             <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
           ) : (
@@ -819,6 +823,11 @@ function FinalScreen({
         <p>
           Punteggio finale: {myScore} - {opponentScore}
         </p>
+        {resolutionData?.matchEndReason === 'ROUND_VALUE_TIEBREAK' ? (
+          <p>Tiebreak: vince la somma dei valori round ({resolutionData.player1RoundValueTotal ?? 0} - {resolutionData.player2RoundValueTotal ?? 0}).</p>
+        ) : resolutionData?.matchEndReason === 'DRAW' ? (
+          <p>Tiebreak: parità perfetta anche nella somma dei valori round.</p>
+        ) : null}
         <p>Durata: {snapshot.game.started_at && snapshot.game.finished_at ? formatDuration(snapshot.game.started_at, snapshot.game.finished_at) : 'n/d'}</p>
       </div>
 

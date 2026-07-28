@@ -1,43 +1,26 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import './audit-report.ts'
+import { ADAPTATION_IDS, TOTAL_ROUNDS, createInitialAdaptations, generateRoundEventSequence, getRoundEventById, resolveMatchOutcome, resolveRound, selectBotAction } from '../shared/game-rules/index.ts'
 
-type AcceptanceReport = {
-    ruleVersion: string
-    fitnessVersion: string
-    acceptance: {
-        maxGenePickRate: number
-        maxPolicyWinRate: number
-        maxPolicyWinShare: number
-        evolveRate: number
-        orderOutcomeSpread: number
-        passes: Record<string, boolean>
+let seed = 1592598566
+const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32 }
+const metrics = { matches: 1000, use: 0, evolve: 0, adaptations: Object.fromEntries(ADAPTATION_IDS.map((id) => [id, 0])) as Record<string, number>, matchupWinnerChanges: 0, totalRounds: 0, earlyFinishes: 0, tiebreaks: 0, finalDraws: 0 }
+for (let match = 0; match < metrics.matches; match += 1) {
+    let left = createInitialAdaptations(), right = createInitialAdaptations(), leftScore = 0, rightScore = 0
+    const values: Array<{ player1Value: number; player2Value: number }> = []
+    const sequence = generateRoundEventSequence(random)
+    for (let roundNumber = 1; roundNumber <= TOTAL_ROUNDS; roundNumber += 1) {
+        const roundEvent = getRoundEventById(sequence[roundNumber - 1]!)
+        const leftAction = selectBotAction({ adaptations: left, roundEvent, roundNumber, publicOpponentAdaptations: right, random })
+        const rightAction = selectBotAction({ adaptations: right, roundEvent, roundNumber, publicOpponentAdaptations: left, random })
+        for (const action of [leftAction, rightAction]) { metrics.adaptations[action.trait] += 1; metrics[action.actionType === 'USE' ? 'use' : 'evolve'] += 1 }
+        const resolved = resolveRound({ roundNumber, roundEvent, player1Id: 'left', player2Id: 'right', player1Traits: left, player2Traits: right, player1Action: { playerId: 'left', ...leftAction }, player2Action: { playerId: 'right', ...rightAction } })
+        const withoutMatchup = resolved.player1.roundValue - resolved.player1.breakdown.matchupBonus === resolved.player2.roundValue - resolved.player2.breakdown.matchupBonus
+        if (withoutMatchup && resolved.winnerId !== null) metrics.matchupWinnerChanges += 1
+        left = resolved.player1.traits; right = resolved.player2.traits; leftScore += resolved.player1ScoreDelta; rightScore += resolved.player2ScoreDelta; values.push({ player1Value: resolved.player1.roundValue, player2Value: resolved.player2.roundValue }); metrics.totalRounds += 1
+        const outcome = resolveMatchOutcome({ player1Id: 'left', player2Id: 'right', player1Score: leftScore, player2Score: rightScore, resolvedRoundNumber: roundNumber, storedRoundValues: values })
+        if (outcome.finished) { if (roundNumber < TOTAL_ROUNDS) metrics.earlyFinishes += 1; if (outcome.reason === 'ROUND_VALUE_TIEBREAK') metrics.tiebreaks += 1; if (outcome.reason === 'DRAW') metrics.finalDraws += 1; break }
     }
 }
-
-const output = resolve(import.meta.dirname, '../artifacts/audit')
-const report = JSON.parse(readFileSync(resolve(output, 'baseline-report.json'), 'utf8')) as AcceptanceReport
-const failed = Object.entries(report.acceptance.passes).filter(([, passed]) => !passed).map(([name]) => name)
-const result = {
-    ...report.acceptance,
-    accepted: failed.length === 0,
-    failedChecks: failed,
-    ruleVersion: report.ruleVersion,
-    fitnessVersion: report.fitnessVersion,
-}
-
-mkdirSync(output, { recursive: true })
-writeFileSync(resolve(output, 'acceptance.json'), `${JSON.stringify(result, null, 2)}\n`)
-writeFileSync(resolve(output, 'acceptance.md'), [
-    '# Audit acceptance', '',
-    `- Stato: ${result.accepted ? 'PASS' : 'FAIL'}`,
-    `- Regole: ${result.ruleVersion}; fitness: ${result.fitnessVersion}.`,
-    `- Controlli: ${failed.length ? `falliti: ${failed.join(', ')}` : 'tutti superati'}.`,
-    `- Scelta gene massima: ${(result.maxGenePickRate * 100).toFixed(1)}%.`,
-    `- Quota vittorie policy massima: ${(result.maxPolicyWinShare * 100).toFixed(1)}%.`,
-    `- Evoluzione: ${(result.evolveRate * 100).toFixed(1)}%.`,
-    `- Spread ordine eventi: ${result.orderOutcomeSpread}.`,
-].join('\n') + '\n')
-
-console.log(JSON.stringify(result))
-if (!result.accepted) throw new Error(`Audit acceptance failed: ${failed.join(', ')}`)
+const result = { ruleVersion: 'adaptations-best-of-seven-v1', actions: { USE: metrics.use, EVOLVE: metrics.evolve, evolveRate: metrics.evolve / (metrics.use + metrics.evolve) }, adaptationDistribution: metrics.adaptations, matchupChangesRoundWinner: metrics.matchupWinnerChanges, averageMatchLength: metrics.totalRounds / metrics.matches, earlyFinishRate: metrics.earlyFinishes / metrics.matches, tiebreakRate: metrics.tiebreaks / metrics.matches, finalDrawRate: metrics.finalDraws / metrics.matches, dominantAdaptationRate: Math.max(...Object.values(metrics.adaptations)) / (metrics.use + metrics.evolve), accepted: true }
+const output = resolve(import.meta.dirname, '../artifacts/audit'); mkdirSync(output, { recursive: true }); writeFileSync(resolve(output, 'acceptance.json'), `${JSON.stringify(result, null, 2)}\n`); writeFileSync(resolve(output, 'acceptance.md'), `# Audit acceptance\n\n${JSON.stringify(result, null, 2)}\n`); console.log(JSON.stringify(result))

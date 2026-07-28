@@ -1,7 +1,3 @@
-import { getValidatedActionBreakdown, getValidatedGeneState, getValidatedGeneUseBreakdown } from '../../shared/game-rules/scoring.ts'
-import type { RoundEventDefinition, TraitCollection, TraitType } from './types.ts'
-
-export const getValidatedTraitState = getValidatedGeneState
-export const getValidatedTraitUseBreakdown = getValidatedGeneUseBreakdown
-export { getValidatedActionBreakdown }
-export function getValidatedTraitRoundValue(roundEvent: RoundEventDefinition, traits: TraitCollection, trait: TraitType) { return getValidatedGeneUseBreakdown(roundEvent, traits, trait).total }
+import { getValidatedActionBreakdown, getValidatedAdaptationState, getValidatedAdaptationUseBreakdown } from '../../shared/game-rules/scoring.ts'; import type { RoundEventDefinition, TraitCollection, TraitType } from './types.ts'
+export const getValidatedTraitState = getValidatedAdaptationState; export const getValidatedTraitUseBreakdown = getValidatedAdaptationUseBreakdown; export { getValidatedActionBreakdown }
+export function getValidatedTraitRoundValue(roundEvent: RoundEventDefinition, traits: TraitCollection, trait: TraitType) { return getValidatedAdaptationUseBreakdown(roundEvent, traits, trait).total }

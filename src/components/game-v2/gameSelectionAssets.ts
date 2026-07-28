@@ -28,11 +28,11 @@ export function getGeneAssetOrFallback(geneKey: GeneAssetKey): string {
 }
 
 const TRAIT_ASSET_KEYS: Record<TraitType, GeneAssetKey> = {
-    RESILIENCE: 'resilience',
-    MOBILITY: 'mobility',
+    FEROCITY: 'resilience',
+    ARMOR: 'resilience',
+    AGILITY: 'mobility',
     SENSES: 'senses',
-    METABOLISM: 'metabolism',
-    AQUATIC: 'aquatic',
+    CAMOUFLAGE: 'aquatic',
 }
 
 export function getGeneAssetByTrait(traitType: TraitType): string {

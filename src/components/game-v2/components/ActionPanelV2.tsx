@@ -79,7 +79,7 @@ export function ActionPanelV2({
     const eventModifier = selectedGene.prediction?.eventModifier ?? 0
     const eventModifierLabel = `Evento ${eventModifier > 0 ? '+' : ''}${eventModifier}`
     const useValue = predictedPoints === undefined ? '— PT' : `${predictedPoints} PT`
-    const evolveValue = canEvolve || isSubmitting ? `LV ${selectedGene.level + 1}` : 'MAX'
+    const evolveValue = '1 PT'
     const useSublabel = isSubmitting
         ? (selectedAction === 'USE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canUse
@@ -89,7 +89,7 @@ export function ActionPanelV2({
         ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso')
         : !canEvolve
             ? 'Livello massimo raggiunto'
-            : `Porta al livello ${selectedGene.level + 1}`
+            : `Valore fisso 1 · porta al livello ${selectedGene.level + 1}`
 
     return (
         <section

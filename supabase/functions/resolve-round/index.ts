@@ -1,23 +1,23 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { BASE_USE_VALUE, LEVEL_BONUS, MAX_TRAIT_LEVEL } from '../../../shared/game-rules/catalog.ts'
+import { BASE_USE_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
 import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
-import { getRoundEventById, normalizeGeneCollection } from '../../../shared/game-rules/state.ts'
-import type { GeneCollection, GeneId } from '../../../shared/game-rules/types.ts'
+import { getRoundEventById, normalizeAdaptationCollection } from '../../../shared/game-rules/state.ts'
+import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
 
-type TraitName = GeneId
+type TraitName = AdaptationId
 
 // Keep the production function's Deno-compatible rule manifest explicit.
 // Resolution itself delegates to the shared engine below; this guard prevents
 // an Edge deployment with a stale local rule copy.
 const EDGE_BASE_USE_VALUE = 1
-const EDGE_MAX_TRAIT_LEVEL = 2
+const EDGE_MAX_ADAPTATION_LEVEL = 2
 const EDGE_LEVEL_BONUS = [0, 1, 3] as const
 
-if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_MAX_TRAIT_LEVEL !== MAX_TRAIT_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',')) {
+if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_MAX_ADAPTATION_LEVEL !== MAX_ADAPTATION_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',')) {
     throw new Error('Scoring rule mismatch between Edge and shared game rules.')
 }
 
@@ -37,7 +37,7 @@ function json(body: unknown, status = 200) {
 
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: ReturnType<typeof createClient>,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: GeneCollection; roundEvent: ReturnType<typeof getRoundEventById> },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById> },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
@@ -77,8 +77,8 @@ async function applyStoredResolution(
     player2Id: string,
     resolutionData: Record<string, unknown>,
 ) {
-    const player1TraitsAfter = normalizeGeneCollection(resolutionData.player1TraitsAfter as GeneCollection)
-    const player2TraitsAfter = normalizeGeneCollection(resolutionData.player2TraitsAfter as GeneCollection)
+    const player1TraitsAfter = normalizeAdaptationCollection(resolutionData.player1TraitsAfter as AdaptationCollection)
+    const player2TraitsAfter = normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection)
     const player1ScoreAfter = Number(resolutionData.player1ScoreAfter ?? 0)
     const player2ScoreAfter = Number(resolutionData.player2ScoreAfter ?? 0)
     const statusAfter = String(resolutionData.statusAfter ?? 'REVEALING')
@@ -197,6 +197,10 @@ Deno.serve(async (request) => {
             return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
         }
 
+        if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
+            return json({ error: 'This round is no longer available.' }, 400)
+        }
+
         const roundEvent = getRoundEventById(roundEventId)
         if (gameMode === 'VS_BOT') {
             const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
@@ -206,7 +210,7 @@ Deno.serve(async (request) => {
                     gameId,
                     roundNumber,
                     playerId: String(botPlayer.id),
-                    traits: normalizeGeneCollection(botPlayer.traits as GeneCollection),
+                    traits: normalizeAdaptationCollection(botPlayer.traits as AdaptationCollection),
                     roundEvent,
                 })
 
@@ -242,8 +246,8 @@ Deno.serve(async (request) => {
             player2Id: String(player2.id),
             player1Score: Number(gameData.player_1_score ?? 0),
             player2Score: Number(gameData.player_2_score ?? 0),
-            player1Traits: normalizeGeneCollection(player1.traits as GeneCollection),
-            player2Traits: normalizeGeneCollection(player2.traits as GeneCollection),
+            player1Traits: normalizeAdaptationCollection(player1.traits as AdaptationCollection),
+            player2Traits: normalizeAdaptationCollection(player2.traits as AdaptationCollection),
             player1Action: {
                 playerId: String(player1.id),
                 trait: player1ActionRow.trait as TraitName,
@@ -255,6 +259,7 @@ Deno.serve(async (request) => {
                 actionType: player2ActionRow.action_type as 'USE' | 'EVOLVE',
             },
             startedAt: (gameData.started_at as string | null) ?? null,
+            priorRoundValues: ((await supabaseAdmin.from('round_results').select('player_1_value, player_2_value').eq('game_id', gameId).lt('round_number', roundNumber)).data ?? []).map((result) => ({ player1Value: Number(result.player_1_value), player2Value: Number(result.player_2_value) })),
         })
 
         const { data: insertedResult, error: insertError } = await supabaseAdmin

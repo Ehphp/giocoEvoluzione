@@ -45,10 +45,11 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
             <p>
                 {prediction.reasons[0]
                     ?? (prediction.eventModifier === 0
-                        ? 'Questo evento non modifica il rendimento del gene.'
+                        ? 'Questa crisi ambientale non modifica il rendimento dell adattamento.'
                         : 'Il punteggio include il modificatore dell evento.')}
             </p>
-            <small className="selector-v2-popover__hint">Tocca di nuovo il gene o fuori dal pannello per chiudere</small>
+            <p>Vantaggio naturale: rivelato solo alla risoluzione, perché la scelta avversaria è segreta.</p>
+            <small className="selector-v2-popover__hint">Tocca di nuovo l adattamento o fuori dal pannello per chiudere</small>
         </aside>
     )
 }
@@ -95,7 +96,7 @@ function GeneCard({
             onKeyDown={onKeyDown}
             disabled={disabled}
         >
-            <div className="selector-v2-icon" role="img" aria-label={`Icona gene ${gene.name}`}>
+            <div className="selector-v2-icon" role="img" aria-label={`Icona adattamento ${gene.name}`}>
                 {gene.imageUrl && !imageFailed ? (
                     <img
                         src={gene.imageUrl}
@@ -274,8 +275,8 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
             {previewGene ? <GenePredictionPopover gene={previewGene} /> : null}
 
             <div className="selector-v2-header">
-                <strong>SCEGLI UN GENE</strong>
-                <span className="selector-v2-sr-only">Gene {selectedIndex + 1} di {total}</span>
+                <strong>SCEGLI UN ADATTAMENTO</strong>
+                <span className="selector-v2-sr-only">Adattamento {selectedIndex + 1} di {total}</span>
             </div>
 
             <div

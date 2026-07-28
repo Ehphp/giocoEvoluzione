@@ -16,7 +16,7 @@ create table public.games (
   id uuid primary key default gen_random_uuid(), room_code text not null unique,
   game_mode text not null default 'PVP' check (game_mode in ('PVP', 'VS_BOT')),
   status text not null check (status in ('WAITING', 'CHOOSING', 'REVEALING', 'ROUND_RESULT', 'FINISHED')),
-  current_round integer not null default 1 check (current_round between 1 and 6),
+  current_round integer not null default 1 check (current_round between 1 and 7),
   world_id text not null default 'AURELIA_PRIME', round_event_sequence jsonb not null,
   player_1_id text, player_2_id text, player_1_score integer not null default 0, player_2_score integer not null default 0,
   winner_id text, started_at timestamptz, finished_at timestamptz, rematch_count integer not null default 0,
@@ -29,16 +29,26 @@ create table public.players (
 );
 create table public.round_actions (
   id uuid primary key default gen_random_uuid(), game_id uuid not null references public.games(id) on delete cascade,
-  round_number integer not null check (round_number between 1 and 6), player_id text not null references public.players(id) on delete cascade,
+  round_number integer not null check (round_number between 1 and 7), player_id text not null references public.players(id) on delete cascade,
   trait text not null, action_type text not null check (action_type in ('USE', 'EVOLVE')), created_at timestamptz not null default timezone('utc', now()),
   unique (game_id, round_number, player_id)
 );
 create table public.round_results (
   id uuid primary key default gen_random_uuid(), game_id uuid not null references public.games(id) on delete cascade,
-  round_number integer not null check (round_number between 1 and 6), player_1_value integer not null, player_2_value integer not null,
+  round_number integer not null check (round_number between 1 and 7), player_1_value integer not null, player_2_value integer not null,
   winner_id text, resolution_data jsonb not null default '{}'::jsonb, created_at timestamptz not null default timezone('utc', now()), unique (game_id, round_number)
 );
 create trigger games_set_updated_at before update on public.games for each row execute function public.set_updated_at();
+
+create or replace function public.prevent_closed_round_action()
+returns trigger language plpgsql as $$
+declare current_status text; current_number integer;
+begin
+  select status, current_round into current_status, current_number from public.games where id = new.game_id;
+  if current_status <> 'CHOOSING' or new.round_number <> current_number then raise exception 'round is not open'; end if;
+  return new;
+end; $$;
+create trigger round_actions_only_for_open_round before insert on public.round_actions for each row execute function public.prevent_closed_round_action();
 
 alter table public.games enable row level security; alter table public.players enable row level security;
 alter table public.round_actions enable row level security; alter table public.round_results enable row level security;
@@ -72,29 +82,37 @@ alter publication supabase_realtime add table public.games, public.players, publ
 create or replace function public.initial_traits()
 returns jsonb language sql immutable as $$
   select jsonb_build_object(
-      'RESILIENCE', jsonb_build_object('level', 0, 'cooldown', 0),
-      'MOBILITY', jsonb_build_object('level', 0, 'cooldown', 0),
+      'FEROCITY', jsonb_build_object('level', 0, 'cooldown', 0),
+      'ARMOR', jsonb_build_object('level', 0, 'cooldown', 0),
+      'AGILITY', jsonb_build_object('level', 0, 'cooldown', 0),
       'SENSES', jsonb_build_object('level', 0, 'cooldown', 0),
-      'METABOLISM', jsonb_build_object('level', 0, 'cooldown', 0),
-      'AQUATIC', jsonb_build_object('level', 0, 'cooldown', 0)
+      'CAMOUFLAGE', jsonb_build_object('level', 0, 'cooldown', 0)
   );
 $$;
 
 alter table public.round_actions drop constraint if exists round_actions_trait_check;
 alter table public.round_actions add constraint round_actions_trait_check
-  check (trait in ('RESILIENCE', 'MOBILITY', 'SENSES', 'METABOLISM', 'AQUATIC'));
+  check (trait in ('FEROCITY', 'ARMOR', 'AGILITY', 'SENSES', 'CAMOUFLAGE'));
 
 create or replace function public.generate_round_event_sequence()
 returns jsonb language sql as $$
-  select jsonb_agg(event_id)
-  from (select event_id from unnest(array[
+  with shuffled as materialized (
+    select event_id, row_number() over () as position
+    from (select event_id from unnest(array[
       'VOLCANIC_ASH_WAVE',
       'PROLONGED_ECLIPSE',
       'PREDATOR_PACK_MIGRATION',
       'HEAT_SPIKE',
       'NUTRIENT_COLLAPSE',
       'FLASH_FLOOD'
-    ]::text[]) event_id order by random()) shuffled;
+    ]::text[]) event_id order by random()) randomized
+  )
+  select jsonb_agg(event_id order by position)
+  from (
+    select event_id, position from shuffled
+    union all
+    select event_id, 7 as position from shuffled where position = 1
+  ) best_of_seven;
 $$;
 
 create or replace function public.create_vs_bot_game(p_nickname text, p_player_id text)

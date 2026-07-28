@@ -218,7 +218,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 affinity: mapAffinity(affinity),
                 imageUrl: getGeneAssetByTrait(traitType),
                 usable,
-                disabledReason: usable ? undefined : `Cooldown ${state.cooldown}`,
+                disabledReason: usable ? undefined : `Recupero ${state.cooldown}`,
                 prediction: prediction
                     ? {
                         useScore: prediction.total,

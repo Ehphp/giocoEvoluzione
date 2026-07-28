@@ -10,7 +10,7 @@ di sviluppo; non esiste alcuna conversione dei dieci geni precedenti.
    l'intero file `supabase/migrations/202607260001_reset_mvp_5_genes.sql` in una
    sola esecuzione.
 4. Verifica che `select public.initial_traits();` restituisca esattamente
-   `RESILIENCE`, `MOBILITY`, `SENSES`, `METABOLISM` e `AQUATIC`.
+   `FEROCITY`, `ARMOR`, `AGILITY`, `SENSES` e `CAMOUFLAGE`.
 
 La migrazione e' autosufficiente per rendere identica l'inizializzazione locale
 e remota, ma e' generata: non modificarla a mano. `supabase/schema.sql` e
