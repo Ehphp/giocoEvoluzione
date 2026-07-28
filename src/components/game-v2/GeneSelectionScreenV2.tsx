@@ -3,6 +3,7 @@ import type { GeneSelectionViewModelV2 } from './types'
 import { ActionPanelV2 } from './components/ActionPanelV2'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
+import { NaturalAdvantageV2 } from './components/NaturalAdvantageV2'
 import { RoundEventPanelV2 } from './components/RoundEventPanelV2'
 import { WaitingStateV2 } from './components/WaitingStateV2'
 
@@ -132,6 +133,8 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                     <p>{viewModel.errorMessage}</p>
                                 </section>
                             ) : null}
+
+                            <NaturalAdvantageV2 selectedGene={viewModel.selectedGene} />
 
                             <div className={`action-panel-shell ${isWaiting ? 'is-waiting' : 'is-actions'}`}>
                                 {isWaiting && viewModel.waitingState ? (

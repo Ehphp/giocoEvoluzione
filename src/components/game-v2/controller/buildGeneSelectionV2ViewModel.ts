@@ -231,7 +231,6 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
             }
         })
         .filter((gene): gene is GeneCardV2 => gene !== null)
-        .sort(compareGenesStrongestFirst)
 }
 
 function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null): GeneCardV2 | null {
@@ -247,7 +246,7 @@ function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null)
 }
 
 export function getBestTraitIdForSnapshot(snapshot: GameSnapshot): TraitType | null {
-    return buildGenes(snapshot)[0]?.traitType ?? null
+    return [...buildGenes(snapshot)].sort(compareGenesStrongestFirst)[0]?.traitType ?? null
 }
 
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {

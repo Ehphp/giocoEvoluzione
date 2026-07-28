@@ -48,7 +48,6 @@ function GenePredictionPopover({ gene }: { gene: GeneCardV2 }) {
                         ? 'Questa crisi ambientale non modifica il rendimento dell adattamento.'
                         : 'Il punteggio include il modificatore dell evento.')}
             </p>
-            <p>Vantaggio naturale: rivelato solo alla risoluzione, perché la scelta avversaria è segreta.</p>
             <small className="selector-v2-popover__hint">Tocca di nuovo l adattamento o fuori dal pannello per chiudere</small>
         </aside>
     )
@@ -270,7 +269,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
         <section
             ref={selectorRef}
             className={`selector-v2 ${isReordering ? 'is-reordering' : ''}`}
-            aria-label="Selettore geni ordinato dal gene più forte al più debole"
+            aria-label="Selettore adattamenti"
         >
             {previewGene ? <GenePredictionPopover gene={previewGene} /> : null}
 
@@ -282,7 +281,7 @@ export function GeneSelectorPreviewV2({ genes, selectedGeneId, onSelectGene, dis
             <div
                 className="selector-v2-carousel"
                 role="listbox"
-                aria-label="Card geni, da più forte a più debole"
+                aria-label="Card adattamenti"
                 onPointerDown={handleSwipeStart}
                 onPointerUp={handleSwipeEnd}
                 onPointerCancel={() => {
