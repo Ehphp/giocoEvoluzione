@@ -40,7 +40,7 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.playerCreature,
     alt: 'Creatura del giocatore verde',
     scale: .82,
-    offsetX: -14,
+    offsetX: -10,
     // The supplied PNG has transparent space under the feet.
     offsetY: 25,
 }
@@ -49,7 +49,7 @@ export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.opponentCreature,
     alt: 'Creatura avversaria viola',
     scale: .72,
-    offsetX: 10,
+    offsetX: 6,
     // The supplied PNG has transparent space under the feet.
     offsetY: 25,
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import type { RoundEventV2 } from '../types'
 
@@ -18,7 +19,7 @@ function EventArtwork({ roundEvent }: { roundEvent: RoundEventV2 }) {
 }
 
 function EventDetails({ roundEvent, heading, onClose }: { roundEvent: RoundEventV2; heading: string; onClose: () => void }) {
-    return (
+    return createPortal(
         <div className="event-v2-overlay" role="presentation" onPointerDown={onClose}>
             <aside className="event-v2-popover" role="dialog" aria-modal="true" aria-label={heading} onPointerDown={(event) => event.stopPropagation()}>
                 <div className="event-v2-popover__header">
@@ -39,7 +40,8 @@ function EventDetails({ roundEvent, heading, onClose }: { roundEvent: RoundEvent
                     </div>
                 ) : <p>Nessun gene modificato da questo ambiente.</p>}
             </aside>
-        </div>
+        </div>,
+        document.body,
     )
 }
 

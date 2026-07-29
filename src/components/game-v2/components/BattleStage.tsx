@@ -30,7 +30,6 @@ export function BattleStage({ background, playerCreature, opponentCreature }: Ba
             <img className="battle-stage__background" src={background} alt="" />
             <div className="battle-stage__atmosphere" aria-hidden="true" />
             <CreatureLayer visual={playerCreature} side="player" />
-            <div className="battle-stage__versus" aria-label="contro">VS</div>
             <CreatureLayer visual={opponentCreature} side="opponent" />
             <div className="battle-stage__foreground" aria-hidden="true" />
         </section>

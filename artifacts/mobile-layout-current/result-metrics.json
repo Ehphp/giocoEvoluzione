@@ -11,26 +11,26 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 245.6,
+        "top": 289.2,
         "bottom": 792,
         "left": 8,
         "right": 352,
         "width": 344,
-        "height": 546.4,
+        "height": 502.8,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 256.6,
-        "bottom": 483.6,
+        "top": 300.2,
+        "bottom": 510.5,
         "left": 19,
         "right": 341,
         "width": 322,
-        "height": 227,
+        "height": 210.2,
         "fullyVisible": true
       },
       ".round-result-cards": {
-        "top": 493.6,
-        "bottom": 628.1,
+        "top": 520.5,
+        "bottom": 654.9,
         "left": 19,
         "right": 341,
         "width": 322,
@@ -38,8 +38,8 @@
         "fullyVisible": true
       },
       ".round-result-explanation": {
-        "top": 638.1,
-        "bottom": 691.8,
+        "top": 664.9,
+        "bottom": 718.6,
         "left": 19,
         "right": 341,
         "width": 322,
@@ -47,8 +47,8 @@
         "fullyVisible": true
       },
       ".round-result-screen .primary-button": {
-        "top": 701.8,
-        "bottom": 754.2,
+        "top": 728.6,
+        "bottom": 781,
         "left": 19,
         "right": 341,
         "width": 322,

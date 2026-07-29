@@ -61,11 +61,11 @@ describe('RoundEventPanelV2 compact module', () => {
         const current = container.querySelector<HTMLButtonElement>('.event-v2-card')!
 
         act(() => current.click())
-        expect(container.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(currentEvent.effects.length)
+        expect(document.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(currentEvent.effects.length)
         expect(current.getAttribute('aria-expanded')).toBe('true')
 
         act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
-        expect(container.querySelector('.event-v2-popover')).toBeNull()
+        expect(document.querySelector('.event-v2-popover')).toBeNull()
         expect(document.activeElement).toBe(current)
     })
 
@@ -73,10 +73,10 @@ describe('RoundEventPanelV2 compact module', () => {
         const next = container.querySelector<HTMLButtonElement>('.event-v2-next-trigger')!
 
         act(() => next.click())
-        expect(container.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(nextEvent.effects.length)
+        expect(document.querySelectorAll('.event-v2-popover .event-v2-modifier')).toHaveLength(nextEvent.effects.length)
         expect(next.getAttribute('aria-expanded')).toBe('true')
 
         act(() => next.click())
-        expect(container.querySelector('.event-v2-popover')).toBeNull()
+        expect(document.querySelector('.event-v2-popover')).toBeNull()
     })
 })
