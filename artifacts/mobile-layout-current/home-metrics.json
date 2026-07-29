@@ -32,11 +32,11 @@
       },
       ".home-entry": {
         "top": 151.3,
-        "bottom": 562,
+        "bottom": 619.6,
         "left": 13,
         "right": 347,
         "width": 334,
-        "height": 410.8,
+        "height": 468.4,
         "fullyVisible": true
       },
       "#player-name": {
@@ -58,8 +58,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 471.2,
-        "bottom": 523.5,
+        "top": 528.8,
+        "bottom": 581.1,
         "left": 234,
         "right": 336,
         "width": 102,
@@ -67,8 +67,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 572,
-        "bottom": 624.4,
+        "top": 629.6,
+        "bottom": 682,
         "left": 13,
         "right": 204.4,
         "width": 191.4,
@@ -110,11 +110,11 @@
       },
       ".home-entry": {
         "top": 158.2,
-        "bottom": 569,
+        "bottom": 626.6,
         "left": 13,
         "right": 377,
         "width": 364,
-        "height": 410.8,
+        "height": 468.4,
         "fullyVisible": true
       },
       "#player-name": {
@@ -136,8 +136,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 478.1,
-        "bottom": 530.5,
+        "top": 535.7,
+        "bottom": 588.1,
         "left": 264,
         "right": 366,
         "width": 102,
@@ -145,8 +145,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 579,
-        "bottom": 631.4,
+        "top": 636.6,
+        "bottom": 689,
         "left": 13,
         "right": 204.4,
         "width": 191.4,
@@ -188,11 +188,11 @@
       },
       ".home-entry": {
         "top": 159.5,
-        "bottom": 570.3,
+        "bottom": 627.9,
         "left": 13,
         "right": 399,
         "width": 386,
-        "height": 410.8,
+        "height": 468.4,
         "fullyVisible": true
       },
       "#player-name": {
@@ -214,8 +214,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 479.4,
-        "bottom": 531.8,
+        "top": 537,
+        "bottom": 589.4,
         "left": 286,
         "right": 388,
         "width": 102,
@@ -223,8 +223,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 580.3,
-        "bottom": 632.7,
+        "top": 637.9,
+        "bottom": 690.3,
         "left": 13,
         "right": 204.4,
         "width": 191.4,
@@ -266,11 +266,11 @@
       },
       ".home-entry": {
         "top": 159.5,
-        "bottom": 570.3,
+        "bottom": 627.9,
         "left": 13,
         "right": 417,
         "width": 404,
-        "height": 410.8,
+        "height": 468.4,
         "fullyVisible": true
       },
       "#player-name": {
@@ -292,8 +292,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 479.4,
-        "bottom": 531.8,
+        "top": 537,
+        "bottom": 589.4,
         "left": 304,
         "right": 406,
         "width": 102,
@@ -301,8 +301,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 580.3,
-        "bottom": 632.7,
+        "top": 637.9,
+        "bottom": 690.3,
         "left": 13,
         "right": 204.4,
         "width": 191.4,
@@ -334,8 +334,8 @@
         "fullyVisible": true
       },
       ".home-screen__header": {
-        "top": 134.7,
-        "bottom": 317.7,
+        "top": 163.5,
+        "bottom": 346.5,
         "left": 17,
         "right": 342.8,
         "width": 325.8,
@@ -344,11 +344,11 @@
       },
       ".home-entry": {
         "top": 17,
-        "bottom": 435.4,
+        "bottom": 493,
         "left": 352.8,
         "right": 751,
         "width": 398.2,
-        "height": 418.4,
+        "height": 476,
         "fullyVisible": true
       },
       "#player-name": {
@@ -370,8 +370,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 339,
-        "bottom": 395,
+        "top": 396.5,
+        "bottom": 452.5,
         "left": 636,
         "right": 738,
         "width": 102,
@@ -379,8 +379,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 445.4,
-        "bottom": 497.8,
+        "top": 503,
+        "bottom": 555.4,
         "left": 352.8,
         "right": 544.2,
         "width": 191.4,
@@ -404,16 +404,16 @@
     "boxes": {
       ".home-screen": {
         "top": 15,
-        "bottom": 479.8,
+        "bottom": 537.4,
         "left": 17,
         "right": 827,
         "width": 810,
-        "height": 464.8,
+        "height": 522.4,
         "fullyVisible": false
       },
       ".home-screen__header": {
-        "top": 150.3,
-        "bottom": 282.1,
+        "top": 179.1,
+        "bottom": 310.9,
         "left": 21,
         "right": 377.4,
         "width": 356.4,
@@ -422,11 +422,11 @@
       },
       ".home-entry": {
         "top": 19,
-        "bottom": 413.4,
+        "bottom": 471,
         "left": 387.4,
         "right": 823,
         "width": 435.6,
-        "height": 394.4,
+        "height": 452,
         "fullyVisible": false
       },
       "#player-name": {
@@ -448,17 +448,17 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 317,
-        "bottom": 373,
+        "top": 374.5,
+        "bottom": 430.5,
         "left": 708,
         "right": 810,
         "width": 102,
         "height": 56,
-        "fullyVisible": true
+        "fullyVisible": false
       },
       ".home-screen__leave": {
-        "top": 423.4,
-        "bottom": 475.8,
+        "top": 481,
+        "bottom": 533.4,
         "left": 387.4,
         "right": 578.8,
         "width": 191.4,
@@ -490,8 +490,8 @@
         "fullyVisible": true
       },
       ".home-screen__header": {
-        "top": 155.1,
-        "bottom": 297.3,
+        "top": 183.9,
+        "bottom": 326.1,
         "left": 257,
         "right": 669.2,
         "width": 412.2,
@@ -500,11 +500,11 @@
       },
       ".home-entry": {
         "top": 17,
-        "bottom": 435.4,
+        "bottom": 493,
         "left": 679.2,
         "right": 1183,
         "width": 503.8,
-        "height": 418.4,
+        "height": 476,
         "fullyVisible": true
       },
       "#player-name": {
@@ -526,8 +526,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 339,
-        "bottom": 395,
+        "top": 396.5,
+        "bottom": 452.5,
         "left": 1068,
         "right": 1170,
         "width": 102,
@@ -535,8 +535,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 445.4,
-        "bottom": 497.8,
+        "top": 503,
+        "bottom": 555.4,
         "left": 679.2,
         "right": 870.6,
         "width": 191.4,
@@ -568,8 +568,8 @@
         "fullyVisible": true
       },
       ".home-screen__header": {
-        "top": 155.1,
-        "bottom": 297.3,
+        "top": 183.9,
+        "bottom": 326.1,
         "left": 497,
         "right": 909.2,
         "width": 412.2,
@@ -578,11 +578,11 @@
       },
       ".home-entry": {
         "top": 17,
-        "bottom": 435.4,
+        "bottom": 493,
         "left": 919.2,
         "right": 1423,
         "width": 503.8,
-        "height": 418.4,
+        "height": 476,
         "fullyVisible": true
       },
       "#player-name": {
@@ -604,8 +604,8 @@
         "fullyVisible": true
       },
       ".home-entry__join": {
-        "top": 339,
-        "bottom": 395,
+        "top": 396.5,
+        "bottom": 452.5,
         "left": 1308,
         "right": 1410,
         "width": 102,
@@ -613,8 +613,8 @@
         "fullyVisible": true
       },
       ".home-screen__leave": {
-        "top": 445.4,
-        "bottom": 497.8,
+        "top": 503,
+        "bottom": 555.4,
         "left": 919.2,
         "right": 1110.6,
         "width": 191.4,

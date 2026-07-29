@@ -10,7 +10,7 @@
     "documentScrollHeight": 800,
     "screenScrollHeight": 800,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 60,
+    "sceneViewportRatio": 60.9,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -46,11 +46,11 @@
       },
       ".arena-stage": {
         "top": 68,
-        "bottom": 547.9,
+        "bottom": 554.9,
         "left": 17,
         "right": 343,
         "width": 326,
-        "height": 479.9,
+        "height": 486.9,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -147,7 +147,7 @@
     "documentScrollHeight": 844,
     "screenScrollHeight": 844,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 60.9,
+    "sceneViewportRatio": 61.8,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -183,11 +183,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 584.2,
+        "bottom": 591.2,
         "left": 18,
         "right": 372,
         "width": 354,
-        "height": 514.2,
+        "height": 521.2,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -284,7 +284,7 @@
     "documentScrollHeight": 915,
     "screenScrollHeight": 915,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 64,
+    "sceneViewportRatio": 64.7,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -320,11 +320,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 655.2,
+        "bottom": 662.2,
         "left": 18,
         "right": 394,
         "width": 376,
-        "height": 585.2,
+        "height": 592.2,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -421,7 +421,7 @@
     "documentScrollHeight": 932,
     "screenScrollHeight": 932,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 64.6,
+    "sceneViewportRatio": 65.4,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -457,11 +457,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 672.2,
+        "bottom": 679.2,
         "left": 18,
         "right": 412,
         "width": 394,
-        "height": 602.2,
+        "height": 609.2,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -605,8 +605,8 @@
         "top": 99,
         "bottom": 198.5,
         "left": 40,
-        "right": 728,
-        "width": 687.9,
+        "right": 720,
+        "width": 680,
         "height": 99.5,
         "fullyVisible": true
       },
@@ -614,8 +614,8 @@
         "top": 110,
         "bottom": 172,
         "left": 51,
-        "right": 710,
-        "width": 658.9,
+        "right": 702,
+        "width": 651,
         "height": 62,
         "fullyVisible": true
       },
@@ -623,8 +623,8 @@
         "top": 175,
         "bottom": 187.5,
         "left": 51,
-        "right": 717,
-        "width": 665.9,
+        "right": 709,
+        "width": 658,
         "height": 12.5,
         "fullyVisible": true
       },
@@ -878,27 +878,27 @@
       ".event-v2-stack": {
         "top": 99,
         "bottom": 198.5,
-        "left": 370,
-        "right": 1070,
-        "width": 700,
+        "left": 59,
+        "right": 739,
+        "width": 680,
         "height": 99.5,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 110,
         "bottom": 172,
-        "left": 381,
-        "right": 1052,
-        "width": 671,
+        "left": 70,
+        "right": 721,
+        "width": 651,
         "height": 62,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 175,
         "bottom": 187.5,
-        "left": 381,
-        "right": 1059,
-        "width": 678,
+        "left": 70,
+        "right": 728,
+        "width": 658,
         "height": 12.5,
         "fullyVisible": true
       },
@@ -1015,27 +1015,27 @@
       ".event-v2-stack": {
         "top": 99,
         "bottom": 198.5,
-        "left": 610,
-        "right": 1310,
-        "width": 700,
+        "left": 59,
+        "right": 739,
+        "width": 680,
         "height": 99.5,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 110,
         "bottom": 172,
-        "left": 621,
-        "right": 1292,
-        "width": 671,
+        "left": 70,
+        "right": 721,
+        "width": 651,
         "height": 62,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 175,
         "bottom": 187.5,
-        "left": 621,
-        "right": 1299,
-        "width": 678,
+        "left": 70,
+        "right": 728,
+        "width": 658,
         "height": 12.5,
         "fullyVisible": true
       },

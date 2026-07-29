@@ -1,6 +1,11 @@
-import { GAME_SELECTION_ASSETS } from './gameSelectionAssets'
+import {
+    DEFAULT_BATTLE_OPPONENT_CREATURE,
+    DEFAULT_BATTLE_PLAYER_CREATURE,
+    getBattleBackgroundForEvent,
+} from './gameSelectionAssets'
 import type { GeneSelectionViewModelV2 } from './types'
 import { ActionPanelV2 } from './components/ActionPanelV2'
+import { BattleStage } from './components/BattleStage'
 import { DuelHeaderV2 } from './components/DuelHeaderV2'
 import { GeneSelectorPreviewV2 } from './components/GeneSelectorPreviewV2'
 import { NaturalAdvantageV2 } from './components/NaturalAdvantageV2'
@@ -16,40 +21,6 @@ type GeneSelectionScreenV2Props = {
     onEvolveGene: () => Promise<void>
     onLeaveSession: () => void
     isInteractionLocked?: boolean
-}
-
-function SceneFallback() {
-    return (
-        <div className="scene-fallback" aria-hidden="true">
-            <img
-                className="scene-fallback-bg"
-                src={GAME_SELECTION_ASSETS.backgroundFallback}
-                alt=""
-                onError={(event) => {
-                    event.currentTarget.style.display = 'none'
-                }}
-            />
-            <div className="scene-fallback-creatures">
-                <img
-                    src="/assets/game-ui/placeholders/player-creature.svg"
-                    alt=""
-                    className="scene-fallback-creature scene-fallback-creature--player"
-                    onError={(event) => {
-                        event.currentTarget.style.display = 'none'
-                    }}
-                />
-                <span className="scene-fallback-vs">VS</span>
-                <img
-                    src="/assets/game-ui/placeholders/opponent-creature.svg"
-                    alt=""
-                    className="scene-fallback-creature scene-fallback-creature--opponent"
-                    onError={(event) => {
-                        event.currentTarget.style.display = 'none'
-                    }}
-                />
-            </div>
-        </div>
-    )
 }
 
 function InvalidSessionMessage({ reason, onLeaveSession }: { reason?: string; onLeaveSession: () => void }) {
@@ -77,18 +48,6 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             aria-hidden={isInteractionLocked || undefined}
             inert={isInteractionLocked}
         >
-            <img
-                className="frame-scene-image"
-                src={GAME_SELECTION_ASSETS.battleScene}
-                alt=""
-                onError={(event) => {
-                    event.currentTarget.style.display = 'none'
-                    event.currentTarget.closest('.gene-selection-screen')?.classList.add('has-scene-error')
-                }}
-            />
-            <SceneFallback />
-            <div className="frame-scene-overlay frame-scene-overlay--top" aria-hidden="true" />
-            <div className="frame-scene-overlay frame-scene-overlay--bottom" aria-hidden="true" />
             <div className="game-frame" data-testid="gene-v2-scroll-container">
                 {viewModel.status === 'invalid' ? (
                     <div className="game-state game-state--centered">
@@ -120,6 +79,11 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                             <RoundEventPanelV2
                                 roundEvent={viewModel.roundEvent}
                                 nextRoundEvent={viewModel.nextRoundEvent}
+                            />
+                            <BattleStage
+                                background={getBattleBackgroundForEvent(viewModel.roundEvent.id)}
+                                playerCreature={viewModel.player.creatureVisual ?? DEFAULT_BATTLE_PLAYER_CREATURE}
+                                opponentCreature={viewModel.opponent.creatureVisual ?? DEFAULT_BATTLE_OPPONENT_CREATURE}
                             />
                         </main>
 

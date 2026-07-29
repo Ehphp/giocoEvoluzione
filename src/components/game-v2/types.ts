@@ -1,4 +1,5 @@
 import type { TraitType } from '../../game/types'
+import type { CreatureVisual } from './gameSelectionAssets'
 
 export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 
@@ -16,6 +17,7 @@ export interface DuelPlayerV2 {
     score: number
     roundValueTotal: number | null
     avatarUrl?: string
+    creatureVisual?: CreatureVisual
     status: DuelPlayerStatusV2
 }
 

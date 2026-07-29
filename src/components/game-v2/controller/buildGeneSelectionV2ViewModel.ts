@@ -6,7 +6,13 @@ import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import { getRoundEventLabel } from '../../../game/ui-context'
 import type { RoundEventDefinition, TraitCollection, TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
-import { GAME_SELECTION_ASSETS, getEventAssetByArtKey, getGeneAssetByTrait } from '../gameSelectionAssets'
+import {
+    DEFAULT_BATTLE_OPPONENT_CREATURE,
+    DEFAULT_BATTLE_PLAYER_CREATURE,
+    GAME_SELECTION_ASSETS,
+    getEventAssetByArtKey,
+    getGeneAssetByTrait,
+} from '../gameSelectionAssets'
 import type {
     DuelPlayerStatusV2,
     GeneActionTypeV2,
@@ -281,6 +287,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 score: 0,
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
+                creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
                 status: 'choosing',
             },
             opponent: {
@@ -289,6 +296,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 score: 0,
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
+                creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
                 status: 'choosing',
             },
             round: {
@@ -349,6 +357,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             score: input.myScore,
             roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
+            creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
         opponent: {
@@ -357,6 +366,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             score: input.opponentScore,
             roundValueTotal: opponent ? getRoundValueTotal(snapshot, opponent.slot) : null,
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
+            creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
             status: resolvePlayerStatus(opponentHasSubmitted, opponent?.connected ?? false),
         },
         round: {

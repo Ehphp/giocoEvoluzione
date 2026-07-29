@@ -38,40 +38,6 @@
   .gene-selection-screen { height: 100dvh; min-height: 100dvh; }
 }
 
-.frame-scene-image,
-.scene-fallback,
-.frame-scene-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.frame-scene-image {
-  z-index: -3;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 45%;
-}
-
-.frame-scene-overlay { z-index: -2; }
-.frame-scene-overlay--top { background: linear-gradient(180deg, rgba(3, 17, 14, .72), rgba(3, 17, 14, .16) 36%, transparent 58%); }
-.frame-scene-overlay--bottom { background: linear-gradient(0deg, rgba(3, 18, 14, .64), transparent 43%); }
-
-.scene-fallback {
-  z-index: -3;
-  display: none;
-  overflow: hidden;
-  align-items: flex-end;
-  justify-content: center;
-  background: #15372e;
-}
-.gene-selection-screen.has-scene-error .scene-fallback { display: flex; }
-.scene-fallback-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.scene-fallback-creatures { position: relative; width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding: 0 8%; }
-.scene-fallback-creature { width: 37%; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
-.scene-fallback-vs { position: absolute; bottom: 32%; left: 50%; transform: translateX(-50%); font-size: 1.7rem; font-weight: 900; text-shadow: 0 2px 8px #263d20; }
-
 .game-frame {
   position: relative;
   z-index: 1;
@@ -131,15 +97,107 @@
 
 .arena-stage {
   position: relative;
+  width: 100%;
   min-width: 0;
   min-height: 0;
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 5px;
   justify-content: center;
 }
 
+.battle-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 820px;
+  height: 100%;
+  min-height: 0;
+  justify-self: center;
+  overflow: hidden;
+  border: 1px solid rgba(237, 244, 208, .3);
+  border-radius: 20px;
+  background: #163e31;
+  box-shadow: 0 9px 20px rgba(3, 22, 17, .24), inset 0 1px 0 rgba(255,255,255,.2);
+  isolation: isolate;
+}
+.battle-stage__background,
+.battle-stage__atmosphere,
+.battle-stage__foreground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.battle-stage__background { z-index: -3; object-fit: cover; object-position: center 74%; }
+.battle-stage__atmosphere { z-index: -2; background: linear-gradient(180deg, rgba(5, 26, 19, .18), transparent 45%, rgba(5, 22, 15, .16)); }
+.battle-stage__foreground { z-index: 5; background: linear-gradient(0deg, rgba(4, 25, 16, .18), transparent 28%); }
+.battle-stage__creature {
+  --battle-creature-scale: 1;
+  --battle-creature-height: 145%;
+  --battle-creature-offset-x: 0%;
+  --battle-creature-offset-y: 0%;
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  width: min(66%, 390px);
+  height: 100%;
+  pointer-events: none;
+}
+.battle-stage__creature--player { left: 0; }
+.battle-stage__creature--opponent { right: 0; z-index: 3; }
+.battle-stage__creature img {
+  position: absolute;
+  bottom: 0;
+  width: auto;
+  max-width: none;
+  height: var(--battle-creature-height);
+  transform: translate(var(--battle-creature-offset-x), var(--battle-creature-offset-y));
+  transform-origin: bottom center;
+  filter: drop-shadow(0 7px 7px rgba(0, 0, 0, .28));
+  user-select: none;
+}
+.battle-stage__creature--player img { left: 0; }
+.battle-stage__creature--opponent img { right: 0; }
+.battle-stage__ground-shadow {
+  position: absolute;
+  z-index: -1;
+  bottom: 3%;
+  width: 53%;
+  height: 11%;
+  border-radius: 50%;
+  background: rgba(3, 19, 12, .42);
+  filter: blur(5px);
+  transform: translateX(34%);
+}
+.battle-stage__creature--opponent .battle-stage__ground-shadow { right: 0; transform: translateX(-34%); }
+.battle-stage__versus {
+  position: absolute;
+  z-index: 4;
+  bottom: 29%;
+  left: 50%;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(255, 250, 226, .66);
+  border-radius: 50%;
+  background: rgba(11, 42, 31, .54);
+  box-shadow: 0 4px 12px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.25);
+  color: #fff8dd;
+  font-size: .78rem;
+  font-weight: 950;
+  letter-spacing: .07em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  transform: translateX(-50%);
+}
+
 .event-v2-stack {
-  width: min(100%, 680px);
+  width: 100%;
+  max-width: 680px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -189,7 +247,7 @@
   display: grid;
   gap: 6px;
   padding: 7px 10px max(7px, env(safe-area-inset-bottom, 0px));
-  margin: 0 -8px;
+  margin: -7px -8px 0;
   border: 1px solid rgba(255,255,255,.72);
   border-bottom: 0;
   border-radius: 24px 24px 0 0;
