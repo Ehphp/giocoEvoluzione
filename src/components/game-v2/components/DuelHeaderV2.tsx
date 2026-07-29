@@ -53,7 +53,7 @@ function PlayerCard({
             <span className="duel-v2-score" aria-label={scoreLabel}>
                 <strong>{player.score}</strong>
                 {player.roundValueTotal !== null ? (
-                    <small title="Valore totale dei round, usato per il tiebreak">Σ {player.roundValueTotal}</small>
+                    <small title="Valore totale dei round, usato per il tiebreak">TB {player.roundValueTotal}</small>
                 ) : null}
             </span>
         </article>
