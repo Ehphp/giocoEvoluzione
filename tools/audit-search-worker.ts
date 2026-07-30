@@ -1,8 +1,1 @@
-import { parentPort } from 'node:worker_threads'
-import { screenCandidate } from './audit-search.ts'
-import type { CandidateCatalog } from './audit-catalog.ts'
-
-parentPort?.on('message', (message: { stop?: boolean; candidate?: CandidateCatalog; sequences?: number[][] }) => {
-    if (message.stop) { parentPort?.close(); return }
-    parentPort?.postMessage(screenCandidate(message.candidate!, message.sequences!))
-})
+throw new Error('Candidate matrix search is disabled: the event affinities are fixed by the deterministic conversion rule.')

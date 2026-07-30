@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { BASE_USE_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
+import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
 import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
 import { getRoundEventById, normalizeAdaptationCollection } from '../../../shared/game-rules/state.ts'
 import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
@@ -13,11 +13,13 @@ type TraitName = AdaptationId
 // Keep the production function's Deno-compatible rule manifest explicit.
 // Resolution itself delegates to the shared engine below; this guard prevents
 // an Edge deployment with a stale local rule copy.
-const EDGE_BASE_USE_VALUE = 1
+const EDGE_BASE_USE_VALUE = 2
+const EDGE_EVOLVE_ROUND_VALUE = 1
 const EDGE_MAX_ADAPTATION_LEVEL = 2
-const EDGE_LEVEL_BONUS = [0, 1, 3] as const
+const EDGE_LEVEL_BONUS = [0, 1, 2] as const
+const EDGE_NATURAL_ADVANTAGE_BONUS = 2
 
-if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_MAX_ADAPTATION_LEVEL !== MAX_ADAPTATION_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',')) {
+if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_EVOLVE_ROUND_VALUE !== EVOLVE_ROUND_VALUE || EDGE_MAX_ADAPTATION_LEVEL !== MAX_ADAPTATION_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',') || EDGE_NATURAL_ADVANTAGE_BONUS !== NATURAL_ADVANTAGE_BONUS) {
     throw new Error('Scoring rule mismatch between Edge and shared game rules.')
 }
 
@@ -37,12 +39,14 @@ function json(body: unknown, status = 200) {
 
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: ReturnType<typeof createClient>,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById>; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits?: AdaptationCollection; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
         roundEvent: input.roundEvent,
         roundNumber: input.roundNumber,
+        nextRoundEvent: input.nextRoundEvent,
+        publicOpponentTraits: input.publicOpponentTraits,
         difficulty: input.difficulty,
     })
     try {
@@ -314,7 +318,7 @@ Deno.serve(async (request) => {
         return json({ status: 'resolved', result: insertedResult })
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error.'
-        const isInvalidAction = /cooldown|maximum level|invalid trait state|unknown trait/i.test(message)
+        const isInvalidAction = /exhausted|no transition|maximum level|invalid adaptation state|unknown adaptation/i.test(message)
 
         return json({ error: message }, isInvalidAction ? 400 : 500)
     }

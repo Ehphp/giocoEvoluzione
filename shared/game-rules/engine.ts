@@ -1,26 +1,27 @@
-import { COOLDOWN_ROUNDS, MAX_ADAPTATION_LEVEL, ROUND_WIN_POINTS, TOTAL_ROUNDS, WINS_TO_WIN } from './catalog.ts'
+import { MAX_ADAPTATION_LEVEL, ROUND_WIN_POINTS, TOTAL_ROUNDS, WINS_TO_WIN } from './catalog.ts'
 import { getNaturalAdvantageBonus, getValidatedActionBreakdown, getValidatedAdaptationUseBreakdown } from './scoring.ts'
 import type { AdaptationCollection, AdaptationId, PlayerRoundAction, ResolveRoundInput, EnvironmentalCrisisDefinition, RoundResolution } from './types.ts'
 
-function cloneAdaptations(adaptations: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(adaptations).map(([adaptation, state]) => [adaptation, { ...state, level: Math.min(state.level, MAX_ADAPTATION_LEVEL) }])) as AdaptationCollection }
-export function isAdaptationUsable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { return adaptations[adaptation].cooldown === 0 }
-export function isAdaptationEvolvable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { return adaptations[adaptation].level < MAX_ADAPTATION_LEVEL }
+function cloneAdaptations(adaptations: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(adaptations).map(([adaptation, state]) => [adaptation, { ...state }])) as AdaptationCollection }
+export function isAdaptationUsable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { return !adaptations[adaptation].exhausted }
+export function isAdaptationEvolvable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { const state = adaptations[adaptation]; return state.level < MAX_ADAPTATION_LEVEL || state.exhausted }
 export function getRoundPoints(roundNumber: number): number { return roundNumber >= 1 && roundNumber <= TOTAL_ROUNDS ? ROUND_WIN_POINTS : 0 }
 export function getAdaptationRoundValue(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId): number { return getValidatedAdaptationUseBreakdown(roundEvent, adaptations, adaptation).total }
 export function hasClinchedMatch(player1Score: number, player2Score: number): boolean { return player1Score >= WINS_TO_WIN || player2Score >= WINS_TO_WIN }
 
 function resolvePlayerAction(input: ResolveRoundInput, adaptations: AdaptationCollection, action: PlayerRoundAction, opponentAction: PlayerRoundAction) {
-    const matchupBonus = getNaturalAdvantageBonus(action, opponentAction)
-    const breakdown = getValidatedActionBreakdown(input.roundEvent, adaptations, action.trait, action.actionType, matchupBonus)
     const nextAdaptations = cloneAdaptations(adaptations)
-    for (const state of Object.values(nextAdaptations)) state.cooldown = Math.max(0, state.cooldown - 1)
     if (action.actionType === 'EVOLVE') {
-        if (!isAdaptationEvolvable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is already at the maximum level and cannot evolve.`)
-        nextAdaptations[action.trait].level += 1
+        if (!isAdaptationEvolvable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is already available at the maximum level; EVOLVE would produce no transition.`)
+        const breakdown = getValidatedActionBreakdown(input.roundEvent, adaptations, action.trait, action.actionType)
+        if (nextAdaptations[action.trait].level < MAX_ADAPTATION_LEVEL) nextAdaptations[action.trait].level += 1
+        nextAdaptations[action.trait].exhausted = false
         return { roundValue: breakdown.total, breakdown, traits: nextAdaptations }
     }
-    if (!isAdaptationUsable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is in recovery and cannot be used.`)
-    nextAdaptations[action.trait].cooldown = COOLDOWN_ROUNDS
+    if (!isAdaptationUsable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is exhausted and cannot be used.`)
+    const matchupBonus = getNaturalAdvantageBonus(action, opponentAction)
+    const breakdown = getValidatedActionBreakdown(input.roundEvent, adaptations, action.trait, action.actionType, matchupBonus)
+    nextAdaptations[action.trait].exhausted = true
     return { roundValue: breakdown.total, breakdown, traits: nextAdaptations }
 }
 

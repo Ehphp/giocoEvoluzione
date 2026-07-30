@@ -3,17 +3,17 @@ import { getAdaptationRoundValue, resolveRound } from './engine.ts'
 import { getLegalBotActions, pickSeeded, type BotDecision, type BotDecisionContext, type OfflineBotPolicy, type BotRoundAction, type PrivilegedBotDecisionContext } from './bot-policies.ts'
 import type { AdaptationCollection, EnvironmentalCrisisDefinition } from './types.ts'
 
-export type EvaluationBreakdown = { terminal: number; score: number; levels: number; available: number; cooldown: number; matchupPotential: number; remaining: number; total: number }
+export type EvaluationBreakdown = { terminal: number; score: number; levels: number; available: number; exhausted: number; matchupPotential: number; remaining: number; total: number }
 export type LookaheadStats = { statesVisited: number; cacheHits: number; cacheMisses: number }
 export type LookaheadOptions = { depth?: number; stats?: LookaheadStats; fullSearchLastRounds?: number; id?: string }
 type SearchState = { own: AdaptationCollection; rival: AdaptationCollection; ownScore: number; rivalScore: number; round: number }
-function canonical(adaptations: AdaptationCollection): string { return Object.values(adaptations).map((state) => `${state.level}:${state.cooldown}`).join(',') }
+function canonical(adaptations: AdaptationCollection): string { return Object.values(adaptations).map((state) => `${state.level}:${Number(state.exhausted)}`).join(',') }
 function clone(adaptations: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(adaptations).map(([key, value]) => [key, { ...value }])) as AdaptationCollection }
 /** Keeps exhaustive root choices, while bounding only future opponent hypotheses. */
 function plausibleActions(adaptations: AdaptationCollection, event: EnvironmentalCrisisDefinition): BotRoundAction[] {
     const actions = getLegalBotActions(adaptations)
-    const uses = actions.filter((action) => action.actionType === 'USE').sort((left, right) => getAdaptationRoundValue(event, adaptations, right.trait) - getAdaptationRoundValue(event, adaptations, left.trait) || left.trait.localeCompare(right.trait)).slice(0, 2)
-    const evolves = actions.filter((action) => action.actionType === 'EVOLVE').sort((left, right) => adaptations[left.trait].level - adaptations[right.trait].level || left.trait.localeCompare(right.trait)).slice(0, 2)
+    const uses = actions.filter((action) => action.actionType === 'USE').sort((left, right) => getAdaptationRoundValue(event, adaptations, right.trait) - getAdaptationRoundValue(event, adaptations, left.trait) || left.trait.localeCompare(right.trait)).slice(0, 1)
+    const evolves = actions.filter((action) => action.actionType === 'EVOLVE').sort((left, right) => Number(adaptations[right.trait].exhausted) - Number(adaptations[left.trait].exhausted) || adaptations[left.trait].level - adaptations[right.trait].level || left.trait.localeCompare(right.trait)).slice(0, 1)
     return [...uses, ...evolves]
 }
 export function evaluateBotState(state: SearchState, remaining: number): EvaluationBreakdown {
@@ -21,10 +21,10 @@ export function evaluateBotState(state: SearchState, remaining: number): Evaluat
     const score = (state.ownScore - state.rivalScore) * 120
     const levels = Object.values(state.own).reduce((sum, trait) => sum + trait.level, 0) * 12 - Object.values(state.rival).reduce((sum, trait) => sum + trait.level, 0) * 12
     const available = getLegalBotActions(state.own).filter((action) => action.actionType === 'USE').length * 2 - getLegalBotActions(state.rival).filter((action) => action.actionType === 'USE').length * 2
-    const cooldown = Object.values(state.rival).reduce((sum, trait) => sum + trait.cooldown, 0) * 3 - Object.values(state.own).reduce((sum, trait) => sum + trait.cooldown, 0) * 3
+    const exhausted = Object.values(state.rival).filter((trait) => trait.exhausted).length * 3 - Object.values(state.own).filter((trait) => trait.exhausted).length * 3
     const matchupPotential = 0
     const remainingContribution = remaining * (state.ownScore === state.rivalScore ? 1 : 0)
-    return { terminal, score, levels, available, cooldown, matchupPotential, remaining: remainingContribution, total: terminal + score + levels + available + cooldown + matchupPotential + remainingContribution }
+    return { terminal, score, levels, available, exhausted, matchupPotential, remaining: remainingContribution, total: terminal + score + levels + available + exhausted + matchupPotential + remainingContribution }
 }
 function decide(context: BotDecisionContext, events: readonly EnvironmentalCrisisDefinition[], depth: number, stats?: LookaheadStats): BotDecision {
     const memo = new Map<string, number>()

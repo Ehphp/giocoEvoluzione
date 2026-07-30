@@ -5,7 +5,7 @@ export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 
 export type ModifierToneV2 = 'positive' | 'negative' | 'neutral'
 
-export type GeneAffinityV2 = 'low' | 'medium' | 'high' | 'excellent'
+export type GeneAffinityV2 = 'unfavorable' | 'suitable' | 'ideal'
 
 export type GeneActionTypeV2 = 'USE' | 'EVOLVE'
 
@@ -50,6 +50,9 @@ export interface GeneCardV2 {
     affinity: GeneAffinityV2
     imageUrl?: string
     usable: boolean
+    exhausted: boolean
+    strongAgainst: string
+    weakAgainst: string
     disabledReason?: string
     prediction?: {
         useScore: number

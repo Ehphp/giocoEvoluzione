@@ -34,7 +34,7 @@ export function NaturalAdvantageV2({ selectedGene }: NaturalAdvantageV2Props) {
                 </div>
             </div>
             <p className="natural-advantage-v2__matchup">
-                <span className="natural-advantage-v2__strong">Forte contro <b>{TRAIT_LABELS[strongAgainst]} +1</b></span>
+                <span className="natural-advantage-v2__strong">Forte contro <b>{TRAIT_LABELS[strongAgainst]} +2</b></span>
                 <span className="natural-advantage-v2__weak">Teme <b>{TRAIT_LABELS[fearedBy]}</b></span>
                 <small>Si attiva solo se entrambi usano</small>
             </p>

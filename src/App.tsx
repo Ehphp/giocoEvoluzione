@@ -785,10 +785,16 @@ function RoundBreakdownCard({
         <details className={`round-breakdown-card__details ${showContributions ? '' : 'is-hidden'}`}>
           <summary>Dettaglio calcolo</summary>
           <div className="round-breakdown-card__math">
-            <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
-            <p>Crisi ambientale {roundEventLabel}: {breakdown.eventModifier}</p>
-            <p>Livello: +{breakdown.levelContribution}</p>
-            <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
+            {action?.actionType === 'EVOLVE' ? (
+              <p>EVOLVE: valore fisso {breakdown.total}; evoluzione e recupero ignorano affinita e matchup.</p>
+            ) : (
+              <>
+                <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
+                <p>Affinita ambientale {roundEventLabel}: +{breakdown.eventModifier}</p>
+                <p>Livello: +{breakdown.levelContribution}</p>
+                <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
+              </>
+            )}
             {breakdown.originalLevel > breakdown.effectiveLevel ? (
               <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
             ) : (

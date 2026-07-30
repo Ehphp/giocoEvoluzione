@@ -1,4 +1,5 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
+import { NATURAL_ADVANTAGE } from '../../../../shared/game-rules/catalog.ts'
 import { isTraitEvolvable, isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { getValidatedTraitUseBreakdown } from '../../../game/scoring'
@@ -36,19 +37,7 @@ type BuildGeneSelectionV2ViewModelInput = {
 }
 
 function mapAffinity(score: number): GeneAffinityV2 {
-    if (score >= 2) {
-        return 'excellent'
-    }
-
-    if (score >= 1) {
-        return 'high'
-    }
-
-    if (score === 0) {
-        return 'medium'
-    }
-
-    return 'low'
+    return score === 2 ? 'ideal' : score === 1 ? 'suitable' : 'unfavorable'
 }
 
 function validateTraits(traits: TraitCollection | null | undefined): boolean {
@@ -59,7 +48,7 @@ function validateTraits(traits: TraitCollection | null | undefined): boolean {
     return TRAITS.every((trait) => {
         const state = traits[trait]
 
-        return state && typeof state.level === 'number' && typeof state.cooldown === 'number'
+        return state && typeof state.level === 'number' && typeof state.exhausted === 'boolean'
     })
 }
 
@@ -109,10 +98,8 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
     const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
     if (includeAll) {
         return effects
-            .filter((effect) => effect.modifier !== 0)
             .sort((a, b) => (
-                // Show every bonus before the malus, independently of the
-                // magnitude defined by a future event (for example +3).
+                // Keep affinities in the fixed ideal, suitable, unfavorable order.
                 (Number(b.modifier > 0) - Number(a.modifier > 0))
                 || (a.modifier > 0 ? b.modifier - a.modifier : a.modifier - b.modifier)
                 || TRAIT_LABELS[a.trait].localeCompare(TRAIT_LABELS[b.trait], 'it')
@@ -121,8 +108,8 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
                 id: `${roundEvent.id}-${effect.trait}-${effect.modifier}`,
                 label: TRAIT_LABELS[effect.trait],
                 modifier: effect.modifier,
-                value: `${effect.modifier > 0 ? '+' : ''}${effect.modifier} ${TRAIT_LABELS[effect.trait]}`,
-                tone: effect.modifier > 0 ? 'positive' : 'negative',
+                value: `${mapAffinity(effect.modifier) === 'ideal' ? 'Ideale' : mapAffinity(effect.modifier) === 'suitable' ? 'Adatto' : 'Sfavorevole'} · ${TRAIT_LABELS[effect.trait]}`,
+                tone: effect.modifier === 2 ? 'positive' : effect.modifier === 1 ? 'neutral' : 'negative',
             }))
     }
 
@@ -179,31 +166,6 @@ function mapRoundEvent(roundEvent: RoundEventDefinition, includeAllEffects = fal
     }
 }
 
-function compareGenesStrongestFirst(a: GeneCardV2, b: GeneCardV2): number {
-    // A gene that cannot legally be used has no immediately obtainable USE value.
-    // It stays in the slider, sorted deterministically with the other unavailable genes.
-    const aValue = a.usable ? (a.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
-    const bValue = b.usable ? (b.prediction?.useScore ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY
-
-    if (aValue !== bValue) {
-        return bValue - aValue
-    }
-
-    if (a.level !== b.level) {
-        return b.level - a.level
-    }
-
-    // The slider is strongest -> weakest. Keep exact ties deterministic from
-    // the left edge without changing their actual predicted value.
-    const alphabetical = a.name.localeCompare(b.name, 'it')
-
-    if (alphabetical !== 0) {
-        return alphabetical
-    }
-
-    return TRAIT_CATALOG[a.traitType].displayOrder - TRAIT_CATALOG[b.traitType].displayOrder
-}
-
 function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
     const roundEvent = snapshot.currentRoundEvent
     const myTraits = snapshot.me?.traits
@@ -223,6 +185,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 ? getRoundEventEffectsForTrait(roundEvent, traitType).reduce((sum, effect) => sum + effect.modifier, 0)
                 : 0
             const usable = isTraitUsable(myTraits, traitType)
+            const weakAgainst = TRAITS.find((candidate) => NATURAL_ADVANTAGE[candidate] === traitType)!
             const prediction = roundEvent
                 ? getValidatedTraitUseBreakdown(roundEvent, myTraits, traitType)
                 : null
@@ -235,7 +198,10 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 affinity: mapAffinity(affinity),
                 imageUrl: getGeneAssetByTrait(traitType),
                 usable,
-                disabledReason: usable ? undefined : `Recupero ${state.cooldown}`,
+                exhausted: state.exhausted,
+                strongAgainst: TRAIT_LABELS[NATURAL_ADVANTAGE[traitType]],
+                weakAgainst: TRAIT_LABELS[weakAgainst],
+                disabledReason: usable ? undefined : 'Esaurito · usa EVOLVE per recuperare',
                 prediction: prediction
                     ? {
                         useScore: prediction.total,
@@ -262,8 +228,8 @@ function resolveSelectedGene(genes: GeneCardV2[], selectedGeneId: string | null)
     return genes[0] ?? null
 }
 
-export function getBestTraitIdForSnapshot(snapshot: GameSnapshot): TraitType | null {
-    return [...buildGenes(snapshot)].sort(compareGenesStrongestFirst)[0]?.traitType ?? null
+export function getInitialTraitIdForSnapshot(snapshot: GameSnapshot): TraitType | null {
+    return buildGenes(snapshot).sort((left, right) => TRAIT_CATALOG[left.traitType].displayOrder - TRAIT_CATALOG[right.traitType].displayOrder)[0]?.traitType ?? null
 }
 
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {

@@ -33,7 +33,7 @@ function EventDetails({ roundEvent, heading, onClose }: { roundEvent: RoundEvent
                     <div className="event-v2-popover__modifiers" aria-label="Geni impattati">
                         {roundEvent.effects.map((effect) => (
                             <div key={effect.id} className={`event-v2-modifier is-${effect.tone}`}>
-                                <b>{effect.modifier > 0 ? '+' : ''}{effect.modifier}</b>
+                                <b>{effect.modifier === 2 ? 'Ideale' : effect.modifier === 1 ? 'Adatto' : 'Sfavorevole'}</b>
                                 <span>{effect.label}</span>
                             </div>
                         ))}

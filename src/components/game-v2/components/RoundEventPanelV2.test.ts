@@ -12,8 +12,8 @@ const currentEvent: RoundEventV2 = {
     effects: [
         { id: 'current-p2', label: 'Forza', modifier: 2, value: '+2 Forza', tone: 'positive' },
         { id: 'current-p1', label: 'Agilità', modifier: 1, value: '+1 Agilità', tone: 'positive' },
-        { id: 'current-n1', label: 'Mimetismo', modifier: -1, value: '-1 Mimetismo', tone: 'negative' },
-        { id: 'current-n2', label: 'Riserva adiposa', modifier: -2, value: '-2 Riserva adiposa', tone: 'negative' },
+        { id: 'current-n1', label: 'Mimetismo', modifier: 0, value: 'Sfavorevole · Mimetismo', tone: 'negative' },
+        { id: 'current-n2', label: 'Riserva adiposa', modifier: 0, value: 'Sfavorevole · Riserva adiposa', tone: 'negative' },
     ],
 }
 
@@ -24,7 +24,7 @@ const nextEvent: RoundEventV2 = {
     effects: [
         { id: 'p2', label: 'Gene +2', modifier: 2, value: '+2 Gene +2', tone: 'positive' },
         { id: 'p1', label: 'Gene +1', modifier: 1, value: '+1 Gene +1', tone: 'positive' },
-        { id: 'n1', label: 'Gene -1', modifier: -1, value: '-1 Gene -1', tone: 'negative' },
+        { id: 'n1', label: 'Gene sfavorevole', modifier: 0, value: 'Sfavorevole · Gene', tone: 'negative' },
     ],
 }
 

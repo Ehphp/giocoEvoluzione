@@ -11,15 +11,16 @@ export type GameMode = (typeof GAME_MODES)[number]
 export type PlayerType = (typeof PLAYER_TYPES)[number]
 export type WorldDefinition = { id: string; name: string; planetName: string; backgroundArtKey: string; paletteKey: string }
 
-export type AdaptationState = { level: number; cooldown: number }
+export type AdaptationLevel = 0 | 1 | 2
+export type AdaptationState = { level: AdaptationLevel; exhausted: boolean }
 export type AdaptationCollection = Record<AdaptationId, AdaptationState>
 
 export type AdaptationDefinition = { id: AdaptationId; label: string; description: string; assetKey: string; displayOrder: number }
-export type EnvironmentalCrisisEffect = { trait: AdaptationId; modifier: number; reason: string }
+export type EnvironmentalCrisisEffect = { trait: AdaptationId; modifier: 0 | 1 | 2; reason: string }
 export type EnvironmentalCrisisDefinition = {
     id: string; title: string; shortDescription: string
     category: 'CLIMATE' | 'GEOLOGICAL' | 'BIOLOGICAL' | 'ASTRONOMICAL' | 'ECOLOGICAL'
-    artKey: string; tags: string[]; modifiers: Record<AdaptationId, number>; effects: EnvironmentalCrisisEffect[]
+    artKey: string; tags: string[]; modifiers: Record<AdaptationId, 0 | 1 | 2>; effects: EnvironmentalCrisisEffect[]
 }
 
 export type RoundValueBreakdown = {

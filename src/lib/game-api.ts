@@ -95,7 +95,7 @@ export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
     const hasAllTraits = TRAITS.every((trait) => {
         const state = traits[trait]
 
-        return state && typeof state.level === 'number' && typeof state.cooldown === 'number'
+        return state && typeof state.level === 'number' && typeof state.exhausted === 'boolean'
     })
 
     if (!hasAllTraits) {

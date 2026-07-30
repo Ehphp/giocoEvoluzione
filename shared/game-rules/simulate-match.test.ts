@@ -16,9 +16,9 @@ describe('deterministic policy simulation', () => {
         const initial = createInitialAdaptations(); initial.FEROCITY.level = 1
         const input = { leftPolicy: heuristicPolicy, rightPolicy: greedyUsePolicy, eventSequence: events, seed: 12345, initialState: { leftAdaptations: initial }, trace: true }
         const first = simulateMatch(input); const second = simulateMatch(input)
-        expect(second).toEqual(first); expect(initial.FEROCITY).toEqual({ level: 1, cooldown: 0 })
+        expect(second).toEqual(first); expect(initial.FEROCITY).toEqual({ level: 1, exhausted: false })
     })
-    it('uses production cooldown, evolution and matchup resolution in its trace', () => {
+    it('uses production exhaustion, evolution and matchup resolution in its trace', () => {
         const evolve: BotPolicy = { id: 'evolve-ferocity', selectAction: (input) => input.roundNumber === 1 ? { trait: 'FEROCITY', actionType: 'EVOLVE' } : input.legalActions.find((action) => action.trait === 'FEROCITY' && action.actionType === 'USE') ?? input.legalActions[0]! }
         const useArmor: BotPolicy = { id: 'use-armor', selectAction: (input) => input.roundNumber === 1 ? { trait: 'ARMOR', actionType: 'EVOLVE' } : input.legalActions.find((action) => action.trait === 'ARMOR' && action.actionType === 'USE') ?? input.legalActions[0]! }
         const report = simulateMatch({ leftPolicy: evolve, rightPolicy: useArmor, eventSequence: events, seed: 1, trace: true })

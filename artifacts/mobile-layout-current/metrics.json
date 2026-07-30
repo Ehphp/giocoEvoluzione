@@ -10,7 +10,7 @@
     "documentScrollHeight": 800,
     "screenScrollHeight": 800,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 60.9,
+    "sceneViewportRatio": 60.7,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -46,11 +46,11 @@
       },
       ".arena-stage": {
         "top": 68,
-        "bottom": 554.9,
+        "bottom": 553.8,
         "left": 17,
         "right": 343,
         "width": 326,
-        "height": 486.9,
+        "height": 485.8,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -81,21 +81,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 551.9,
+        "top": 550.8,
         "bottom": 800,
         "left": 10,
         "right": 350,
         "width": 340,
-        "height": 248.1,
+        "height": 249.2,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 579.9,
+        "top": 578.8,
         "bottom": 667.9,
         "left": 20,
         "right": 340,
         "width": 320,
-        "height": 88,
+        "height": 89.1,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -147,7 +147,7 @@
     "documentScrollHeight": 844,
     "screenScrollHeight": 844,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 61.8,
+    "sceneViewportRatio": 61.5,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -183,11 +183,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 591.2,
+        "bottom": 588.7,
         "left": 18,
         "right": 372,
         "width": 354,
-        "height": 521.2,
+        "height": 518.7,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -218,21 +218,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 590.2,
+        "top": 587.7,
         "bottom": 844,
         "left": 10,
         "right": 380,
         "width": 370,
-        "height": 253.8,
+        "height": 256.3,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 618.2,
+        "top": 615.7,
         "bottom": 710.2,
         "left": 21,
         "right": 369,
         "width": 348,
-        "height": 92,
+        "height": 94.5,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -284,7 +284,7 @@
     "documentScrollHeight": 915,
     "screenScrollHeight": 915,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 64.7,
+    "sceneViewportRatio": 64.4,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -320,11 +320,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 662.2,
+        "bottom": 659.7,
         "left": 18,
         "right": 394,
         "width": 376,
-        "height": 592.2,
+        "height": 589.7,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -355,21 +355,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 661.2,
+        "top": 658.7,
         "bottom": 915,
         "left": 10,
         "right": 402,
         "width": 392,
-        "height": 253.8,
+        "height": 256.3,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 689.2,
+        "top": 686.7,
         "bottom": 781.2,
         "left": 21,
         "right": 391,
         "width": 370,
-        "height": 92,
+        "height": 94.5,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -421,7 +421,7 @@
     "documentScrollHeight": 932,
     "screenScrollHeight": 932,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 65.4,
+    "sceneViewportRatio": 65.1,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -457,11 +457,11 @@
       },
       ".arena-stage": {
         "top": 70,
-        "bottom": 679.2,
+        "bottom": 676.7,
         "left": 18,
         "right": 412,
         "width": 394,
-        "height": 609.2,
+        "height": 606.7,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -492,21 +492,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 678.2,
+        "top": 675.7,
         "bottom": 932,
         "left": 10,
         "right": 420,
         "width": 410,
-        "height": 253.8,
+        "height": 256.3,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 706.2,
+        "top": 703.7,
         "bottom": 798.2,
         "left": 21,
         "right": 409,
         "width": 388,
-        "height": 92,
+        "height": 94.5,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -558,7 +558,7 @@
     "documentScrollHeight": 1024,
     "screenScrollHeight": 1024,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 60,
+    "sceneViewportRatio": 58.6,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -594,11 +594,11 @@
       },
       ".arena-stage": {
         "top": 97,
-        "bottom": 711.3,
+        "bottom": 697.1,
         "left": 40,
         "right": 728,
         "width": 687.9,
-        "height": 614.3,
+        "height": 600.1,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -629,21 +629,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 717.3,
+        "top": 703.1,
         "bottom": 1029,
         "left": 40,
         "right": 728,
         "width": 687.9,
-        "height": 311.7,
+        "height": 325.9,
         "fullyVisible": false
       },
       ".selector-v2-grid": {
-        "top": 745.3,
+        "top": 731.1,
         "bottom": 871.6,
         "left": 51,
         "right": 717,
         "width": 665.9,
-        "height": 126.3,
+        "height": 140.6,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -766,26 +766,26 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 77.6,
-        "bottom": 326.4,
+        "top": 73.3,
+        "bottom": 330.7,
         "left": 378.8,
         "right": 829,
         "width": 450.3,
-        "height": 248.8,
+        "height": 257.3,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 105.6,
-        "bottom": 191.6,
+        "top": 101.3,
+        "bottom": 195.9,
         "left": 389.8,
         "right": 818,
         "width": 428.3,
-        "height": 86,
+        "height": 94.5,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 197.6,
-        "bottom": 248.4,
+        "top": 201.9,
+        "bottom": 252.7,
         "left": 389.8,
         "right": 818,
         "width": 428.3,
@@ -793,8 +793,8 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 254.4,
-        "bottom": 318.4,
+        "top": 258.7,
+        "bottom": 322.7,
         "left": 389.8,
         "right": 818,
         "width": 428.3,
@@ -802,8 +802,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 254.4,
-        "bottom": 318.4,
+        "top": 258.7,
+        "bottom": 322.7,
         "left": 389.8,
         "right": 634,
         "width": 244.3,
@@ -811,8 +811,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 254.4,
-        "bottom": 318.4,
+        "top": 258.7,
+        "bottom": 322.7,
         "left": 641,
         "right": 818,
         "width": 177,
@@ -832,7 +832,7 @@
     "documentScrollHeight": 900,
     "screenScrollHeight": 900,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 54.5,
+    "sceneViewportRatio": 52.9,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -868,11 +868,11 @@
       },
       ".arena-stage": {
         "top": 97,
-        "bottom": 587.3,
+        "bottom": 573.1,
         "left": 59,
         "right": 1381,
         "width": 1322,
-        "height": 490.3,
+        "height": 476.1,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -903,21 +903,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 593.3,
+        "top": 579.1,
         "bottom": 905,
         "left": 340,
         "right": 1100,
         "width": 760,
-        "height": 311.7,
+        "height": 325.9,
         "fullyVisible": false
       },
       ".selector-v2-grid": {
-        "top": 621.3,
+        "top": 607.1,
         "bottom": 747.6,
         "left": 351,
         "right": 1089,
         "width": 738,
-        "height": 126.3,
+        "height": 140.6,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
@@ -969,7 +969,7 @@
     "documentScrollHeight": 1080,
     "screenScrollHeight": 1080,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 62.1,
+    "sceneViewportRatio": 60.7,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
@@ -1005,11 +1005,11 @@
       },
       ".arena-stage": {
         "top": 97,
-        "bottom": 767.3,
+        "bottom": 753.1,
         "left": 59,
         "right": 1861,
         "width": 1802,
-        "height": 670.3,
+        "height": 656.1,
         "fullyVisible": true
       },
       ".event-v2-stack": {
@@ -1040,21 +1040,21 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 773.3,
+        "top": 759.1,
         "bottom": 1085,
         "left": 580,
         "right": 1340,
         "width": 760,
-        "height": 311.7,
+        "height": 325.9,
         "fullyVisible": false
       },
       ".selector-v2-grid": {
-        "top": 801.3,
+        "top": 787.1,
         "bottom": 927.6,
         "left": 591,
         "right": 1329,
         "width": 738,
-        "height": 126.3,
+        "height": 140.6,
         "fullyVisible": true
       },
       ".natural-advantage-v2": {

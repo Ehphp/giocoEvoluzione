@@ -1,0 +1,323 @@
+{
+  "ruleVersion": "adaptations-exhaustion-best-of-seven-v2",
+  "summary": {
+    "random": {
+      "wins": 2,
+      "draws": 12,
+      "losses": 82,
+      "leftWins": 1,
+      "rightWins": 1,
+      "actions": 564,
+      "uses": 298,
+      "evolves": 266,
+      "genes": {
+        "FEROCITY": 78,
+        "ARMOR": 132,
+        "AGILITY": 110,
+        "SENSES": 108,
+        "CAMOUFLAGE": 136
+      },
+      "levels": 266,
+      "matches": 96,
+      "winRate": 0.020833333333333332,
+      "scoreRate": 0.08333333333333333,
+      "positionWinRate": {
+        "left": 0.020833333333333332,
+        "right": 0.020833333333333332
+      },
+      "useRate": 0.5283687943262412,
+      "evolveRate": 0.4716312056737589,
+      "geneFrequency": {
+        "FEROCITY": 0.13829787234042554,
+        "ARMOR": 0.23404255319148937,
+        "AGILITY": 0.1950354609929078,
+        "SENSES": 0.19148936170212766,
+        "CAMOUFLAGE": 0.24113475177304963
+      },
+      "averageFinalLevel": 2.7708333333333335,
+      "actionConcentration": 0.24113475177304963
+    },
+    "greedy-immediate-use": {
+      "wins": 46,
+      "draws": 16,
+      "losses": 34,
+      "leftWins": 23,
+      "rightWins": 23,
+      "actions": 642,
+      "uses": 558,
+      "evolves": 84,
+      "genes": {
+        "FEROCITY": 128,
+        "ARMOR": 132,
+        "AGILITY": 118,
+        "SENSES": 144,
+        "CAMOUFLAGE": 120
+      },
+      "levels": 84,
+      "matches": 96,
+      "winRate": 0.4791666666666667,
+      "scoreRate": 0.5625,
+      "positionWinRate": {
+        "left": 0.4791666666666667,
+        "right": 0.4791666666666667
+      },
+      "useRate": 0.8691588785046729,
+      "evolveRate": 0.1308411214953271,
+      "geneFrequency": {
+        "FEROCITY": 0.19937694704049844,
+        "ARMOR": 0.205607476635514,
+        "AGILITY": 0.1838006230529595,
+        "SENSES": 0.22429906542056074,
+        "CAMOUFLAGE": 0.18691588785046728
+      },
+      "averageFinalLevel": 0.875,
+      "actionConcentration": 0.22429906542056074
+    },
+    "evolve-first": {
+      "wins": 34,
+      "draws": 14,
+      "losses": 48,
+      "leftWins": 17,
+      "rightWins": 17,
+      "actions": 648,
+      "uses": 456,
+      "evolves": 192,
+      "genes": {
+        "FEROCITY": 136,
+        "ARMOR": 136,
+        "AGILITY": 114,
+        "SENSES": 122,
+        "CAMOUFLAGE": 140
+      },
+      "levels": 192,
+      "matches": 96,
+      "winRate": 0.3541666666666667,
+      "scoreRate": 0.4270833333333333,
+      "positionWinRate": {
+        "left": 0.3541666666666667,
+        "right": 0.3541666666666667
+      },
+      "useRate": 0.7037037037037037,
+      "evolveRate": 0.2962962962962963,
+      "geneFrequency": {
+        "FEROCITY": 0.20987654320987653,
+        "ARMOR": 0.20987654320987653,
+        "AGILITY": 0.17592592592592593,
+        "SENSES": 0.1882716049382716,
+        "CAMOUFLAGE": 0.21604938271604937
+      },
+      "averageFinalLevel": 2,
+      "actionConcentration": 0.21604938271604937
+    },
+    "heuristic": {
+      "wins": 50,
+      "draws": 16,
+      "losses": 30,
+      "leftWins": 25,
+      "rightWins": 25,
+      "actions": 630,
+      "uses": 542,
+      "evolves": 88,
+      "genes": {
+        "FEROCITY": 164,
+        "ARMOR": 112,
+        "AGILITY": 150,
+        "SENSES": 102,
+        "CAMOUFLAGE": 102
+      },
+      "levels": 88,
+      "matches": 96,
+      "winRate": 0.5208333333333334,
+      "scoreRate": 0.6041666666666666,
+      "positionWinRate": {
+        "left": 0.5208333333333334,
+        "right": 0.5208333333333334
+      },
+      "useRate": 0.8603174603174604,
+      "evolveRate": 0.13968253968253969,
+      "geneFrequency": {
+        "FEROCITY": 0.26031746031746034,
+        "ARMOR": 0.17777777777777778,
+        "AGILITY": 0.23809523809523808,
+        "SENSES": 0.1619047619047619,
+        "CAMOUFLAGE": 0.1619047619047619
+      },
+      "averageFinalLevel": 0.9166666666666666,
+      "actionConcentration": 0.26031746031746034
+    },
+    "lookahead-2": {
+      "wins": 74,
+      "draws": 14,
+      "losses": 8,
+      "leftWins": 37,
+      "rightWins": 37,
+      "actions": 560,
+      "uses": 476,
+      "evolves": 84,
+      "genes": {
+        "FEROCITY": 130,
+        "ARMOR": 134,
+        "AGILITY": 80,
+        "SENSES": 86,
+        "CAMOUFLAGE": 130
+      },
+      "levels": 84,
+      "matches": 96,
+      "winRate": 0.7708333333333334,
+      "scoreRate": 0.84375,
+      "positionWinRate": {
+        "left": 0.7708333333333334,
+        "right": 0.7708333333333334
+      },
+      "useRate": 0.85,
+      "evolveRate": 0.15,
+      "geneFrequency": {
+        "FEROCITY": 0.23214285714285715,
+        "ARMOR": 0.2392857142857143,
+        "AGILITY": 0.14285714285714285,
+        "SENSES": 0.15357142857142858,
+        "CAMOUFLAGE": 0.23214285714285715
+      },
+      "averageFinalLevel": 0.875,
+      "actionConcentration": 0.2392857142857143
+    },
+    "param-evolve-1": {
+      "wins": 40,
+      "draws": 14,
+      "losses": 42,
+      "leftWins": 20,
+      "rightWins": 20,
+      "actions": 618,
+      "uses": 464,
+      "evolves": 154,
+      "genes": {
+        "FEROCITY": 214,
+        "ARMOR": 102,
+        "AGILITY": 104,
+        "SENSES": 102,
+        "CAMOUFLAGE": 96
+      },
+      "levels": 154,
+      "matches": 96,
+      "winRate": 0.4166666666666667,
+      "scoreRate": 0.4895833333333333,
+      "positionWinRate": {
+        "left": 0.4166666666666667,
+        "right": 0.4166666666666667
+      },
+      "useRate": 0.7508090614886731,
+      "evolveRate": 0.24919093851132687,
+      "geneFrequency": {
+        "FEROCITY": 0.34627831715210355,
+        "ARMOR": 0.1650485436893204,
+        "AGILITY": 0.16828478964401294,
+        "SENSES": 0.1650485436893204,
+        "CAMOUFLAGE": 0.1553398058252427
+      },
+      "averageFinalLevel": 1.6041666666666667,
+      "actionConcentration": 0.34627831715210355
+    },
+    "param-matchup": {
+      "wins": 42,
+      "draws": 20,
+      "losses": 34,
+      "leftWins": 21,
+      "rightWins": 21,
+      "actions": 628,
+      "uses": 548,
+      "evolves": 80,
+      "genes": {
+        "FEROCITY": 144,
+        "ARMOR": 104,
+        "AGILITY": 144,
+        "SENSES": 120,
+        "CAMOUFLAGE": 116
+      },
+      "levels": 80,
+      "matches": 96,
+      "winRate": 0.4375,
+      "scoreRate": 0.5416666666666666,
+      "positionWinRate": {
+        "left": 0.4375,
+        "right": 0.4375
+      },
+      "useRate": 0.8726114649681529,
+      "evolveRate": 0.12738853503184713,
+      "geneFrequency": {
+        "FEROCITY": 0.22929936305732485,
+        "ARMOR": 0.16560509554140126,
+        "AGILITY": 0.22929936305732485,
+        "SENSES": 0.1910828025477707,
+        "CAMOUFLAGE": 0.18471337579617833
+      },
+      "averageFinalLevel": 0.8333333333333334,
+      "actionConcentration": 0.22929936305732485
+    },
+    "param-evolve-behind": {
+      "wins": 32,
+      "draws": 22,
+      "losses": 42,
+      "leftWins": 16,
+      "rightWins": 16,
+      "actions": 586,
+      "uses": 420,
+      "evolves": 166,
+      "genes": {
+        "FEROCITY": 188,
+        "ARMOR": 128,
+        "AGILITY": 102,
+        "SENSES": 98,
+        "CAMOUFLAGE": 70
+      },
+      "levels": 166,
+      "matches": 96,
+      "winRate": 0.3333333333333333,
+      "scoreRate": 0.4479166666666667,
+      "positionWinRate": {
+        "left": 0.3333333333333333,
+        "right": 0.3333333333333333
+      },
+      "useRate": 0.7167235494880546,
+      "evolveRate": 0.2832764505119454,
+      "geneFrequency": {
+        "FEROCITY": 0.32081911262798635,
+        "ARMOR": 0.21843003412969283,
+        "AGILITY": 0.17406143344709898,
+        "SENSES": 0.16723549488054607,
+        "CAMOUFLAGE": 0.11945392491467577
+      },
+      "averageFinalLevel": 1.7291666666666667,
+      "actionConcentration": 0.32081911262798635
+    }
+  },
+  "seed": 1592598566,
+  "sequences": [
+    [
+      "PROLONGED_ECLIPSE",
+      "PREDATOR_PACK_MIGRATION",
+      "VOLCANIC_ASH_WAVE",
+      "NUTRIENT_COLLAPSE",
+      "FLASH_FLOOD",
+      "HEAT_SPIKE",
+      "PROLONGED_ECLIPSE"
+    ],
+    [
+      "NUTRIENT_COLLAPSE",
+      "PROLONGED_ECLIPSE",
+      "VOLCANIC_ASH_WAVE",
+      "HEAT_SPIKE",
+      "PREDATOR_PACK_MIGRATION",
+      "FLASH_FLOOD",
+      "NUTRIENT_COLLAPSE"
+    ],
+    [
+      "NUTRIENT_COLLAPSE",
+      "PROLONGED_ECLIPSE",
+      "PREDATOR_PACK_MIGRATION",
+      "VOLCANIC_ASH_WAVE",
+      "FLASH_FLOOD",
+      "HEAT_SPIKE",
+      "NUTRIENT_COLLAPSE"
+    ]
+  ]
+}

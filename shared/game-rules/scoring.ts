@@ -1,14 +1,14 @@
-import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE } from './catalog.ts'
+import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, NATURAL_ADVANTAGE_BONUS } from './catalog.ts'
 import type { ActionType, AdaptationCollection, AdaptationId, EnvironmentalCrisisDefinition, RoundValueBreakdown } from './types.ts'
 
 export function getValidatedAdaptationState(adaptations: AdaptationCollection, adaptation: AdaptationId) {
     const state = adaptations[adaptation]
-    if (!state || !Number.isFinite(state.level) || !Number.isFinite(state.cooldown) || state.level < 0 || state.cooldown < 0) throw new Error(`Invalid adaptation state for "${adaptation}".`)
+    if (!state || !Number.isInteger(state.level) || state.level < 0 || state.level > MAX_ADAPTATION_LEVEL || typeof state.exhausted !== 'boolean') throw new Error(`Invalid adaptation state for "${adaptation}".`)
     return state
 }
 
 export function getNaturalAdvantageBonus(ownAction: { trait: AdaptationId; actionType: ActionType }, opponentAction: { trait: AdaptationId; actionType: ActionType }): number {
-    return ownAction.actionType === 'USE' && opponentAction.actionType === 'USE' && NATURAL_ADVANTAGE[ownAction.trait] === opponentAction.trait ? 1 : 0
+    return ownAction.actionType === 'USE' && opponentAction.actionType === 'USE' && NATURAL_ADVANTAGE[ownAction.trait] === opponentAction.trait ? NATURAL_ADVANTAGE_BONUS : 0
 }
 
 export function getValidatedAdaptationUseBreakdown(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId, matchupBonus = 0): RoundValueBreakdown {

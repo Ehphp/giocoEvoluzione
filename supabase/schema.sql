@@ -1,5 +1,6 @@
--- Five-gene MVP baseline. This file is intentionally destructive only when used
--- through the reset procedure documented in README.md.
+-- Five-gene structural schema for adaptations-exhaustion-best-of-seven-v2.
+-- Adaptation JSONB defaults, shape constraints, and action-transition guards are
+-- generated from shared/game-rules into supabase/generated/game-rules.sql.
 create extension if not exists pgcrypto;
 
 create or replace function public.set_updated_at()
@@ -68,4 +69,4 @@ grant execute on all functions in schema public to service_role;
 do $$ begin if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if; end $$;
 alter publication supabase_realtime add table public.games, public.players, public.round_actions, public.round_results;
 
--- Apply supabase/generated/game-rules.sql immediately after this baseline.
+-- Apply supabase/generated/game-rules.sql immediately after this structural schema.

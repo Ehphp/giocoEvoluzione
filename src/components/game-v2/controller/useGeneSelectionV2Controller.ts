@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import type { GeneActionTypeV2 } from '../types'
-import { buildGeneSelectionV2ViewModel, getBestTraitIdForSnapshot } from './buildGeneSelectionV2ViewModel'
+import { buildGeneSelectionV2ViewModel, getInitialTraitIdForSnapshot } from './buildGeneSelectionV2ViewModel'
 
 type UseGeneSelectionV2ControllerInput = {
     snapshot: GameSnapshot
@@ -13,7 +13,7 @@ type UseGeneSelectionV2ControllerInput = {
 }
 
 function getInitialTraitId(snapshot: GameSnapshot): string | null {
-    return getBestTraitIdForSnapshot(snapshot)
+    return getInitialTraitIdForSnapshot(snapshot)
 }
 
 export function useGeneSelectionV2Controller(input: UseGeneSelectionV2ControllerInput) {

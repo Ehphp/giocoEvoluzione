@@ -11,9 +11,12 @@ const selectedGene: GeneCardV2 = {
     traitType: 'AGILITY',
     name: 'Agilità',
     level: 0,
-    affinity: 'high',
+    affinity: 'ideal',
     usable: true,
-    prediction: { useScore: 3, baseContribution: 1, levelContribution: 0, eventModifier: 2, reasons: [] },
+    exhausted: false,
+    strongAgainst: 'Sensi',
+    weakAgainst: 'Corazza',
+    prediction: { useScore: 4, baseContribution: 2, levelContribution: 0, eventModifier: 2, reasons: [] },
 }
 
 describe('action and waiting states', () => {
@@ -45,7 +48,7 @@ describe('action and waiting states', () => {
         })
 
         expect(container.querySelector('.action-v2-btn--use')?.textContent).toContain('USA')
-        expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('2 PT')
+        expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('1 PT')
         expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('LV 0 → 1')
     })
 

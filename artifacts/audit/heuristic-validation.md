@@ -1,27 +1,27 @@
 # Heuristic validation
 
-- 126 stati, 11227 ms.
+- 125 stati, 299 ms.
 - EVOLVE immediateValue is exactly EVOLVE_ROUND_VALUE; evolution is only the next-visible-event level gain. They are separate terms and not the same value counted twice.
 
 ## Heuristic vs lookahead-3
 
 | Scelta heuristic → lookahead | Frequenza | Delta round osservato |
 |---|---:|---:|
-| same | 63.5% | 0.85 |
-| EVOLVE → USE | 19.0% | -0.92 |
-| USE → USE different | 7.1% | -0.44 |
-| EVOLVE → EVOLVE different | 6.3% | -1.00 |
-| USE → EVOLVE | 4.0% | 2.80 |
+| USE → USE different | 22.4% | 0.61 |
+| USE → EVOLVE | 22.4% | -0.43 |
+| EVOLVE → USE | 1.6% | -2.00 |
+| same | 43.2% | 0.57 |
+| EVOLVE → EVOLVE different | 10.4% | -0.77 |
 
 ## Componenti heuristic medie
 
-- immediateValue: 17.770
-- matchup: 0.864
-- level: 0.833
-- cooldown: -3.532
-- evolution: 4.357
-- remainingRounds: 5.262
-- scorePressure: 1.344
-- decisiveRound: 1.252
+- immediateValue: 12.680
+- matchup: 0.466
+- level: 0.184
+- conservation: -5.184
+- evolution: 5.000
+- remainingRounds: 6.770
+- scorePressure: 0.000
+- decisiveRound: 0.456
 
-Casi heuristic=EVOLVE, lookahead=USE: 20. Vedi JSON per seed, eventi e valutazioni per azione.
+Casi heuristic=EVOLVE, lookahead=USE: 2. Vedi JSON per seed, eventi e valutazioni per azione.
