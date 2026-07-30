@@ -52,6 +52,43 @@ describe('action and waiting states', () => {
         expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('LV 0 → 1')
     })
 
+    it.each([
+        { level: 0, exhausted: false, label: 'EVOLVI' },
+        { level: 1, exhausted: true, label: 'EVOLVI E RECUPERA' },
+        { level: 2, exhausted: true, label: 'RECUPERA' },
+    ])('labels the real EVOLVE transition at level $level/exhausted=$exhausted', ({ level, exhausted, label }) => {
+        act(() => {
+            root.render(createElement(ActionPanelV2, {
+                selectedAction: null,
+                selectedGene: { ...selectedGene, level, exhausted, usable: !exhausted },
+                canUse: !exhausted,
+                canEvolve: true,
+                isSubmitting: false,
+                onUseAction: async () => {},
+                onEvolveAction: async () => {},
+            }))
+        })
+
+        expect(container.querySelector('.action-v2-btn--evolve .action-v2-btn__label')?.textContent).toBe(label)
+    })
+
+    it('disables EVOLVE when a max-level gene is already available', () => {
+        act(() => {
+            root.render(createElement(ActionPanelV2, {
+                selectedAction: null,
+                selectedGene: { ...selectedGene, level: 2, exhausted: false },
+                canUse: true,
+                canEvolve: false,
+                isSubmitting: false,
+                onUseAction: async () => {},
+                onEvolveAction: async () => {},
+            }))
+        })
+
+        expect(container.querySelector<HTMLButtonElement>('.action-v2-btn--evolve')?.disabled).toBe(true)
+        expect(container.querySelector('.action-v2-btn--evolve')?.textContent).toContain('Gia disponibile al livello massimo')
+    })
+
     it('renders waiting as the alternative state of the same decision dock', () => {
         act(() => {
             root.render(createElement(WaitingStateV2, {

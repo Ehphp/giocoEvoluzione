@@ -1,9 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
-import { buildPersistedRoundResolution } from '../../../shared/game-rules/persisted-round-resolution.ts'
 import { getRoundEventById, normalizeAdaptationCollection } from '../../../shared/game-rules/state.ts'
 import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
+import { resolveEdgeRound } from './round-domain.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
@@ -246,7 +246,7 @@ Deno.serve(async (request) => {
             return json({ status: 'pending', reason: 'missing_player_action' })
         }
 
-        const resolution = buildPersistedRoundResolution({
+        const resolution = resolveEdgeRound({
             roundNumber,
             roundEvent,
             player1Id: String(player1.id),

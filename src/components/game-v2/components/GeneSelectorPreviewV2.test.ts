@@ -19,4 +19,18 @@ describe('GeneSelectorPreviewV2 five-gene grid', () => {
     afterEach(() => { act(() => root.unmount()); container.remove() })
     it('renders all five genes in stable input order and selects each by tap', () => { const cards = [...container.querySelectorAll<HTMLButtonElement>('.selector-v2-card')]; expect(cards).toHaveLength(5); expect(cards.map((card) => card.title)).toEqual(genes.map((entry) => entry.name)); cards.forEach((card, index) => { act(() => card.click()); expect(cards[index]?.getAttribute('aria-selected')).toBe('true') }) })
     it('keeps keyboard selection and clearly exposes exhaustion, affinity and matchup', () => { const cards = [...container.querySelectorAll<HTMLButtonElement>('.selector-v2-card')]; act(() => cards[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))); expect(cards[1]?.getAttribute('aria-selected')).toBe('true'); act(() => cards[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))); expect(cards[4]?.getAttribute('aria-selected')).toBe('true'); expect(cards[3]?.classList.contains('is-exhausted')).toBe(true); expect(cards[3]?.textContent).toContain('Esaurito'); expect(cards[3]?.textContent).toContain('Affinita Sfavorevole'); expect(cards[3]?.textContent).toContain('Forte:') })
+    it('does not reconstruct a score when the authoritative prediction is missing', () => {
+        const geneWithoutPrediction: GeneCardV2 = {
+            ...genes[4]!,
+            prediction: undefined,
+        }
+        act(() => root.render(createElement(GeneSelectorPreviewV2, {
+            genes: [geneWithoutPrediction],
+            selectedGeneId: geneWithoutPrediction.id,
+            onSelectGene: () => {},
+        })))
+
+        expect(container.querySelector('.selector-v2-points')?.textContent).toBe('— PT base')
+        expect(container.querySelector('.selector-v2-card')?.getAttribute('aria-label')).toContain('valore ambientale non disponibile')
+    })
 })

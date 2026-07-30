@@ -32,5 +32,6 @@ export function resolveRound(input: ResolveRoundInput): RoundResolution {
     const player2 = resolvePlayerAction(input, input.player2Traits, input.player2Action, input.player1Action)
     const player1Won = player1.roundValue > player2.roundValue
     const player2Won = player2.roundValue > player1.roundValue
-    return { roundNumber: input.roundNumber, roundEvent: input.roundEvent, player1: { ...input.player1Action, ...player1 }, player2: { ...input.player2Action, ...player2 }, winnerId: player1Won ? input.player1Id : player2Won ? input.player2Id : null, awardedPoints: getRoundPoints(input.roundNumber), player1ScoreDelta: player1Won ? ROUND_WIN_POINTS : 0, player2ScoreDelta: player2Won ? ROUND_WIN_POINTS : 0 }
+    const awardedPoints = player1Won || player2Won ? getRoundPoints(input.roundNumber) : 0
+    return { roundNumber: input.roundNumber, roundEvent: input.roundEvent, player1: { ...input.player1Action, ...player1 }, player2: { ...input.player2Action, ...player2 }, winnerId: player1Won ? input.player1Id : player2Won ? input.player2Id : null, awardedPoints, player1ScoreDelta: player1Won ? awardedPoints : 0, player2ScoreDelta: player2Won ? awardedPoints : 0 }
 }

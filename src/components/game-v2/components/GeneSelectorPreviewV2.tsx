@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
-import { BASE_USE_VALUE, LEVEL_BONUS, MAX_TRAIT_LEVEL } from '../../../game/config'
 import type { GeneCardV2 } from '../types'
 
 type GeneSelectorPreviewV2Props = { genes: GeneCardV2[]; selectedGeneId: string; onSelectGene: (geneId: string) => void; disableSelection?: boolean }
@@ -10,7 +9,15 @@ function formatContribution(value: number): string { return value > 0 ? `+${valu
 function affinityLabel(gene: GeneCardV2): string { return gene.affinity === 'ideal' ? 'Ideale' : gene.affinity === 'suitable' ? 'Adatto' : 'Sfavorevole' }
 
 function GenePredictionPopover({ gene, onClose }: { gene: GeneCardV2; onClose: () => void }) {
-    const prediction = gene.prediction ?? { useScore: BASE_USE_VALUE + LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!, baseContribution: BASE_USE_VALUE, levelContribution: LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!, eventModifier: 0, reasons: [] }
+    const prediction = gene.prediction
+    if (!prediction) {
+        return (
+            <aside id="gene-prediction-details" className="selector-v2-popover" role="tooltip" aria-live="polite">
+                <button type="button" className="selector-v2-popover__close" onClick={onClose} aria-label="Chiudi dettagli previsione">Ã—</button>
+                <p>Valore ambientale non disponibile.</p>
+            </aside>
+        )
+    }
     return (
         <aside id="gene-prediction-details" className="selector-v2-popover" role="tooltip" aria-live="polite">
             <button type="button" className="selector-v2-popover__close" onClick={onClose} aria-label="Chiudi dettagli previsione">×</button>
@@ -24,13 +31,14 @@ function GenePredictionPopover({ gene, onClose }: { gene: GeneCardV2; onClose: (
 
 function GeneCard({ gene, isSelected, isPredictionOpen, disabled, tabIndex, onClick, onKeyDown }: { gene: GeneCardV2; isSelected: boolean; isPredictionOpen: boolean; disabled: boolean; tabIndex: number; onClick: () => void; onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void }) {
     const [imageFailed, setImageFailed] = useState(false)
-    const prediction = gene.prediction ?? { useScore: BASE_USE_VALUE + LEVEL_BONUS[Math.min(gene.level, MAX_TRAIT_LEVEL)]!, eventModifier: 0 }
+    const prediction = gene.prediction
     const eventLabel = `Affinita ${affinityLabel(gene)}`
+    const predictionLabel = prediction ? String(prediction.useScore) : 'non disponibile'
     return (
-        <button type="button" role="option" className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''}`} aria-selected={isSelected} aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${prediction.useScore}, ${eventLabel}, forte contro ${gene.strongAgainst}, teme ${gene.weakAgainst}${isSelected ? `. Tocca per ${isPredictionOpen ? 'chiudere' : 'vedere'} i dettagli` : ''}`} aria-expanded={isSelected ? isPredictionOpen : undefined} aria-describedby={isPredictionOpen ? 'gene-prediction-details' : undefined} title={gene.name} tabIndex={tabIndex} onClick={onClick} onKeyDown={onKeyDown} disabled={disabled}>
+        <button type="button" role="option" className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''}`} aria-selected={isSelected} aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${predictionLabel}, ${eventLabel}, forte contro ${gene.strongAgainst}, teme ${gene.weakAgainst}${isSelected ? `. Tocca per ${isPredictionOpen ? 'chiudere' : 'vedere'} i dettagli` : ''}`} aria-expanded={isSelected ? isPredictionOpen : undefined} aria-describedby={isPredictionOpen ? 'gene-prediction-details' : undefined} title={gene.name} tabIndex={tabIndex} onClick={onClick} onKeyDown={onKeyDown} disabled={disabled}>
             <div className="selector-v2-icon" aria-hidden="true">{gene.imageUrl && !imageFailed ? <img src={gene.imageUrl} alt="" loading="lazy" onError={() => setImageFailed(true)} /> : <span>{gene.name.slice(0, 2).toUpperCase()}</span>}</div>
             <strong className="selector-v2-name">{gene.name}</strong>
-            <div className="selector-v2-meta"><span className="selector-v2-points">{prediction.useScore} PT base</span><span className="selector-v2-level">LV {gene.level}</span></div>
+            <div className="selector-v2-meta"><span className="selector-v2-points">{prediction ? `${prediction.useScore} PT base` : '— PT base'}</span><span className="selector-v2-level">LV {gene.level}</span></div>
             <span className={`selector-v2-event-modifier is-${gene.affinity}`}>{eventLabel}</span>
             <span className="selector-v2-matchups">Forte: {gene.strongAgainst} · Teme: {gene.weakAgainst}</span>
             <span className="selector-v2-availability">{gene.usable ? 'Disponibile' : 'Esaurito'}</span>

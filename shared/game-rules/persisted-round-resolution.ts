@@ -1,11 +1,12 @@
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from './catalog.ts'
-import { resolveRound } from './engine.ts'
+import { hasClinchedMatch, resolveRound } from './engine.ts'
 import { resolveMatchOutcome, type StoredRoundValue } from './match.ts'
 import type { PlayerRoundAction, EnvironmentalCrisisDefinition, RoundValueBreakdown, AdaptationCollection } from './types.ts'
 
 export type PersistedRoundResolutionData = { ruleVersion: string; catalogSignature: string; awardedPoints: number; roundEventId: string; player1Action: PlayerRoundAction; player2Action: PlayerRoundAction; player1Breakdown: RoundValueBreakdown; player2Breakdown: RoundValueBreakdown; player1PointsAwarded: number; player2PointsAwarded: number; player1TraitsAfter: AdaptationCollection; player2TraitsAfter: AdaptationCollection; player1ScoreAfter: number; player2ScoreAfter: number; statusAfter: 'REVEALING' | 'FINISHED'; winnerIdAfter: string | null; finishedAt: string | null; durationMs: number | null; matchEndReason: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null; player1RoundValueTotal: number; player2RoundValueTotal: number }
 
 export function buildPersistedRoundResolution(params: { roundNumber: number; roundEvent: EnvironmentalCrisisDefinition; player1Id: string; player2Id: string; player1Score: number; player2Score: number; player1Traits: AdaptationCollection; player2Traits: AdaptationCollection; player1Action: PlayerRoundAction; player2Action: PlayerRoundAction; priorRoundValues?: StoredRoundValue[]; startedAt: string | null; now?: () => string }) {
+    if (hasClinchedMatch(params.player1Score, params.player2Score)) throw new Error('The match was already clinched before this round.')
     const resolution = resolveRound(params)
     const player1ScoreAfter = params.player1Score + resolution.player1ScoreDelta
     const player2ScoreAfter = params.player2Score + resolution.player2ScoreDelta

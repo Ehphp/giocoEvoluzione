@@ -1,11 +1,11 @@
 # Gioco Evoluzione MVP
 
-Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `EVOLVE` su sei round condivisi con evento evolutivo sincronizzato.
+Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `EVOLVE` in un best-of-seven con evento evolutivo sincronizzato.
 
 ## Cosa include
 
 - React + TypeScript + Vite mobile-first.
-- Motore puro e testabile in `src/game`.
+- Motore puro e testabile in `shared/game-rules`; `src/game` espone adapter frontend.
 - Sincronizzazione stanza/partita tramite Supabase.
 - Risoluzione round centralizzata e idempotente con Edge Function `resolve-round`.
 - Reconnect minimo via `localStorage`.
@@ -25,7 +25,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 1. Crea un progetto Supabase.
 2. Apri SQL Editor.
-3. Per il reset distruttivo dell ambiente di sviluppo, esegui nell ordine: `supabase/migrations/202607260001_reset_mvp_5_genes.sql`, `supabase/schema.sql`, `supabase/generated/game-rules.sql`, poi `supabase/migrations/202607280001_bot_difficulty.sql`.
+3. Per il reset distruttivo dell ambiente di sviluppo, esegui nell ordine: `supabase/migrations/202607260001_reset_mvp_5_genes.sql`, `supabase/schema.sql`, `supabase/generated/game-rules.sql`, `supabase/migrations/202607280001_bot_difficulty.sql`, poi `supabase/migrations/202607300001_exhaustion_adaptations.sql`.
 4. Lo schema abilita anche la publication Realtime per `games`, `players`, `round_actions` e `round_results`.
 5. Se stai usando un progetto già esistente, verifica comunque in Database > Replication che le quattro tabelle siano presenti.
 
@@ -58,14 +58,14 @@ Apri l indirizzo di rete mostrato da Vite sui due telefoni collegati alla stessa
 4. Entrambi vedono round, punteggio, evento corrente e prossimo evento.
 5. Ognuno seleziona un tratto e poi `Usa` oppure `Evolvi`.
 6. Dopo la seconda conferma, il round viene risolto contemporaneamente.
-7. Dopo sei round appare il vincitore finale.
+7. La partita termina alla quarta vittoria oppure, al piu tardi, dopo sette round.
 8. Un refresh prova a ripristinare la partita tramite `localStorage`.
 
 ## Note operative
 
-- Un tratto in cooldown non puo essere `USE`, ma puo essere `EVOLVE`.
+- Un gene esaurito non puo essere `USE`; `EVOLVE` lo recupera e, sotto il livello massimo, ne aumenta anche il livello.
 - La scelta dell avversario non viene letta dal client finche non esiste `round_results`.
-- Il sesto round assegna 2 punti.
+- Ogni round vinto assegna 1 punto partita.
 - Non ci sono account, matchmaking pubblico o chat.
 
 ## Limiti noti dell MVP

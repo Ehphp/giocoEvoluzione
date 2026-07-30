@@ -1,6 +1,8 @@
 # Gioco Evoluzione — AI-readable project summary
 
 > Last updated: 2026-07-25. This document is a structured, high-signal overview of the MVP codebase intended for AI assistants and new developers.
+>
+> **Archivio storico:** descrive il prototipo precedente al refactor `adaptations-exhaustion-best-of-seven-v2`. Non e una fonte di regole attive; per il contratto corrente usare `shared/game-rules` e `README.md`.
 
 ---
 
