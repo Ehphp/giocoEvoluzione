@@ -30,7 +30,9 @@ describe('BattleStage', () => {
         expect(container.querySelector('.battle-stage__background')).toBeNull()
         expect(container.querySelector<HTMLImageElement>('.battle-stage__creature--player img')?.src).toContain('/player.png')
         expect(container.querySelector<HTMLImageElement>('.battle-stage__creature--opponent img')?.src).toContain('/opponent.png')
-        expect(container.querySelector('.battle-stage__versus')?.textContent).toBe('VS')
+        const versus = container.querySelector<HTMLImageElement>('.battle-stage__versus')
+        expect(versus?.src).toContain('/assets/game-ui/battle-versus.png')
+        expect(versus?.alt).toBe('')
     })
 
     it('keeps visual sizing and offsets in the creature configuration', () => {

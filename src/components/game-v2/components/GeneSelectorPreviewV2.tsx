@@ -39,8 +39,7 @@ function GeneCard({ gene, isSelected, isPredictionOpen, disabled, tabIndex, onCl
             <div className="selector-v2-icon" aria-hidden="true">{gene.imageUrl && !imageFailed ? <img src={gene.imageUrl} alt="" loading="lazy" onError={() => setImageFailed(true)} /> : <span>{gene.name.slice(0, 2).toUpperCase()}</span>}</div>
             <strong className="selector-v2-name">{gene.name}</strong>
             <span className="selector-v2-level">Liv. {gene.level}</span>
-            <span className="selector-v2-points"><small>USA</small>{prediction ? `${prediction.useScore} PT` : '— PT'}</span>
-            <span className="selector-v2-availability">{gene.usable ? 'Usabile' : 'In cooldown'}</span>
+            <span className="selector-v2-points">{prediction ? `${prediction.useScore} PT` : '— PT'}</span>
         </button>
     )
 }

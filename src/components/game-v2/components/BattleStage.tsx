@@ -29,7 +29,7 @@ export function BattleStage({ playerCreature, opponentCreature }: BattleStagePro
             <div className="battle-stage__atmosphere" aria-hidden="true" />
             <CreatureLayer visual={playerCreature} side="player" />
             <CreatureLayer visual={opponentCreature} side="opponent" />
-            <span className="battle-stage__versus" aria-hidden="true">VS</span>
+            <img className="battle-stage__versus" src="/assets/game-ui/battle-versus.png" alt="" aria-hidden="true" />
             <div className="battle-stage__foreground" aria-hidden="true" />
         </section>
     )
