@@ -279,8 +279,8 @@
 
 @media (min-width: 401px) and (max-width: 640px) and (orientation: portrait) {
   .battle-stage__creature { --battle-creature-mobile-scale: 1.38; width: min(72%, 360px); }
-  .battle-stage__creature--player { left: -3%; }
-  .battle-stage__creature--opponent { right: -3%; }
+  .battle-stage__creature--player { left: 7%; }
+  .battle-stage__creature--opponent { right: 7%; }
 
   .event-v2-next-trigger { position: relative; grid-template-columns: minmax(0, 1fr) 32px; gap: 5px; padding: 8px; }
   .event-v2-next-trigger .event-v2-art { width: 32px; border-radius: 9px; }
