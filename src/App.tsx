@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import './App.css'
 import { HomeScreen } from './components/home/HomeScreen'
+import { buildMatchResultViewModel } from './components/game-results/buildMatchResultViewModel'
+import { MatchResultScreen } from './components/game-results/MatchResultScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
-import { getRoundEventById } from './game/round-events'
 import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
-import { type RoundEventDefinition, type RoundValueBreakdown, type TraitType } from './game/types'
+import { type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
 import {
   acknowledgeReveal,
@@ -25,7 +26,6 @@ import {
   submitRoundAction,
   type GameSnapshot,
   type PlayerRecord,
-  type RoundResultRecord,
 } from './lib/game-api'
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 
@@ -220,9 +220,15 @@ function App() {
   const isGameScreen = snapshot?.game.status === 'CHOOSING'
     || snapshot?.game.status === 'REVEALING'
     || snapshot?.game.status === 'ROUND_RESULT'
+  const isResultScreen = snapshot?.game.status === 'FINISHED'
+  const isGamePresentation = isGameScreen || isResultScreen
   const resolutionData = useMemo(
     () => (snapshot?.currentRoundResult?.resolution_data as ResolutionData | undefined) ?? undefined,
     [snapshot?.currentRoundResult?.resolution_data],
+  )
+  const resultViewModel = useMemo(
+    () => snapshot ? buildMatchResultViewModel(snapshot, myScore, opponentScore) : null,
+    [myScore, opponentScore, snapshot],
   )
 
   async function refreshSnapshot(gameId: string, playerId: string) {
@@ -252,54 +258,50 @@ function App() {
     return refreshSnapshot(gameId, playerId)
   }
 
-  async function handleCreateGame() {
-    if (!nickname.trim()) {
+  async function startNewGame(mode: 'PVP' | 'VS_BOT', playerName: string, difficulty = botDifficulty) {
+    if (!playerName.trim()) {
       setErrorMessage('Inserisci un nickname.')
 
       return
     }
 
     setIsBusy(true)
-    setBusyAction('CREATE')
+    setBusyAction(mode === 'VS_BOT' ? 'CREATE_BOT' : 'CREATE')
     setErrorMessage(null)
     setStatusMessage(null)
 
     try {
       const playerId = createPlayerId()
-      const created = await createGame({ nickname, playerId })
+      const created = mode === 'VS_BOT'
+        ? await createVsBotGame({ nickname: playerName, playerId, difficulty })
+        : await createGame({ nickname: playerName, playerId })
       saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code })
       setSnapshot(created)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Impossibile creare la partita.')
+      setErrorMessage(error instanceof Error ? error.message : mode === 'VS_BOT' ? 'Impossibile creare la partita contro il bot.' : 'Impossibile creare la partita.')
     } finally {
       setIsBusy(false)
       setBusyAction(null)
     }
   }
 
-  async function handleCreateBotGame() {
-    if (!nickname.trim()) {
-      setErrorMessage('Inserisci un nickname.')
+  async function handleCreateGame() {
+    await startNewGame('PVP', nickname)
+  }
 
+  async function handleCreateBotGame() {
+    await startNewGame('VS_BOT', nickname, botDifficulty)
+  }
+
+  async function handleNewMatch() {
+    if (!snapshot?.me) {
+      handleLeaveSession()
       return
     }
 
-    setIsBusy(true)
-    setBusyAction('CREATE_BOT')
-    setErrorMessage(null)
-    setStatusMessage(null)
-
-    try {
-      const playerId = createPlayerId()
-       const created = await createVsBotGame({ nickname, playerId, difficulty: botDifficulty })
-      saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code })
-      setSnapshot(created)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Impossibile creare la partita contro il bot.')
-    } finally {
-      setIsBusy(false)
-      setBusyAction(null)
-    }
+    const playerName = snapshot.me.nickname
+    setNickname(playerName)
+    await startNewGame(snapshot.game.game_mode, playerName, snapshot.game.bot_difficulty)
   }
 
   async function handleJoinGame() {
@@ -407,7 +409,7 @@ function App() {
   }
 
   return (
-    <main className={`shell ${isGameScreen ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
+    <main className={`shell ${isGamePresentation ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
       {isLoading ? (
         <section className="panel centered-panel home-state-panel" role="status" aria-live="polite" aria-busy="true">
           <span className="eyebrow">Connessione alla partita</span>
@@ -426,7 +428,7 @@ function App() {
           </div>
         </section>
       ) : (
-        <section className={`panel app-panel ${isGameScreen ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
+        <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot ? (
             <HomeScreen
               nickname={nickname}
@@ -491,24 +493,16 @@ function App() {
               isBusy={isBusy}
               errorMessage={errorMessage}
             />
+          ) : resultViewModel ? (
+            <MatchResultScreen
+              viewModel={resultViewModel}
+              onLeaveSession={handleLeaveSession}
+              onNewGame={() => void handleNewMatch()}
+              isBusy={isBusy}
+              errorMessage={errorMessage}
+            />
           ) : (
-            <>
-              <header className="topbar">
-                <div>
-                  <span className="eyebrow">Multiplayer 1v1</span>
-                  <h1>Gioco Evoluzione</h1>
-                </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
-                  Esci
-                </button>
-              </header>
-
-              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
-
-              <FinalScreen snapshot={snapshot} myScore={myScore} opponentScore={opponentScore} result={snapshot.currentRoundResult} />
-            </>
+            <section className="state-message" role="alert">Risultato finale non disponibile.</section>
           )}
         </section>
       )}
@@ -812,154 +806,6 @@ function RoundBreakdownCard({
       </footer>
     </article>
   )
-}
-
-function FinalScreen({
-  snapshot,
-  myScore,
-  opponentScore,
-  result,
-}: {
-  snapshot: GameSnapshot
-  myScore: number
-  opponentScore: number
-  result: RoundResultRecord | null
-}) {
-  const winnerNickname = snapshot.players.find((player) => player.id === snapshot.game.winner_id)?.nickname ?? null
-  const resolutionData = (result?.resolution_data as ResolutionData | undefined) ?? undefined
-  const iAmPlayer1 = snapshot.me?.slot === 1
-  const player1Action = resolutionData?.player1Action
-  const player2Action = resolutionData?.player2Action
-  const player1Breakdown = resolutionData?.player1Breakdown
-  const player2Breakdown = resolutionData?.player2Breakdown
-  const myResolvedAction = player1Action?.playerId === snapshot.me?.id ? player1Action : player2Action
-  const opponentResolvedAction = player1Action?.playerId === snapshot.opponent?.id ? player1Action : player2Action
-  const myBreakdown = iAmPlayer1 ? player1Breakdown : player2Breakdown
-  const opponentBreakdown = iAmPlayer1 ? player2Breakdown : player1Breakdown
-  const myRoundValue = iAmPlayer1 ? result?.player_1_value ?? 0 : result?.player_2_value ?? 0
-  const opponentRoundValue = iAmPlayer1 ? result?.player_2_value ?? 0 : result?.player_1_value ?? 0
-  const myRoundPoints = iAmPlayer1
-    ? resolutionData?.player1PointsAwarded ?? (result?.winner_id === snapshot.me?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-    : resolutionData?.player2PointsAwarded ?? (result?.winner_id === snapshot.me?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-  const opponentRoundPoints = iAmPlayer1
-    ? resolutionData?.player2PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-    : resolutionData?.player1PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-  const roundEventFromResult = result
-    ? getRoundEventFromSequence(snapshot.game.round_event_sequence, result.round_number)
-    : null
-  const roundEventLabel = getRoundEventLabel(roundEventFromResult)
-  const explanation = getRoundExplanation({
-    roundEventTitle: roundEventFromResult?.title ?? null,
-    meWon: result?.winner_id ? result.winner_id === snapshot.me?.id : null,
-    meActionType: myResolvedAction?.actionType ?? null,
-    opponentActionType: opponentResolvedAction?.actionType ?? null,
-    myBreakdown,
-    opponentBreakdown,
-  })
-
-  return (
-    <section className="stack-lg">
-      <Scoreboard snapshot={snapshot} myScore={myScore} opponentScore={opponentScore} />
-
-      <div className="final-card">
-        <span className="eyebrow">Partita conclusa</span>
-        <h2>{winnerNickname ? `${winnerNickname} vince la partita` : 'Pareggio finale'}</h2>
-        <p>
-          Punteggio finale: {myScore} - {opponentScore}
-        </p>
-        {resolutionData?.matchEndReason === 'ROUND_VALUE_TIEBREAK' ? (
-          <p>Tiebreak: vince la somma dei valori round ({resolutionData.player1RoundValueTotal ?? 0} - {resolutionData.player2RoundValueTotal ?? 0}).</p>
-        ) : resolutionData?.matchEndReason === 'DRAW' ? (
-          <p>Tiebreak: parità perfetta anche nella somma dei valori round.</p>
-        ) : null}
-        <p>Durata: {snapshot.game.started_at && snapshot.game.finished_at ? formatDuration(snapshot.game.started_at, snapshot.game.finished_at) : 'n/d'}</p>
-      </div>
-
-      {result ? (
-        <section className="final-round-recap" aria-label="Dettaglio ultimo round">
-          <header className="final-round-recap__header">
-            <span className="eyebrow">Ultimo round</span>
-            <strong>Round {result.round_number} · {roundEventLabel}</strong>
-          </header>
-
-          <div className="round-result-cards">
-            <RoundBreakdownCard
-              title={snapshot.me?.nickname ?? 'Tu'}
-              action={myResolvedAction}
-              breakdown={myBreakdown}
-              total={myRoundValue}
-              awardedPoints={myRoundPoints}
-              roundEventLabel={roundEventLabel}
-              showContributions
-              showTotal
-              isMe
-            />
-            <RoundBreakdownCard
-              title={snapshot.opponent?.nickname ?? 'Avversario'}
-              action={opponentResolvedAction}
-              breakdown={opponentBreakdown}
-              total={opponentRoundValue}
-              awardedPoints={opponentRoundPoints}
-              roundEventLabel={roundEventLabel}
-              showContributions
-              showTotal
-            />
-          </div>
-
-          <p className="round-result-explanation">{explanation}</p>
-        </section>
-      ) : null}
-
-      {result ? (
-        <div className="status-card">
-          Ultimo round registrato alle {new Date(result.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}.
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
-function Scoreboard({ snapshot, myScore, opponentScore }: { snapshot: GameSnapshot; myScore: number; opponentScore: number }) {
-  return (
-    <div className="scoreboard">
-      <div>
-        <span className="eyebrow">Tu</span>
-        <strong>{snapshot.me?.nickname ?? '-'}</strong>
-        <span>{myScore} pt</span>
-      </div>
-      <div>
-        <span className="eyebrow">Avversario</span>
-        <strong>{snapshot.opponent?.nickname ?? 'In attesa'}</strong>
-        <span>{opponentScore} pt</span>
-      </div>
-    </div>
-  )
-}
-
-function formatDuration(startedAt: string, finishedAt: string): string {
-  const elapsedMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime()
-
-  if (elapsedMs <= 0) {
-    return 'meno di 1 minuto'
-  }
-
-  const totalMinutes = Math.max(1, Math.round(elapsedMs / 60000))
-
-  return `${totalMinutes} min`
-}
-
-function getRoundEventFromSequence(eventSequence: string[], roundNumber: number): RoundEventDefinition | null {
-  const eventId = eventSequence[roundNumber - 1]
-
-  if (!eventId) {
-    return null
-  }
-
-  try {
-    return getRoundEventById(eventId)
-  } catch {
-    return null
-  }
 }
 
 export default App

@@ -466,29 +466,29 @@
       },
       ".event-v2-stack": {
         "top": 89.4,
-        "bottom": 227,
+        "bottom": 207.4,
         "left": 20.8,
         "right": 409.3,
         "width": 388.5,
-        "height": 137.6,
+        "height": 118,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 90.4,
-        "bottom": 226,
+        "bottom": 206.4,
         "left": 21.8,
         "right": 278.3,
         "width": 256.5,
-        "height": 135.6,
+        "height": 116,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 90.4,
-        "bottom": 226,
+        "bottom": 206.4,
         "left": 278.3,
         "right": 408.3,
         "width": 130,
-        "height": 135.6,
+        "height": 116,
         "fullyVisible": true
       },
       ".decision-dock": {

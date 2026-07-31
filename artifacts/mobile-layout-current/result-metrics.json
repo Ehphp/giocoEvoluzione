@@ -10,49 +10,76 @@
     "documentScrollHeight": 800,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 306.1,
+      ".match-result-screen": {
+        "top": 0,
+        "bottom": 800,
+        "left": 10,
+        "right": 350,
+        "width": 340,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".match-result-hud": {
+        "top": 10,
+        "bottom": 68,
+        "left": 18,
+        "right": 342,
+        "width": 324,
+        "height": 58,
+        "fullyVisible": true
+      },
+      ".match-result-hero": {
+        "top": 77,
+        "bottom": 382,
+        "left": 18,
+        "right": 342,
+        "width": 324,
+        "height": 305,
+        "fullyVisible": true
+      },
+      ".match-result-last-round__cards": {
+        "top": 465.2,
+        "bottom": 606.2,
+        "left": 28,
+        "right": 332,
+        "width": 304,
+        "height": 141,
+        "fullyVisible": true
+      },
+      ".match-result-history": {
+        "top": 665.6,
+        "bottom": 1071.9,
+        "left": 18,
+        "right": 342,
+        "width": 324,
+        "height": 406.3,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 717,
+        "bottom": 800,
+        "left": 18,
+        "right": 342,
+        "width": 324,
+        "height": 83,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 725,
         "bottom": 792,
-        "left": 8,
-        "right": 352,
-        "width": 344,
-        "height": 485.9,
+        "left": 18,
+        "right": 176.5,
+        "width": 158.5,
+        "height": 67,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 317.1,
-        "bottom": 527.3,
-        "left": 19,
-        "right": 341,
-        "width": 322,
-        "height": 210.2,
-        "fullyVisible": true
-      },
-      ".round-result-cards": {
-        "top": 537.3,
-        "bottom": 671.8,
-        "left": 19,
-        "right": 341,
-        "width": 322,
-        "height": 134.5,
-        "fullyVisible": true
-      },
-      ".round-result-explanation": {
-        "top": 681.8,
-        "bottom": 718.6,
-        "left": 19,
-        "right": 341,
-        "width": 322,
-        "height": 36.8,
-        "fullyVisible": true
-      },
-      ".round-result-screen .primary-button": {
-        "top": 728.6,
-        "bottom": 781,
-        "left": 19,
-        "right": 341,
-        "width": 322,
-        "height": 52.4,
+      ".match-result-actions__new": {
+        "top": 725,
+        "bottom": 792,
+        "left": 183.5,
+        "right": 342,
+        "width": 158.5,
+        "height": 67,
         "fullyVisible": true
       }
     }
@@ -68,49 +95,76 @@
     "documentScrollHeight": 844,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 350.1,
+      ".match-result-screen": {
+        "top": 0,
+        "bottom": 844,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".match-result-hud": {
+        "top": 10,
+        "bottom": 68,
+        "left": 18,
+        "right": 372,
+        "width": 354,
+        "height": 58,
+        "fullyVisible": true
+      },
+      ".match-result-hero": {
+        "top": 77,
+        "bottom": 382,
+        "left": 18,
+        "right": 372,
+        "width": 354,
+        "height": 305,
+        "fullyVisible": true
+      },
+      ".match-result-last-round__cards": {
+        "top": 465.2,
+        "bottom": 606.2,
+        "left": 28,
+        "right": 362,
+        "width": 334,
+        "height": 141,
+        "fullyVisible": true
+      },
+      ".match-result-history": {
+        "top": 665.6,
+        "bottom": 1071.9,
+        "left": 18,
+        "right": 372,
+        "width": 354,
+        "height": 406.3,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 761,
+        "bottom": 844,
+        "left": 18,
+        "right": 372,
+        "width": 354,
+        "height": 83,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 769,
         "bottom": 836,
-        "left": 8,
-        "right": 382,
-        "width": 374,
-        "height": 485.9,
+        "left": 18,
+        "right": 191.5,
+        "width": 173.5,
+        "height": 67,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 361.1,
-        "bottom": 571.3,
-        "left": 19,
-        "right": 371,
-        "width": 352,
-        "height": 210.2,
-        "fullyVisible": true
-      },
-      ".round-result-cards": {
-        "top": 581.3,
-        "bottom": 715.8,
-        "left": 19,
-        "right": 371,
-        "width": 352,
-        "height": 134.5,
-        "fullyVisible": true
-      },
-      ".round-result-explanation": {
-        "top": 725.8,
-        "bottom": 762.6,
-        "left": 19,
-        "right": 371,
-        "width": 352,
-        "height": 36.8,
-        "fullyVisible": true
-      },
-      ".round-result-screen .primary-button": {
-        "top": 772.6,
-        "bottom": 825,
-        "left": 19,
-        "right": 371,
-        "width": 352,
-        "height": 52.4,
+      ".match-result-actions__new": {
+        "top": 769,
+        "bottom": 836,
+        "left": 198.5,
+        "right": 372,
+        "width": 173.5,
+        "height": 67,
         "fullyVisible": true
       }
     }
@@ -126,49 +180,76 @@
     "documentScrollHeight": 915,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 421.1,
+      ".match-result-screen": {
+        "top": 0,
+        "bottom": 915,
+        "left": 10,
+        "right": 402,
+        "width": 392,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".match-result-hud": {
+        "top": 10,
+        "bottom": 72,
+        "left": 20.3,
+        "right": 391.7,
+        "width": 371.4,
+        "height": 62,
+        "fullyVisible": true
+      },
+      ".match-result-hero": {
+        "top": 82,
+        "bottom": 512,
+        "left": 20.3,
+        "right": 391.7,
+        "width": 371.4,
+        "height": 430,
+        "fullyVisible": true
+      },
+      ".match-result-last-round__cards": {
+        "top": 598.2,
+        "bottom": 759,
+        "left": 32.3,
+        "right": 379.7,
+        "width": 347.4,
+        "height": 160.9,
+        "fullyVisible": true
+      },
+      ".match-result-history": {
+        "top": 821.4,
+        "bottom": 1248,
+        "left": 20.3,
+        "right": 391.7,
+        "width": 371.4,
+        "height": 426.5,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 829,
+        "bottom": 915,
+        "left": 20.3,
+        "right": 391.7,
+        "width": 371.4,
+        "height": 86,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 837,
         "bottom": 907,
-        "left": 8,
-        "right": 404,
-        "width": 396,
-        "height": 485.9,
+        "left": 20.3,
+        "right": 201.9,
+        "width": 181.6,
+        "height": 70,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 432.1,
-        "bottom": 642.3,
-        "left": 19,
-        "right": 393,
-        "width": 374,
-        "height": 210.2,
-        "fullyVisible": true
-      },
-      ".round-result-cards": {
-        "top": 652.3,
-        "bottom": 786.8,
-        "left": 19,
-        "right": 393,
-        "width": 374,
-        "height": 134.5,
-        "fullyVisible": true
-      },
-      ".round-result-explanation": {
-        "top": 796.8,
-        "bottom": 833.6,
-        "left": 19,
-        "right": 393,
-        "width": 374,
-        "height": 36.8,
-        "fullyVisible": true
-      },
-      ".round-result-screen .primary-button": {
-        "top": 843.6,
-        "bottom": 896,
-        "left": 19,
-        "right": 393,
-        "width": 374,
-        "height": 52.4,
+      ".match-result-actions__new": {
+        "top": 837,
+        "bottom": 907,
+        "left": 210.1,
+        "right": 391.7,
+        "width": 181.6,
+        "height": 70,
         "fullyVisible": true
       }
     }
@@ -184,49 +265,76 @@
     "documentScrollHeight": 932,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 438.1,
+      ".match-result-screen": {
+        "top": 0,
+        "bottom": 932,
+        "left": 10,
+        "right": 420,
+        "width": 410,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".match-result-hud": {
+        "top": 10,
+        "bottom": 72,
+        "left": 20.8,
+        "right": 409.3,
+        "width": 388.5,
+        "height": 62,
+        "fullyVisible": true
+      },
+      ".match-result-hero": {
+        "top": 82,
+        "bottom": 512,
+        "left": 20.8,
+        "right": 409.3,
+        "width": 388.5,
+        "height": 430,
+        "fullyVisible": true
+      },
+      ".match-result-last-round__cards": {
+        "top": 598.2,
+        "bottom": 759,
+        "left": 32.8,
+        "right": 397.3,
+        "width": 364.5,
+        "height": 160.9,
+        "fullyVisible": true
+      },
+      ".match-result-history": {
+        "top": 821.4,
+        "bottom": 1248,
+        "left": 20.8,
+        "right": 409.3,
+        "width": 388.5,
+        "height": 426.5,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 846,
+        "bottom": 932,
+        "left": 20.8,
+        "right": 409.3,
+        "width": 388.5,
+        "height": 86,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 854,
         "bottom": 924,
-        "left": 8,
-        "right": 422,
-        "width": 414,
-        "height": 485.9,
+        "left": 20.8,
+        "right": 210.7,
+        "width": 190,
+        "height": 70,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 449.1,
-        "bottom": 659.3,
-        "left": 19,
-        "right": 411,
-        "width": 392,
-        "height": 210.2,
-        "fullyVisible": true
-      },
-      ".round-result-cards": {
-        "top": 669.3,
-        "bottom": 803.8,
-        "left": 19,
-        "right": 411,
-        "width": 392,
-        "height": 134.5,
-        "fullyVisible": true
-      },
-      ".round-result-explanation": {
-        "top": 813.8,
-        "bottom": 850.6,
-        "left": 19,
-        "right": 411,
-        "width": 392,
-        "height": 36.8,
-        "fullyVisible": true
-      },
-      ".round-result-screen .primary-button": {
-        "top": 860.6,
-        "bottom": 913,
-        "left": 19,
-        "right": 411,
-        "width": 392,
-        "height": 52.4,
+      ".match-result-actions__new": {
+        "top": 854,
+        "bottom": 924,
+        "left": 219.3,
+        "right": 409.3,
+        "width": 190,
+        "height": 70,
         "fullyVisible": true
       }
     }
@@ -242,49 +350,76 @@
     "documentScrollHeight": 1024,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 298.9,
-        "bottom": 725.1,
-        "left": 94,
-        "right": 674,
-        "width": 580,
-        "height": 426.3,
+      ".match-result-screen": {
+        "top": 17,
+        "bottom": 1007,
+        "left": 17,
+        "right": 751,
+        "width": 734,
+        "height": 990,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 309.9,
-        "bottom": 460.4,
-        "left": 105,
-        "right": 663,
-        "width": 558,
-        "height": 150.6,
+      ".match-result-hud": {
+        "top": 27,
+        "bottom": 109,
+        "left": 36.2,
+        "right": 731.8,
+        "width": 695.6,
+        "height": 82,
         "fullyVisible": true
       },
-      ".round-result-cards": {
-        "top": 470.4,
-        "bottom": 604.9,
-        "left": 105,
-        "right": 663,
-        "width": 558,
-        "height": 134.5,
+      ".match-result-hero": {
+        "top": 122.8,
+        "bottom": 614.3,
+        "left": 36.2,
+        "right": 731.8,
+        "width": 695.6,
+        "height": 491.5,
         "fullyVisible": true
       },
-      ".round-result-explanation": {
-        "top": 614.9,
-        "bottom": 651.7,
-        "left": 105,
-        "right": 663,
-        "width": 558,
-        "height": 36.8,
+      ".match-result-last-round__cards": {
+        "top": 725.5,
+        "bottom": 922.4,
+        "left": 54.8,
+        "right": 713.2,
+        "width": 658.3,
+        "height": 196.9,
         "fullyVisible": true
       },
-      ".round-result-screen .primary-button": {
-        "top": 661.7,
-        "bottom": 714.1,
-        "left": 105,
-        "right": 663,
-        "width": 558,
-        "height": 52.4,
+      ".match-result-history": {
+        "top": 1013.3,
+        "bottom": 1520.5,
+        "left": 36.2,
+        "right": 731.8,
+        "width": 695.6,
+        "height": 507.2,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 899,
+        "bottom": 1007,
+        "left": 36.2,
+        "right": 731.8,
+        "width": 695.6,
+        "height": 108,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 907,
+        "bottom": 999,
+        "left": 36.2,
+        "right": 376.3,
+        "width": 340.1,
+        "height": 92,
+        "fullyVisible": true
+      },
+      ".match-result-actions__new": {
+        "top": 907,
+        "bottom": 999,
+        "left": 391.7,
+        "right": 731.8,
+        "width": 340.1,
+        "height": 92,
         "fullyVisible": true
       }
     }
@@ -300,50 +435,77 @@
     "documentScrollHeight": 390,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
+      ".match-result-screen": {
+        "top": 7,
+        "bottom": 383,
+        "left": 7,
+        "right": 837,
+        "width": 830,
+        "height": 376,
+        "fullyVisible": true
+      },
+      ".match-result-hud": {
         "top": 14,
-        "bottom": 376,
-        "left": 132,
-        "right": 712,
-        "width": 580,
-        "height": 362,
+        "bottom": 96,
+        "left": 15,
+        "right": 829,
+        "width": 814,
+        "height": 82,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 25,
-        "bottom": 175.6,
-        "left": 143,
-        "right": 701,
-        "width": 558,
-        "height": 150.6,
+      ".match-result-hero": {
+        "top": 104,
+        "bottom": 322.4,
+        "left": 15,
+        "right": 375.9,
+        "width": 360.9,
+        "height": 218.4,
         "fullyVisible": true
       },
-      ".round-result-cards": {
-        "top": 185.6,
-        "bottom": 320,
-        "left": 143,
-        "right": 701,
-        "width": 558,
-        "height": 134.5,
-        "fullyVisible": true
-      },
-      ".round-result-explanation": {
-        "top": 330,
-        "bottom": 366.9,
-        "left": 143,
-        "right": 701,
-        "width": 558,
-        "height": 36.8,
-        "fullyVisible": true
-      },
-      ".round-result-screen .primary-button": {
-        "top": 376.9,
-        "bottom": 429.3,
-        "left": 143,
-        "right": 701,
-        "width": 558,
-        "height": 52.4,
+      ".match-result-last-round__cards": {
+        "top": 192.9,
+        "bottom": 391.1,
+        "left": 396.9,
+        "right": 820,
+        "width": 423.1,
+        "height": 198.2,
         "fullyVisible": false
+      },
+      ".match-result-history": {
+        "top": 467.7,
+        "bottom": 640.2,
+        "left": 387.9,
+        "right": 829,
+        "width": 441.1,
+        "height": 172.5,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 324,
+        "bottom": 383,
+        "left": 387.9,
+        "right": 829,
+        "width": 441.1,
+        "height": 59,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 324,
+        "bottom": 383,
+        "left": 387.9,
+        "right": 600.4,
+        "width": 212.5,
+        "height": 59,
+        "fullyVisible": true
+      },
+      ".match-result-actions__new": {
+        "top": 324,
+        "bottom": 383,
+        "left": 616.4,
+        "right": 829,
+        "width": 212.6,
+        "height": 59,
+        "fullyVisible": true
       }
     }
   },
@@ -358,49 +520,76 @@
     "documentScrollHeight": 900,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 236.9,
-        "bottom": 663.1,
-        "left": 430,
-        "right": 1010,
-        "width": 580,
-        "height": 426.3,
+      ".match-result-screen": {
+        "top": 17,
+        "bottom": 883,
+        "left": 17,
+        "right": 1423,
+        "width": 1406,
+        "height": 866,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 247.9,
-        "bottom": 398.4,
-        "left": 441,
-        "right": 999,
-        "width": 558,
-        "height": 150.6,
+      ".match-result-hud": {
+        "top": 27,
+        "bottom": 109,
+        "left": 218,
+        "right": 1222,
+        "width": 1004,
+        "height": 82,
         "fullyVisible": true
       },
-      ".round-result-cards": {
-        "top": 408.4,
-        "bottom": 542.9,
-        "left": 441,
-        "right": 999,
-        "width": 558,
-        "height": 134.5,
+      ".match-result-hero": {
+        "top": 127,
+        "bottom": 559,
+        "left": 218,
+        "right": 1222,
+        "width": 1004,
+        "height": 432,
         "fullyVisible": true
       },
-      ".round-result-explanation": {
-        "top": 552.9,
-        "bottom": 589.7,
-        "left": 441,
-        "right": 999,
-        "width": 558,
-        "height": 36.8,
+      ".match-result-last-round__cards": {
+        "top": 678.4,
+        "bottom": 876.6,
+        "left": 239,
+        "right": 1201,
+        "width": 962,
+        "height": 198.2,
         "fullyVisible": true
       },
-      ".round-result-screen .primary-button": {
-        "top": 599.7,
-        "bottom": 652.1,
-        "left": 441,
-        "right": 999,
-        "width": 558,
-        "height": 52.4,
+      ".match-result-history": {
+        "top": 975.7,
+        "bottom": 1490.1,
+        "left": 218,
+        "right": 1222,
+        "width": 1004,
+        "height": 514.4,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 775,
+        "bottom": 883,
+        "left": 340,
+        "right": 1100,
+        "width": 760,
+        "height": 108,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 783,
+        "bottom": 875,
+        "left": 340,
+        "right": 712,
+        "width": 372,
+        "height": 92,
+        "fullyVisible": true
+      },
+      ".match-result-actions__new": {
+        "top": 783,
+        "bottom": 875,
+        "left": 728,
+        "right": 1100,
+        "width": 372,
+        "height": 92,
         "fullyVisible": true
       }
     }
@@ -416,49 +605,76 @@
     "documentScrollHeight": 1080,
     "hasHorizontalOverflow": false,
     "boxes": {
-      ".round-result-screen": {
-        "top": 326.9,
-        "bottom": 753.1,
-        "left": 670,
-        "right": 1250,
-        "width": 580,
-        "height": 426.3,
+      ".match-result-screen": {
+        "top": 17,
+        "bottom": 1063,
+        "left": 17,
+        "right": 1903,
+        "width": 1886,
+        "height": 1046,
         "fullyVisible": true
       },
-      ".round-result-hero": {
-        "top": 337.9,
-        "bottom": 488.4,
-        "left": 681,
-        "right": 1239,
-        "width": 558,
-        "height": 150.6,
+      ".match-result-hud": {
+        "top": 27,
+        "bottom": 109,
+        "left": 458,
+        "right": 1462,
+        "width": 1004,
+        "height": 82,
         "fullyVisible": true
       },
-      ".round-result-cards": {
-        "top": 498.4,
-        "bottom": 632.9,
-        "left": 681,
-        "right": 1239,
-        "width": 558,
-        "height": 134.5,
+      ".match-result-hero": {
+        "top": 127,
+        "bottom": 627,
+        "left": 458,
+        "right": 1462,
+        "width": 1004,
+        "height": 500,
         "fullyVisible": true
       },
-      ".round-result-explanation": {
-        "top": 642.9,
-        "bottom": 679.7,
-        "left": 681,
-        "right": 1239,
-        "width": 558,
-        "height": 36.8,
+      ".match-result-last-round__cards": {
+        "top": 746.4,
+        "bottom": 944.6,
+        "left": 479,
+        "right": 1441,
+        "width": 962,
+        "height": 198.2,
         "fullyVisible": true
       },
-      ".round-result-screen .primary-button": {
-        "top": 689.7,
-        "bottom": 742.1,
-        "left": 681,
-        "right": 1239,
-        "width": 558,
-        "height": 52.4,
+      ".match-result-history": {
+        "top": 1043.7,
+        "bottom": 1558.1,
+        "left": 458,
+        "right": 1462,
+        "width": 1004,
+        "height": 514.4,
+        "fullyVisible": false
+      },
+      ".match-result-actions": {
+        "top": 955,
+        "bottom": 1063,
+        "left": 580,
+        "right": 1340,
+        "width": 760,
+        "height": 108,
+        "fullyVisible": true
+      },
+      ".match-result-actions__home": {
+        "top": 963,
+        "bottom": 1055,
+        "left": 580,
+        "right": 952,
+        "width": 372,
+        "height": 92,
+        "fullyVisible": true
+      },
+      ".match-result-actions__new": {
+        "top": 963,
+        "bottom": 1055,
+        "left": 968,
+        "right": 1340,
+        "width": 372,
+        "height": 92,
         "fullyVisible": true
       }
     }

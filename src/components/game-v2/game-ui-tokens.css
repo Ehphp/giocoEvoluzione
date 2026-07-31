@@ -1,0 +1,21 @@
+:root {
+  --gs-player: #70d54d;
+  --gs-player-deep: #1f6a35;
+  --gs-opponent: #b56af1;
+  --gs-opponent-deep: #502474;
+  --gs-cream: #f9f1df;
+  --gs-cream-deep: #e9dbc0;
+  --gs-ink: #283027;
+  --gs-muted: #61675e;
+  --gs-surface-dark: #112720;
+  --gs-surface-dark-strong: #081812;
+  --gs-line-light: rgba(255, 255, 255, .32);
+  --gs-line-dark: rgba(77, 68, 48, .22);
+  --gs-radius-module: 24px;
+  --gs-radius-card: 18px;
+  --gs-shadow-float: 0 12px 28px rgba(2, 18, 13, .34);
+  --gs-shadow-dock: 0 -12px 34px rgba(3, 18, 14, .38);
+  --gs-use: #398a1d;
+  --gs-evolve: #712caa;
+  --gs-selection: #b8ec49;
+}

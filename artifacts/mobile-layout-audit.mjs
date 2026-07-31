@@ -270,11 +270,14 @@ async function collectHomeMetrics(send, viewport) {
 async function collectResultMetrics(send, viewport) {
     return evaluate(send, `(() => {
         const selectors = [
-            '.round-result-screen',
-            '.round-result-hero',
-            '.round-result-cards',
-            '.round-result-explanation',
-            '.round-result-screen .primary-button',
+            '.match-result-screen',
+            '.match-result-hud',
+            '.match-result-hero',
+            '.match-result-last-round__cards',
+            '.match-result-history',
+            '.match-result-actions',
+            '.match-result-actions__home',
+            '.match-result-actions__new',
         ]
         const boxes = Object.fromEntries(selectors.map((selector) => {
             const element = document.querySelector(selector)
@@ -305,6 +308,62 @@ async function collectResultMetrics(send, viewport) {
             boxes,
         }
     })()`)
+}
+
+async function reachFinishedResult(send) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        if (await evaluate(send, "Boolean(document.querySelector('.match-result-screen'))")) {
+            return
+        }
+
+        await waitForSelector(send, '.gene-selection-screen', 30_000)
+        const preferredAction = await evaluate(send, `(() => {
+            const cards = [...document.querySelectorAll('.selector-v2-card')]
+            const usableCard = cards.find((card) => !card.classList.contains('is-exhausted'))
+            const targetCard = usableCard ?? cards[0]
+            targetCard?.click()
+            return usableCard ? 'use' : 'evolve'
+        })()`)
+        await delay(60)
+        const submitted = await evaluate(send, `(() => {
+            const action = document.querySelector('.action-v2-btn--${preferredAction}:not(:disabled)')
+            action?.click()
+            return Boolean(action)
+        })()`)
+
+        if (!submitted) {
+            throw new Error('Nessuna azione valida disponibile durante l\'audit del risultato.')
+        }
+
+        try {
+            await waitFor(
+                () => evaluate(send, "Boolean(document.querySelector('.round-result-screen, .match-result-screen'))"),
+                30_000,
+                'risultato round o risultato finale',
+            )
+        } catch (error) {
+            const pageText = await evaluate(send, 'document.body.innerText')
+            throw new Error(`${error.message}\nTentativo ${attempt + 1}:\n${pageText}`)
+        }
+
+        if (await evaluate(send, "Boolean(document.querySelector('.match-result-screen'))")) {
+            return
+        }
+
+        await waitFor(
+            () => evaluate(send, "Boolean(document.querySelector('.round-result-screen .primary-button:not(:disabled)'))"),
+            5_000,
+            'pulsante continua risultato round',
+        )
+        await evaluate(send, "document.querySelector('.round-result-screen .primary-button:not(:disabled)')?.click()")
+        await waitFor(
+            () => evaluate(send, "!document.querySelector('.round-result-screen') && Boolean(document.querySelector('.gene-selection-screen, .match-result-screen'))"),
+            30_000,
+            'round successivo o risultato finale',
+        )
+    }
+
+    await waitForSelector(send, '.match-result-screen', 30_000)
 }
 
 async function run() {
@@ -531,10 +590,7 @@ async function run() {
     )
 
     await setViewport(send, VIEWPORTS[1])
-    await evaluate(send, `document.querySelector('.selector-v2-card')?.click()`)
-    await delay(100)
-    await evaluate(send, `document.querySelector('.action-v2-btn--use')?.click()`)
-    await waitForSelector(send, '.round-result-screen', 30_000)
+    await reachFinishedResult(send)
     await delay(1_500)
 
     const resultScreenResults = []
@@ -542,7 +598,7 @@ async function run() {
     for (const viewport of VIEWPORTS) {
         await setViewport(send, viewport)
         await delay(150)
-        await evaluate(send, 'window.scrollTo(0, 0)')
+        await evaluate(send, "document.querySelector('.match-result-screen')?.scrollTo(0, 0)")
 
         const screenshot = await send('Page.captureScreenshot', {
             format: 'png',
