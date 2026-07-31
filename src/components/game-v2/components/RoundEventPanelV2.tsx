@@ -111,7 +111,7 @@ export function RoundEventPanelV2({ roundEvent, nextRoundEvent }: RoundEventPane
                 onClick={() => toggleDetails('next')}
             >
                 <span className="event-v2-next-copy">
-                    <span>PROSSIMO EVENTO</span>
+                    <span className="event-v2-next-label"><span className="event-v2-next-label--full">PROSSIMO EVENTO</span><span className="event-v2-next-label--compact">PROSSIMO</span></span>
                     <strong>{nextRoundEvent?.title ?? 'Fine ecosistema'}</strong>
                 </span>
                 {nextRoundEvent ? <EventArtwork roundEvent={nextRoundEvent} /> : null}

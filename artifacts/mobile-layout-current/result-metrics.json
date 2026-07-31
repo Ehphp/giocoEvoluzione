@@ -11,21 +11,21 @@
     "hasHorizontalOverflow": false,
     "boxes": {
       ".round-result-screen": {
-        "top": 289.3,
+        "top": 306.1,
         "bottom": 792,
         "left": 8,
         "right": 352,
         "width": 344,
-        "height": 502.7,
+        "height": 485.9,
         "fullyVisible": true
       },
       ".round-result-hero": {
-        "top": 300.3,
+        "top": 317.1,
         "bottom": 527.3,
         "left": 19,
         "right": 341,
         "width": 322,
-        "height": 227,
+        "height": 210.2,
         "fullyVisible": true
       },
       ".round-result-cards": {
