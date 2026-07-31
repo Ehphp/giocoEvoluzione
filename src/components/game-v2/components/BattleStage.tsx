@@ -3,7 +3,6 @@ import type { CSSProperties } from 'react'
 import type { CreatureVisual } from '../gameSelectionAssets'
 
 type BattleStageProps = {
-    background: string
     playerCreature: CreatureVisual
     opponentCreature: CreatureVisual
 }
@@ -24,10 +23,9 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: 'player
     )
 }
 
-export function BattleStage({ background, playerCreature, opponentCreature }: BattleStageProps) {
+export function BattleStage({ playerCreature, opponentCreature }: BattleStageProps) {
     return (
         <section className="battle-stage" aria-label="Scena di battaglia">
-            <img className="battle-stage__background" src={background} alt="" />
             <div className="battle-stage__atmosphere" aria-hidden="true" />
             <CreatureLayer visual={playerCreature} side="player" />
             <CreatureLayer visual={opponentCreature} side="opponent" />

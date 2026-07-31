@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
+
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
     DEFAULT_BATTLE_PLAYER_CREATURE,
+    GAME_SELECTION_ASSETS,
     getBattleBackgroundForEvent,
 } from './gameSelectionAssets'
 import type { GeneSelectionViewModelV2 } from './types'
@@ -40,6 +43,18 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
     const hasRenderableContent = viewModel.status !== 'invalid' && viewModel.status !== 'loading'
+    const battleBackground = getBattleBackgroundForEvent(viewModel.roundEvent.id)
+    const [backgroundSource, setBackgroundSource] = useState(battleBackground)
+
+    useEffect(() => {
+        setBackgroundSource(battleBackground)
+    }, [battleBackground])
+
+    function handleBackgroundError() {
+        if (backgroundSource !== GAME_SELECTION_ASSETS.backgroundFallback) {
+            setBackgroundSource(GAME_SELECTION_ASSETS.backgroundFallback)
+        }
+    }
 
     return (
         <section
@@ -48,6 +63,8 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
             aria-hidden={isInteractionLocked || undefined}
             inert={isInteractionLocked}
         >
+            <img className="gene-selection-screen__background" src={backgroundSource} alt="" onError={handleBackgroundError} />
+            <div className="gene-selection-screen__backdrop" aria-hidden="true" />
             <div className="game-frame" data-testid="gene-v2-scroll-container">
                 {viewModel.status === 'invalid' ? (
                     <div className="game-state game-state--centered">
@@ -81,7 +98,6 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                 nextRoundEvent={viewModel.nextRoundEvent}
                             />
                             <BattleStage
-                                background={getBattleBackgroundForEvent(viewModel.roundEvent.id)}
                                 playerCreature={viewModel.player.creatureVisual ?? DEFAULT_BATTLE_PLAYER_CREATURE}
                                 opponentCreature={viewModel.opponent.creatureVisual ?? DEFAULT_BATTLE_OPPONENT_CREATURE}
                             />

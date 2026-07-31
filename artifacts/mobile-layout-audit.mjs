@@ -138,6 +138,7 @@ async function collectMetrics(send, viewport) {
     return evaluate(send, `(() => {
         const selectors = [
             '.gene-selection-screen',
+            '.gene-selection-screen__background',
             '.game-frame',
             '.duel-v2-header',
             '.arena-stage',
@@ -199,6 +200,8 @@ async function collectMetrics(send, viewport) {
                 ))
             })(),
             arenaHasUsefulHeight: (document.querySelector('.arena-stage')?.getBoundingClientRect().height ?? 0) > 0,
+            hasFullscreenBattleBackground: Boolean(document.querySelector('.gene-selection-screen__background')),
+            arenaEmbedsBattleBackground: Boolean(document.querySelector('.battle-stage__background')),
             scrollY: window.scrollY,
             boxes,
         }
@@ -208,12 +211,15 @@ async function collectMetrics(send, viewport) {
 function assertViewportMetrics(result) {
     const useButton = result.boxes['.action-v2-btn--use']
     const evolveButton = result.boxes['.action-v2-btn--evolve']
+    const fullscreenBackground = result.boxes['.gene-selection-screen__background']
     const failures = []
 
     if (result.hasVerticalOverflow) failures.push('overflow verticale')
     if (!result.fiveGenesFullyVisible) failures.push('cinque geni non completamente visibili')
     if (!result.eventDoesNotCoverDock) failures.push('evento sovrapposto al dock')
     if (!result.arenaHasUsefulHeight) failures.push('arena senza altezza utile')
+    if (!result.hasFullscreenBattleBackground || !fullscreenBackground?.fullyVisible) failures.push('fondale battaglia non fullscreen')
+    if (result.arenaEmbedsBattleBackground) failures.push('fondale duplicato dentro l\'arena')
     if (!useButton?.fullyVisible) failures.push('USA non completamente visibile')
     if (!evolveButton?.fullyVisible) failures.push('EVOLVI non completamente visibile')
 

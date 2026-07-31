@@ -15,7 +15,6 @@ describe('BattleStage', () => {
         root = createRoot(container)
         act(() => {
             root.render(createElement(BattleStage, {
-                background: '/forest.png',
                 playerCreature: { src: '/player.png', alt: 'Giocatore', scale: 1.1, offsetY: 12 },
                 opponentCreature: { src: '/opponent.png', alt: 'Avversario', offsetX: 4 },
             }))
@@ -27,8 +26,8 @@ describe('BattleStage', () => {
         container.remove()
     })
 
-    it('renders background and creatures as independent image layers', () => {
-        expect(container.querySelector<HTMLImageElement>('.battle-stage__background')?.src).toContain('/forest.png')
+    it('renders creature layers without embedding the page background in the arena', () => {
+        expect(container.querySelector('.battle-stage__background')).toBeNull()
         expect(container.querySelector<HTMLImageElement>('.battle-stage__creature--player img')?.src).toContain('/player.png')
         expect(container.querySelector<HTMLImageElement>('.battle-stage__creature--opponent img')?.src).toContain('/opponent.png')
         expect(container.querySelector('.battle-stage__versus')?.textContent).toBe('VS')

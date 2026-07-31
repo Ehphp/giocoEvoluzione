@@ -15,6 +15,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -23,6 +25,15 @@
         "left": 10,
         "right": 350,
         "width": 340,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 800,
+        "left": 0,
+        "right": 360,
+        "width": 360,
         "height": 800,
         "fullyVisible": true
       },
@@ -152,6 +163,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -160,6 +173,15 @@
         "left": 10,
         "right": 380,
         "width": 370,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "width": 390,
         "height": 844,
         "fullyVisible": true
       },
@@ -289,6 +311,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -297,6 +321,15 @@
         "left": 10,
         "right": 402,
         "width": 392,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 915,
+        "left": 0,
+        "right": 412,
+        "width": 412,
         "height": 915,
         "fullyVisible": true
       },
@@ -329,29 +362,29 @@
       },
       ".event-v2-stack": {
         "top": 86.3,
-        "bottom": 203.3,
+        "bottom": 234.3,
         "left": 20.3,
         "right": 391.7,
         "width": 371.4,
-        "height": 117,
+        "height": 148,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 87.3,
-        "bottom": 202.3,
+        "bottom": 233.3,
         "left": 21.3,
         "right": 260.7,
         "width": 239.4,
-        "height": 115,
+        "height": 146,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 87.3,
-        "bottom": 202.3,
+        "bottom": 233.3,
         "left": 260.7,
         "right": 390.7,
         "width": 130,
-        "height": 115,
+        "height": 146,
         "fullyVisible": true
       },
       ".decision-dock": {
@@ -426,6 +459,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -434,6 +469,15 @@
         "left": 10,
         "right": 420,
         "width": 410,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 932,
+        "left": 0,
+        "right": 430,
+        "width": 430,
         "height": 932,
         "fullyVisible": true
       },
@@ -466,29 +510,29 @@
       },
       ".event-v2-stack": {
         "top": 89.4,
-        "bottom": 207.4,
+        "bottom": 218.8,
         "left": 20.8,
         "right": 409.3,
         "width": 388.5,
-        "height": 118,
+        "height": 129.4,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 90.4,
-        "bottom": 206.4,
+        "bottom": 217.8,
         "left": 21.8,
         "right": 278.3,
         "width": 256.5,
-        "height": 116,
+        "height": 127.4,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 90.4,
-        "bottom": 206.4,
+        "bottom": 217.8,
         "left": 278.3,
         "right": 408.3,
         "width": 130,
-        "height": 116,
+        "height": 127.4,
         "fullyVisible": true
       },
       ".decision-dock": {
@@ -563,6 +607,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -573,6 +619,15 @@
         "width": 734,
         "height": 1024,
         "fullyVisible": false
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 1024,
+        "left": 0,
+        "right": 768,
+        "width": 768,
+        "height": 1024,
+        "fullyVisible": true
       },
       ".game-frame": {
         "top": 17,
@@ -693,13 +748,15 @@
     "innerWidth": 844,
     "innerHeight": 390,
     "documentScrollHeight": 390,
-    "screenScrollHeight": 390,
+    "screenScrollHeight": 394,
     "hasVerticalOverflow": false,
-    "sceneViewportRatio": 75.6,
+    "sceneViewportRatio": 76.7,
     "geneCardCount": 5,
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -711,13 +768,22 @@
         "height": 390,
         "fullyVisible": false
       },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 390,
+        "left": 0,
+        "right": 844,
+        "width": 844,
+        "height": 390,
+        "fullyVisible": true
+      },
       ".game-frame": {
         "top": 7,
-        "bottom": 397,
+        "bottom": 401.1,
         "left": 7,
         "right": 837,
         "width": 830,
-        "height": 390,
+        "height": 394.1,
         "fullyVisible": false
       },
       ".duel-v2-header": {
@@ -731,43 +797,43 @@
       },
       ".arena-stage": {
         "top": 96,
-        "bottom": 391,
+        "bottom": 395.1,
         "left": 16,
         "right": 384,
         "width": 368,
-        "height": 295,
+        "height": 299.1,
         "fullyVisible": false
       },
       ".event-v2-stack": {
         "top": 96,
-        "bottom": 237.9,
+        "bottom": 260.1,
         "left": 16,
         "right": 384,
         "width": 368,
-        "height": 141.9,
+        "height": 164.1,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 97,
-        "bottom": 236.9,
+        "bottom": 259.1,
         "left": 17,
         "right": 253,
         "width": 236,
-        "height": 139.9,
+        "height": 162.1,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 97,
-        "bottom": 236.9,
+        "bottom": 259.1,
         "left": 253,
         "right": 383,
         "width": 130,
-        "height": 139.9,
+        "height": 162.1,
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 24.2,
-        "bottom": 379.8,
+        "top": 26.2,
+        "bottom": 381.9,
         "left": 396,
         "right": 828,
         "width": 432,
@@ -775,8 +841,8 @@
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 55.2,
-        "bottom": 218.8,
+        "top": 57.2,
+        "bottom": 220.9,
         "left": 405,
         "right": 819,
         "width": 414,
@@ -784,8 +850,8 @@
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 224.8,
-        "bottom": 300.8,
+        "top": 226.9,
+        "bottom": 302.9,
         "left": 405,
         "right": 819,
         "width": 414,
@@ -793,8 +859,8 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 306.8,
-        "bottom": 370.8,
+        "top": 308.9,
+        "bottom": 372.9,
         "left": 405,
         "right": 819,
         "width": 414,
@@ -802,8 +868,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 306.8,
-        "bottom": 370.8,
+        "top": 308.9,
+        "bottom": 372.9,
         "left": 405,
         "right": 608,
         "width": 203,
@@ -811,8 +877,8 @@
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 306.8,
-        "bottom": 370.8,
+        "top": 308.9,
+        "bottom": 372.9,
         "left": 616,
         "right": 819,
         "width": 203,
@@ -837,6 +903,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -847,6 +915,15 @@
         "width": 1406,
         "height": 900,
         "fullyVisible": false
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 900,
+        "left": 0,
+        "right": 1440,
+        "width": 1440,
+        "height": 900,
+        "fullyVisible": true
       },
       ".game-frame": {
         "top": 17,
@@ -903,17 +980,17 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 279.2,
-        "bottom": 719,
+        "top": 284.6,
+        "bottom": 713.7,
         "left": 793.1,
         "right": 1288,
         "width": 494.9,
-        "height": 439.9,
+        "height": 429.1,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 323.2,
-        "bottom": 488.3,
+        "top": 328.6,
+        "bottom": 493.7,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
@@ -921,8 +998,8 @@
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 499.1,
-        "bottom": 598.5,
+        "top": 504.5,
+        "bottom": 603.9,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
@@ -930,30 +1007,30 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 609.3,
-        "bottom": 702,
+        "top": 614.7,
+        "bottom": 696.7,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 609.3,
-        "bottom": 702,
+        "top": 614.7,
+        "bottom": 696.7,
         "left": 812.1,
         "right": 1034.5,
         "width": 222.4,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 609.3,
-        "bottom": 702,
+        "top": 614.7,
+        "bottom": 696.7,
         "left": 1046.5,
         "right": 1269,
         "width": 222.4,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       }
     }
@@ -974,6 +1051,8 @@
     "fiveGenesFullyVisible": true,
     "eventDoesNotCoverDock": true,
     "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
     "scrollY": 0,
     "boxes": {
       ".gene-selection-screen": {
@@ -984,6 +1063,15 @@
         "width": 1886,
         "height": 1080,
         "fullyVisible": false
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 1080,
+        "left": 0,
+        "right": 1920,
+        "width": 1920,
+        "height": 1080,
+        "fullyVisible": true
       },
       ".game-frame": {
         "top": 17,
@@ -1040,17 +1128,17 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 369.4,
-        "bottom": 809.6,
+        "top": 374.8,
+        "bottom": 804.2,
         "left": 1033.4,
         "right": 1528,
         "width": 494.6,
-        "height": 440.3,
+        "height": 429.5,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 413.4,
-        "bottom": 578.4,
+        "top": 418.8,
+        "bottom": 583.8,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
@@ -1058,8 +1146,8 @@
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 589.4,
-        "bottom": 688.8,
+        "top": 594.8,
+        "bottom": 694.2,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
@@ -1067,30 +1155,30 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 699.8,
-        "bottom": 792.6,
+        "top": 705.2,
+        "bottom": 787.2,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 699.8,
-        "bottom": 792.6,
+        "top": 705.2,
+        "bottom": 787.2,
         "left": 1052.4,
         "right": 1274.7,
         "width": 222.3,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 699.8,
-        "bottom": 792.6,
+        "top": 705.2,
+        "bottom": 787.2,
         "left": 1286.7,
         "right": 1509,
         "width": 222.3,
-        "height": 92.8,
+        "height": 82,
         "fullyVisible": true
       }
     }
