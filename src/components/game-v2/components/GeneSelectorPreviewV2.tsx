@@ -38,10 +38,9 @@ function GeneCard({ gene, isSelected, isPredictionOpen, disabled, tabIndex, onCl
         <button type="button" role="option" className={`selector-v2-card selector-v2-card--${gene.traitType.toLowerCase().replaceAll('_', '-')} ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''}`} aria-selected={isSelected} aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${predictionLabel}, ${eventLabel}, forte contro ${gene.strongAgainst}, teme ${gene.weakAgainst}${isSelected ? `. Tocca per ${isPredictionOpen ? 'chiudere' : 'vedere'} i dettagli` : ''}`} aria-expanded={isSelected ? isPredictionOpen : undefined} aria-describedby={isPredictionOpen ? 'gene-prediction-details' : undefined} title={gene.name} tabIndex={tabIndex} onClick={onClick} onKeyDown={onKeyDown} disabled={disabled}>
             <div className="selector-v2-icon" aria-hidden="true">{gene.imageUrl && !imageFailed ? <img src={gene.imageUrl} alt="" loading="lazy" onError={() => setImageFailed(true)} /> : <span>{gene.name.slice(0, 2).toUpperCase()}</span>}</div>
             <strong className="selector-v2-name">{gene.name}</strong>
-            <div className="selector-v2-meta"><span className="selector-v2-points">{prediction ? `${prediction.useScore} PT base` : '— PT base'}</span><span className="selector-v2-level">LV {gene.level}</span></div>
-            <span className={`selector-v2-event-modifier is-${gene.affinity}`}>{eventLabel}</span>
-            <span className="selector-v2-matchups">Forte: {gene.strongAgainst} · Teme: {gene.weakAgainst}</span>
-            <span className="selector-v2-availability">{gene.usable ? 'Disponibile' : 'Esaurito'}</span>
+            <span className="selector-v2-level">Liv. {gene.level}</span>
+            <span className="selector-v2-points"><small>USA</small>{prediction ? `${prediction.useScore} PT` : '— PT'}</span>
+            <span className="selector-v2-availability">{gene.usable ? 'Usabile' : 'In cooldown'}</span>
         </button>
     )
 }

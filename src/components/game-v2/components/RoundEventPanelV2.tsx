@@ -91,6 +91,7 @@ export function RoundEventPanelV2({ roundEvent, nextRoundEvent }: RoundEventPane
                 <span className="event-v2-copy">
                     <span className="event-v2-eyebrow">EVENTO ATTIVO</span>
                     <strong className="event-v2-title">{roundEvent.title}</strong>
+                    <span className="event-v2-description">{roundEvent.description}</span>
                     {roundEvent.effects.length > 0 ? (
                         <span className="event-v2-effects" aria-label="Modificatori principali">
                             {roundEvent.effects.map((effect) => <span key={effect.id} className={`event-v2-chip is-${effect.tone}`}>{effect.value}</span>)}
@@ -109,8 +110,11 @@ export function RoundEventPanelV2({ roundEvent, nextRoundEvent }: RoundEventPane
                 aria-controls={openTarget === 'next' ? 'event-details' : undefined}
                 onClick={() => toggleDetails('next')}
             >
-                <span>PROSSIMO</span>
-                <strong>{nextRoundEvent?.title ?? 'Fine ecosistema'}</strong>
+                <span className="event-v2-next-copy">
+                    <span>PROSSIMO EVENTO</span>
+                    <strong>{nextRoundEvent?.title ?? 'Fine ecosistema'}</strong>
+                </span>
+                {nextRoundEvent ? <EventArtwork roundEvent={nextRoundEvent} /> : null}
                 {nextRoundEvent ? <b aria-hidden="true">›</b> : null}
             </button>
 

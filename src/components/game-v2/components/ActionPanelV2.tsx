@@ -1,4 +1,5 @@
 import type { GeneCardV2 } from '../types'
+import { EVOLVE_ROUND_VALUE } from '../../../../shared/game-rules/catalog.ts'
 
 type ActionPanelV2Props = { selectedAction: 'USE' | 'EVOLVE' | null; selectedGene: GeneCardV2 | null; canUse: boolean; canEvolve: boolean; isSubmitting: boolean; onUseAction: () => Promise<void>; onEvolveAction: () => Promise<void> }
 function ActionButton({ variant, label, value, sublabel, disabled, isActive, isSubmitting, onClick }: { variant: 'use' | 'evolve'; label: string; value: string; sublabel: string; disabled: boolean; isActive: boolean; isSubmitting: boolean; onClick: () => void }) {
@@ -17,6 +18,6 @@ export function ActionPanelV2({ selectedAction, selectedGene, canUse, canEvolve,
     const evolveSublabel = isSubmitting ? (selectedAction === 'EVOLVE' ? 'Invio della scelta' : 'Scelta in corso') : !canEvolve ? 'Gia disponibile al livello massimo' : selectedGene.level >= 2 ? 'Recupera senza aumentare il livello' : `LV ${selectedGene.level} → ${selectedGene.level + 1}${selectedGene.exhausted ? ' e recupero' : ''}`
     return <section className="action-v2-panel" aria-label={`Azioni per ${selectedGene.name}`} aria-busy={isSubmitting} data-testid="gene-action-panel">
         <ActionButton variant="use" label={useLabel} value={selectedGene.prediction ? `${selectedGene.prediction.useScore} PT base` : '— PT'} sublabel={useSublabel} disabled={!canUse || isSubmitting} isActive={selectedAction === 'USE'} isSubmitting={isSubmitting && selectedAction === 'USE'} onClick={() => { void onUseAction() }} />
-        <ActionButton variant="evolve" label={evolveLabel} value="1 PT" sublabel={evolveSublabel} disabled={!canEvolve || isSubmitting} isActive={selectedAction === 'EVOLVE'} isSubmitting={isSubmitting && selectedAction === 'EVOLVE'} onClick={() => { void onEvolveAction() }} />
+        <ActionButton variant="evolve" label={evolveLabel} value={`${EVOLVE_ROUND_VALUE} PT`} sublabel={evolveSublabel} disabled={!canEvolve || isSubmitting} isActive={selectedAction === 'EVOLVE'} isSubmitting={isSubmitting && selectedAction === 'EVOLVE'} onClick={() => { void onEvolveAction() }} />
     </section>
 }

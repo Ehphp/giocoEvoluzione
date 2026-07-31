@@ -8,10 +8,10 @@
   "geneCardCount": 5,
   "allGenesFullyVisible": true,
   "selectedCardRect": {
-    "top": 578.8125,
-    "bottom": 667.921875,
-    "left": 279.1875,
-    "right": 339.984375
+    "top": 536.90625,
+    "bottom": 648.90625,
+    "left": 279.59375,
+    "right": 342
   },
   "selectedCardOpacity": "1",
   "selectedCardVisibility": "visible",

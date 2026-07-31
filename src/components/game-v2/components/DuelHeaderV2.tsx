@@ -20,10 +20,10 @@ function statusLabel(status: DuelPlayerV2['status']): string {
     return 'Sta scegliendo'
 }
 
-function Avatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+function Avatar({ name, avatarUrl, creatureUrl }: { name: string; avatarUrl?: string; creatureUrl?: string }) {
     return (
         <div className="duel-v2-avatar" role="img" aria-label={`Avatar ${name}`}>
-            <img src={avatarUrl} alt="" loading="lazy" onError={(event) => {
+            <img src={creatureUrl ?? avatarUrl} alt="" loading="lazy" onError={(event) => {
                 event.currentTarget.style.display = 'none'
             }} />
             <span aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>
@@ -44,7 +44,7 @@ function PlayerCard({
 
     return (
         <article className={`duel-v2-card duel-v2-card--${variant}`} aria-label={`${role} ${player.name}, ${scoreLabel.toLowerCase()}`}>
-            <Avatar name={player.name} avatarUrl={player.avatarUrl} />
+            <Avatar name={player.name} avatarUrl={player.avatarUrl} creatureUrl={player.creatureVisual?.src} />
             <div className="duel-v2-copy">
                 <span className="duel-v2-role">{role}</span>
                 <strong className="duel-v2-name" title={player.name}>{player.name}</strong>

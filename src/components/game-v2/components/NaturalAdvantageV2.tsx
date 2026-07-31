@@ -1,5 +1,5 @@
 import { TRAIT_LABELS } from '../../../game/config'
-import { NATURAL_ADVANTAGE } from '../../../../shared/game-rules/catalog.ts'
+import { NATURAL_ADVANTAGE, NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
 import type { GeneCardV2 } from '../types'
 
 type NaturalAdvantageV2Props = {
@@ -21,23 +21,18 @@ export function NaturalAdvantageV2({ selectedGene }: NaturalAdvantageV2Props) {
 
     return (
         <section className="natural-advantage-v2" aria-label={`Vantaggio naturale di ${selectedGene.name}`}>
-            <div className="natural-advantage-v2__identity">
+            <div className="natural-advantage-v2__heading">
                 <span className="natural-advantage-v2__icon" aria-hidden="true">
-                    {selectedGene.imageUrl ? (
-                        <img src={selectedGene.imageUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} />
-                    ) : null}
+                    {selectedGene.imageUrl ? <img src={selectedGene.imageUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} /> : null}
                 </span>
-                <div className="natural-advantage-v2__summary">
-                    <strong>{selectedGene.name}</strong>
-                    <span>{selectedGene.prediction?.useScore ?? 0} PT</span>
-                    <span>LV {selectedGene.level}</span>
-                </div>
+                <strong>Vantaggio naturale</strong>
+                <span className="natural-advantage-v2__info" aria-hidden="true">i</span>
             </div>
-            <p className="natural-advantage-v2__matchup">
-                <span className="natural-advantage-v2__strong">Forte contro <b>{TRAIT_LABELS[strongAgainst]} +2</b></span>
-                <span className="natural-advantage-v2__weak">Teme <b>{TRAIT_LABELS[fearedBy]}</b></span>
-                <small>Si attiva solo se entrambi usano</small>
-            </p>
+            <div className="natural-advantage-v2__grid">
+                <p className="natural-advantage-v2__fact natural-advantage-v2__fact--strong"><span aria-hidden="true">↗</span><small>Forte contro</small><b>{TRAIT_LABELS[strongAgainst]} +{NATURAL_ADVANTAGE_BONUS}</b></p>
+                <p className="natural-advantage-v2__fact natural-advantage-v2__fact--weak"><span aria-hidden="true">↘</span><small>Teme</small><b>{TRAIT_LABELS[fearedBy]}</b></p>
+                <p className="natural-advantage-v2__fact natural-advantage-v2__fact--condition"><span aria-hidden="true">★</span><small>Si attiva se</small><b>entrambi usano USA</b><em>contro {TRAIT_LABELS[strongAgainst]}</em></p>
+            </div>
         </section>
     )
 }
