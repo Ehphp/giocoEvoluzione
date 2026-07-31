@@ -63,6 +63,12 @@ describe('HomeScreen', () => {
     it('renders the guest hub with one personal creature and working play modes', () => {
         render()
 
+        const logo = container.querySelector('.home-brand__logo') as HTMLImageElement
+
+        expect(logo.getAttribute('src')).toBe('/assets/branding/evori-logo.png')
+        expect(logo.getAttribute('alt')).toBe('Evori')
+        expect(container.querySelector('.home-brand')?.textContent).not.toContain('Gioco Evoluzione')
+        expect(container.querySelector('.home-brand')?.textContent).not.toContain('Evolvi. Cresci. Diventa leggenda.')
         expect(container.querySelector('[data-testid="home-creature-stage"]')).not.toBeNull()
         expect(container.querySelectorAll('.home-creature-stage__creature')).toHaveLength(1)
         expect(container.querySelector('#player-name')).toBeNull()

@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 const APP_URL = 'http://127.0.0.1:4173'
 const DEBUG_PORT = 9333
 const OUTPUT_DIR = resolve('artifacts/mobile-layout-current')
+const homeOnly = process.argv.includes('--home-only')
 const VIEWPORTS = [
     { width: 360, height: 800 },
     { width: 390, height: 844 },
@@ -234,6 +235,7 @@ async function collectHomeMetrics(send, viewport) {
             '.home-screen',
             '.home-topbar',
             '.home-brand',
+            '.home-brand__logo',
             '.home-creature-stage',
             '.home-primary-navigation__play',
         ]
@@ -257,16 +259,29 @@ async function collectHomeMetrics(send, viewport) {
             }]
         }))
 
+        const brand = document.querySelector('.home-brand')?.getBoundingClientRect()
+        const logo = document.querySelector('.home-brand__logo')
+        const logoRect = logo?.getBoundingClientRect()
+
         return {
             requestedViewport: ${JSON.stringify(viewport)},
             innerWidth: window.innerWidth,
             innerHeight: window.innerHeight,
+            scrollY: window.scrollY,
             documentScrollHeight: document.documentElement.scrollHeight,
             hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
             hasCreatureStage: document.querySelectorAll('[data-testid="home-creature-stage"]').length === 1,
             creatureImageCount: document.querySelectorAll('.home-creature-stage__creature').length,
             usesEmbeddedCreatureBackground: getComputedStyle(document.querySelector('.shell--home'))
                 .backgroundImage.includes('battle-scene-mobile.jpeg'),
+            logo: {
+                alt: logo?.getAttribute('alt') ?? null,
+                src: logo?.getAttribute('src') ?? null,
+                objectFit: logo ? getComputedStyle(logo).objectFit : null,
+                centered: Boolean(brand && logoRect && Math.abs(
+                    (brand.left + brand.width / 2) - (logoRect.left + logoRect.width / 2),
+                ) < 1),
+            },
             boxes,
         }
     })()`)
@@ -274,13 +289,19 @@ async function collectHomeMetrics(send, viewport) {
 
 function assertHomeMetrics(result) {
     const failures = []
+    const logo = result.boxes['.home-brand__logo']
     const stage = result.boxes['.home-creature-stage']
     const playAction = result.boxes['.home-primary-navigation__play']
 
     if (result.hasHorizontalOverflow) failures.push('overflow orizzontale')
+    if (result.scrollY !== 0) failures.push(`home non allineata in alto (${result.scrollY}px)`)
     if (result.documentScrollHeight > result.innerHeight + 1) failures.push(`scroll iniziale della home (${result.documentScrollHeight}px)`)
     if (!result.hasCreatureStage || result.creatureImageCount !== 1) failures.push('palco creatura non univoco')
     if (result.usesEmbeddedCreatureBackground) failures.push('fondale home con creature incorporate')
+    if (!logo?.fullyVisible) failures.push('logo Evori non completamente visibile')
+    if (result.logo.src !== '/assets/branding/evori-logo.png' || result.logo.alt !== 'Evori') failures.push('asset o testo alternativo del logo non corretto')
+    if (result.logo.objectFit !== 'contain') failures.push('logo senza object-fit contain')
+    if (!result.logo.centered) failures.push('logo non centrato')
     if (!stage?.fullyVisible) failures.push('palco creatura non completamente visibile')
     if (!playAction?.fullyVisible) {
         failures.push('CTA Gioca non completamente visibile')
@@ -432,12 +453,18 @@ async function run() {
     await setViewport(send, VIEWPORTS[1])
     await send('Page.navigate', { url: APP_URL })
     await waitForSelector(send, '.home-primary-navigation__play')
+    await waitFor(
+        () => evaluate(send, "Boolean(document.querySelector('.home-brand__logo')?.complete && document.querySelector('.home-brand__logo')?.naturalWidth)"),
+        20_000,
+        'logo Evori',
+    )
 
     const homeResults = []
 
     for (const viewport of VIEWPORTS) {
         await setViewport(send, viewport)
         await delay(150)
+        await evaluate(send, 'window.scrollTo(0, 0)')
 
         const screenshot = await send('Page.captureScreenshot', {
             format: 'png',
@@ -470,6 +497,11 @@ async function run() {
         join(OUTPUT_DIR, 'home-play-modes-current-390x844.png'),
         Buffer.from(playModesScreenshot.data, 'base64'),
     )
+
+    if (homeOnly) {
+        await send('Browser.close')
+        return
+    }
 
     await evaluate(send, `(() => {
         const input = document.querySelector('#player-name')
