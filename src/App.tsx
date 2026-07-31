@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import './App.css'
 import { HomeScreen } from './components/home/HomeScreen'
+import { buildGuestHomeViewModel } from './components/home/buildHomeViewModel'
 import { buildMatchResultViewModel } from './components/game-results/buildMatchResultViewModel'
 import { MatchResultScreen } from './components/game-results/MatchResultScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
@@ -230,6 +231,19 @@ function App() {
     () => snapshot ? buildMatchResultViewModel(snapshot, myScore, opponentScore) : null,
     [myScore, opponentScore, snapshot],
   )
+  const homeViewModel = useMemo(
+    () => buildGuestHomeViewModel({
+      nickname,
+      roomCode,
+      botDifficulty,
+      isOnline,
+      errorMessage,
+      statusMessage,
+      isBusy,
+      busyAction,
+    }),
+    [botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, roomCode, statusMessage],
+  )
 
   async function refreshSnapshot(gameId: string, playerId: string) {
     const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
@@ -431,21 +445,16 @@ function App() {
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot ? (
             <HomeScreen
-              nickname={nickname}
-               roomCode={roomCode}
-               botDifficulty={botDifficulty}
-              isOnline={isOnline}
-              errorMessage={errorMessage}
-              statusMessage={statusMessage}
-              isBusy={isBusy}
-              busyAction={busyAction}
-              onNicknameChange={setNickname}
-               onRoomCodeChange={(value) => setRoomCode(value.toUpperCase())}
-               onBotDifficultyChange={setBotDifficulty}
-              onCreateGame={() => void handleCreateGame()}
-              onCreateBotGame={() => void handleCreateBotGame()}
-              onJoinGame={() => void handleJoinGame()}
-              onLeaveSession={handleLeaveSession}
+              viewModel={homeViewModel}
+              actions={{
+                onNicknameChange: setNickname,
+                onRoomCodeChange: (value) => setRoomCode(value.toUpperCase()),
+                onBotDifficultyChange: setBotDifficulty,
+                onCreateGame: () => void handleCreateGame(),
+                onCreateBotGame: () => void handleCreateBotGame(),
+                onJoinGame: () => void handleJoinGame(),
+                onLeaveSession: handleLeaveSession,
+              }}
             />
           ) : snapshot.game.status === 'WAITING' ? (
             <>

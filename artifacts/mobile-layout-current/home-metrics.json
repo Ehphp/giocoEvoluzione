@@ -7,72 +7,55 @@
     },
     "innerWidth": 360,
     "innerHeight": 800,
-    "documentScrollHeight": 802,
+    "documentScrollHeight": 800,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 9,
-        "bottom": 793,
-        "left": 9,
-        "right": 351,
-        "width": 342,
-        "height": 784,
+        "top": 10,
+        "bottom": 784,
+        "left": 10,
+        "right": 350,
+        "width": 340,
+        "height": 774,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 13,
-        "bottom": 141.3,
-        "left": 13,
-        "right": 347,
-        "width": 334,
-        "height": 128.3,
+      ".home-topbar": {
+        "top": 14,
+        "bottom": 72,
+        "left": 14,
+        "right": 346,
+        "width": 332,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 151.3,
-        "bottom": 619.6,
-        "left": 13,
-        "right": 347,
-        "width": 334,
-        "height": 468.4,
+      ".home-brand": {
+        "top": 84,
+        "bottom": 167.5,
+        "left": 14,
+        "right": 346,
+        "width": 332,
+        "height": 83.5,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 190.8,
-        "bottom": 243.2,
-        "left": 24,
-        "right": 336,
-        "width": 312,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 179.5,
+        "bottom": 523.5,
+        "left": 14,
+        "right": 346,
+        "width": 332,
+        "height": 344,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 253.2,
-        "bottom": 321.7,
-        "left": 24,
-        "right": 336,
-        "width": 312,
-        "height": 68.5,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 528.8,
-        "bottom": 581.1,
-        "left": 234,
-        "right": 336,
-        "width": 102,
-        "height": 52.4,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 629.6,
-        "bottom": 682,
-        "left": 13,
-        "right": 204.4,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 535.5,
+        "bottom": 598.9,
+        "left": 14,
+        "right": 346,
+        "width": 332,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -85,72 +68,55 @@
     },
     "innerWidth": 390,
     "innerHeight": 844,
-    "documentScrollHeight": 846,
+    "documentScrollHeight": 844,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 9,
-        "bottom": 837,
-        "left": 9,
-        "right": 381,
-        "width": 372,
-        "height": 828,
+        "top": 10,
+        "bottom": 828,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 818,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 13,
-        "bottom": 148.2,
-        "left": 13,
-        "right": 377,
-        "width": 364,
-        "height": 135.2,
+      ".home-topbar": {
+        "top": 14,
+        "bottom": 72,
+        "left": 14,
+        "right": 376,
+        "width": 362,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 158.2,
-        "bottom": 626.6,
-        "left": 13,
-        "right": 377,
-        "width": 364,
-        "height": 468.4,
+      ".home-brand": {
+        "top": 84,
+        "bottom": 170.4,
+        "left": 14,
+        "right": 376,
+        "width": 362,
+        "height": 86.4,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 197.8,
-        "bottom": 250.2,
-        "left": 24,
-        "right": 366,
-        "width": 342,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 182.4,
+        "bottom": 545.3,
+        "left": 14,
+        "right": 376,
+        "width": 362,
+        "height": 362.9,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 260.2,
-        "bottom": 328.7,
-        "left": 24,
-        "right": 366,
-        "width": 342,
-        "height": 68.5,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 535.7,
-        "bottom": 588.1,
-        "left": 264,
-        "right": 366,
-        "width": 102,
-        "height": 52.4,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 636.6,
-        "bottom": 689,
-        "left": 13,
-        "right": 204.4,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 557.3,
+        "bottom": 620.8,
+        "left": 14,
+        "right": 376,
+        "width": 362,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -163,72 +129,55 @@
     },
     "innerWidth": 412,
     "innerHeight": 915,
-    "documentScrollHeight": 917,
+    "documentScrollHeight": 915,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 9,
-        "bottom": 908,
-        "left": 9,
-        "right": 403,
-        "width": 394,
-        "height": 899,
+        "top": 10,
+        "bottom": 899,
+        "left": 10,
+        "right": 402,
+        "width": 392,
+        "height": 889,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 13,
-        "bottom": 149.5,
-        "left": 13,
-        "right": 399,
-        "width": 386,
-        "height": 136.5,
+      ".home-topbar": {
+        "top": 14,
+        "bottom": 72,
+        "left": 14,
+        "right": 398,
+        "width": 384,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 159.5,
-        "bottom": 627.9,
-        "left": 13,
-        "right": 399,
-        "width": 386,
-        "height": 468.4,
+      ".home-brand": {
+        "top": 84,
+        "bottom": 173.7,
+        "left": 14,
+        "right": 398,
+        "width": 384,
+        "height": 89.7,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 199.1,
-        "bottom": 251.5,
-        "left": 24,
-        "right": 388,
-        "width": 364,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 185.7,
+        "bottom": 575.7,
+        "left": 14,
+        "right": 398,
+        "width": 384,
+        "height": 390,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 261.5,
-        "bottom": 330,
-        "left": 24,
-        "right": 388,
-        "width": 364,
-        "height": 68.5,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 537,
-        "bottom": 589.4,
-        "left": 286,
-        "right": 388,
-        "width": 102,
-        "height": 52.4,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 637.9,
-        "bottom": 690.3,
-        "left": 13,
-        "right": 204.4,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 587.7,
+        "bottom": 651.1,
+        "left": 14,
+        "right": 398,
+        "width": 384,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -241,72 +190,55 @@
     },
     "innerWidth": 430,
     "innerHeight": 932,
-    "documentScrollHeight": 934,
+    "documentScrollHeight": 932,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 9,
-        "bottom": 925,
-        "left": 9,
-        "right": 421,
-        "width": 412,
-        "height": 916,
+        "top": 10,
+        "bottom": 916,
+        "left": 10,
+        "right": 420,
+        "width": 410,
+        "height": 906,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 13,
-        "bottom": 149.5,
-        "left": 13,
-        "right": 417,
-        "width": 404,
-        "height": 136.5,
+      ".home-topbar": {
+        "top": 14,
+        "bottom": 72,
+        "left": 14,
+        "right": 416,
+        "width": 402,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 159.5,
-        "bottom": 627.9,
-        "left": 13,
-        "right": 417,
-        "width": 404,
-        "height": 468.4,
+      ".home-brand": {
+        "top": 84,
+        "bottom": 176.3,
+        "left": 14,
+        "right": 416,
+        "width": 402,
+        "height": 92.3,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 199.1,
-        "bottom": 251.5,
-        "left": 24,
-        "right": 406,
-        "width": 382,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 188.3,
+        "bottom": 578.3,
+        "left": 14,
+        "right": 416,
+        "width": 402,
+        "height": 390,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 261.5,
-        "bottom": 330,
-        "left": 24,
-        "right": 406,
-        "width": 382,
-        "height": 68.5,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 537,
-        "bottom": 589.4,
-        "left": 304,
-        "right": 406,
-        "width": 102,
-        "height": 52.4,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 637.9,
-        "bottom": 690.3,
-        "left": 13,
-        "right": 204.4,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 590.3,
+        "bottom": 653.7,
+        "left": 14,
+        "right": 416,
+        "width": 402,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -319,72 +251,55 @@
     },
     "innerWidth": 768,
     "innerHeight": 1024,
-    "documentScrollHeight": 1026,
+    "documentScrollHeight": 1024,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 13,
-        "bottom": 1013,
-        "left": 13,
-        "right": 755,
-        "width": 742,
-        "height": 1000,
+        "top": 52.9,
+        "bottom": 965,
+        "left": 179.5,
+        "right": 588.5,
+        "width": 409,
+        "height": 912.1,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 163.5,
-        "bottom": 346.5,
-        "left": 17,
-        "right": 342.8,
-        "width": 325.8,
-        "height": 183,
+      ".home-topbar": {
+        "top": 56.9,
+        "bottom": 114.9,
+        "left": 183.5,
+        "right": 584.5,
+        "width": 401,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 17,
-        "bottom": 493,
-        "left": 352.8,
-        "right": 751,
-        "width": 398.2,
-        "height": 476,
+      ".home-brand": {
+        "top": 130.9,
+        "bottom": 228.2,
+        "left": 183.5,
+        "right": 584.5,
+        "width": 401,
+        "height": 97.3,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 58.6,
-        "bottom": 111,
-        "left": 365.8,
-        "right": 738,
-        "width": 372.2,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 244.2,
+        "bottom": 817.6,
+        "left": 183.5,
+        "right": 584.5,
+        "width": 401,
+        "height": 573.4,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 121,
-        "bottom": 191.3,
-        "left": 365.8,
-        "right": 738,
-        "width": 372.2,
-        "height": 70.3,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 396.5,
-        "bottom": 452.5,
-        "left": 636,
-        "right": 738,
-        "width": 102,
-        "height": 56,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 503,
-        "bottom": 555.4,
-        "left": 352.8,
-        "right": 544.2,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 833.6,
+        "bottom": 897,
+        "left": 183.5,
+        "right": 584.5,
+        "width": 401,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -399,71 +314,54 @@
     "innerHeight": 390,
     "documentScrollHeight": 390,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 15,
-        "bottom": 537.4,
-        "left": 17,
-        "right": 827,
-        "width": 810,
-        "height": 522.4,
-        "fullyVisible": false
-      },
-      ".home-screen__header": {
-        "top": 179.1,
-        "bottom": 310.9,
-        "left": 21,
-        "right": 377.4,
-        "width": 356.4,
-        "height": 131.8,
+        "top": 6,
+        "bottom": 361.3,
+        "left": 72,
+        "right": 772,
+        "width": 700,
+        "height": 355.3,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 19,
-        "bottom": 471,
-        "left": 387.4,
-        "right": 823,
-        "width": 435.6,
-        "height": 452,
-        "fullyVisible": false
-      },
-      "#player-name": {
-        "top": 60.6,
-        "bottom": 113,
-        "left": 400.4,
-        "right": 810,
-        "width": 409.6,
-        "height": 52.4,
+      ".home-topbar": {
+        "top": 10,
+        "bottom": 60,
+        "left": 76,
+        "right": 768,
+        "width": 692,
+        "height": 50,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 123,
-        "bottom": 181.3,
-        "left": 400.4,
-        "right": 810,
-        "width": 409.6,
-        "height": 58.3,
+      ".home-brand": {
+        "top": 68,
+        "bottom": 119.7,
+        "left": 76,
+        "right": 768,
+        "width": 692,
+        "height": 51.7,
         "fullyVisible": true
       },
-      ".home-entry__join": {
-        "top": 374.5,
-        "bottom": 430.5,
-        "left": 708,
-        "right": 810,
-        "width": 102,
-        "height": 56,
-        "fullyVisible": false
+      ".home-creature-stage": {
+        "top": 127.7,
+        "bottom": 287.7,
+        "left": 76,
+        "right": 768,
+        "width": 692,
+        "height": 160,
+        "fullyVisible": true
       },
-      ".home-screen__leave": {
-        "top": 481,
-        "bottom": 533.4,
-        "left": 387.4,
-        "right": 578.8,
-        "width": 191.4,
-        "height": 52.4,
-        "fullyVisible": false
+      ".home-primary-navigation__play": {
+        "top": 295.7,
+        "bottom": 349.3,
+        "left": 76,
+        "right": 768,
+        "width": 692,
+        "height": 53.6,
+        "fullyVisible": true
       }
     }
   },
@@ -475,72 +373,55 @@
     },
     "innerWidth": 1440,
     "innerHeight": 900,
-    "documentScrollHeight": 902,
+    "documentScrollHeight": 900,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 13,
-        "bottom": 889,
-        "left": 253,
-        "right": 1187,
-        "width": 934,
-        "height": 876,
+        "top": 25.7,
+        "bottom": 868.3,
+        "left": 515.5,
+        "right": 924.5,
+        "width": 409,
+        "height": 842.7,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 183.9,
-        "bottom": 326.1,
-        "left": 257,
-        "right": 669.2,
-        "width": 412.2,
-        "height": 142.2,
+      ".home-topbar": {
+        "top": 29.7,
+        "bottom": 87.7,
+        "left": 519.5,
+        "right": 920.5,
+        "width": 401,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 17,
-        "bottom": 493,
-        "left": 679.2,
-        "right": 1183,
-        "width": 503.8,
-        "height": 476,
+      ".home-brand": {
+        "top": 103.7,
+        "bottom": 200.9,
+        "left": 519.5,
+        "right": 920.5,
+        "width": 401,
+        "height": 97.3,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 58.6,
-        "bottom": 111,
-        "left": 692.2,
-        "right": 1170,
-        "width": 477.8,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 216.9,
+        "bottom": 720.9,
+        "left": 519.5,
+        "right": 920.5,
+        "width": 401,
+        "height": 504,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 121,
-        "bottom": 191.3,
-        "left": 692.2,
-        "right": 1170,
-        "width": 477.8,
-        "height": 70.3,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 396.5,
-        "bottom": 452.5,
-        "left": 1068,
-        "right": 1170,
-        "width": 102,
-        "height": 56,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 503,
-        "bottom": 555.4,
-        "left": 679.2,
-        "right": 870.6,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 736.9,
+        "bottom": 800.3,
+        "left": 519.5,
+        "right": 920.5,
+        "width": 401,
+        "height": 63.4,
         "fullyVisible": true
       }
     }
@@ -553,72 +434,55 @@
     },
     "innerWidth": 1920,
     "innerHeight": 1080,
-    "documentScrollHeight": 1082,
+    "documentScrollHeight": 1080,
     "hasHorizontalOverflow": false,
-    "hasLegacyHero": false,
-    "usesBattleSceneBackground": true,
+    "hasCreatureStage": true,
+    "creatureImageCount": 1,
+    "usesEmbeddedCreatureBackground": false,
     "boxes": {
       ".home-screen": {
-        "top": 13,
-        "bottom": 1069,
-        "left": 493,
-        "right": 1427,
-        "width": 934,
-        "height": 1056,
+        "top": 72.7,
+        "bottom": 1001.3,
+        "left": 755.5,
+        "right": 1164.5,
+        "width": 409,
+        "height": 928.7,
         "fullyVisible": true
       },
-      ".home-screen__header": {
-        "top": 183.9,
-        "bottom": 326.1,
-        "left": 497,
-        "right": 909.2,
-        "width": 412.2,
-        "height": 142.2,
+      ".home-topbar": {
+        "top": 76.7,
+        "bottom": 134.7,
+        "left": 759.5,
+        "right": 1160.5,
+        "width": 401,
+        "height": 58,
         "fullyVisible": true
       },
-      ".home-entry": {
-        "top": 17,
-        "bottom": 493,
-        "left": 919.2,
-        "right": 1423,
-        "width": 503.8,
-        "height": 476,
+      ".home-brand": {
+        "top": 150.7,
+        "bottom": 247.9,
+        "left": 759.5,
+        "right": 1160.5,
+        "width": 401,
+        "height": 97.3,
         "fullyVisible": true
       },
-      "#player-name": {
-        "top": 58.6,
-        "bottom": 111,
-        "left": 932.2,
-        "right": 1410,
-        "width": 477.8,
-        "height": 52.4,
+      ".home-creature-stage": {
+        "top": 263.9,
+        "bottom": 853.9,
+        "left": 759.5,
+        "right": 1160.5,
+        "width": 401,
+        "height": 590,
         "fullyVisible": true
       },
-      ".home-entry__create": {
-        "top": 121,
-        "bottom": 191.3,
-        "left": 932.2,
-        "right": 1410,
-        "width": 477.8,
-        "height": 70.3,
-        "fullyVisible": true
-      },
-      ".home-entry__join": {
-        "top": 396.5,
-        "bottom": 452.5,
-        "left": 1308,
-        "right": 1410,
-        "width": 102,
-        "height": 56,
-        "fullyVisible": true
-      },
-      ".home-screen__leave": {
-        "top": 503,
-        "bottom": 555.4,
-        "left": 919.2,
-        "right": 1110.6,
-        "width": 191.4,
-        "height": 52.4,
+      ".home-primary-navigation__play": {
+        "top": 869.9,
+        "bottom": 933.3,
+        "left": 759.5,
+        "right": 1160.5,
+        "width": 401,
+        "height": 63.4,
         "fullyVisible": true
       }
     }

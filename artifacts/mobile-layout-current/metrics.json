@@ -329,29 +329,29 @@
       },
       ".event-v2-stack": {
         "top": 86.3,
-        "bottom": 234.3,
+        "bottom": 203.3,
         "left": 20.3,
         "right": 391.7,
         "width": 371.4,
-        "height": 148,
+        "height": 117,
         "fullyVisible": true
       },
       ".event-v2-card": {
         "top": 87.3,
-        "bottom": 233.3,
+        "bottom": 202.3,
         "left": 21.3,
         "right": 260.7,
         "width": 239.4,
-        "height": 146,
+        "height": 115,
         "fullyVisible": true
       },
       ".event-v2-next-trigger": {
         "top": 87.3,
-        "bottom": 233.3,
+        "bottom": 202.3,
         "left": 260.7,
         "right": 390.7,
         "width": 130,
-        "height": 146,
+        "height": 115,
         "fullyVisible": true
       },
       ".decision-dock": {
@@ -903,17 +903,17 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 284.6,
-        "bottom": 713.7,
+        "top": 279.2,
+        "bottom": 719,
         "left": 793.1,
         "right": 1288,
         "width": 494.9,
-        "height": 429.1,
+        "height": 439.9,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 328.6,
-        "bottom": 493.7,
+        "top": 323.2,
+        "bottom": 488.3,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
@@ -921,8 +921,8 @@
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 504.5,
-        "bottom": 603.9,
+        "top": 499.1,
+        "bottom": 598.5,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
@@ -930,30 +930,30 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 614.7,
-        "bottom": 696.7,
+        "top": 609.3,
+        "bottom": 702,
         "left": 812.1,
         "right": 1269,
         "width": 456.9,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 614.7,
-        "bottom": 696.7,
+        "top": 609.3,
+        "bottom": 702,
         "left": 812.1,
         "right": 1034.5,
         "width": 222.4,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 614.7,
-        "bottom": 696.7,
+        "top": 609.3,
+        "bottom": 702,
         "left": 1046.5,
         "right": 1269,
         "width": 222.4,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       }
     }
@@ -1040,17 +1040,17 @@
         "fullyVisible": true
       },
       ".decision-dock": {
-        "top": 374.8,
-        "bottom": 804.2,
+        "top": 369.4,
+        "bottom": 809.6,
         "left": 1033.4,
         "right": 1528,
         "width": 494.6,
-        "height": 429.5,
+        "height": 440.3,
         "fullyVisible": true
       },
       ".selector-v2-grid": {
-        "top": 418.8,
-        "bottom": 583.8,
+        "top": 413.4,
+        "bottom": 578.4,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
@@ -1058,8 +1058,8 @@
         "fullyVisible": true
       },
       ".natural-advantage-v2": {
-        "top": 594.8,
-        "bottom": 694.2,
+        "top": 589.4,
+        "bottom": 688.8,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
@@ -1067,30 +1067,30 @@
         "fullyVisible": true
       },
       ".action-v2-panel": {
-        "top": 705.2,
-        "bottom": 787.2,
+        "top": 699.8,
+        "bottom": 792.6,
         "left": 1052.4,
         "right": 1509,
         "width": 456.6,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       },
       ".action-v2-btn--use": {
-        "top": 705.2,
-        "bottom": 787.2,
+        "top": 699.8,
+        "bottom": 792.6,
         "left": 1052.4,
         "right": 1274.7,
         "width": 222.3,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       },
       ".action-v2-btn--evolve": {
-        "top": 705.2,
-        "bottom": 787.2,
+        "top": 699.8,
+        "bottom": 792.6,
         "left": 1286.7,
         "right": 1509,
         "width": 222.3,
-        "height": 82,
+        "height": 92.8,
         "fullyVisible": true
       }
     }

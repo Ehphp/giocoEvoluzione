@@ -226,12 +226,10 @@ async function collectHomeMetrics(send, viewport) {
     return evaluate(send, `(() => {
         const selectors = [
             '.home-screen',
-            '.home-screen__header',
-            '.home-entry',
-            '#player-name',
-            '.home-entry__create',
-            '.home-entry__join',
-            '.home-screen__leave',
+            '.home-topbar',
+            '.home-brand',
+            '.home-creature-stage',
+            '.home-primary-navigation__play',
         ]
         const boxes = Object.fromEntries(selectors.map((selector) => {
             const element = document.querySelector(selector)
@@ -259,12 +257,32 @@ async function collectHomeMetrics(send, viewport) {
             innerHeight: window.innerHeight,
             documentScrollHeight: document.documentElement.scrollHeight,
             hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
-            hasLegacyHero: document.querySelector('.home-hero') !== null,
-            usesBattleSceneBackground: getComputedStyle(document.querySelector('.shell--home'))
+            hasCreatureStage: document.querySelectorAll('[data-testid="home-creature-stage"]').length === 1,
+            creatureImageCount: document.querySelectorAll('.home-creature-stage__creature').length,
+            usesEmbeddedCreatureBackground: getComputedStyle(document.querySelector('.shell--home'))
                 .backgroundImage.includes('battle-scene-mobile.jpeg'),
             boxes,
         }
     })()`)
+}
+
+function assertHomeMetrics(result) {
+    const failures = []
+    const stage = result.boxes['.home-creature-stage']
+    const playAction = result.boxes['.home-primary-navigation__play']
+
+    if (result.hasHorizontalOverflow) failures.push('overflow orizzontale')
+    if (result.documentScrollHeight > result.innerHeight + 1) failures.push(`scroll iniziale della home (${result.documentScrollHeight}px)`)
+    if (!result.hasCreatureStage || result.creatureImageCount !== 1) failures.push('palco creatura non univoco')
+    if (result.usesEmbeddedCreatureBackground) failures.push('fondale home con creature incorporate')
+    if (!stage?.fullyVisible) failures.push('palco creatura non completamente visibile')
+    if (!playAction?.fullyVisible) {
+        failures.push('CTA Gioca non completamente visibile')
+    }
+
+    if (failures.length) {
+        throw new Error(`${result.innerWidth}x${result.innerHeight}: ${failures.join(', ')}`)
+    }
 }
 
 async function collectResultMetrics(send, viewport) {
@@ -407,7 +425,7 @@ async function run() {
     await send('Runtime.enable')
     await setViewport(send, VIEWPORTS[1])
     await send('Page.navigate', { url: APP_URL })
-    await waitForSelector(send, '#player-name')
+    await waitForSelector(send, '.home-primary-navigation__play')
 
     const homeResults = []
 
@@ -422,7 +440,9 @@ async function run() {
         })
         const filename = `home-current-${viewport.width}x${viewport.height}.png`
         await writeFile(join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'))
-        homeResults.push({ screenshot: filename, ...await collectHomeMetrics(send, viewport) })
+        const homeMetrics = { screenshot: filename, ...await collectHomeMetrics(send, viewport) }
+        assertHomeMetrics(homeMetrics)
+        homeResults.push(homeMetrics)
     }
 
     await writeFile(
@@ -432,6 +452,18 @@ async function run() {
     )
 
     await setViewport(send, VIEWPORTS[1])
+    await evaluate(send, "document.querySelector('.home-primary-navigation__play')?.click()")
+    await waitForSelector(send, '#player-name')
+
+    const playModesScreenshot = await send('Page.captureScreenshot', {
+        format: 'png',
+        fromSurface: true,
+        captureBeyondViewport: false,
+    })
+    await writeFile(
+        join(OUTPUT_DIR, 'home-play-modes-current-390x844.png'),
+        Buffer.from(playModesScreenshot.data, 'base64'),
+    )
 
     await evaluate(send, `(() => {
         const input = document.querySelector('#player-name')
