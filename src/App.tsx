@@ -597,7 +597,6 @@ function App() {
               errorMessage={historyError}
               onBack={() => setCurrentScreen('home')}
               onLogout={() => void handleLogout()}
-              onUpdateNickname={auth.updateNickname}
             />
           ) : !snapshot ? (
             <HomeScreen

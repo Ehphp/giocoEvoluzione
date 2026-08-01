@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo } from 'react'
 
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
@@ -13,7 +13,6 @@ type ProfileScreenProps = {
     errorMessage: string | null
     onBack: () => void
     onLogout: () => void
-    onUpdateNickname: (nickname: string) => Promise<void>
 }
 
 function formatDate(value: string) {
@@ -30,11 +29,7 @@ export function ProfileScreen({
     errorMessage,
     onBack,
     onLogout,
-    onUpdateNickname,
 }: ProfileScreenProps) {
-    const [nickname, setNickname] = useState(profile.nickname)
-    const [isSaving, setIsSaving] = useState(false)
-    const [saveError, setSaveError] = useState<string | null>(null)
     const experience = getExperienceProgress(creature.experience)
     const stats = useMemo(() => history.reduce((total, item) => ({
         played: total.played + 1,
@@ -43,24 +38,6 @@ export function ProfileScreen({
         losses: total.losses + (item.outcome === 'loss' ? 1 : 0),
     }), { played: 0, wins: 0, draws: 0, losses: 0 }), [history])
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
-
-    useEffect(() => {
-        setNickname(profile.nickname)
-    }, [profile.nickname])
-
-    async function handleNicknameSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault()
-        setIsSaving(true)
-        setSaveError(null)
-
-        try {
-            await onUpdateNickname(nickname)
-        } catch (error) {
-            setSaveError(error instanceof Error ? error.message : 'Impossibile salvare il nickname.')
-        } finally {
-            setIsSaving(false)
-        }
-    }
 
     return (
         <section className="profile-screen" aria-labelledby="profile-title">
@@ -74,12 +51,6 @@ export function ProfileScreen({
                 <div><span>Creatura attuale</span><h2>{creature.name ?? 'Creatura iniziale'}</h2><p>{creature.base_creature_key}</p></div>
                 <div><strong>Livello {creature.level}</strong><small>Esperienza: {experience.current} / {experience.required}</small></div>
             </section>
-
-            <form className="profile-screen__nickname" onSubmit={(event) => void handleNicknameSubmit(event)}>
-                <label htmlFor="profile-nickname">Nickname</label>
-                <div><input id="profile-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={20} /><button type="submit" disabled={isSaving}>{isSaving ? 'Salvo…' : 'Salva'}</button></div>
-                {saveError ? <p role="alert">{saveError}</p> : null}
-            </form>
 
             <section className="profile-screen__stats" aria-label="Statistiche">
                 <article><span>Partite</span><strong>{stats.played}</strong></article>
