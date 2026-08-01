@@ -4,6 +4,8 @@ import { TRAIT_LABELS } from '../../game/config'
 import { getGeneAssetByTrait } from '../game-v2/gameSelectionAssets'
 import { getResultActionLabel } from './buildMatchResultViewModel'
 import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from './types'
+import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
+import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
 
 import './MatchResultScreen.css'
 
@@ -13,6 +15,8 @@ type MatchResultScreenProps = {
     onNewGame: () => void
     isBusy?: boolean
     errorMessage?: string | null
+    reward?: MatchRewardRecord | null
+    creature?: PlayerCreatureRecord | null
 }
 
 function outcomeCopy(outcome: MatchResultOutcome) {
@@ -199,7 +203,29 @@ function RoundHistory({ rounds }: { rounds: MatchResultRound[] }) {
     )
 }
 
-export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy = false, errorMessage }: MatchResultScreenProps) {
+function RewardSummary({ outcome, reward, creature }: {
+    outcome: MatchResultOutcome
+    reward: MatchRewardRecord | null | undefined
+    creature: PlayerCreatureRecord | null | undefined
+}) {
+    if (!reward || !creature) {
+        return <p className="match-reward match-reward--pending">Registrazione ricompensa in corso…</p>
+    }
+
+    const progress = getExperienceProgress(creature.experience)
+    const bonus = outcome === 'win' ? PROGRESSION.WIN_BONUS_XP : outcome === 'draw' ? PROGRESSION.DRAW_BONUS_XP : 0
+
+    return (
+        <section className="match-reward" aria-label="Esperienza ottenuta">
+            <span>Esperienza ottenuta</span>
+            <p>+{PROGRESSION.COMPLETED_MATCH_XP} XP partita completata</p>
+            {bonus ? <p>+{bonus} XP {outcome === 'win' ? 'vittoria' : 'pareggio'}</p> : null}
+            <strong>+{reward.experience_awarded} XP · Esperienza: {progress.current} / {progress.required}</strong>
+        </section>
+    )
+}
+
+export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy = false, errorMessage, reward, creature }: MatchResultScreenProps) {
     const outcome = outcomeCopy(viewModel.outcome)
 
     return (
@@ -219,6 +245,7 @@ export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy
                         {viewModel.metrics.length ? <div className="match-result-hero__metrics">{viewModel.metrics.map((metric) => <p key={metric.id}><span>{metric.label}</span><strong>{metric.value}</strong></p>)}</div> : null}
                     </div>
                 </section>
+                <RewardSummary outcome={viewModel.outcome} reward={reward} creature={creature} />
                 {viewModel.lastRound ? <LastRound round={viewModel.lastRound} /> : null}
                 <RoundHistory rounds={viewModel.rounds} />
                 <footer className="match-result-actions">

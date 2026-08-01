@@ -80,4 +80,6 @@ export type HomeActions = {
     onCreateBotGame: () => void
     onJoinGame: () => void
     onLeaveSession: () => void
+    onOpenProfile: () => void
+    onLogout: () => void
 }

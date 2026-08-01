@@ -3,9 +3,10 @@ import type { HomeViewModel } from './types'
 type HomePrimaryNavigationProps = {
     navigation: HomeViewModel['navigation']
     onOpenPlayModes: () => void
+    onOpenProfile: () => void
 }
 
-export function HomePrimaryNavigation({ navigation, onOpenPlayModes }: HomePrimaryNavigationProps) {
+export function HomePrimaryNavigation({ navigation, onOpenPlayModes, onOpenProfile }: HomePrimaryNavigationProps) {
     const playItem = navigation.find((item) => item.id === 'play')
     const futureItems = navigation.filter((item) => item.id !== 'play')
 
@@ -19,7 +20,7 @@ export function HomePrimaryNavigation({ navigation, onOpenPlayModes }: HomePrima
             ) : null}
             <div className="home-primary-navigation__future" aria-label="Sezioni future">
                 {futureItems.map((item) => (
-                    <button key={item.id} type="button" disabled={!item.available} aria-disabled={!item.available}>
+                    <button key={item.id} type="button" disabled={!item.available} aria-disabled={!item.available} onClick={item.id === 'profile' ? onOpenProfile : undefined}>
                         {item.label}
                     </button>
                 ))}

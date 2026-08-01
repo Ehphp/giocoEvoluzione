@@ -118,6 +118,8 @@
 
 .home-topbar__connection.is-online { color: #d8ffb4; background: rgba(79, 155, 59, .22); }
 .home-topbar__connection.is-offline { color: #ffe4a6; background: rgba(156, 105, 30, .28); }
+.home-topbar__actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.home-topbar__actions button { min-height: 30px; padding: 5px 8px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 9px; color: var(--game-text); background: rgba(255, 255, 255, .06); font: inherit; font-size: .66rem; cursor: pointer; }
 
 .home-brand {
   grid-area: brand;
@@ -184,7 +186,7 @@
   position: absolute;
   z-index: 2;
   right: 10px;
-  bottom: 10px;
+  bottom: 10px;f
   left: 10px;
   display: grid;
   gap: 1px;

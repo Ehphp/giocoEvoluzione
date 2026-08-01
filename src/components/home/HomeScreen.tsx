@@ -33,10 +33,10 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
         <section className="home-screen" aria-busy={viewModel.playModes.isBusy}>
             <img className="home-screen__background" src={backgroundSource} alt="" onError={handleBackgroundError} />
             <div className="home-screen__backdrop" aria-hidden="true" />
-            <HomeTopBar player={viewModel.player} isOnline={viewModel.connection.isOnline} />
+            <HomeTopBar player={viewModel.player} isOnline={viewModel.connection.isOnline} onOpenProfile={actions.onOpenProfile} onLogout={actions.onLogout} />
             <HomeBrand />
             <HomeCreatureStage creature={viewModel.creature} shortcuts={viewModel.shortcuts} />
-            <HomePrimaryNavigation navigation={viewModel.navigation} onOpenPlayModes={() => setIsPlayModesOpen(true)} />
+            <HomePrimaryNavigation navigation={viewModel.navigation} onOpenPlayModes={() => setIsPlayModesOpen(true)} onOpenProfile={actions.onOpenProfile} />
             <HomeNotices notices={viewModel.notices} />
             <HomePlayModes
                 mode={viewModel.mode}

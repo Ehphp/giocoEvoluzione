@@ -41,6 +41,9 @@ export type PlayerRecord = {
     player_type: PlayerType
     traits: TraitCollection
     connected: boolean
+    profile_id?: string | null
+    creature_id?: string | null
+    creature_snapshot?: Record<string, unknown> | null
     created_at: string
 }
 
@@ -143,7 +146,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
     }
 }
 
-function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
+export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
     return {
         id: String(data.id),
         game_id: String(data.game_id),
@@ -152,6 +155,11 @@ function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         player_type: (data.player_type as PlayerType) ?? 'HUMAN',
         traits: normalizeTraitCollection(data.traits as TraitCollection),
         connected: Boolean(data.connected),
+        profile_id: typeof data.profile_id === 'string' ? data.profile_id : null,
+        creature_id: typeof data.creature_id === 'string' ? data.creature_id : null,
+        creature_snapshot: data.creature_snapshot && typeof data.creature_snapshot === 'object'
+            ? data.creature_snapshot as Record<string, unknown>
+            : null,
         created_at: String(data.created_at),
     }
 }
@@ -314,7 +322,15 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
     }
 }
 
-export async function createGame(input: { nickname: string; playerId: string }): Promise<GameSnapshot> {
+export type GameParticipantIdentity = {
+    nickname: string
+    playerId: string
+    profileId: string | null
+    creatureId: string | null
+    creatureSnapshot: Record<string, unknown> | null
+}
+
+export async function createGame(input: GameParticipantIdentity): Promise<GameSnapshot> {
     const supabase = requireSupabase()
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -354,6 +370,9 @@ export async function createGame(input: { nickname: string; playerId: string }):
             player_type: 'HUMAN',
             traits: createInitialTraits(),
             connected: true,
+            profile_id: input.profileId,
+            creature_id: input.creatureId,
+            creature_snapshot: input.creatureSnapshot,
         })
 
         if (playerError) {
@@ -377,13 +396,16 @@ export async function createGame(input: { nickname: string; playerId: string }):
     throw new Error('Impossibile generare un codice stanza valido. Riprova.')
 }
 
-export async function createVsBotGame(input: { nickname: string; playerId: string; difficulty: 'EASY' | 'NORMAL' | 'HARD' }): Promise<GameSnapshot> {
+export async function createVsBotGame(input: GameParticipantIdentity & { difficulty: 'EASY' | 'NORMAL' | 'HARD' }): Promise<GameSnapshot> {
     const supabase = requireSupabase()
 
     const { data, error } = await supabase.rpc('create_vs_bot_game', {
         p_nickname: input.nickname.trim(),
         p_player_id: input.playerId,
         p_bot_difficulty: input.difficulty,
+        p_profile_id: input.profileId,
+        p_creature_id: input.creatureId,
+        p_creature_snapshot: input.creatureSnapshot,
     })
 
     if (error) {
@@ -405,11 +427,7 @@ export async function createVsBotGame(input: { nickname: string; playerId: strin
     return fetchGameSnapshot(gameId, input.playerId)
 }
 
-export async function joinGame(input: {
-    roomCode: string
-    nickname: string
-    playerId: string
-}): Promise<GameSnapshot> {
+export async function joinGame(input: GameParticipantIdentity & { roomCode: string }): Promise<GameSnapshot> {
     const supabase = requireSupabase()
     const roomCode = normalizeRoomCode(input.roomCode)
 
@@ -485,6 +503,9 @@ export async function joinGame(input: {
         player_type: 'HUMAN',
         traits: createInitialTraits(),
         connected: true,
+        profile_id: input.profileId,
+        creature_id: input.creatureId,
+        creature_snapshot: input.creatureSnapshot,
     })
 
     if (playerError) {

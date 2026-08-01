@@ -4,6 +4,7 @@ export type StoredSession = {
     playerId: string
     gameId: string
     roomCode: string
+    profileId?: string
 }
 
 export function createPlayerId(): string {

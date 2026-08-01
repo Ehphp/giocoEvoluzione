@@ -3,9 +3,11 @@ import type { HomeViewModel } from './types'
 type HomeTopBarProps = {
     player: HomeViewModel['player']
     isOnline: boolean
+    onOpenProfile: () => void
+    onLogout: () => void
 }
 
-export function HomeTopBar({ player, isOnline }: HomeTopBarProps) {
+export function HomeTopBar({ player, isOnline, onOpenProfile, onLogout }: HomeTopBarProps) {
     const displayName = player.displayName ?? 'Allenatore locale'
     const initial = displayName.slice(0, 1).toUpperCase()
 
@@ -22,9 +24,13 @@ export function HomeTopBar({ player, isOnline }: HomeTopBarProps) {
                     <strong>{displayName}</strong>
                 </div>
             </div>
-            <span className={`home-topbar__connection${isOnline ? ' is-online' : ' is-offline'}`}>
-                {isOnline ? 'Online' : 'Offline'}
-            </span>
+            <div className="home-topbar__actions">
+                <span className={`home-topbar__connection${isOnline ? ' is-online' : ' is-offline'}`}>
+                    {isOnline ? 'Online' : 'Offline'}
+                </span>
+                <button type="button" onClick={onOpenProfile}>Profilo</button>
+                <button type="button" onClick={onLogout}>Esci</button>
+            </div>
         </header>
     )
 }

@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import './App.css'
+import { useAuth } from './auth/AuthProvider'
+import { AuthScreen } from './components/auth/AuthScreen'
 import { HomeScreen } from './components/home/HomeScreen'
-import { buildGuestHomeViewModel } from './components/home/buildHomeViewModel'
+import { buildAuthenticatedHomeViewModel, buildGuestHomeViewModel } from './components/home/buildHomeViewModel'
 import { buildMatchResultViewModel } from './components/game-results/buildMatchResultViewModel'
 import { MatchResultScreen } from './components/game-results/MatchResultScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
+import { ProfileScreen } from './components/profile/ProfileScreen'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
 import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
 import { type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
+import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
 import {
   acknowledgeReveal,
   advanceToNextRound,
@@ -60,6 +64,11 @@ function getTraitLabel(trait: TraitType): string {
 }
 
 function App() {
+  const auth = useAuth()
+  const authStatus = auth.status
+  const profileId = auth.profile?.id
+  const profileNickname = auth.profile?.nickname
+  const refreshProfile = auth.refreshProfile
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
   const [nickname, setNickname] = useState('')
   const [roomCode, setRoomCode] = useState('')
@@ -67,12 +76,17 @@ function App() {
   const [isBusy, setIsBusy] = useState(false)
   const [busyAction, setBusyAction] = useState<BusyAction>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'profile'>('home')
+  const [history, setHistory] = useState<ProfileMatchHistoryItem[]>([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
+  const [matchReward, setMatchReward] = useState<MatchRewardRecord | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(window.navigator.onLine)
 
   useEffect(() => {
-    if (!hasSupabaseConfig) {
+    if (!hasSupabaseConfig || authStatus !== 'ready' || !profileId) {
       setIsLoading(false)
 
       return
@@ -80,7 +94,10 @@ function App() {
 
     const session = loadStoredSession()
 
-    if (!session) {
+    if (!session || session.profileId !== profileId) {
+      if (session) {
+        clearStoredSession()
+      }
       setIsLoading(false)
 
       return
@@ -90,7 +107,7 @@ function App() {
       try {
         const restored = await restoreGameSession(session)
 
-        if (!isGameSnapshotPlayable(restored)) {
+        if (!isGameSnapshotPlayable(restored) || restored.me?.profile_id !== profileId) {
           clearStoredSession()
           setErrorMessage('La partita salvata non è compatibile con questa versione. Crea una nuova partita.')
           setIsLoading(false)
@@ -107,7 +124,89 @@ function App() {
         setIsLoading(false)
       }
     })()
-  }, [])
+  }, [authStatus, profileId])
+
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      clearStoredSession()
+      setSnapshot(null)
+      setCurrentScreen('home')
+    }
+  }, [authStatus])
+
+  useEffect(() => {
+    if (profileNickname) {
+      setNickname(profileNickname)
+    }
+  }, [profileNickname])
+
+  useEffect(() => {
+    if (currentScreen !== 'profile' || !profileId) {
+      return
+    }
+
+    let active = true
+    setIsLoadingHistory(true)
+    setHistoryError(null)
+
+    void fetchProfileMatchHistory(profileId, null)
+      .then((nextHistory) => {
+        if (active) {
+          setHistory(nextHistory)
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setHistoryError(error instanceof Error ? error.message : 'Impossibile caricare la cronologia.')
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingHistory(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentScreen, profileId])
+
+  useEffect(() => {
+    const gameId = snapshot?.game.id
+
+    if (snapshot?.game.status !== 'FINISHED' || !gameId || !profileId) {
+      setMatchReward(null)
+      return
+    }
+
+    let active = true
+    setMatchReward(null)
+
+    void (async () => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          const reward = await fetchMatchReward(gameId, profileId)
+
+          if (reward) {
+            if (active) {
+              setMatchReward(reward)
+              await refreshProfile()
+            }
+
+            return
+          }
+        } catch {
+          return
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 250))
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [profileId, refreshProfile, snapshot?.game.id, snapshot?.game.status])
 
   useEffect(() => {
     const handleOnline = () => {
@@ -231,8 +330,8 @@ function App() {
     () => snapshot ? buildMatchResultViewModel(snapshot, myScore, opponentScore) : null,
     [myScore, opponentScore, snapshot],
   )
-  const homeViewModel = useMemo(
-    () => buildGuestHomeViewModel({
+  const homeViewModel = useMemo(() => {
+    const input = {
       nickname,
       roomCode,
       botDifficulty,
@@ -241,9 +340,12 @@ function App() {
       statusMessage,
       isBusy,
       busyAction,
-    }),
-    [botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, roomCode, statusMessage],
-  )
+    }
+
+    return auth.profile && auth.creature
+      ? buildAuthenticatedHomeViewModel({ ...input, profile: auth.profile, creature: auth.creature })
+      : buildGuestHomeViewModel(input)
+  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, roomCode, statusMessage])
 
   async function refreshSnapshot(gameId: string, playerId: string) {
     const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
@@ -272,9 +374,9 @@ function App() {
     return refreshSnapshot(gameId, playerId)
   }
 
-  async function startNewGame(mode: 'PVP' | 'VS_BOT', playerName: string, difficulty = botDifficulty) {
-    if (!playerName.trim()) {
-      setErrorMessage('Inserisci un nickname.')
+  async function startNewGame(mode: 'PVP' | 'VS_BOT', difficulty = botDifficulty) {
+    if (!auth.profile || !auth.creature) {
+      setErrorMessage('Accedi e attendi l’inizializzazione del profilo prima di giocare.')
 
       return
     }
@@ -286,10 +388,22 @@ function App() {
 
     try {
       const playerId = createPlayerId()
+      const participant = {
+        nickname: auth.profile.nickname,
+        playerId,
+        profileId: auth.profile.id,
+        creatureId: auth.creature.id,
+        creatureSnapshot: {
+          id: auth.creature.id,
+          baseCreatureKey: auth.creature.base_creature_key,
+          name: auth.creature.name,
+          level: auth.creature.level,
+        },
+      }
       const created = mode === 'VS_BOT'
-        ? await createVsBotGame({ nickname: playerName, playerId, difficulty })
-        : await createGame({ nickname: playerName, playerId })
-      saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code })
+        ? await createVsBotGame({ ...participant, difficulty })
+        : await createGame(participant)
+      saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code, profileId: auth.profile.id })
       setSnapshot(created)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : mode === 'VS_BOT' ? 'Impossibile creare la partita contro il bot.' : 'Impossibile creare la partita.')
@@ -300,11 +414,11 @@ function App() {
   }
 
   async function handleCreateGame() {
-    await startNewGame('PVP', nickname)
+    await startNewGame('PVP')
   }
 
   async function handleCreateBotGame() {
-    await startNewGame('VS_BOT', nickname, botDifficulty)
+    await startNewGame('VS_BOT', botDifficulty)
   }
 
   async function handleNewMatch() {
@@ -313,14 +427,12 @@ function App() {
       return
     }
 
-    const playerName = snapshot.me.nickname
-    setNickname(playerName)
-    await startNewGame(snapshot.game.game_mode, playerName, snapshot.game.bot_difficulty)
+    await startNewGame(snapshot.game.game_mode, snapshot.game.bot_difficulty)
   }
 
   async function handleJoinGame() {
-    if (!nickname.trim()) {
-      setErrorMessage('Inserisci un nickname.')
+    if (!auth.profile || !auth.creature) {
+      setErrorMessage('Accedi e attendi l’inizializzazione del profilo prima di entrare in una stanza.')
 
       return
     }
@@ -338,8 +450,20 @@ function App() {
 
     try {
       const playerId = createPlayerId()
-      const joined = await joinGame({ roomCode, nickname, playerId })
-      saveStoredSession({ playerId, gameId: joined.game.id, roomCode: joined.game.room_code })
+      const joined = await joinGame({
+        roomCode,
+        nickname: auth.profile.nickname,
+        playerId,
+        profileId: auth.profile.id,
+        creatureId: auth.creature.id,
+        creatureSnapshot: {
+          id: auth.creature.id,
+          baseCreatureKey: auth.creature.base_creature_key,
+          name: auth.creature.name,
+          level: auth.creature.level,
+        },
+      })
+      saveStoredSession({ playerId, gameId: joined.game.id, roomCode: joined.game.room_code, profileId: auth.profile.id })
       setSnapshot(joined)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Impossibile entrare nella partita.')
@@ -409,6 +533,21 @@ function App() {
     setStatusMessage('Sessione locale rimossa.')
   }
 
+  async function handleLogout() {
+    clearStoredSession()
+    setSnapshot(null)
+    setCurrentScreen('home')
+    setHistory([])
+    setMatchReward(null)
+    setErrorMessage(null)
+
+    try {
+      await auth.signOut()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Logout non riuscito.')
+    }
+  }
+
   async function handleCopyRoomCode() {
     if (!snapshot?.game.room_code) {
       return
@@ -424,7 +563,7 @@ function App() {
 
   return (
     <main className={`shell ${isGamePresentation ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
-      {isLoading ? (
+      {isLoading || auth.status === 'loading' || auth.status === 'initializing' ? (
         <section className="panel centered-panel home-state-panel" role="status" aria-live="polite" aria-busy="true">
           <span className="eyebrow">Connessione alla partita</span>
           <h1>Gioco Evoluzione</h1>
@@ -441,9 +580,26 @@ function App() {
             Imposta <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong>, poi applica lo schema SQL e deploya la funzione <strong>resolve-round</strong>.
           </div>
         </section>
+      ) : !snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature) ? (
+        <AuthScreen
+          initialError={auth.error}
+          onSignIn={auth.signIn}
+          onSignUp={auth.signUp}
+        />
       ) : (
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
-          {!snapshot ? (
+          {!snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
+            <ProfileScreen
+              profile={auth.profile}
+              creature={auth.creature}
+              history={history}
+              isLoadingHistory={isLoadingHistory}
+              errorMessage={historyError}
+              onBack={() => setCurrentScreen('home')}
+              onLogout={() => void handleLogout()}
+              onUpdateNickname={auth.updateNickname}
+            />
+          ) : !snapshot ? (
             <HomeScreen
               viewModel={homeViewModel}
               actions={{
@@ -454,6 +610,8 @@ function App() {
                 onCreateBotGame: () => void handleCreateBotGame(),
                 onJoinGame: () => void handleJoinGame(),
                 onLeaveSession: handleLeaveSession,
+                onOpenProfile: () => setCurrentScreen('profile'),
+                onLogout: () => void handleLogout(),
               }}
             />
           ) : snapshot.game.status === 'WAITING' ? (
@@ -509,6 +667,8 @@ function App() {
               onNewGame={() => void handleNewMatch()}
               isBusy={isBusy}
               errorMessage={errorMessage}
+              reward={matchReward}
+              creature={auth.creature}
             />
           ) : (
             <section className="state-message" role="alert">Risultato finale non disponibile.</section>

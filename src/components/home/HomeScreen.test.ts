@@ -28,6 +28,8 @@ function createActions(): HomeActions {
         onCreateBotGame: vi.fn(),
         onJoinGame: vi.fn(),
         onLeaveSession: vi.fn(),
+        onOpenProfile: vi.fn(),
+        onLogout: vi.fn(),
     }
 }
 
