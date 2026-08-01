@@ -4,15 +4,14 @@ import './AuthScreen.css'
 
 type AuthScreenProps = {
     initialError?: string | null
-    onSignIn: (input: { email: string; password: string }) => Promise<void>
-    onSignUp: (input: { email: string; password: string; nickname: string }) => Promise<{ requiresEmailConfirmation: boolean }>
+    onSignIn: (input: { username: string; password: string }) => Promise<void>
+    onSignUp: (input: { username: string; password: string }) => Promise<{ requiresEmailConfirmation: boolean }>
 }
 
 export function AuthScreen({ initialError = null, onSignIn, onSignUp }: AuthScreenProps) {
     const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
-    const [email, setEmail] = useState('')
+    const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [nickname, setNickname] = useState('')
     const [isBusy, setIsBusy] = useState(false)
     const [message, setMessage] = useState<string | null>(initialError)
 
@@ -27,12 +26,12 @@ export function AuthScreen({ initialError = null, onSignIn, onSignUp }: AuthScre
 
         try {
             if (mode === 'sign-up') {
-                const result = await onSignUp({ email, password, nickname })
+                const result = await onSignUp({ username, password })
                 setMessage(result.requiresEmailConfirmation
                     ? 'Account creato. Controlla la tua email per confermare l’accesso.'
                     : 'Account creato. Prepariamo il tuo profilo.')
             } else {
-                await onSignIn({ email, password })
+                await onSignIn({ username, password })
             }
         } catch (error) {
             setMessage(error instanceof Error ? error.message : 'Autenticazione non riuscita.')
@@ -50,15 +49,9 @@ export function AuthScreen({ initialError = null, onSignIn, onSignUp }: AuthScre
             </div>
 
             <form className="auth-screen__form" onSubmit={(event) => void handleSubmit(event)}>
-                {mode === 'sign-up' ? (
-                    <label className="field" htmlFor="auth-nickname">
-                        <span>Nickname</span>
-                        <input id="auth-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={20} autoComplete="nickname" required />
-                    </label>
-                ) : null}
-                <label className="field" htmlFor="auth-email">
-                    <span>Email</span>
-                    <input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
+                <label className="field" htmlFor="auth-username">
+                    <span>Nome utente</span>
+                    <input id="auth-username" value={username} onChange={(event) => setUsername(event.target.value)} minLength={3} maxLength={20} autoComplete="username" required />
                 </label>
                 <label className="field" htmlFor="auth-password">
                     <span>Password</span>

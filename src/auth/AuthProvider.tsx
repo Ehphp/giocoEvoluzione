@@ -12,6 +12,29 @@ import { hasSupabaseConfig, requireSupabase } from '../lib/supabase'
 
 export type AuthenticationStatus = 'loading' | 'unauthenticated' | 'initializing' | 'ready' | 'error'
 
+const USERNAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,19}$/
+
+function requireUsername(value: string) {
+    const username = value.trim()
+
+    if (!USERNAME_PATTERN.test(username)) {
+        throw new Error('Scegli un nome utente da 3 a 20 caratteri: lettere, numeri, trattino o underscore.')
+    }
+
+    return username
+}
+
+function getAuthEmail(identifier: string) {
+    const trimmedIdentifier = identifier.trim()
+
+    // Existing accounts created before the username-only flow can still sign in.
+    if (trimmedIdentifier.includes('@')) {
+        return trimmedIdentifier.toLowerCase()
+    }
+
+    return `${requireUsername(trimmedIdentifier).toLowerCase()}@accounts.evoluzione.invalid`
+}
+
 type AuthContextValue = {
     status: AuthenticationStatus
     session: Session | null
@@ -19,8 +42,8 @@ type AuthContextValue = {
     profile: ProfileRecord | null
     creature: PlayerCreatureRecord | null
     error: string | null
-    signUp: (input: { email: string; password: string; nickname: string }) => Promise<{ requiresEmailConfirmation: boolean }>
-    signIn: (input: { email: string; password: string }) => Promise<void>
+    signUp: (input: { username: string; password: string }) => Promise<{ requiresEmailConfirmation: boolean }>
+    signIn: (input: { username: string; password: string }) => Promise<void>
     signOut: () => Promise<void>
     refreshProfile: () => Promise<void>
     updateNickname: (nickname: string) => Promise<void>
@@ -115,18 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await resolveSession(session)
     }, [resolveSession, session])
 
-    const signUp = useCallback(async ({ email, password, nickname }: { email: string; password: string; nickname: string }) => {
-        const trimmedNickname = nickname.trim()
-
-        if (!trimmedNickname || trimmedNickname.length > 20) {
-            throw new Error('Scegli un nickname da 1 a 20 caratteri.')
-        }
+    const signUp = useCallback(async ({ username, password }: { username: string; password: string }) => {
+        const accountUsername = requireUsername(username)
 
         const { data, error: signUpError } = await requireSupabase().auth.signUp({
-            email: email.trim(),
+            email: getAuthEmail(accountUsername),
             password,
             options: {
-                data: { nickname: trimmedNickname },
+                data: { nickname: accountUsername },
             },
         })
 
@@ -137,9 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { requiresEmailConfirmation: !data.session }
     }, [])
 
-    const signIn = useCallback(async ({ email, password }: { email: string; password: string }) => {
+    const signIn = useCallback(async ({ username, password }: { username: string; password: string }) => {
         const { error: signInError } = await requireSupabase().auth.signInWithPassword({
-            email: email.trim(),
+            email: getAuthEmail(username),
             password,
         })
 
