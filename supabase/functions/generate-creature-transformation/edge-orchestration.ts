@@ -130,12 +130,13 @@ function mapThrownError(error: unknown): FailureDetails {
     if (error instanceof CreatureTransformationRequestRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof ImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
     if (error instanceof OpenAiStructuredConceptModelError) {
+        const providerDiagnostic = error.providerErrorCode ? ` (codice provider: ${error.providerErrorCode})` : ''
         if (error.code === 'AI_NOT_CONFIGURED') return { code: error.code, message: 'La modalita AI non e configurata.' }
-        if (error.code === 'AI_BAD_REQUEST') return { code: error.code, message: 'La richiesta AI non e accettata dal provider.' }
-        if (error.code === 'AI_AUTHENTICATION_FAILED') return { code: error.code, message: 'La credenziale AI non e accettata dal provider.' }
-        if (error.code === 'AI_PERMISSION_DENIED') return { code: error.code, message: 'La credenziale AI non e autorizzata per questa richiesta.' }
+        if (error.code === 'AI_BAD_REQUEST') return { code: error.code, message: `La richiesta AI non e accettata dal provider.${providerDiagnostic}` }
+        if (error.code === 'AI_AUTHENTICATION_FAILED') return { code: error.code, message: `La credenziale AI non e accettata dal provider.${providerDiagnostic}` }
+        if (error.code === 'AI_PERMISSION_DENIED') return { code: error.code, message: `La credenziale AI non e autorizzata per questa richiesta.${providerDiagnostic}` }
         if (error.code === 'AI_NETWORK_ERROR') return { code: error.code, message: 'Il runtime non ha raggiunto il provider AI.' }
-        return { code: error.code, message: 'La generazione AI non e disponibile.' }
+        return { code: error.code, message: `La generazione AI non e disponibile.${providerDiagnostic}` }
     }
     if (error instanceof CreatureConceptGenerationError && error.cause instanceof OpenAiStructuredConceptModelError) return mapThrownError(error.cause)
     if (error instanceof CreatureConceptGenerationError) return { code: 'AI_PROVIDER_ERROR', message: 'La generazione AI non ha prodotto un concept utilizzabile.' }

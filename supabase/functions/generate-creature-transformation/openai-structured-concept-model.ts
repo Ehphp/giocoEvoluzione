@@ -15,11 +15,13 @@ export type OpenAiStructuredConceptModelErrorCode =
 
 export class OpenAiStructuredConceptModelError extends Error {
     readonly code: OpenAiStructuredConceptModelErrorCode
+    readonly providerErrorCode: string | null
 
-    constructor(code: OpenAiStructuredConceptModelErrorCode, message: string, options?: { cause?: unknown }) {
+    constructor(code: OpenAiStructuredConceptModelErrorCode, message: string, options?: { cause?: unknown, providerErrorCode?: string | null }) {
         super(message, options)
         this.name = 'OpenAiStructuredConceptModelError'
         this.code = code
+        this.providerErrorCode = options?.providerErrorCode ?? null
     }
 }
 
@@ -35,6 +37,17 @@ function mapProviderHttpFailure(status: number): OpenAiStructuredConceptModelErr
     if (status === 401) return 'AI_AUTHENTICATION_FAILED'
     if (status === 403) return 'AI_PERMISSION_DENIED'
     return 'AI_PROVIDER_ERROR'
+}
+
+async function readSafeProviderErrorCode(response: Response): Promise<string | null> {
+    try {
+        const payload: unknown = await response.clone().json()
+        const error = payload && typeof payload === 'object' ? (payload as Record<string, unknown>).error : null
+        const code = error && typeof error === 'object' ? (error as Record<string, unknown>).code : null
+        return typeof code === 'string' && /^[A-Za-z0-9_.-]{1,80}$/.test(code) ? code : null
+    } catch {
+        return null
+    }
 }
 
 function createInstructions(input: StructuredConceptModelInput): string {
@@ -169,7 +182,9 @@ export class OpenAiStructuredConceptModel implements StructuredConceptModel {
                 throw new OpenAiStructuredConceptModelError('AI_RATE_LIMITED', 'Il provider AI ha applicato un rate limit.')
             }
             if (!response.ok) {
-                throw new OpenAiStructuredConceptModelError(mapProviderHttpFailure(response.status), 'Il provider AI non ha completato la richiesta.')
+                throw new OpenAiStructuredConceptModelError(mapProviderHttpFailure(response.status), 'Il provider AI non ha completato la richiesta.', {
+                    providerErrorCode: await readSafeProviderErrorCode(response),
+                })
             }
 
             let payload: unknown

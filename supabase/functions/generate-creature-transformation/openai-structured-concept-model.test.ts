@@ -41,8 +41,11 @@ describe('OpenAiStructuredConceptModel', () => {
         const limited = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 429 }) })
         await expect(limited.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_RATE_LIMITED' } satisfies Partial<OpenAiStructuredConceptModelError>)
 
-        const badRequest = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 400 }) })
-        await expect(badRequest.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_BAD_REQUEST' } satisfies Partial<OpenAiStructuredConceptModelError>)
+        const badRequest = new OpenAiStructuredConceptModel({
+            apiKey: 'test-key', model: 'test-model',
+            fetchImplementation: async () => new Response(JSON.stringify({ error: { code: 'invalid_json_schema', message: 'not retained' } }), { status: 400 }),
+        })
+        await expect(badRequest.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_BAD_REQUEST', providerErrorCode: 'invalid_json_schema' } satisfies Partial<OpenAiStructuredConceptModelError>)
 
         const unauthenticated = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 401 }) })
         await expect(unauthenticated.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_AUTHENTICATION_FAILED' } satisfies Partial<OpenAiStructuredConceptModelError>)
