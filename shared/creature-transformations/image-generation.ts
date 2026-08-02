@@ -30,7 +30,16 @@ export interface CreatureImageProvider {
     transformCreature(input: CreatureImageGenerationInput): Promise<CreatureImageGenerationResult>
 }
 
-export type CreatureImageProviderErrorCode = 'MOCK_PROVIDER_FAILED' | 'IMAGE_PROVIDER_TIMEOUT'
+export type CreatureImageProviderErrorCode =
+    | 'MOCK_PROVIDER_FAILED'
+    | 'IMAGE_PROVIDER_TIMEOUT'
+    | 'OPENAI_IMAGE_TIMEOUT'
+    | 'OPENAI_IMAGE_RATE_LIMITED'
+    | 'OPENAI_IMAGE_MODERATION_BLOCKED'
+    | 'OPENAI_IMAGE_BAD_REQUEST'
+    | 'OPENAI_IMAGE_PROVIDER_ERROR'
+    | 'OPENAI_IMAGE_RESPONSE_INVALID'
+    | 'OPENAI_IMAGE_BASE64_INVALID'
 
 export class CreatureImageProviderError extends Error {
     readonly code: CreatureImageProviderErrorCode

@@ -1,10 +1,11 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
-import type { CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GetTransformationRequestStatusRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
 const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'intensity', 'conceptMode', 'idempotencyKey'])
 const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey'])
+const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 
 export type ParsedCreatureTransformationRequest =
     | { valid: true; request: CreatureTransformationRequest }
@@ -16,6 +17,10 @@ export type ParsedGenerateConceptRequest =
 
 export type ParsedGenerateImageRequest =
     | { valid: true; request: GenerateImageRequest }
+    | Extract<ParsedCreatureTransformationRequest, { valid: false }>
+
+export type ParsedGetTransformationRequestStatusRequest =
+    | { valid: true; request: GetTransformationRequestStatusRequest }
     | Extract<ParsedCreatureTransformationRequest, { valid: false }>
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -67,6 +72,19 @@ export function parseGenerateConceptRequest(value: unknown): ParsedGenerateConce
             idempotencyKey: required.idempotencyKey,
         },
     }
+}
+
+export function parseGetTransformationRequestStatusRequest(value: unknown): ParsedGetTransformationRequestStatusRequest {
+    const body = asRecord(value)
+    if (!body) return { valid: false, code: 'INVALID_REQUEST', message: 'Il body deve essere un oggetto JSON.' }
+    if (!hasOnlyFields(body, STATUS_REQUEST_FIELDS) || body.operation !== 'GET_REQUEST_STATUS' || typeof body.transformationRequestId !== 'string') {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta di stato non rispetta il contratto pubblico.' }
+    }
+    const transformationRequestId = body.transformationRequestId.trim()
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(transformationRequestId)) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'transformationRequestId deve essere un UUID valido.' }
+    }
+    return { valid: true, request: { operation: 'GET_REQUEST_STATUS', transformationRequestId } }
 }
 
 export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRequest {

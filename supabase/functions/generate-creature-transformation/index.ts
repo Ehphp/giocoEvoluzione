@@ -17,6 +17,13 @@ import {
     SupabaseCreatureTransformationStorageAdapter,
     type CreatureTransformationStorageClient,
 } from './supabase-creature-transformation-storage.ts'
+import {
+    SupabaseCreatureTransformationRequestRepository,
+    type CreatureTransformationRequestRepositoryClient,
+} from './creature-transformation-request-repository.ts'
+import { OpenAiCreatureImageProvider } from './openai-creature-image-provider.ts'
+
+declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void }
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -111,6 +118,7 @@ Deno.serve(async (request) => {
         supabaseAdmin.storage as unknown as CreatureTransformationStorageClient,
         { signedUrlTtlSeconds: policy.signedUrlTtlSeconds },
     )
+    const requestRepository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
     const result = await orchestrateCreatureTransformation({
         profileId: authData.user.id,
         requestId,
@@ -120,11 +128,43 @@ Deno.serve(async (request) => {
         createGenerator,
         storage,
         createImageProvider: () => new MockCreatureImageProvider(),
+        createRealImageProvider: () => new OpenAiCreatureImageProvider({
+            apiKey: policy.realImage.apiKey!, model: policy.realImage.model!, quality: policy.realImage.quality,
+            timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: policy.realImage.estimatedCostUsd!,
+        }),
+        deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         postProcessor: new NoopImagePostProcessor(),
+        repository: requestRepository,
     })
     if (!result.success) {
-        console.error('Creature transformation request failed', { requestId, code: result.code })
+        console.error('Creature transformation request failed', {
+            requestId,
+            transformationRequestId: result.requestPersistence?.transformationRequestId,
+            operation: (body && typeof body === 'object' ? (body as { operation?: unknown }).operation : undefined),
+            status: result.requestPersistence?.status,
+            errorCode: result.code,
+        })
         return json(result, getGenerateConceptFailureStatus(result.code))
     }
+    if ('accepted' in result && result.accepted) {
+        console.info('Creature transformation real image accepted', {
+            requestId,
+            transformationRequestId: result.requestPersistence.transformationRequestId,
+            operation: 'GENERATE_IMAGE',
+            status: result.requestPersistence.status,
+        })
+        return json(result, 202)
+    }
+    console.info('Creature transformation request completed', {
+        requestId,
+        transformationRequestId: result.requestPersistence.transformationRequestId,
+        operation: (body && typeof body === 'object' ? (body as { operation?: unknown }).operation : undefined),
+        status: result.requestPersistence.status,
+        ...('generation' in result ? {
+            provider: 'provider' in result.generation ? result.generation.provider : result.generation.generator,
+            model: result.generation.model,
+            latencyMs: result.generation.latencyMs,
+        } : {}),
+    })
     return json(result)
 })

@@ -6,6 +6,8 @@ import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-
 import type { GenerateConceptRequest, CreatureIdentityResolver } from '../../../shared/creature-transformations/contracts.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
+export type GeneratedConceptResponse = Omit<GenerateConceptResponse, 'requestPersistence'>
+
 export type GenerateConceptServiceInput = Readonly<{
     profileId: string
     requestId: string
@@ -17,7 +19,7 @@ export type GenerateConceptServiceInput = Readonly<{
 
 export async function generateConceptForAuthenticatedProfile(
     input: GenerateConceptServiceInput,
-): Promise<GenerateConceptResponse | GenerateConceptErrorResponse> {
+): Promise<GeneratedConceptResponse | GenerateConceptErrorResponse> {
     const now = input.now ?? (() => Date.now())
     const startedAt = now()
     const resolvedCreature = await input.resolver.resolve({
@@ -83,4 +85,3 @@ export async function generateConceptForAuthenticatedProfile(
         },
     }
 }
-

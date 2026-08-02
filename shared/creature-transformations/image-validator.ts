@@ -18,6 +18,9 @@ export type ImageValidationProblemCode =
     | 'RESULT_IMAGE_UNCHANGED'
     | 'SHA256_UNAVAILABLE'
 
+export type ImageValidationProfile = 'PROVIDER_RAW_RESULT' | 'FINAL_CREATURE_ASSET'
+export type ImageValidationWarningCode = 'RESULT_IMAGE_UNCHANGED_MOCK' | 'RAW_RESULT_ALPHA_MISSING'
+
 export type ImageValidationProblem = {
     code: ImageValidationProblemCode
     message: string
@@ -35,7 +38,7 @@ export type ValidatedPngMetadata = {
 }
 
 export type ImageValidationResult =
-    | { valid: true; metadata: ValidatedPngMetadata; warnings: string[] }
+    | { valid: true; metadata: ValidatedPngMetadata; warnings: ImageValidationWarningCode[] }
     | { valid: false; problems: ImageValidationProblem[] }
 
 export type ImageValidationInput = Readonly<{
@@ -46,6 +49,7 @@ export type ImageValidationInput = Readonly<{
     isMock?: boolean
     minBytes?: number
     maxBytes?: number
+    profile?: ImageValidationProfile
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -78,6 +82,7 @@ export class ImageValidator {
         const problems: ImageValidationProblem[] = []
         const minBytes = input.minBytes ?? DEFAULT_MIN_BYTES
         const maxBytes = input.maxBytes ?? DEFAULT_MAX_BYTES
+        const profile = input.profile ?? 'FINAL_CREATURE_ASSET'
 
         if (!input.bytes.length) problems.push(problem('IMAGE_EMPTY', 'L immagine non contiene byte.'))
         if (input.mimeType !== 'image/png') problems.push(problem('MIME_TYPE_INVALID', 'Il MIME type dell immagine deve essere image/png.'))
@@ -149,7 +154,7 @@ export class ImageValidator {
             problems.push(problem('PNG_COLOR_TYPE_UNSUPPORTED', 'Il color type PNG non e compatibile con la pipeline.'))
         }
         const hasAlpha = Boolean(ihdr && (ihdr.colorType === 4 || ihdr.colorType === 6 || sawTransparency))
-        if (ihdr && !hasAlpha) problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
+        if (ihdr && !hasAlpha && profile === 'FINAL_CREATURE_ASSET') problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
         if (problems.length) return { valid: false, problems }
 
         let sha256: string
@@ -174,9 +179,10 @@ export class ImageValidator {
                 sha256,
                 bytes: input.bytes.length,
             },
-            warnings: input.sourceSha256 && sha256 === input.sourceSha256 && input.isMock
-                ? ['RESULT_IMAGE_UNCHANGED_MOCK']
-                : [],
+            warnings: [
+                ...(input.sourceSha256 && sha256 === input.sourceSha256 && input.isMock ? ['RESULT_IMAGE_UNCHANGED_MOCK' as const] : []),
+                ...(!hasAlpha && profile === 'PROVIDER_RAW_RESULT' ? ['RAW_RESULT_ALPHA_MISSING' as const] : []),
+            ],
         }
     }
 }

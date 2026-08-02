@@ -38,4 +38,9 @@ export type GenerateImageRequest = {
     idempotencyKey: string
 }
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest
+export type GetTransformationRequestStatusRequest = {
+    operation: 'GET_REQUEST_STATUS'
+    transformationRequestId: string
+}
+
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest

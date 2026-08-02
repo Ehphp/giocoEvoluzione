@@ -13,6 +13,7 @@ const acceptedConcept = {
     evaluation: { acceptable: true, identityRisk: 'LOW' as const, transformationStrength: 'BALANCED' as const, problems: [] },
     prompt: composeCreatureTransformationPrompt({ identity: TEST_CREATURE_IDENTITY, concept: createValidConcept(), renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION, templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION }),
     generation: { generator: 'mock', isMock: true, attempts: 1, latencyMs: 1 },
+    requestPersistence: { transformationRequestId: 'persisted-1', idempotencyStatus: 'CREATED' as const, status: 'SUCCEEDED' as const, estimatedCostUsd: 0, actualCostUsd: 0 },
 }
 
 describe('creature transformation lab image state', () => {

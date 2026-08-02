@@ -54,6 +54,10 @@ function profilePathSegment(profileId: string): string {
     return profileId
 }
 
+function isSafeResultObjectPath(path: string): boolean {
+    return /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
+}
+
 export class SupabaseCreatureTransformationStorageAdapter {
     private readonly client: CreatureTransformationStorageClient
     private readonly sourceBucket: string
@@ -110,9 +114,16 @@ export class SupabaseCreatureTransformationStorageAdapter {
             throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Non e stato possibile salvare il risultato della trasformazione.', { cause: upload.error })
         }
 
+        return this.createResultSignedUrl(objectPath)
+    }
+
+    async createResultSignedUrl(resultPath: string): Promise<StoredCreatureTransformationImage> {
+        if (!isSafeResultObjectPath(resultPath)) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path persistito del risultato non e valido.')
+        }
         let signed: { data: { signedUrl?: string } | null; error: StorageError }
         try {
-            signed = await this.client.from(this.experimentBucket).createSignedUrl(objectPath, this.signedUrlTtlSeconds)
+            signed = await this.client.from(this.experimentBucket).createSignedUrl(resultPath, this.signedUrlTtlSeconds)
         } catch (error) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo del risultato.', { cause: error })
         }

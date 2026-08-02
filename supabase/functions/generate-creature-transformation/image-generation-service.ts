@@ -1,4 +1,4 @@
-import type { GenerateImageErrorResponse, GenerateImageResponse } from '../../../shared/creature-transformations/api-contracts.ts'
+import type { CreatureTransformationAssetReadiness, GenerateImageErrorResponse, GenerateImageResponse } from '../../../shared/creature-transformations/api-contracts.ts'
 import { evaluateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-evaluation.ts'
 import { validateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-validation.ts'
 import type { CreatureIdentityResolver, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
@@ -10,6 +10,10 @@ import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import type { SupabaseCreatureTransformationStorageAdapter } from './supabase-creature-transformation-storage.ts'
 
+export type GeneratedImageResponse = Omit<GenerateImageResponse, 'requestPersistence'> & {
+    sourceSha256: string
+}
+
 export type ImageGenerationServiceErrorCode =
     | 'CONCEPT_REJECTED'
     | 'SOURCE_IMAGE_INVALID'
@@ -19,6 +23,13 @@ export type ImageGenerationServiceErrorCode =
     | 'RESULT_IMAGE_INVALID'
     | 'RESULT_IMAGE_UNCHANGED'
     | 'POST_PROCESSING_FAILED'
+    | 'OPENAI_IMAGE_TIMEOUT'
+    | 'OPENAI_IMAGE_RATE_LIMITED'
+    | 'OPENAI_IMAGE_MODERATION_BLOCKED'
+    | 'OPENAI_IMAGE_BAD_REQUEST'
+    | 'OPENAI_IMAGE_PROVIDER_ERROR'
+    | 'OPENAI_IMAGE_RESPONSE_INVALID'
+    | 'OPENAI_IMAGE_BASE64_INVALID'
 
 export class ImageGenerationServiceError extends Error {
     readonly code: ImageGenerationServiceErrorCode
@@ -68,9 +79,13 @@ function uniqueWarnings(warnings: readonly string[]): string[] {
     return [...new Set(warnings)]
 }
 
+function onlyAlphaIsMissing(validation: Awaited<ReturnType<ImageValidator['validate']>>): boolean {
+    return !validation.valid && validation.problems.length === 1 && validation.problems[0].code === 'PNG_ALPHA_REQUIRED'
+}
+
 export async function generateImageForAuthenticatedProfile(
     input: GenerateImageServiceInput,
-): Promise<GenerateImageResponse | GenerateImageErrorResponse> {
+): Promise<GeneratedImageResponse | GenerateImageErrorResponse> {
     const validator = input.validator ?? new ImageValidator()
     const resolvedCreature = await input.resolver.resolve({
         profileId: input.profileId,
@@ -131,7 +146,7 @@ export async function generateImageForAuthenticatedProfile(
         })
     } catch (error) {
         if (error instanceof CreatureImageProviderError) {
-            throw new ImageGenerationServiceError(error.code, 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
+            throw new ImageGenerationServiceError(error.code, 'Il provider immagini non e disponibile.', undefined, { cause: error })
         }
         throw new ImageGenerationServiceError('MOCK_PROVIDER_FAILED', 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
     }
@@ -142,6 +157,7 @@ export async function generateImageForAuthenticatedProfile(
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
+        profile: generated.isMock ? 'FINAL_CREATURE_ASSET' : 'PROVIDER_RAW_RESULT',
     })
     if (!firstValidation.valid) throw resultFailure(firstValidation)
 
@@ -167,8 +183,18 @@ export async function generateImageForAuthenticatedProfile(
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
+        profile: 'FINAL_CREATURE_ASSET',
     })
-    if (!finalValidation.valid) throw resultFailure(finalValidation)
+    if (!finalValidation.valid && !onlyAlphaIsMissing(finalValidation)) throw resultFailure(finalValidation)
+
+    const assetReadiness: CreatureTransformationAssetReadiness = finalValidation.valid ? 'FINAL_ASSET' : 'EXPERIMENT_ONLY'
+    const outputMetadata = finalValidation.valid ? finalValidation.metadata : firstValidation.metadata
+    const outputWarnings = uniqueWarnings([
+        ...generated.warnings,
+        ...firstValidation.warnings,
+        ...processed.warnings,
+        ...(finalValidation.valid ? finalValidation.warnings : ['RAW_RESULT_ALPHA_MISSING']),
+    ])
 
     const stored = await input.storage.saveResult({
         profileId: input.profileId,
@@ -182,10 +208,11 @@ export async function generateImageForAuthenticatedProfile(
         result: {
             signedUrl: stored.signedUrl,
             expiresAt: stored.expiresAt,
-            mimeType: finalValidation.metadata.mimeType,
-            width: finalValidation.metadata.width,
-            height: finalValidation.metadata.height,
-            sha256: finalValidation.metadata.sha256,
+            mimeType: outputMetadata.mimeType,
+            width: outputMetadata.width,
+            height: outputMetadata.height,
+            sha256: outputMetadata.sha256,
+            assetReadiness,
         },
         generation: {
             provider: generated.provider,
@@ -196,7 +223,8 @@ export async function generateImageForAuthenticatedProfile(
             ...(generated.estimatedCostUsd === undefined ? {} : { estimatedCostUsd: generated.estimatedCostUsd }),
         },
         validation: {
-            warnings: uniqueWarnings([...generated.warnings, ...firstValidation.warnings, ...processed.warnings, ...finalValidation.warnings]),
+            warnings: outputWarnings,
         },
+        sourceSha256: validatedSource.metadata.sha256,
     }
 }

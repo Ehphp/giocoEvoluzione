@@ -5,6 +5,8 @@ import type {
     GenerateConceptRequest,
     GenerateImageApiResponse,
     GenerateImageRequest,
+    GetTransformationRequestStatusRequest,
+    TransformationRequestStatusResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
 
@@ -14,6 +16,7 @@ export class CreatureTransformationApiError extends Error {
     readonly code: string
     readonly requestId?: string
     readonly problems?: CreatureTransformationErrorResponse['problems']
+    readonly requestPersistence?: CreatureTransformationErrorResponse['requestPersistence']
 
     constructor(response: CreatureTransformationErrorResponse) {
         super(response.message)
@@ -21,11 +24,12 @@ export class CreatureTransformationApiError extends Error {
         this.code = response.code
         this.requestId = response.requestId
         this.problems = response.problems
+        this.requestPersistence = response.requestPersistence
     }
 }
 
 export type CreatureTransformationFunctionInvoker = {
-    invoke: (name: string, options: { body: GenerateConceptRequest | GenerateImageRequest }) => Promise<{ data: unknown; error: unknown }>
+    invoke: (name: string, options: { body: GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest }) => Promise<{ data: unknown; error: unknown }>
 }
 
 function isErrorResponse(value: unknown): value is CreatureTransformationErrorResponse {
@@ -65,7 +69,7 @@ export function createImageIdempotencyKey(): string {
 }
 
 async function invokeCreatureTransformation<TResponse extends Extract<CreatureTransformationApiResponse, { success: true }>>(
-    request: GenerateConceptRequest | GenerateImageRequest,
+    request: GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest,
     invoker: CreatureTransformationFunctionInvoker,
 ): Promise<TResponse> {
     const { data, error } = await invoker.invoke('generate-creature-transformation', { body: request })
@@ -92,4 +96,11 @@ export async function generateCreatureTransformationImage(
     invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions,
 ): Promise<Extract<GenerateImageApiResponse, { success: true }>> {
     return invokeCreatureTransformation<Extract<GenerateImageApiResponse, { success: true }>>(request, invoker)
+}
+
+export async function getCreatureTransformationRequestStatus(
+    request: GetTransformationRequestStatusRequest,
+    invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions,
+): Promise<TransformationRequestStatusResponse> {
+    return invokeCreatureTransformation<TransformationRequestStatusResponse>(request, invoker)
 }

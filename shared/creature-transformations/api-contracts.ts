@@ -4,6 +4,9 @@ import type { CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
 import type { ComposedCreatureTransformationPrompt } from './prompt-composer.ts'
+import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
+
+export type CreatureTransformationAssetReadiness = 'FINAL_ASSET' | 'EXPERIMENT_ONLY'
 
 export type GenerateConceptResponse = {
     success: true
@@ -19,6 +22,7 @@ export type GenerateConceptResponse = {
         attempts: number
         latencyMs: number
     }
+    requestPersistence: TransformationRequestPersistence
 }
 
 export type CreatureTransformationErrorResponse = {
@@ -27,6 +31,7 @@ export type CreatureTransformationErrorResponse = {
     code: string
     message: string
     problems?: Array<ConceptProblem | ImageValidationProblem>
+    requestPersistence?: TransformationRequestPersistence
 }
 
 export type GenerateConceptErrorResponse = CreatureTransformationErrorResponse
@@ -42,6 +47,7 @@ export type GenerateImageResponse = {
         width: number
         height: number
         sha256: string
+        assetReadiness: CreatureTransformationAssetReadiness
     }
     generation: {
         provider: string
@@ -54,8 +60,44 @@ export type GenerateImageResponse = {
     validation: {
         warnings: string[]
     }
+    requestPersistence: TransformationRequestPersistence
+}
+
+export type GenerateImageAcceptedResponse = {
+    success: true
+    accepted: true
+    requestId: string
+    requestPersistence: TransformationRequestPersistence
+}
+
+export type TransformationRequestStatusResponse = {
+    success: true
+    requestId: string
+    requestPersistence: TransformationRequestStatusPersistence
+    generation?: {
+        provider: string
+        model: string
+        providerRequestId?: string
+        latencyMs?: number
+        estimatedCostUsd?: number
+        actualCostUsd?: number
+    }
+    result?: {
+        signedUrl: string
+        expiresAt: string
+        width: number
+        height: number
+        mimeType: 'image/png'
+        sha256: string
+        assetReadiness: CreatureTransformationAssetReadiness
+        warnings: string[]
+    }
+    error?: {
+        code: string
+        message: string
+    }
 }
 
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
-export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse
+export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse
