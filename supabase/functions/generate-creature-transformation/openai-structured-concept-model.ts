@@ -81,8 +81,8 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
         ],
         properties: {
-            schemaVersion: { const: 1 },
-            visualTrait: { const: input.visualTrait.id },
+            schemaVersion: { type: 'integer', enum: [1] },
+            visualTrait: { type: 'string', enum: [input.visualTrait.id] },
             conceptName: { type: 'string' },
             evolutionaryFunction: { type: 'string' },
             primaryMutation: {
@@ -108,7 +108,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             },
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
-            intensity: { const: input.intensity },
+            intensity: { type: 'integer', enum: [input.intensity] },
         },
     }
 }
