@@ -69,7 +69,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
             </header>
 
             <section className="creature-transformation-lab__identity" aria-label="Creatura autenticata">
-                <img src="/assets/creatures/base.png" alt="Anteprima della creatura sorgente" />
+                <img src="/assets/battle/creatures/verdant-hatchling.png" alt="Anteprima del drago sorgente" />
                 <div>
                     <span>Creatura autenticata</span>
                     <strong>{creature.name ?? 'Creatura iniziale'}</strong>

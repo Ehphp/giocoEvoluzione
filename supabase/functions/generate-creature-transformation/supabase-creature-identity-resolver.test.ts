@@ -24,10 +24,10 @@ describe('SupabaseCreatureIdentityResolver', () => {
         expect(result.identity).toMatchObject({
             creatureId: 'creature-1',
             baseCreatureKey: 'VERDANT_HATCHLING',
-            description: 'Piccola creatura turchese con volto a mezzaluna e coda corta.',
+            description: 'Piccolo drago verde con grandi occhi ambrati, corpo tozzo e cresta di spine fogliari.',
         })
-        expect(result.identity.identityFeatures).toEqual(['volto a mezzaluna', 'palette turchese', 'coda corta'])
-        expect(result.sourceImagePath).toBe('/assets/creatures/base.png')
+        expect(result.identity.identityFeatures).toEqual(['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari'])
+        expect(result.sourceImagePath).toBe('/assets/battle/creatures/verdant-hatchling.png')
     })
 
     it('rejects missing, foreign and unsupported creature records', async () => {

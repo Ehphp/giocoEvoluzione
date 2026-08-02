@@ -26,6 +26,8 @@ describe('CreatureTransformationLab', () => {
         expect(markup).toContain('Visual Trait')
         expect(markup).toContain('Concept Generator')
         expect(markup).toContain('Genera concept')
+        expect(markup).toContain('/assets/battle/creatures/verdant-hatchling.png')
+        expect(markup).not.toContain('/assets/creatures/base.png')
         expect(markup).not.toContain('Genera immagine')
         expect(mocks.generateConcept).not.toHaveBeenCalled()
     })

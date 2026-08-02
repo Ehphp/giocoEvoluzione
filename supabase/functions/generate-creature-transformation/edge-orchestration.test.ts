@@ -12,6 +12,7 @@ import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository, type S
 
 const ownedCreature: StoredPlayerCreature = { id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING' }
 const allowedPolicy: CreatureTransformationLabPolicy = { enabled: true, allowedConceptModes: new Set(['MOCK', 'AI']) }
+const VERDANT_HATCHLING_IDENTITY_FEATURES = ['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari']
 
 function createResolver(record: StoredPlayerCreature | null = ownedCreature) {
     const repository: PlayerCreatureRepository = { async findByCreatureId() { return record } }
@@ -28,6 +29,10 @@ function request(overrides: Record<string, unknown> = {}) {
         idempotencyKey: 'intentional-click-1',
         ...overrides,
     }
+}
+
+function createCanonicalConcept(): CreatureTransformationConcept {
+    return { ...createValidConcept(), identityToPreserve: [...VERDANT_HATCHLING_IDENTITY_FEATURES] }
 }
 
 function sequenceGenerator(outputs: CreatureTransformationConcept[]): CreatureConceptGenerator {
@@ -57,14 +62,14 @@ describe('generate concept edge orchestration', () => {
 
         expect(result).toMatchObject({
             success: true,
-            identity: { description: 'Piccola creatura turchese con volto a mezzaluna e coda corta.' },
+            identity: { description: 'Piccolo drago verde con grandi occhi ambrati, corpo tozzo e cresta di spine fogliari.' },
             generation: { isMock: true, attempts: 1, latencyMs: 35 },
         })
         if (result.success) expect(result.prompt.prompt).toContain('IDENTITY')
     })
 
     it('accepts an AI generator fake and preserves its non-mock metadata', async () => {
-        const generator = new AiCreatureConceptGenerator({ async generateStructuredConcept() { return createValidConcept() } }, { modelName: 'fake-model' })
+        const generator = new AiCreatureConceptGenerator({ async generateStructuredConcept() { return createCanonicalConcept() } }, { modelName: 'fake-model' })
         const result = await orchestrateGenerateConcept({
             profileId: 'profile-1', requestId: 'request-ai', body: request({ conceptMode: 'AI' }), policy: allowedPolicy,
             resolver: createResolver(), createGenerator: () => generator,
@@ -89,8 +94,8 @@ describe('generate concept edge orchestration', () => {
         await expect(orchestrateGenerateConcept({ ...base, resolver: createResolver({ ...ownedCreature, profileId: 'profile-2' }) })).resolves.toMatchObject({ code: 'CREATURE_NOT_OWNED' })
         await expect(orchestrateGenerateConcept({ ...base, resolver: createResolver({ ...ownedCreature, baseCreatureKey: 'UNKNOWN_CREATURE' }) })).resolves.toMatchObject({ code: 'CREATURE_IDENTITY_NOT_SUPPORTED' })
 
-        const invalid = { ...createValidConcept(), intensity: 1 } as unknown as CreatureTransformationConcept
-        const retried = await orchestrateGenerateConcept({ ...base, resolver: createResolver(), createGenerator: () => sequenceGenerator([invalid, createValidConcept()]) })
+        const invalid = { ...createCanonicalConcept(), intensity: 1 } as unknown as CreatureTransformationConcept
+        const retried = await orchestrateGenerateConcept({ ...base, resolver: createResolver(), createGenerator: () => sequenceGenerator([invalid, createCanonicalConcept()]) })
         expect(retried).toMatchObject({ success: true, generation: { attempts: 2 } })
 
         const rejected = await orchestrateGenerateConcept({ ...base, resolver: createResolver(), createGenerator: () => sequenceGenerator([invalid]) })
