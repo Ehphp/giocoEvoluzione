@@ -10,6 +10,8 @@ import { MatchResultScreen } from './components/game-results/MatchResultScreen'
 import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { ProfileScreen } from './components/profile/ProfileScreen'
+import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
+import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
 import { getRoundExplanation } from './game/round-result-explainer'
@@ -35,6 +37,15 @@ import {
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
+type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab'
+
+const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
+
+function getInitialScreen(): CurrentScreen {
+  return isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH
+    ? 'creature-transformation-lab'
+    : 'home'
+}
 
 type ResolutionData = {
   ruleVersion?: string
@@ -76,7 +87,7 @@ function App() {
   const [isBusy, setIsBusy] = useState(false)
   const [busyAction, setBusyAction] = useState<BusyAction>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'profile'>('home')
+  const [currentScreen, setCurrentScreen] = useState<CurrentScreen>(getInitialScreen)
   const [history, setHistory] = useState<ProfileMatchHistoryItem[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [historyError, setHistoryError] = useState<string | null>(null)
@@ -133,6 +144,19 @@ function App() {
       setCurrentScreen('home')
     }
   }, [authStatus])
+
+  useEffect(() => {
+    if (!isCreatureTransformationLabEnabled) {
+      return
+    }
+
+    const syncTechnicalRoute = () => {
+      setCurrentScreen(window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH ? 'creature-transformation-lab' : 'home')
+    }
+
+    window.addEventListener('hashchange', syncTechnicalRoute)
+    return () => window.removeEventListener('hashchange', syncTechnicalRoute)
+  }, [])
 
   useEffect(() => {
     if (profileNickname) {
@@ -533,6 +557,13 @@ function App() {
     setStatusMessage('Sessione locale rimossa.')
   }
 
+  function handleLeaveCreatureTransformationLab() {
+    if (window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+    setCurrentScreen('home')
+  }
+
   async function handleLogout() {
     clearStoredSession()
     setSnapshot(null)
@@ -588,7 +619,12 @@ function App() {
         />
       ) : (
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
-          {!snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
+          {!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature ? (
+            <CreatureTransformationLab
+              creature={auth.creature}
+              onBack={handleLeaveCreatureTransformationLab}
+            />
+          ) : !snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
             <ProfileScreen
               profile={auth.profile}
               creature={auth.creature}

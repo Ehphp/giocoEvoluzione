@@ -1,0 +1,191 @@
+import type { CreatureTransformationConcept, TransformationIntensity } from './concepts.ts'
+import type { BodyArea } from './body-areas.ts'
+import {
+    type ConceptGeneratorMetadata,
+    type CreatureConceptGenerationInput,
+    type CreatureConceptGenerator,
+    CreatureConceptGenerationError,
+} from './concept-generator.ts'
+import { VISUAL_TRAIT_BY_ID, type VisualTraitId } from './visual-traits.ts'
+
+type MockConceptVariant = Readonly<{
+    conceptName: string
+    evolutionaryFunction: string
+    mutationArchetype: CreatureTransformationConcept['primaryMutation']['mutationArchetype']
+    bodyAreas: readonly BodyArea[]
+    morphology: string
+    material: string
+    secondaryMutations: readonly string[]
+}>
+
+const MOCK_CONCEPT_VARIANTS: Readonly<Record<VisualTraitId, readonly MockConceptVariant[]>> = Object.freeze({
+    IMPACT_ADAPTATION: Object.freeze([
+        Object.freeze({
+            conceptName: 'Scudi flessibili',
+            evolutionaryFunction: 'Distribuisce gli urti lungo una corazza mobile senza alterare la sagoma familiare.',
+            mutationArchetype: 'LAYERED_PLATING',
+            bodyAreas: ['BACK', 'CHEST'] as const,
+            morphology: 'Lamine sovrapposte e arrotondate seguono il dorso e il petto con una curvatura compatta.',
+            material: 'Cheratina opaca con bordi morbidi e riflessi naturali.',
+            secondaryMutations: ['Giunti elastici tra le lamine', 'Cuscinetti protettivi sugli arti anteriori'],
+        }),
+        Object.freeze({
+            conceptName: 'Cuscini di rimbalzo',
+            evolutionaryFunction: 'Assorbe pressioni improvvise e restituisce stabilita durante gli atterraggi.',
+            mutationArchetype: 'ELASTIC_CUSHIONING',
+            bodyAreas: ['FORELIMBS', 'SKIN_SURFACE'] as const,
+            morphology: 'Cuscinetti stratificati emergono lungo gli arti anteriori e si fondono con la pelle.',
+            material: 'Tessuto fibroso compatto con venature ambrate appena visibili.',
+            secondaryMutations: ['Anelli compressibili vicino alle articolazioni', 'Fasce cutanee a tensione variabile'],
+        }),
+    ]),
+    LOCOMOTION_ADAPTATION: Object.freeze([
+        Object.freeze({
+            conceptName: 'Balzi canalizzati',
+            evolutionaryFunction: 'Accumula energia nelle zampe posteriori per scatti brevi e controllati.',
+            mutationArchetype: 'SPRING_TENDONS',
+            bodyAreas: ['HIND_LIMBS', 'TAIL'] as const,
+            morphology: 'Tendini arcuati disegnano linee elastiche sulle zampe e convergono verso la base della coda.',
+            material: 'Fibre tese, lisce e leggermente lucide sotto la pelle.',
+            secondaryMutations: ['Nodi di tensione alle caviglie', 'Fascia stabilizzante alla base della coda'],
+        }),
+        Object.freeze({
+            conceptName: 'Presa radicata',
+            evolutionaryFunction: 'Migliora l aderenza su superfici instabili senza appesantire il movimento.',
+            mutationArchetype: 'GRIPPING_PADS',
+            bodyAreas: ['FORELIMBS', 'HIND_LIMBS'] as const,
+            morphology: 'Polpastrelli segmentati si aprono sotto le zampe formando superfici di presa compatte.',
+            material: 'Tessuto gommoso naturale con sottili creste concentriche.',
+            secondaryMutations: ['Microcreste orientabili', 'Bordi ammortizzati lungo le dita'],
+        }),
+    ]),
+    SENSORY_EXPANSION: Object.freeze([
+        Object.freeze({
+            conceptName: 'Frange di corrente',
+            evolutionaryFunction: 'Raccoglie variazioni dell aria e del terreno per anticipare movimenti vicini.',
+            mutationArchetype: 'SENSORY_FRILLS',
+            bodyAreas: ['HEAD_SURFACE', 'NECK'] as const,
+            morphology: 'Frange sottili seguono la superficie del capo e sfumano nel collo senza coprire i tratti familiari.',
+            material: 'Membrane semitraslucide con nervature morbide e colori coerenti.',
+            secondaryMutations: ['Filamenti mobili sul collo', 'Pieghe percettive dietro il capo'],
+        }),
+        Object.freeze({
+            conceptName: 'Punti di fuoco',
+            evolutionaryFunction: 'Affina la lettura della distanza attraverso piccoli centri ottici complementari.',
+            mutationArchetype: 'FOCUSED_OCELLI',
+            bodyAreas: ['EYE_REGION'] as const,
+            morphology: 'Piccoli ocelli laterali incorniciano la regione degli occhi senza sostituire lo sguardo originario.',
+            material: 'Superficie madreperlacea con un nucleo scuro e discreto.',
+            secondaryMutations: ['Anelli ottici attenuati', 'Sottili nervature protettive'],
+        }),
+    ]),
+    ENERGY_REGULATION: Object.freeze([
+        Object.freeze({
+            conceptName: 'Vele termiche',
+            evolutionaryFunction: 'Dissipa o conserva calore modulando la superficie esposta del corpo.',
+            mutationArchetype: 'THERMAL_MEMBRANES',
+            bodyAreas: ['NECK', 'CHEST'] as const,
+            morphology: 'Membrane pieghevoli si aprono dal collo al petto in fasce brevi e armoniche.',
+            material: 'Pelle sottile con una trama calda e vene soffuse.',
+            secondaryMutations: ['Pieghe termiche richiudibili', 'Piccole valvole cutanee'],
+        }),
+        Object.freeze({
+            conceptName: 'Riserve diffuse',
+            evolutionaryFunction: 'Conserva energia in piccoli serbatoi distribuiti per sostenere periodi difficili.',
+            mutationArchetype: 'GLANDULAR_RESERVOIRS',
+            bodyAreas: ['BACK', 'SKIN_SURFACE'] as const,
+            morphology: 'Noduli poco sporgenti seguono il dorso e si dissolvono gradualmente nella pelle.',
+            material: 'Tessuto ceroso e morbido con sfumature profonde ma naturali.',
+            secondaryMutations: ['Canali di rilascio graduato', 'Placche protettive molto sottili'],
+        }),
+    ]),
+    AQUATIC_MORPHOLOGY: Object.freeze([
+        Object.freeze({
+            conceptName: 'Remi a ventaglio',
+            evolutionaryFunction: 'Aumenta la spinta in acqua mantenendo gesti terrestri riconoscibili.',
+            mutationArchetype: 'HYDRODYNAMIC_WEBBING',
+            bodyAreas: ['FORELIMBS', 'HIND_LIMBS'] as const,
+            morphology: 'Membrane raccolte tra le dita si aprono a ventaglio durante la nuotata e restano discrete a riposo.',
+            material: 'Tessuto elastico umido con venature delicate e bordi arrotondati.',
+            secondaryMutations: ['Bordi natatori rinforzati', 'Piega idrodinamica vicino alle dita'],
+        }),
+        Object.freeze({
+            conceptName: 'Coda di corrente',
+            evolutionaryFunction: 'Riduce la resistenza e migliora la direzione nelle correnti lente.',
+            mutationArchetype: 'STREAMLINED_RIDGES',
+            bodyAreas: ['TAIL', 'SKIN_SURFACE'] as const,
+            morphology: 'Creste basse accompagnano la coda e proseguono in linee fluide lungo la pelle.',
+            material: 'Scaglie lisce con riflessi d acqua e una grana compatta.',
+            secondaryMutations: ['Solchi per deviare il flusso', 'Bordo caudale piu flessibile'],
+        }),
+    ]),
+})
+
+const INTENSITY_DESCRIPTION: Readonly<Record<TransformationIntensity, string>> = Object.freeze({
+    1: 'La mutazione resta sottile e facilmente leggibile.',
+    2: 'La mutazione e chiara ma resta integrata nella forma originaria.',
+    3: 'La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili.',
+})
+
+function stableHash(value: string): number {
+    let hash = 2166136261
+    for (let index = 0; index < value.length; index += 1) {
+        hash = Math.imul(hash ^ value.charCodeAt(index), 16777619)
+    }
+    return hash >>> 0
+}
+
+function getControlledTrait(input: CreatureConceptGenerationInput) {
+    const controlledTrait = VISUAL_TRAIT_BY_ID[input.visualTrait.id]
+    if (controlledTrait !== input.visualTrait) {
+        throw new CreatureConceptGenerationError(
+            'CATALOG_CONFIGURATION_INVALID',
+            'Il Visual Trait del generatore deve provenire dal catalogo controllato.',
+        )
+    }
+    return controlledTrait
+}
+
+export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
+    readonly metadata: ConceptGeneratorMetadata = Object.freeze({
+        generator: 'mock-creature-concept-generator',
+        isMock: true,
+    })
+
+    async generateConcept(input: CreatureConceptGenerationInput): Promise<CreatureTransformationConcept> {
+        const visualTrait = getControlledTrait(input)
+        const variants = MOCK_CONCEPT_VARIANTS[visualTrait.id]
+        if (!variants?.length) {
+            throw new CreatureConceptGenerationError(
+                'CATALOG_CONFIGURATION_INVALID',
+                `Manca un concept mock per ${visualTrait.id}.`,
+            )
+        }
+
+        const variant = variants[stableHash(`${visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % variants.length]
+        const secondaryCount = Math.min(input.intensity, variant.secondaryMutations.length, visualTrait.creativeLimits.maxSecondaryMutations)
+
+        return {
+            schemaVersion: 1,
+            visualTrait: visualTrait.id,
+            conceptName: variant.conceptName,
+            evolutionaryFunction: `${variant.evolutionaryFunction} ${INTENSITY_DESCRIPTION[input.intensity]}`,
+            primaryMutation: {
+                mutationArchetype: variant.mutationArchetype,
+                bodyAreas: [...variant.bodyAreas],
+                morphology: `${variant.morphology} ${INTENSITY_DESCRIPTION[input.intensity]}`,
+                material: variant.material,
+            },
+            secondaryMutations: [...variant.secondaryMutations.slice(0, secondaryCount)],
+            identityToPreserve: [...input.identity.identityFeatures, 'Specie, silhouette e palette cromatica riconoscibili'],
+            forbiddenChanges: [
+                'Cambio di specie',
+                'Sostituzione del volto',
+                'Anatomia umanoide',
+                'Trasformazione totale',
+                'Armi, abiti o accessori artificiali',
+            ],
+            intensity: input.intensity,
+        }
+    }
+}

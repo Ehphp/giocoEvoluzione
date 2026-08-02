@@ -417,3 +417,6 @@ enabled = true
 
 [functions.resolve-round]
 verify_jwt = false
+
+[functions.generate-creature-transformation]
+verify_jwt = true
