@@ -10,6 +10,7 @@ import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from 
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModel } from './openai-structured-concept-model.ts'
 import { getGenerateConceptFailureStatus, orchestrateGenerateConcept } from './edge-orchestration.ts'
+import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -32,7 +33,7 @@ function errorResponse(requestId: string, code: string, message: string, status:
     } satisfies GenerateConceptErrorResponse, status)
 }
 
-function createRepository(supabaseAdmin: ReturnType<typeof createClient>): PlayerCreatureRepository {
+function createRepository(supabaseAdmin: ReturnType<typeof createClient>, requestId: string): PlayerCreatureRepository {
     return {
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin
@@ -40,7 +41,13 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>): Playe
                 .select('id, profile_id, base_creature_key')
                 .eq('id', creatureId)
                 .maybeSingle()
-            if (error) throw error
+            if (error) {
+                console.error('Creature transformation player_creatures lookup failed', {
+                    requestId,
+                    databaseCode: getSafeDatabaseLookupCode(error),
+                })
+                throw error
+            }
             if (!data) return null
             return {
                 id: String(data.id),
@@ -93,7 +100,7 @@ Deno.serve(async (request) => {
     }
     const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
-    const resolver = new SupabaseCreatureIdentityResolver(createRepository(supabaseAdmin))
+    const resolver = new SupabaseCreatureIdentityResolver(createRepository(supabaseAdmin, requestId))
     const result = await orchestrateGenerateConcept({
         profileId: authData.user.id,
         requestId,
