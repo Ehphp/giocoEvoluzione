@@ -118,8 +118,8 @@ export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
     if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
     if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT') return 409
-    if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED') return 422
-    if (code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'POST_PROCESSING_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID') return 502
+    if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED') return 422
+    if (code === 'AI_AUTHENTICATION_FAILED' || code === 'AI_PERMISSION_DENIED' || code === 'AI_NETWORK_ERROR' || code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'POST_PROCESSING_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID') return 502
     if (code === 'REQUEST_RESERVATION_FAILED' || code === 'REQUEST_PERSISTENCE_FAILED' || code === 'INTERNAL_ERROR' || code === 'CREATURE_LOOKUP_FAILED') return 500
     return 400
 }
@@ -129,7 +129,14 @@ function mapThrownError(error: unknown): FailureDetails {
     if (error instanceof CreatureTransformationStorageError) return { code: error.code, message: error.message }
     if (error instanceof CreatureTransformationRequestRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof ImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
-    if (error instanceof OpenAiStructuredConceptModelError) return { code: error.code, message: error.code === 'AI_NOT_CONFIGURED' ? 'La modalita AI non e configurata.' : 'La generazione AI non e disponibile.' }
+    if (error instanceof OpenAiStructuredConceptModelError) {
+        if (error.code === 'AI_NOT_CONFIGURED') return { code: error.code, message: 'La modalita AI non e configurata.' }
+        if (error.code === 'AI_BAD_REQUEST') return { code: error.code, message: 'La richiesta AI non e accettata dal provider.' }
+        if (error.code === 'AI_AUTHENTICATION_FAILED') return { code: error.code, message: 'La credenziale AI non e accettata dal provider.' }
+        if (error.code === 'AI_PERMISSION_DENIED') return { code: error.code, message: 'La credenziale AI non e autorizzata per questa richiesta.' }
+        if (error.code === 'AI_NETWORK_ERROR') return { code: error.code, message: 'Il runtime non ha raggiunto il provider AI.' }
+        return { code: error.code, message: 'La generazione AI non e disponibile.' }
+    }
     if (error instanceof CreatureConceptGenerationError && error.cause instanceof OpenAiStructuredConceptModelError) return mapThrownError(error.cause)
     if (error instanceof CreatureConceptGenerationError) return { code: 'AI_PROVIDER_ERROR', message: 'La generazione AI non ha prodotto un concept utilizzabile.' }
     return { code: 'INTERNAL_ERROR', message: 'Errore interno durante la trasformazione della creatura.' }

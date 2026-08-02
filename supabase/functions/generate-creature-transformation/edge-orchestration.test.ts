@@ -115,6 +115,10 @@ describe('generate concept edge orchestration', () => {
 
         expect(result).toMatchObject({ success: false, code: 'AI_RATE_LIMITED' })
         expect(getGenerateConceptFailureStatus('AI_RATE_LIMITED')).toBe(429)
+        expect(getGenerateConceptFailureStatus('AI_BAD_REQUEST')).toBe(422)
+        expect(getGenerateConceptFailureStatus('AI_AUTHENTICATION_FAILED')).toBe(502)
+        expect(getGenerateConceptFailureStatus('AI_PERMISSION_DENIED')).toBe(502)
+        expect(getGenerateConceptFailureStatus('AI_NETWORK_ERROR')).toBe(502)
         expect(getGenerateConceptFailureStatus('OPERATION_NOT_IMPLEMENTED')).toBe(501)
     })
 

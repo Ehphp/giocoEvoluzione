@@ -6,6 +6,10 @@ export type OpenAiStructuredConceptModelErrorCode =
     | 'AI_NOT_CONFIGURED'
     | 'AI_TIMEOUT'
     | 'AI_RATE_LIMITED'
+    | 'AI_BAD_REQUEST'
+    | 'AI_AUTHENTICATION_FAILED'
+    | 'AI_PERMISSION_DENIED'
+    | 'AI_NETWORK_ERROR'
     | 'AI_PROVIDER_ERROR'
     | 'AI_RESPONSE_INVALID'
 
@@ -25,6 +29,13 @@ export type OpenAiStructuredConceptModelOptions = Readonly<{
     timeoutMs?: number
     fetchImplementation?: FetchLike
 }>
+
+function mapProviderHttpFailure(status: number): OpenAiStructuredConceptModelErrorCode {
+    if (status === 400) return 'AI_BAD_REQUEST'
+    if (status === 401) return 'AI_AUTHENTICATION_FAILED'
+    if (status === 403) return 'AI_PERMISSION_DENIED'
+    return 'AI_PROVIDER_ERROR'
+}
 
 function createInstructions(input: StructuredConceptModelInput): string {
     const correctionFeedback = input.correctionFeedback.length
@@ -158,7 +169,7 @@ export class OpenAiStructuredConceptModel implements StructuredConceptModel {
                 throw new OpenAiStructuredConceptModelError('AI_RATE_LIMITED', 'Il provider AI ha applicato un rate limit.')
             }
             if (!response.ok) {
-                throw new OpenAiStructuredConceptModelError('AI_PROVIDER_ERROR', 'Il provider AI non ha completato la richiesta.')
+                throw new OpenAiStructuredConceptModelError(mapProviderHttpFailure(response.status), 'Il provider AI non ha completato la richiesta.')
             }
 
             let payload: unknown
@@ -178,7 +189,7 @@ export class OpenAiStructuredConceptModel implements StructuredConceptModel {
             if (controller.signal.aborted) {
                 throw new OpenAiStructuredConceptModelError('AI_TIMEOUT', 'La richiesta al provider AI ha superato il timeout.', { cause: error })
             }
-            throw new OpenAiStructuredConceptModelError('AI_PROVIDER_ERROR', 'La richiesta al provider AI non e riuscita.', { cause: error })
+            throw new OpenAiStructuredConceptModelError('AI_NETWORK_ERROR', 'Il runtime non ha raggiunto il provider AI.', { cause: error })
         } finally {
             clearTimeout(timeoutId)
         }

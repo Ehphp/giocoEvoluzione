@@ -31,7 +31,7 @@ describe('OpenAiStructuredConceptModel', () => {
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.baseCreatureKey)
     })
 
-    it('maps malformed output, rate limits and provider errors without retries', async () => {
+    it('maps malformed output and provider statuses without retries', async () => {
         const malformed = new OpenAiStructuredConceptModel({
             apiKey: 'test-key', model: 'test-model',
             fetchImplementation: async () => new Response(JSON.stringify({ output_text: '{bad json' }), { status: 200 }),
@@ -41,8 +41,26 @@ describe('OpenAiStructuredConceptModel', () => {
         const limited = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 429 }) })
         await expect(limited.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_RATE_LIMITED' } satisfies Partial<OpenAiStructuredConceptModelError>)
 
+        const badRequest = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 400 }) })
+        await expect(badRequest.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_BAD_REQUEST' } satisfies Partial<OpenAiStructuredConceptModelError>)
+
+        const unauthenticated = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 401 }) })
+        await expect(unauthenticated.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_AUTHENTICATION_FAILED' } satisfies Partial<OpenAiStructuredConceptModelError>)
+
+        const denied = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 403 }) })
+        await expect(denied.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_PERMISSION_DENIED' } satisfies Partial<OpenAiStructuredConceptModelError>)
+
         const unavailable = new OpenAiStructuredConceptModel({ apiKey: 'test-key', model: 'test-model', fetchImplementation: async () => new Response('', { status: 500 }) })
         await expect(unavailable.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_PROVIDER_ERROR' } satisfies Partial<OpenAiStructuredConceptModelError>)
+    })
+
+    it('maps a rejected fetch as a network error without retaining the cause details', async () => {
+        const offline = new OpenAiStructuredConceptModel({
+            apiKey: 'test-key', model: 'test-model',
+            fetchImplementation: async () => { throw new TypeError('network unreachable') },
+        })
+
+        await expect(offline.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_NETWORK_ERROR' } satisfies Partial<OpenAiStructuredConceptModelError>)
     })
 
     it('maps an explicit timeout from the injected HTTP dependency', async () => {
@@ -56,4 +74,3 @@ describe('OpenAiStructuredConceptModel', () => {
         await expect(timeout.generateStructuredConcept(input)).rejects.toMatchObject({ code: 'AI_TIMEOUT' } satisfies Partial<OpenAiStructuredConceptModelError>)
     })
 })
-
