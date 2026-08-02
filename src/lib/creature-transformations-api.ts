@@ -1,7 +1,10 @@
 import type {
+    CreatureTransformationApiResponse,
+    CreatureTransformationErrorResponse,
     GenerateConceptApiResponse,
-    GenerateConceptErrorResponse,
     GenerateConceptRequest,
+    GenerateImageApiResponse,
+    GenerateImageRequest,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
 
@@ -10,9 +13,9 @@ type FunctionInvokeError = Error & { context?: unknown }
 export class CreatureTransformationApiError extends Error {
     readonly code: string
     readonly requestId?: string
-    readonly problems?: GenerateConceptErrorResponse['problems']
+    readonly problems?: CreatureTransformationErrorResponse['problems']
 
-    constructor(response: GenerateConceptErrorResponse) {
+    constructor(response: CreatureTransformationErrorResponse) {
         super(response.message)
         this.name = 'CreatureTransformationApiError'
         this.code = response.code
@@ -22,10 +25,10 @@ export class CreatureTransformationApiError extends Error {
 }
 
 export type CreatureTransformationFunctionInvoker = {
-    invoke: (name: string, options: { body: GenerateConceptRequest }) => Promise<{ data: unknown; error: unknown }>
+    invoke: (name: string, options: { body: GenerateConceptRequest | GenerateImageRequest }) => Promise<{ data: unknown; error: unknown }>
 }
 
-function isErrorResponse(value: unknown): value is GenerateConceptErrorResponse {
+function isErrorResponse(value: unknown): value is CreatureTransformationErrorResponse {
     return Boolean(value)
         && typeof value === 'object'
         && (value as { success?: unknown }).success === false
@@ -34,14 +37,14 @@ function isErrorResponse(value: unknown): value is GenerateConceptErrorResponse 
         && typeof (value as { requestId?: unknown }).requestId === 'string'
 }
 
-function isSuccessResponse(value: unknown): value is Extract<GenerateConceptApiResponse, { success: true }> {
+function isSuccessResponse(value: unknown): value is Extract<CreatureTransformationApiResponse, { success: true }> {
     return Boolean(value)
         && typeof value === 'object'
         && (value as { success?: unknown }).success === true
         && typeof (value as { requestId?: unknown }).requestId === 'string'
 }
 
-async function readFunctionError(error: unknown): Promise<GenerateConceptErrorResponse | null> {
+async function readFunctionError(error: unknown): Promise<CreatureTransformationErrorResponse | null> {
     const context = (error as FunctionInvokeError | null)?.context
     if (typeof Response === 'undefined' || !(context instanceof Response)) return null
 
@@ -57,10 +60,14 @@ export function createConceptIdempotencyKey(): string {
     return crypto.randomUUID()
 }
 
-export async function generateCreatureTransformationConcept(
-    request: GenerateConceptRequest,
-    invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions,
-): Promise<Extract<GenerateConceptApiResponse, { success: true }>> {
+export function createImageIdempotencyKey(): string {
+    return crypto.randomUUID()
+}
+
+async function invokeCreatureTransformation<TResponse extends Extract<CreatureTransformationApiResponse, { success: true }>>(
+    request: GenerateConceptRequest | GenerateImageRequest,
+    invoker: CreatureTransformationFunctionInvoker,
+): Promise<TResponse> {
     const { data, error } = await invoker.invoke('generate-creature-transformation', { body: request })
 
     if (error) {
@@ -70,6 +77,19 @@ export async function generateCreatureTransformationConcept(
     }
     if (isErrorResponse(data)) throw new CreatureTransformationApiError(data)
     if (!isSuccessResponse(data)) throw new Error('Il laboratorio ha restituito una risposta non riconosciuta.')
-    return data
+    return data as TResponse
 }
 
+export async function generateCreatureTransformationConcept(
+    request: GenerateConceptRequest,
+    invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions,
+): Promise<Extract<GenerateConceptApiResponse, { success: true }>> {
+    return invokeCreatureTransformation<Extract<GenerateConceptApiResponse, { success: true }>>(request, invoker)
+}
+
+export async function generateCreatureTransformationImage(
+    request: GenerateImageRequest,
+    invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions,
+): Promise<Extract<GenerateImageApiResponse, { success: true }>> {
+    return invokeCreatureTransformation<Extract<GenerateImageApiResponse, { success: true }>>(request, invoker)
+}

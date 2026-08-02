@@ -27,7 +27,7 @@ describe('SupabaseCreatureIdentityResolver', () => {
             description: 'Piccolo drago verde con grandi occhi ambrati, corpo tozzo e cresta di spine fogliari.',
         })
         expect(result.identity.identityFeatures).toEqual(['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari'])
-        expect(result.sourceImagePath).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        expect(result.sourceImagePath).toBe('verdant-hatchling-v1.png')
     })
 
     it('rejects missing, foreign and unsupported creature records', async () => {

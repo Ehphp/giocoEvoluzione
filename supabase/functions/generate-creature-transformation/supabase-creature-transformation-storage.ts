@@ -1,0 +1,128 @@
+import { sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
+
+export const CREATURE_TRANSFORMATION_SOURCE_BUCKET = 'creature-transformation-sources'
+export const CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET = 'creature-transformation-experiments'
+
+type StorageError = { message?: string } | null
+
+type StorageBucketClient = {
+    download(path: string): Promise<{ data: Blob | null; error: StorageError }>
+    upload(path: string, body: Uint8Array, options: { contentType: string; upsert: boolean }): Promise<{ error: StorageError }>
+    createSignedUrl(path: string, expiresIn: number): Promise<{ data: { signedUrl?: string } | null; error: StorageError }>
+}
+
+export interface CreatureTransformationStorageClient {
+    from(bucket: string): StorageBucketClient
+}
+
+export type CanonicalCreatureSourceImage = Readonly<{
+    bytes: Uint8Array
+    mimeType: 'image/png'
+}>
+
+export type StoredCreatureTransformationImage = Readonly<{
+    signedUrl: string
+    expiresAt: string
+}>
+
+export type CreatureTransformationStorageAdapterOptions = Readonly<{
+    sourceBucket?: string
+    experimentBucket?: string
+    signedUrlTtlSeconds?: number
+    now?: () => number
+}>
+
+export type CreatureTransformationStorageErrorCode =
+    | 'SOURCE_IMAGE_NOT_FOUND'
+    | 'STORAGE_UPLOAD_FAILED'
+    | 'SIGNED_URL_FAILED'
+
+export class CreatureTransformationStorageError extends Error {
+    readonly code: CreatureTransformationStorageErrorCode
+
+    constructor(code: CreatureTransformationStorageErrorCode, message: string, options?: { cause?: unknown }) {
+        super(message, options)
+        this.name = 'CreatureTransformationStorageError'
+        this.code = code
+    }
+}
+
+function profilePathSegment(profileId: string): string {
+    if (!/^[A-Za-z0-9-]{1,128}$/.test(profileId)) {
+        throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Il profilo autenticato non puo essere usato per il path del risultato.')
+    }
+    return profileId
+}
+
+export class SupabaseCreatureTransformationStorageAdapter {
+    private readonly client: CreatureTransformationStorageClient
+    private readonly sourceBucket: string
+    private readonly experimentBucket: string
+    private readonly signedUrlTtlSeconds: number
+    private readonly now: () => number
+
+    constructor(client: CreatureTransformationStorageClient, options: CreatureTransformationStorageAdapterOptions = {}) {
+        this.client = client
+        this.sourceBucket = options.sourceBucket ?? CREATURE_TRANSFORMATION_SOURCE_BUCKET
+        this.experimentBucket = options.experimentBucket ?? CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET
+        this.signedUrlTtlSeconds = options.signedUrlTtlSeconds ?? 300
+        this.now = options.now ?? (() => Date.now())
+    }
+
+    async readCanonicalSource(sourceImagePath: string): Promise<CanonicalCreatureSourceImage> {
+        let result: { data: Blob | null; error: StorageError }
+        try {
+            result = await this.client.from(this.sourceBucket).download(sourceImagePath)
+        } catch (error) {
+            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente canonica non e disponibile.', { cause: error })
+        }
+        if (result.error || !result.data) {
+            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente canonica non e disponibile.', { cause: result.error ?? undefined })
+        }
+        return {
+            bytes: new Uint8Array(await result.data.arrayBuffer()),
+            mimeType: 'image/png',
+        }
+    }
+
+    async createResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {
+        const profileSegment = profilePathSegment(profileId)
+        const idempotencyDigest = await sha256Hex(new TextEncoder().encode(idempotencyKey))
+        return `${profileSegment}/${idempotencyDigest}.png`
+    }
+
+    async saveResult(input: {
+        profileId: string
+        idempotencyKey: string
+        image: Uint8Array
+    }): Promise<StoredCreatureTransformationImage> {
+        const objectPath = await this.createResultObjectPath(input.profileId, input.idempotencyKey)
+        let upload: { error: StorageError }
+        try {
+            upload = await this.client.from(this.experimentBucket).upload(objectPath, input.image, {
+                contentType: 'image/png',
+                upsert: true,
+            })
+        } catch (error) {
+            throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Non e stato possibile salvare il risultato della trasformazione.', { cause: error })
+        }
+        if (upload.error) {
+            throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Non e stato possibile salvare il risultato della trasformazione.', { cause: upload.error })
+        }
+
+        let signed: { data: { signedUrl?: string } | null; error: StorageError }
+        try {
+            signed = await this.client.from(this.experimentBucket).createSignedUrl(objectPath, this.signedUrlTtlSeconds)
+        } catch (error) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo del risultato.', { cause: error })
+        }
+        if (signed.error || !signed.data?.signedUrl) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo del risultato.', { cause: signed.error ?? undefined })
+        }
+
+        return {
+            signedUrl: signed.data.signedUrl,
+            expiresAt: new Date(this.now() + this.signedUrlTtlSeconds * 1000).toISOString(),
+        }
+    }
+}

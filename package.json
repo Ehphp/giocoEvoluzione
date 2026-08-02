@@ -23,7 +23,8 @@
     "audit:evolve:compare": "node --experimental-strip-types tools/audit-evolve-compare.ts",
     "audit:heuristic": "node --experimental-strip-types tools/audit-heuristic-validation.ts",
     "audit:evolution:quick": "node --experimental-strip-types tools/audit-evolution.ts --quick",
-    "audit:evolution:deep": "node --experimental-strip-types tools/audit-evolution.ts --deep"
+    "audit:evolution:deep": "node --experimental-strip-types tools/audit-evolution.ts --deep",
+    "seed:creature-transformation-source": "node --experimental-strip-types tools/seed-creature-transformation-source.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",

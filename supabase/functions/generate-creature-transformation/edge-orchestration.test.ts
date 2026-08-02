@@ -11,7 +11,7 @@ import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository, type StoredPlayerCreature } from './supabase-creature-identity-resolver.ts'
 
 const ownedCreature: StoredPlayerCreature = { id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING' }
-const allowedPolicy: CreatureTransformationLabPolicy = { enabled: true, allowedConceptModes: new Set(['MOCK', 'AI']) }
+const allowedPolicy: CreatureTransformationLabPolicy = { enabled: true, allowedConceptModes: new Set(['MOCK', 'AI']), allowedImageProviderModes: new Set(['MOCK']), signedUrlTtlSeconds: 300 }
 const VERDANT_HATCHLING_IDENTITY_FEATURES = ['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari']
 
 function createResolver(record: StoredPlayerCreature | null = ownedCreature) {
@@ -81,8 +81,8 @@ describe('generate concept edge orchestration', () => {
     it('enforces authentication, policy, operation and trait validation before generation', async () => {
         const common = { requestId: 'request-errors', resolver: createResolver(), createGenerator: () => new MockCreatureConceptGenerator() }
         await expect(orchestrateGenerateConcept({ ...common, profileId: null, body: request(), policy: allowedPolicy })).resolves.toMatchObject({ code: 'UNAUTHENTICATED' })
-        await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request(), policy: { enabled: false, allowedConceptModes: new Set() } })).resolves.toMatchObject({ code: 'LAB_DISABLED' })
-        await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request({ conceptMode: 'AI' }), policy: { enabled: true, allowedConceptModes: new Set(['MOCK']) } })).resolves.toMatchObject({ code: 'CONCEPT_MODE_NOT_ALLOWED' })
+        await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request(), policy: { enabled: false, allowedConceptModes: new Set(), allowedImageProviderModes: new Set(), signedUrlTtlSeconds: 300 } })).resolves.toMatchObject({ code: 'LAB_DISABLED' })
+        await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request({ conceptMode: 'AI' }), policy: { enabled: true, allowedConceptModes: new Set(['MOCK']), allowedImageProviderModes: new Set(['MOCK']), signedUrlTtlSeconds: 300 } })).resolves.toMatchObject({ code: 'CONCEPT_MODE_NOT_ALLOWED' })
         await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request({ operation: 'GENERATE_IMAGE' }), policy: allowedPolicy })).resolves.toMatchObject({ code: 'OPERATION_NOT_IMPLEMENTED' })
         await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request({ visualTraitId: 'NOT_A_TRAIT' }), policy: allowedPolicy })).resolves.toMatchObject({ code: 'INVALID_VISUAL_TRAIT' })
         await expect(orchestrateGenerateConcept({ ...common, profileId: 'profile-1', body: request({ profileId: 'client-profile' }), policy: allowedPolicy })).resolves.toMatchObject({ code: 'INVALID_REQUEST' })

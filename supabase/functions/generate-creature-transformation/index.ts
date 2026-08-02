@@ -2,15 +2,21 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import {
     AiCreatureConceptGenerator,
     type CreatureConceptGenerator,
-    type GenerateConceptErrorResponse,
+    type CreatureTransformationErrorResponse,
     type GenerateConceptRequest,
+    MockCreatureImageProvider,
     MockCreatureConceptGenerator,
+    NoopImagePostProcessor,
 } from '../../../shared/creature-transformations/index.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModel } from './openai-structured-concept-model.ts'
-import { getGenerateConceptFailureStatus, orchestrateGenerateConcept } from './edge-orchestration.ts'
+import { getGenerateConceptFailureStatus, orchestrateCreatureTransformation } from './edge-orchestration.ts'
 import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
+import {
+    SupabaseCreatureTransformationStorageAdapter,
+    type CreatureTransformationStorageClient,
+} from './supabase-creature-transformation-storage.ts'
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -23,14 +29,14 @@ function json(body: unknown, status = 200): Response {
     return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS })
 }
 
-function errorResponse(requestId: string, code: string, message: string, status: number, problems?: GenerateConceptErrorResponse['problems']): Response {
+function errorResponse(requestId: string, code: string, message: string, status: number, problems?: CreatureTransformationErrorResponse['problems']): Response {
     return json({
         success: false,
         requestId,
         code,
         message,
         ...(problems?.length ? { problems } : {}),
-    } satisfies GenerateConceptErrorResponse, status)
+    } satisfies CreatureTransformationErrorResponse, status)
 }
 
 function createRepository(supabaseAdmin: ReturnType<typeof createClient>, requestId: string): PlayerCreatureRepository {
@@ -101,13 +107,20 @@ Deno.serve(async (request) => {
     const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
     const resolver = new SupabaseCreatureIdentityResolver(createRepository(supabaseAdmin, requestId))
-    const result = await orchestrateGenerateConcept({
+    const storage = new SupabaseCreatureTransformationStorageAdapter(
+        supabaseAdmin.storage as unknown as CreatureTransformationStorageClient,
+        { signedUrlTtlSeconds: policy.signedUrlTtlSeconds },
+    )
+    const result = await orchestrateCreatureTransformation({
         profileId: authData.user.id,
         requestId,
         body,
         policy,
         resolver,
         createGenerator,
+        storage,
+        createImageProvider: () => new MockCreatureImageProvider(),
+        postProcessor: new NoopImagePostProcessor(),
     })
     if (!result.success) {
         console.error('Creature transformation request failed', { requestId, code: result.code })
