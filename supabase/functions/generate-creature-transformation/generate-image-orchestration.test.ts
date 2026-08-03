@@ -24,6 +24,7 @@ const policy: CreatureTransformationLabPolicy = {
     dailyRequestLimit: 10,
     dailyBudgetUsd: 0,
     staleRequestSeconds: 900,
+    realImage: { enabled: true, provider: null, allowedProfileIds: new Set(['profile-1']), apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null },
 }
 
 function canonicalConcept() {

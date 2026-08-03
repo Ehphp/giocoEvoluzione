@@ -136,11 +136,21 @@ Deno.serve(async (request) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-        return json({ error: 'Missing Supabase service role configuration.' }, 500)
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+        return json({ error: 'Missing server configuration.' }, 500)
     }
+
+    const authorization = request.headers.get('authorization') ?? ''
+    if (!authorization) return json({ error: 'Authentication required.' }, 401)
+
+    const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authorization } },
+    })
+    const { data: authData, error: authError } = await authenticatedClient.auth.getUser()
+    if (authError || !authData.user) return json({ error: 'Authentication required.' }, 401)
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
 
@@ -172,6 +182,9 @@ Deno.serve(async (request) => {
         if (playersError) {
             return json({ error: playersError.message }, 400)
         }
+
+        const isParticipant = (playersData ?? []).some((player) => player.profile_id === authData.user.id && player.player_type === 'HUMAN')
+        if (!isParticipant) return json({ error: 'Game participant required.' }, 403)
 
         if (!playersData || playersData.length < 2) {
             return json({ status: 'pending', reason: 'waiting_for_players' })

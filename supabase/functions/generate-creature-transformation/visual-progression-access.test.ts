@@ -73,10 +73,10 @@ describe('visual progression access', () => {
             .resolves.toMatchObject({ success: true, opponent: { versionNumber: 2, isBaseVersion: false } })
     })
 
-    it('does not apply the production-profile allowlist to an unlocked generation', async () => {
+    it('requires a dedicated image-generation entitlement for an unlocked generation', async () => {
         await expect(orchestrateGenerateUnlockedTransformation(input({
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID,
             progressTrackId: '00000000-0000-4000-8000-000000000004', idempotencyKey: 'friend-attempt',
-        }) as never)).resolves.toMatchObject({ success: false, code: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' })
+        }) as never)).resolves.toMatchObject({ success: false, code: 'IMAGE_GENERATION_NOT_ALLOWED' })
     })
 })

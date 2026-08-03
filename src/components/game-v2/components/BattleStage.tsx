@@ -1,15 +1,20 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 
 import type { CreatureVisual } from '../gameSelectionAssets'
+import { shouldMirrorCreature, type CreatureFacing } from './creatureOrientation'
 
 type BattleStageProps = {
     playerCreature: CreatureVisual
     opponentCreature: CreatureVisual
 }
 
-function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: 'player' | 'opponent' }) {
+type BattleSide = 'player' | 'opponent'
+
+function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleSide }) {
     const [source, setSource] = useState(visual.src)
     useEffect(() => setSource(visual.src), [visual.src])
+    const facing: CreatureFacing = side === 'player' ? 'right' : 'left'
+    const isMirrored = shouldMirrorCreature(visual.nativeFacing, facing)
     const style = {
         '--battle-creature-scale': visual.scale ?? 1,
         '--battle-creature-height': `${145 * (visual.scale ?? 1)}%`,
@@ -18,9 +23,14 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: 'player
     } as CSSProperties
 
     return (
-        <div className={`battle-stage__creature battle-stage__creature--${side}`} style={style}>
+        <div className={`battle-stage__creature battle-stage__creature--${side}`} style={style} data-facing={facing}>
             <span className="battle-stage__ground-shadow" aria-hidden="true" />
-            <img src={source} alt={visual.alt} onError={() => setSource(side === 'player' ? '/assets/battle/creatures/verdant-hatchling.png' : '/assets/battle/creatures/amethyst-hatchling.png')} />
+            <img
+                className={`battle-stage__sprite ${isMirrored ? 'is-mirrored' : ''}`}
+                src={source}
+                alt={visual.alt}
+                onError={() => setSource(side === 'player' ? '/assets/battle/creatures/verdant-hatchling.png' : '/assets/battle/creatures/amethyst-hatchling.png')}
+            />
         </div>
     )
 }

@@ -1,0 +1,1370 @@
+[
+  {
+    "screenshot": "battle-current-320x568.png",
+    "requestedViewport": {
+      "width": 320,
+      "height": 568
+    },
+    "innerWidth": 320,
+    "innerHeight": 568,
+    "documentScrollHeight": 568,
+    "screenScrollHeight": 800,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 66,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": false,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 568,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 568,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 568,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 568,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 800,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 800,
+        "fullyVisible": false
+      },
+      ".duel-v2-header": {
+        "top": 9.5,
+        "bottom": 66.5,
+        "left": 7,
+        "right": 301,
+        "width": 294,
+        "height": 57,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 74,
+        "bottom": 448.8,
+        "left": 7,
+        "right": 313,
+        "width": 306,
+        "height": 374.8,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 74,
+        "bottom": 180.4,
+        "left": 7,
+        "right": 313,
+        "width": 306,
+        "height": 106.4,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 75,
+        "bottom": 179.4,
+        "left": 8,
+        "right": 234,
+        "width": 226,
+        "height": 104.4,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 75,
+        "bottom": 179.4,
+        "left": 234,
+        "right": 312,
+        "width": 78,
+        "height": 104.4,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 455.8,
+        "bottom": 800,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 344.3,
+        "fullyVisible": false
+      },
+      ".selector-v2-grid": {
+        "top": 488.8,
+        "bottom": 598.8,
+        "left": 8,
+        "right": 312,
+        "width": 304,
+        "height": 110,
+        "fullyVisible": false
+      },
+      ".natural-advantage-v2": {
+        "top": 605.8,
+        "bottom": 707,
+        "left": 8,
+        "right": 312,
+        "width": 304,
+        "height": 101.3,
+        "fullyVisible": false
+      },
+      ".action-v2-panel": {
+        "top": 492,
+        "bottom": 568,
+        "left": 8,
+        "right": 312,
+        "width": 304,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 492,
+        "bottom": 568,
+        "left": 8,
+        "right": 157,
+        "width": 149,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 492,
+        "bottom": 568,
+        "left": 163,
+        "right": 312,
+        "width": 149,
+        "height": 76,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-360x800.png",
+    "requestedViewport": {
+      "width": 360,
+      "height": 800
+    },
+    "innerWidth": 360,
+    "innerHeight": 800,
+    "documentScrollHeight": 800,
+    "screenScrollHeight": 800,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 46.8,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 800,
+        "left": 0,
+        "right": 360,
+        "width": 360,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 800,
+        "left": 0,
+        "right": 360,
+        "width": 360,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 800,
+        "left": 0,
+        "right": 360,
+        "width": 360,
+        "height": 800,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9.5,
+        "bottom": 66.5,
+        "left": 7,
+        "right": 341,
+        "width": 334,
+        "height": 57,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 74,
+        "bottom": 448.8,
+        "left": 7,
+        "right": 353,
+        "width": 346,
+        "height": 374.8,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 74,
+        "bottom": 164.8,
+        "left": 7,
+        "right": 353,
+        "width": 346,
+        "height": 90.8,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 75,
+        "bottom": 163.8,
+        "left": 8,
+        "right": 266,
+        "width": 258,
+        "height": 88.8,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 75,
+        "bottom": 163.8,
+        "left": 266,
+        "right": 352,
+        "width": 86,
+        "height": 88.8,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 455.8,
+        "bottom": 800,
+        "left": 0,
+        "right": 360,
+        "width": 360,
+        "height": 344.3,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 488.8,
+        "bottom": 598.8,
+        "left": 8,
+        "right": 352,
+        "width": 344,
+        "height": 110,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 605.8,
+        "bottom": 707,
+        "left": 8,
+        "right": 352,
+        "width": 344,
+        "height": 101.3,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 714,
+        "bottom": 790,
+        "left": 8,
+        "right": 352,
+        "width": 344,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 714,
+        "bottom": 790,
+        "left": 8,
+        "right": 177,
+        "width": 169,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 714,
+        "bottom": 790,
+        "left": 183,
+        "right": 352,
+        "width": 169,
+        "height": 76,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-390x844.png",
+    "requestedViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "innerWidth": 390,
+    "innerHeight": 844,
+    "documentScrollHeight": 844,
+    "screenScrollHeight": 844,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 49.4,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "width": 390,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "width": 390,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "width": 390,
+        "height": 844,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 67,
+        "left": 9.8,
+        "right": 368.3,
+        "width": 358.5,
+        "height": 58,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 77.5,
+        "bottom": 494.7,
+        "left": 9.8,
+        "right": 380.3,
+        "width": 370.5,
+        "height": 417.2,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 77.5,
+        "bottom": 174.4,
+        "left": 9.8,
+        "right": 380.3,
+        "width": 370.5,
+        "height": 96.8,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 78.5,
+        "bottom": 173.4,
+        "left": 10.8,
+        "right": 287.1,
+        "width": 276.4,
+        "height": 94.8,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 78.5,
+        "bottom": 173.4,
+        "left": 287.1,
+        "right": 379.3,
+        "width": 92.1,
+        "height": 94.8,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 505.3,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "width": 390,
+        "height": 338.7,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 539.3,
+        "bottom": 660.2,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 120.9,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 670.3,
+        "bottom": 744.9,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 74.6,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 755,
+        "bottom": 833,
+        "left": 10,
+        "right": 380,
+        "width": 370,
+        "height": 78,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 755,
+        "bottom": 833,
+        "left": 10,
+        "right": 192,
+        "width": 182,
+        "height": 78,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 755,
+        "bottom": 833,
+        "left": 198,
+        "right": 380,
+        "width": 182,
+        "height": 78,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-412x915.png",
+    "requestedViewport": {
+      "width": 412,
+      "height": 915
+    },
+    "innerWidth": 412,
+    "innerHeight": 915,
+    "documentScrollHeight": 915,
+    "screenScrollHeight": 915,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 49.8,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 915,
+        "left": 0,
+        "right": 412,
+        "width": 412,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 915,
+        "left": 0,
+        "right": 412,
+        "width": 412,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 915,
+        "left": 0,
+        "right": 412,
+        "width": 412,
+        "height": 915,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 74.9,
+        "left": 10.3,
+        "right": 389.7,
+        "width": 379.4,
+        "height": 65.9,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 86.3,
+        "bottom": 542.4,
+        "left": 10.3,
+        "right": 401.7,
+        "width": 391.4,
+        "height": 456,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 86.3,
+        "bottom": 183.8,
+        "left": 10.3,
+        "right": 401.7,
+        "width": 391.4,
+        "height": 97.4,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 87.3,
+        "bottom": 182.8,
+        "left": 11.3,
+        "right": 270.7,
+        "width": 259.4,
+        "height": 95.4,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 87.3,
+        "bottom": 182.8,
+        "left": 270.7,
+        "right": 400.7,
+        "width": 130,
+        "height": 95.4,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 553.8,
+        "bottom": 915,
+        "left": 0,
+        "right": 412,
+        "width": 412,
+        "height": 361.2,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 587.8,
+        "bottom": 723.8,
+        "left": 10.5,
+        "right": 401.5,
+        "width": 391.1,
+        "height": 136,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 734.7,
+        "bottom": 810.6,
+        "left": 10.5,
+        "right": 401.5,
+        "width": 391.1,
+        "height": 75.9,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 821.6,
+        "bottom": 904,
+        "left": 10.5,
+        "right": 401.5,
+        "width": 391.1,
+        "height": 82.4,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 821.6,
+        "bottom": 904,
+        "left": 10.5,
+        "right": 202.9,
+        "width": 192.4,
+        "height": 82.4,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 821.6,
+        "bottom": 904,
+        "left": 209.1,
+        "right": 401.5,
+        "width": 192.5,
+        "height": 82.4,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-430x932.png",
+    "requestedViewport": {
+      "width": 430,
+      "height": 932
+    },
+    "innerWidth": 430,
+    "innerHeight": 932,
+    "documentScrollHeight": 932,
+    "screenScrollHeight": 932,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 49.3,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 932,
+        "left": 0,
+        "right": 430,
+        "width": 430,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 932,
+        "left": 0,
+        "right": 430,
+        "width": 430,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 932,
+        "left": 0,
+        "right": 430,
+        "width": 430,
+        "height": 932,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 77.8,
+        "left": 10.8,
+        "right": 407.3,
+        "width": 396.5,
+        "height": 68.8,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 89.4,
+        "bottom": 548.5,
+        "left": 10.8,
+        "right": 419.3,
+        "width": 408.5,
+        "height": 459,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 89.4,
+        "bottom": 187.9,
+        "left": 10.8,
+        "right": 419.3,
+        "width": 408.5,
+        "height": 98.4,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 90.4,
+        "bottom": 186.9,
+        "left": 11.8,
+        "right": 288.3,
+        "width": 276.5,
+        "height": 96.4,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 90.4,
+        "bottom": 186.9,
+        "left": 288.3,
+        "right": 418.3,
+        "width": 130,
+        "height": 96.4,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 560.1,
+        "bottom": 932,
+        "left": 0,
+        "right": 430,
+        "width": 430,
+        "height": 371.9,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 594.1,
+        "bottom": 736,
+        "left": 10.9,
+        "right": 419.1,
+        "width": 408.3,
+        "height": 141.9,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 747,
+        "bottom": 824,
+        "left": 10.9,
+        "right": 419.1,
+        "width": 408.3,
+        "height": 77,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 835,
+        "bottom": 921,
+        "left": 10.9,
+        "right": 419.1,
+        "width": 408.3,
+        "height": 86,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 835,
+        "bottom": 921,
+        "left": 10.9,
+        "right": 211.8,
+        "width": 200.9,
+        "height": 86,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 835,
+        "bottom": 921,
+        "left": 218.2,
+        "right": 419.1,
+        "width": 200.9,
+        "height": 86,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-768x1024.png",
+    "requestedViewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "innerWidth": 768,
+    "innerHeight": 1024,
+    "documentScrollHeight": 1024,
+    "screenScrollHeight": 1024,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 46.4,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 1024,
+        "left": 0,
+        "right": 768,
+        "width": 768,
+        "height": 1024,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 1024,
+        "left": 0,
+        "right": 768,
+        "width": 768,
+        "height": 1024,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 1024,
+        "left": 0,
+        "right": 768,
+        "width": 768,
+        "height": 1024,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 85,
+        "left": 30.7,
+        "right": 725.3,
+        "width": 694.6,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 97,
+        "bottom": 571.9,
+        "left": 30.7,
+        "right": 737.3,
+        "width": 706.6,
+        "height": 474.9,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 97,
+        "bottom": 213,
+        "left": 30.7,
+        "right": 737.3,
+        "width": 706.6,
+        "height": 116,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 98,
+        "bottom": 212,
+        "left": 31.7,
+        "right": 527.9,
+        "width": 496.2,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 98,
+        "bottom": 212,
+        "left": 527.9,
+        "right": 736.3,
+        "width": 208.4,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 583.9,
+        "bottom": 1024,
+        "left": 30.7,
+        "right": 737.3,
+        "width": 706.6,
+        "height": 440.1,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 627.3,
+        "bottom": 803.9,
+        "left": 49.4,
+        "right": 718.6,
+        "width": 669.3,
+        "height": 176.6,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 814.9,
+        "bottom": 914,
+        "left": 49.4,
+        "right": 718.6,
+        "width": 669.3,
+        "height": 99.1,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 925,
+        "bottom": 1007,
+        "left": 49.4,
+        "right": 718.6,
+        "width": 669.3,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 925,
+        "bottom": 1007,
+        "left": 49.4,
+        "right": 378.2,
+        "width": 328.9,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 925,
+        "bottom": 1007,
+        "left": 389.8,
+        "right": 718.6,
+        "width": 328.9,
+        "height": 82,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-844x390.png",
+    "requestedViewport": {
+      "width": 844,
+      "height": 390
+    },
+    "innerWidth": 844,
+    "innerHeight": 390,
+    "documentScrollHeight": 390,
+    "screenScrollHeight": 390,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 75.6,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 390,
+        "left": 0,
+        "right": 844,
+        "width": 844,
+        "height": 390,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 390,
+        "left": 0,
+        "right": 844,
+        "width": 844,
+        "height": 390,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 390,
+        "left": 0,
+        "right": 844,
+        "width": 844,
+        "height": 390,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 6,
+        "bottom": 82,
+        "left": 9,
+        "right": 371.4,
+        "width": 362.4,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 89,
+        "bottom": 384,
+        "left": 9,
+        "right": 383.4,
+        "width": 374.4,
+        "height": 295,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 89,
+        "bottom": 186.5,
+        "left": 9,
+        "right": 383.4,
+        "width": 374.4,
+        "height": 97.5,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 90,
+        "bottom": 185.5,
+        "left": 10,
+        "right": 252.4,
+        "width": 242.4,
+        "height": 95.5,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 90,
+        "bottom": 185.5,
+        "left": 252.4,
+        "right": 382.4,
+        "width": 130,
+        "height": 95.5,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 23.5,
+        "bottom": 366.5,
+        "left": 395.4,
+        "right": 835,
+        "width": 439.6,
+        "height": 343,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 54.5,
+        "bottom": 205.5,
+        "left": 404.4,
+        "right": 826,
+        "width": 421.6,
+        "height": 151,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 211.5,
+        "bottom": 287.5,
+        "left": 404.4,
+        "right": 826,
+        "width": 421.6,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 293.5,
+        "bottom": 357.5,
+        "left": 404.4,
+        "right": 826,
+        "width": 421.6,
+        "height": 64,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 293.5,
+        "bottom": 357.5,
+        "left": 404.4,
+        "right": 611.2,
+        "width": 206.8,
+        "height": 64,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 293.5,
+        "bottom": 357.5,
+        "left": 619.2,
+        "right": 826,
+        "width": 206.8,
+        "height": 64,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-1440x900.png",
+    "requestedViewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "innerWidth": 1440,
+    "innerHeight": 900,
+    "documentScrollHeight": 900,
+    "screenScrollHeight": 900,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 76.7,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 900,
+        "left": 0,
+        "right": 1440,
+        "width": 1440,
+        "height": 900,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 900,
+        "left": 0,
+        "right": 1440,
+        "width": 1440,
+        "height": 900,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 900,
+        "left": 110,
+        "right": 1330,
+        "width": 1220,
+        "height": 900,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 85,
+        "left": 152,
+        "right": 1276,
+        "width": 1124,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 96.3,
+        "bottom": 786.3,
+        "left": 152,
+        "right": 781.9,
+        "width": 629.9,
+        "height": 690,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 96.3,
+        "bottom": 212.3,
+        "left": 152,
+        "right": 781.9,
+        "width": 629.9,
+        "height": 116,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 97.3,
+        "bottom": 211.3,
+        "left": 153,
+        "right": 595.1,
+        "width": 442.1,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 97.3,
+        "bottom": 211.3,
+        "left": 595.1,
+        "right": 780.9,
+        "width": 185.7,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 269.1,
+        "bottom": 695.1,
+        "left": 793.1,
+        "right": 1288,
+        "width": 494.9,
+        "height": 426,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 313.1,
+        "bottom": 475.1,
+        "left": 812.1,
+        "right": 1269,
+        "width": 456.9,
+        "height": 162,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 485.9,
+        "bottom": 585.3,
+        "left": 812.1,
+        "right": 1269,
+        "width": 456.9,
+        "height": 99.4,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 596.1,
+        "bottom": 678.1,
+        "left": 812.1,
+        "right": 1269,
+        "width": 456.9,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 596.1,
+        "bottom": 678.1,
+        "left": 812.1,
+        "right": 1034.5,
+        "width": 222.4,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 596.1,
+        "bottom": 678.1,
+        "left": 1046.5,
+        "right": 1269,
+        "width": 222.4,
+        "height": 82,
+        "fullyVisible": true
+      }
+    }
+  },
+  {
+    "screenshot": "battle-current-1920x1080.png",
+    "requestedViewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "innerWidth": 1920,
+    "innerHeight": 1080,
+    "documentScrollHeight": 1080,
+    "screenScrollHeight": 1080,
+    "hasVerticalOverflow": false,
+    "hasHorizontalOverflow": false,
+    "sceneViewportRatio": 63.9,
+    "geneCardCount": 5,
+    "fiveGenesFullyVisible": true,
+    "genesReachable": true,
+    "eventDoesNotCoverDock": true,
+    "arenaHasUsefulHeight": true,
+    "hasFullscreenBattleBackground": true,
+    "arenaEmbedsBattleBackground": false,
+    "versusIsCentered": true,
+    "actionControlsReachable": true,
+    "scrollY": 0,
+    "boxes": {
+      ".gene-selection-screen": {
+        "top": 0,
+        "bottom": 1080,
+        "left": 0,
+        "right": 1920,
+        "width": 1920,
+        "height": 1080,
+        "fullyVisible": true
+      },
+      ".gene-selection-screen__background": {
+        "top": 0,
+        "bottom": 1080,
+        "left": 0,
+        "right": 1920,
+        "width": 1920,
+        "height": 1080,
+        "fullyVisible": true
+      },
+      ".game-frame": {
+        "top": 0,
+        "bottom": 1080,
+        "left": 350,
+        "right": 1570,
+        "width": 1220,
+        "height": 1080,
+        "fullyVisible": true
+      },
+      ".duel-v2-header": {
+        "top": 9,
+        "bottom": 85,
+        "left": 392,
+        "right": 1516,
+        "width": 1124,
+        "height": 76,
+        "fullyVisible": true
+      },
+      ".arena-stage": {
+        "top": 97,
+        "bottom": 787,
+        "left": 392,
+        "right": 1021.4,
+        "width": 629.4,
+        "height": 690,
+        "fullyVisible": true
+      },
+      ".event-v2-stack": {
+        "top": 97,
+        "bottom": 213,
+        "left": 392,
+        "right": 1021.4,
+        "width": 629.4,
+        "height": 116,
+        "fullyVisible": true
+      },
+      ".event-v2-card": {
+        "top": 98,
+        "bottom": 212,
+        "left": 393,
+        "right": 834.8,
+        "width": 441.8,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".event-v2-next-trigger": {
+        "top": 98,
+        "bottom": 212,
+        "left": 834.8,
+        "right": 1020.4,
+        "width": 185.6,
+        "height": 114,
+        "fullyVisible": true
+      },
+      ".decision-dock": {
+        "top": 359.3,
+        "bottom": 785.7,
+        "left": 1033.4,
+        "right": 1528,
+        "width": 494.6,
+        "height": 426.4,
+        "fullyVisible": true
+      },
+      ".selector-v2-grid": {
+        "top": 403.3,
+        "bottom": 565.3,
+        "left": 1052.4,
+        "right": 1509,
+        "width": 456.6,
+        "height": 162,
+        "fullyVisible": true
+      },
+      ".natural-advantage-v2": {
+        "top": 576.3,
+        "bottom": 675.7,
+        "left": 1052.4,
+        "right": 1509,
+        "width": 456.6,
+        "height": 99.4,
+        "fullyVisible": true
+      },
+      ".action-v2-panel": {
+        "top": 686.7,
+        "bottom": 768.7,
+        "left": 1052.4,
+        "right": 1509,
+        "width": 456.6,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--use": {
+        "top": 686.7,
+        "bottom": 768.7,
+        "left": 1052.4,
+        "right": 1274.7,
+        "width": 222.3,
+        "height": 82,
+        "fullyVisible": true
+      },
+      ".action-v2-btn--evolve": {
+        "top": 686.7,
+        "bottom": 768.7,
+        "left": 1286.7,
+        "right": 1509,
+        "width": 222.3,
+        "height": 82,
+        "fullyVisible": true
+      }
+    }
+  }
+]

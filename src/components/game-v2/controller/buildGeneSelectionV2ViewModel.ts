@@ -23,6 +23,7 @@ import type {
     GeneSelectionStatusV2,
     GeneSelectionViewModelV2,
 } from '../types'
+import { buildBattleParticipants } from './battleParticipants'
 
 type BuildGeneSelectionV2ViewModelInput = {
     snapshot: GameSnapshot
@@ -234,7 +235,7 @@ export function getInitialTraitIdForSnapshot(snapshot: GameSnapshot): TraitType 
 
 export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewModelInput): GeneSelectionViewModelV2 {
     const { snapshot } = input
-    const me = snapshot.me
+    const { localPlayer: me, remotePlayer: opponent } = buildBattleParticipants(snapshot.players, snapshot.me?.id)
     const isVsBot = snapshot.game.game_mode === 'VS_BOT'
     const playability = isSnapshotPlayable(snapshot)
     const genes = buildGenes(snapshot)
@@ -242,8 +243,6 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     const selectedGeneId = selectedGene?.id ?? null
     const myHasSubmitted = Boolean(snapshot.myCurrentAction) || input.hasLocalSubmittedAction
     const opponentHasSubmitted = resolveOpponentSubmitted(snapshot)
-
-    const opponent = snapshot.opponent
 
     if (!playability.valid || !me) {
         return {

@@ -52,6 +52,7 @@ type BackgroundTaskScheduler = (task: Promise<void>) => void
 
 export type GenerateConceptEdgeOrchestrationInput = Readonly<{
     profileId: string | null
+    canGenerateImages?: boolean
     requestId: string
     body: unknown
     policy: CreatureTransformationLabPolicy
@@ -62,6 +63,7 @@ export type GenerateConceptEdgeOrchestrationInput = Readonly<{
 
 export type GenerateImageEdgeOrchestrationInput = Readonly<{
     profileId: string | null
+    canGenerateImages?: boolean
     requestId: string
     body: unknown
     policy: CreatureTransformationLabPolicy
@@ -144,14 +146,14 @@ function withImagePersistence(response: GeneratedImageResponse, record: Creature
 export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'METHOD_NOT_ALLOWED') return 405
     if (code === 'UNAUTHENTICATED') return 401
-    if (code === 'LAB_DISABLED' || code === 'CONCEPT_MODE_NOT_ALLOWED' || code === 'IMAGE_PROVIDER_MODE_NOT_ALLOWED' || code === 'CREATURE_NOT_OWNED' || code === 'REAL_IMAGE_PROVIDER_DISABLED' || code === 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' || code === 'BENCHMARK_NOT_ALLOWED' || code === 'BENCHMARK_REVIEWER_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'VISUAL_PROFILE_NOT_ALLOWED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
+    if (code === 'LAB_DISABLED' || code === 'CONCEPT_MODE_NOT_ALLOWED' || code === 'IMAGE_PROVIDER_MODE_NOT_ALLOWED' || code === 'CREATURE_NOT_OWNED' || code === 'REAL_IMAGE_PROVIDER_DISABLED' || code === 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' || code === 'IMAGE_GENERATION_NOT_ALLOWED' || code === 'BENCHMARK_NOT_ALLOWED' || code === 'BENCHMARK_REVIEWER_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'VISUAL_PROFILE_NOT_ALLOWED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
     if (code === 'CREATURE_NOT_FOUND' || code === 'SOURCE_IMAGE_NOT_FOUND' || code === 'REQUEST_NOT_FOUND' || code === 'VISUAL_TRACK_NOT_FOUND' || code === 'VISUAL_VERSION_NOT_FOUND' || code === 'CURRENT_VISUAL_UNAVAILABLE') return 404
-    if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
+    if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
     if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
     if (code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID' || code === 'PNG_ALPHA_COVERAGE_INVALID') return 422
     if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
-    if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 409
+    if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 409
     if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH') return 422
     if (code === 'AI_AUTHENTICATION_FAILED' || code === 'AI_PERMISSION_DENIED' || code === 'AI_NETWORK_ERROR' || code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'POST_PROCESSING_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID') return 502
     if (code === 'REQUEST_RESERVATION_FAILED' || code === 'REQUEST_PERSISTENCE_FAILED' || code === 'INTERNAL_ERROR' || code === 'CREATURE_LOOKUP_FAILED') return 500
@@ -189,17 +191,45 @@ function estimateImageCost(request: GenerateImageRequest, policy: CreatureTransf
     return policy.realImage.estimatedCostUsd === null ? {} : { estimatedCostUsd: policy.realImage.estimatedCostUsd }
 }
 
+function generationAccessFailure(input: Pick<GenerateConceptEdgeOrchestrationInput, 'profileId' | 'canGenerateImages' | 'policy'>): FailureDetails | null {
+    if (input.canGenerateImages || (input.profileId !== null && input.policy.realImage.allowedProfileIds.has(input.profileId))) return null
+    return { code: 'IMAGE_GENERATION_NOT_ALLOWED', message: 'Il profilo autenticato non e autorizzato alla generazione a pagamento.' }
+}
+
+function realImageReservationLimits(policy: CreatureTransformationLabPolicy) {
+    return {
+        dailyRealImageLimit: policy.dailyRealImageLimit,
+        globalDailyRealImageLimit: policy.globalDailyRealImageLimit,
+        globalConcurrentRealImageLimit: policy.globalConcurrentRealImageLimit,
+        realImageCooldownSeconds: policy.realImageCooldownSeconds,
+    }
+}
+
+function canonicalizeForFingerprint(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(canonicalizeForFingerprint)
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalizeForFingerprint((value as Record<string, unknown>)[key])]))
+    }
+    return value
+}
+
+async function requestFingerprint(value: unknown): Promise<string> {
+    const bytes = new TextEncoder().encode(JSON.stringify(canonicalizeForFingerprint(value)))
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 function isStale(record: CreatureTransformationRequestRecord, staleRequestSeconds: number, now = Date.now()): boolean {
     if (record.status !== 'RUNNING' && record.status !== 'RESERVED') return false
     const startedAt = Date.parse(record.startedAt ?? record.createdAt)
     return Number.isFinite(startedAt) && now - startedAt > staleRequestSeconds * 1000
 }
 
-function realImagePolicyFailure(policy: CreatureTransformationLabPolicy, profileId: string): FailureDetails | null {
+function realImagePolicyFailure(policy: CreatureTransformationLabPolicy, profileId: string, canGenerateImages = false): FailureDetails | null {
     const realImage = policy.realImage
     if (!realImage) return { code: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', message: 'Il provider immagini reale non e configurato in modo completo.' }
     if (!realImage.enabled) return { code: 'REAL_IMAGE_PROVIDER_DISABLED', message: 'Il pilot immagini reale non e abilitato.' }
-    if (!realImage.allowedProfileIds.has(profileId)) return { code: 'REAL_IMAGE_PROVIDER_NOT_ALLOWED', message: 'Il profilo autenticato non e autorizzato al pilot immagini reale.' }
+    if (!canGenerateImages && !realImage.allowedProfileIds.has(profileId)) return { code: 'REAL_IMAGE_PROVIDER_NOT_ALLOWED', message: 'Il profilo autenticato non e autorizzato al pilot immagini reale.' }
     if (!realImage.provider || !realImage.apiKey || !realImage.model || realImage.estimatedCostUsd === null || realImage.maxEstimatedCostUsd === null) {
         return { code: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', message: 'Il provider immagini reale non e configurato in modo completo.' }
     }
@@ -258,10 +288,14 @@ async function reserveConcept(input: GenerateConceptEdgeOrchestrationInput, requ
 }
 
 async function reserveImage(input: GenerateImageEdgeOrchestrationInput, request: GenerateImageRequest, benchmark?: BenchmarkImageExecution): Promise<RequestReservationResult> {
+    const fingerprint = request.imageProviderMode === 'REAL'
+        ? await requestFingerprint({ operation: request.operation, creatureId: request.creatureId, imageProviderMode: request.imageProviderMode, concept: request.concept, benchmarkCaseId: request.benchmarkCaseId, generationProfileId: request.generationProfileId })
+        : undefined
     return input.repository.reserve({
         profileId: input.profileId!, creatureId: request.creatureId, idempotencyKey: request.idempotencyKey, operation: request.operation,
         visualTraitId: request.concept.visualTrait, intensity: request.concept.intensity, imageProviderMode: request.imageProviderMode,
         ...estimateImageCost(request, input.policy, benchmark), dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
+        ...(request.imageProviderMode === 'REAL' ? { requestFingerprint: fingerprint, ...realImageReservationLimits(input.policy) } : {}),
         ...(benchmark ? { benchmarkCaseId: benchmark.benchmarkCase.id, generationProfileId: benchmark.profile.id, conceptSeed: benchmark.benchmarkCase.conceptSeed } : {}),
     })
 }
@@ -269,6 +303,12 @@ async function reserveImage(input: GenerateImageEdgeOrchestrationInput, request:
 function reservationFailure(requestId: string, result: Exclude<RequestReservationResult, { outcome: 'CREATED' | 'EXISTING' }>): CreatureTransformationErrorResponse {
     if (result.outcome === 'CREATURE_NOT_OWNED') return failure(requestId, 'CREATURE_NOT_OWNED', 'La creatura non appartiene al profilo autenticato.')
     if (result.outcome === 'DAILY_LIMIT_REACHED') return failure(requestId, 'DAILY_LIMIT_REACHED', 'Hai raggiunto il limite giornaliero di richieste del laboratorio.')
+    if (result.outcome === 'REAL_IMAGE_USER_LIMIT_REACHED') return failure(requestId, result.outcome, 'Hai raggiunto il limite giornaliero di immagini reali.')
+    if (result.outcome === 'REAL_IMAGE_USER_CONCURRENCY_REACHED') return failure(requestId, result.outcome, 'Hai gia una generazione immagini reale in corso.')
+    if (result.outcome === 'REAL_IMAGE_COOLDOWN_ACTIVE') return failure(requestId, result.outcome, 'Attendi il cooldown prima di una nuova immagine reale.')
+    if (result.outcome === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED') return failure(requestId, result.outcome, 'Il limite globale giornaliero immagini e stato raggiunto.')
+    if (result.outcome === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED') return failure(requestId, result.outcome, 'Ci sono gia troppe immagini reali in elaborazione.')
+    if (result.outcome === 'IDEMPOTENCY_KEY_REUSED') return failure(requestId, result.outcome, 'La idempotency key e gia associata a una richiesta diversa.')
     return failure(requestId, 'DAILY_BUDGET_REACHED', 'Il budget giornaliero del laboratorio non consente questa richiesta.')
 }
 
@@ -551,6 +591,8 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     const access = visualProgressionAccessFailure(input.policy, 'GENERATE')
     if (access) return failure(input.requestId, access.code, access.message)
+    const generationAccess = generationAccessFailure(input)
+    if (generationAccess) return failure(input.requestId, generationAccess.code, generationAccess.message)
     const profile = productionImageProfile(input.policy)
     if (input.policy.visualProgression.productionGenerationProfileId && !profile) return failure(input.requestId, 'GENERATION_PROFILE_CONFIGURATION_INVALID', 'Il profilo di generazione produzione non e disponibile.')
     const realFailure = productionRealImageFailure(input.policy, profile)
@@ -563,11 +605,13 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         if (!track || track.id !== parsed.request.progressTrackId) return failure(input.requestId, 'VISUAL_TRACK_NOT_FOUND', 'Il percorso visuale non e disponibile.')
         if (track.status === 'GENERATING') return failure(input.requestId, 'VISUAL_GENERATION_ALREADY_RUNNING', 'La generazione visuale e gia in corso.')
         if (track.status !== 'READY') return failure(input.requestId, 'VISUAL_TRACK_NOT_READY', 'Il percorso deve essere sbloccato prima della generazione.')
+        const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: track.visualTraitId, sourceVisualVersionId: source.currentVisualVersionId })
         const reservation = await input.repository.reserve({
             profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', visualTraitId: track.visualTraitId, intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL',
             estimatedCostUsd: profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
             dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
+            requestFingerprint: fingerprint, ...realImageReservationLimits(input.policy),
             visualProgressTrackId: track.id, sourceVisualVersionId: source.currentVisualVersionId,
         })
         if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
@@ -632,6 +676,10 @@ export async function orchestrateGenerateConcept(input: GenerateConceptEdgeOrche
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
     if (!input.policy.allowedConceptModes.has(parsed.request.conceptMode)) return failure(input.requestId, 'CONCEPT_MODE_NOT_ALLOWED', 'La modalita concept richiesta non e autorizzata.')
+    if (parsed.request.conceptMode === 'AI') {
+        const accessFailure = generationAccessFailure(input)
+        if (accessFailure) return failure(input.requestId, accessFailure.code, accessFailure.message)
+    }
     const benchmarkCase = parsed.request.benchmarkCaseId ? getCreatureTransformationBenchmarkCase(parsed.request.benchmarkCaseId) : null
     if (parsed.request.benchmarkCaseId) {
         const accessFailure = benchmarkGenerationAllowed(input.policy, input.profileId)
@@ -685,7 +733,9 @@ export async function orchestrateGenerateImage(input: GenerateImageEdgeOrchestra
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
     if (parsed.request.imageProviderMode === 'REAL') {
-        const policyFailure = realImagePolicyFailure(input.policy, input.profileId)
+        const accessFailure = generationAccessFailure(input)
+        if (accessFailure) return failure(input.requestId, accessFailure.code, accessFailure.message)
+        const policyFailure = realImagePolicyFailure(input.policy, input.profileId, input.canGenerateImages)
         if (policyFailure) return failure(input.requestId, policyFailure.code, policyFailure.message)
     } else if (!input.policy.allowedImageProviderModes.has(parsed.request.imageProviderMode)) {
         return failure(input.requestId, 'IMAGE_PROVIDER_MODE_NOT_ALLOWED', 'La modalita immagini richiesta non e autorizzata.')

@@ -1,4 +1,4 @@
-import { createInitialTraits, generateRoundEventSequence, normalizeTraitCollection, ROOM_CODE_LENGTH, TOTAL_ROUNDS, TRAITS } from '../game/config'
+import { normalizeTraitCollection, TRAITS } from '../game/config'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
     GameMode,
@@ -82,8 +82,6 @@ export type GameSnapshot = {
     roundResults: RoundResultRecord[]
 }
 
-const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-
 export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
     if (!snapshot.me) {
         return false
@@ -113,14 +111,6 @@ export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
     }
 
     return snapshot.currentRoundEvent !== null
-}
-
-function generateRoomCode(): string {
-    return Array.from({ length: ROOM_CODE_LENGTH }, () => {
-        const index = Math.floor(Math.random() * ROOM_CODE_ALPHABET.length)
-
-        return ROOM_CODE_ALPHABET[index] ?? ROOM_CODE_ALPHABET[0]
-    }).join('')
 }
 
 function mapGameRecord(data: Record<string, unknown>): GameRecord {
@@ -193,10 +183,6 @@ function normalizeRoomCode(roomCode: string) {
     return roomCode.trim().toUpperCase()
 }
 
-function isUniqueViolation(error: { code?: string } | null) {
-    return error?.code === '23505'
-}
-
 async function getInvokeErrorMessage(error: unknown): Promise<string> {
     if (!(error instanceof Error)) {
         return 'Errore sconosciuto durante la risoluzione round.'
@@ -227,10 +213,17 @@ async function getInvokeErrorMessage(error: unknown): Promise<string> {
     return error.message
 }
 
-async function ensurePlayerConnected(playerId: string) {
+async function ensurePlayerConnected(gameId: string, playerId: string) {
     const supabase = requireSupabase()
 
-    await supabase.from('players').update({ connected: true }).eq('id', playerId)
+    const { error } = await supabase.rpc('touch_game_participant', {
+        p_game_id: gameId,
+        p_player_id: playerId,
+    })
+
+    if (error) {
+        throw new Error(error.message)
+    }
 }
 
 export async function fetchGameSnapshot(gameId: string, playerId: string): Promise<GameSnapshot> {
@@ -266,27 +259,18 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
     const me = players.find((player) => player.id === playerId) ?? null
     const opponent = players.find((player) => player.id !== playerId) ?? null
 
-    const { count, error: countError } = await supabase
-        .from('round_actions')
-        .select('*', { count: 'exact', head: true })
-        .eq('game_id', gameId)
-        .eq('round_number', game.current_round)
+    const { data: actionStateData, error: actionStateError } = await supabase.rpc('get_game_round_action_state', {
+        p_game_id: gameId,
+        p_round_number: game.current_round,
+    })
 
-    if (countError) {
-        throw new Error(countError.message)
+    if (actionStateError) {
+        throw new Error(actionStateError.message)
     }
 
-    const { data: myActionData, error: myActionError } = await supabase
-        .from('round_actions')
-        .select('*')
-        .eq('game_id', gameId)
-        .eq('round_number', game.current_round)
-        .eq('player_id', playerId)
-        .maybeSingle()
-
-    if (myActionError) {
-        throw new Error(myActionError.message)
-    }
+    const actionState = actionStateData && typeof actionStateData === 'object'
+        ? actionStateData as { submitted_count?: unknown; my_action?: Record<string, unknown> | null }
+        : {}
 
     const { data: roundResultsData, error: roundResultsError } = await supabase
         .from('round_results')
@@ -301,7 +285,7 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
     const roundResults = (roundResultsData ?? []).map((entry) => mapRoundResultRecord(entry))
     const currentRoundResult = roundResults.find((result) => result.round_number === game.current_round) ?? null
 
-    if (game.status === 'CHOOSING' && (count ?? 0) >= 2 && !currentRoundResult) {
+    if (game.status === 'CHOOSING' && Number(actionState.submitted_count ?? 0) >= 2 && !currentRoundResult) {
         // Self-heal stuck rounds by retrying idempotent resolution.
         void maybeResolveRound(gameId, game.current_round).catch(() => undefined)
     }
@@ -315,8 +299,8 @@ export async function fetchGameSnapshot(gameId: string, playerId: string): Promi
         world,
         currentRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round),
         nextRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round + 1),
-        actionsSubmitted: count ?? 0,
-        myCurrentAction: myActionData ? mapRoundActionRecord(myActionData) : null,
+        actionsSubmitted: Number(actionState.submitted_count ?? 0),
+        myCurrentAction: actionState.my_action ? mapRoundActionRecord(actionState.my_action) : null,
         currentRoundResult,
         roundResults,
     }
@@ -332,68 +316,21 @@ export type GameParticipantIdentity = {
 
 export async function createGame(input: GameParticipantIdentity): Promise<GameSnapshot> {
     const supabase = requireSupabase()
+    const { data, error } = await supabase.rpc('create_pvp_game', { p_player_id: input.playerId })
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-        const roomCode = generateRoomCode()
-        const roundEventSequence = generateRoundEventSequence()
-
-        const { data: gameData, error: gameError } = await supabase
-            .from('games')
-            .insert({
-                room_code: roomCode,
-                game_mode: 'PVP',
-                status: 'WAITING',
-                current_round: 1,
-                world_id: DEFAULT_WORLD_ID,
-                round_event_sequence: roundEventSequence,
-                player_1_score: 0,
-                player_2_score: 0,
-            })
-            .select('*')
-            .single()
-
-        if (gameError) {
-            if (isUniqueViolation(gameError)) {
-                continue
-            }
-
-            throw new Error(gameError.message)
-        }
-
-        const game = mapGameRecord(gameData)
-
-        const { error: playerError } = await supabase.from('players').insert({
-            id: input.playerId,
-            game_id: game.id,
-            nickname: input.nickname.trim(),
-            slot: 1,
-            player_type: 'HUMAN',
-            traits: createInitialTraits(),
-            connected: true,
-            profile_id: input.profileId,
-            creature_id: input.creatureId,
-            creature_snapshot: input.creatureSnapshot,
-        })
-
-        if (playerError) {
-            throw new Error(playerError.message)
-        }
-
-        const { error: updateError } = await supabase
-            .from('games')
-            .update({ player_1_id: input.playerId })
-            .eq('id', game.id)
-
-        if (updateError) {
-            throw new Error(updateError.message)
-        }
-
-        await ensurePlayerConnected(input.playerId)
-
-        return fetchGameSnapshot(game.id, input.playerId)
+    if (error) {
+        throw new Error(error.message)
     }
 
-    throw new Error('Impossibile generare un codice stanza valido. Riprova.')
+    const created = Array.isArray(data) ? data[0] : data
+    const gameId = String((created as { game_id?: unknown } | null)?.game_id ?? '')
+    const playerId = String((created as { human_player_id?: unknown } | null)?.human_player_id ?? '')
+
+    if (!gameId || !playerId) {
+        throw new Error('Impossibile creare la partita.')
+    }
+
+    return fetchGameSnapshot(gameId, playerId)
 }
 
 export async function createVsBotGame(input: GameParticipantIdentity & { difficulty: 'EASY' | 'NORMAL' | 'HARD' }): Promise<GameSnapshot> {
@@ -424,12 +361,34 @@ export async function createVsBotGame(input: GameParticipantIdentity & { difficu
         throw new Error('Impossibile recuperare la partita contro il bot.')
     }
 
-    return fetchGameSnapshot(gameId, input.playerId)
+    const playerId = String((created as { human_player_id?: unknown }).human_player_id ?? input.playerId)
+    return fetchGameSnapshot(gameId, playerId)
 }
 
 export async function joinGame(input: GameParticipantIdentity & { roomCode: string }): Promise<GameSnapshot> {
     const supabase = requireSupabase()
     const roomCode = normalizeRoomCode(input.roomCode)
+
+    const { data, error } = await supabase.rpc('join_pvp_game', {
+        p_room_code: roomCode,
+        p_player_id: input.playerId,
+    })
+
+    if (error) {
+        throw new Error(error.message)
+    }
+
+    const joined = Array.isArray(data) ? data[0] : data
+    const gameId = String((joined as { game_id?: unknown } | null)?.game_id ?? '')
+    const playerId = String((joined as { human_player_id?: unknown } | null)?.human_player_id ?? '')
+
+    if (!gameId || !playerId) {
+        throw new Error('Impossibile entrare nella partita.')
+    }
+
+    return fetchGameSnapshot(gameId, playerId)
+
+    /* Legacy direct-table join flow, retained only as commented migration context.
 
     const { data: gameData, error: gameError } = await supabase
         .from('games')
@@ -528,13 +487,14 @@ export async function joinGame(input: GameParticipantIdentity & { roomCode: stri
     await ensurePlayerConnected(input.playerId)
 
     return fetchGameSnapshot(game.id, input.playerId)
+    */
 }
 
 export async function restoreGameSession(session: {
     gameId: string
     playerId: string
 }): Promise<GameSnapshot> {
-    await ensurePlayerConnected(session.playerId)
+    await ensurePlayerConnected(session.gameId, session.playerId)
 
     const snapshot = await fetchGameSnapshot(session.gameId, session.playerId)
 
@@ -548,21 +508,19 @@ export async function restoreGameSession(session: {
 export async function submitRoundAction(input: {
     gameId: string
     roundNumber: number
-    playerId: string
     trait: TraitType
     actionType: 'USE' | 'EVOLVE'
 }) {
     const supabase = requireSupabase()
 
-    const { error } = await supabase.from('round_actions').insert({
-        game_id: input.gameId,
-        round_number: input.roundNumber,
-        player_id: input.playerId,
-        trait: input.trait,
-        action_type: input.actionType,
+    const { error } = await supabase.rpc('submit_game_round_action', {
+        p_game_id: input.gameId,
+        p_round_number: input.roundNumber,
+        p_trait: input.trait,
+        p_action_type: input.actionType,
     })
 
-    if (error && !isUniqueViolation(error)) {
+    if (error) {
         throw new Error(error.message)
     }
 
@@ -591,6 +549,11 @@ export async function maybeResolveRound(gameId: string, roundNumber: number) {
 
 export async function advanceToNextRound(gameId: string) {
     const supabase = requireSupabase()
+
+    const { error } = await supabase.rpc('advance_game_round', { p_game_id: gameId })
+    if (error) throw new Error(error.message)
+
+    /* Legacy direct-table state transition.
 
     const { data: gameData, error: gameError } = await supabase
         .from('games')
@@ -631,16 +594,13 @@ export async function advanceToNextRound(gameId: string) {
     if (!updatedGame) {
         return
     }
+    */
 }
 
 export async function acknowledgeReveal(gameId: string) {
     const supabase = requireSupabase()
 
-    const { error } = await supabase
-        .from('games')
-        .update({ status: 'ROUND_RESULT' })
-        .eq('id', gameId)
-        .eq('status', 'REVEALING')
+    const { error } = await supabase.rpc('acknowledge_game_reveal', { p_game_id: gameId })
 
     if (error) {
         throw new Error(error.message)

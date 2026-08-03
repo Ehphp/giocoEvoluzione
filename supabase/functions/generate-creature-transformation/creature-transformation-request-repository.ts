@@ -52,7 +52,7 @@ export type CreatureTransformationRequestRecord = Readonly<{
     updatedAt: string
 }>
 
-export type RequestReservationOutcome = 'CREATED' | 'EXISTING' | 'DAILY_LIMIT_REACHED' | 'DAILY_BUDGET_REACHED' | 'CREATURE_NOT_OWNED'
+export type RequestReservationOutcome = 'CREATED' | 'EXISTING' | 'DAILY_LIMIT_REACHED' | 'DAILY_BUDGET_REACHED' | 'CREATURE_NOT_OWNED' | 'IDEMPOTENCY_KEY_REUSED' | 'REAL_IMAGE_USER_LIMIT_REACHED' | 'REAL_IMAGE_USER_CONCURRENCY_REACHED' | 'REAL_IMAGE_COOLDOWN_ACTIVE' | 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' | 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED'
 export type RequestReservationResult =
     | { outcome: 'CREATED' | 'EXISTING'; record: CreatureTransformationRequestRecord }
     | { outcome: Exclude<RequestReservationOutcome, 'CREATED' | 'EXISTING'> }
@@ -71,6 +71,11 @@ export type ReserveCreatureTransformationRequestInput = TransformationCost & Rea
     conceptSeed?: string
     visualProgressTrackId?: string
     sourceVisualVersionId?: string
+    requestFingerprint?: string
+    dailyRealImageLimit?: number
+    globalDailyRealImageLimit?: number
+    globalConcurrentRealImageLimit?: number
+    realImageCooldownSeconds?: number
     dailyRequestLimit: number
     dailyBudgetUsd: number
 }>
@@ -222,6 +227,11 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_benchmark_case_id: input.benchmarkCaseId ?? null, p_generation_profile_id: input.generationProfileId ?? null,
                 p_concept_seed: input.conceptSeed ?? null,
                 p_visual_progress_track_id: input.visualProgressTrackId ?? null, p_source_visual_version_id: input.sourceVisualVersionId ?? null,
+                p_request_fingerprint: input.requestFingerprint ?? null,
+                p_daily_real_image_limit: input.dailyRealImageLimit ?? null,
+                p_global_daily_real_image_limit: input.globalDailyRealImageLimit ?? null,
+                p_global_concurrent_real_image_limit: input.globalConcurrentRealImageLimit ?? null,
+                p_real_image_cooldown_seconds: input.realImageCooldownSeconds ?? 0,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_RESERVATION_FAILED', 'Non e stato possibile riservare la richiesta.', { cause: error })
@@ -232,7 +242,7 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
             if (!result.record) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'La riserva non contiene il record richiesto.')
             return { outcome: result.outcome, record: result.record }
         }
-        if (result.outcome === 'DAILY_LIMIT_REACHED' || result.outcome === 'DAILY_BUDGET_REACHED' || result.outcome === 'CREATURE_NOT_OWNED') return { outcome: result.outcome }
+        if (result.outcome === 'DAILY_LIMIT_REACHED' || result.outcome === 'DAILY_BUDGET_REACHED' || result.outcome === 'CREATURE_NOT_OWNED' || result.outcome === 'IDEMPOTENCY_KEY_REUSED' || result.outcome === 'REAL_IMAGE_USER_LIMIT_REACHED' || result.outcome === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || result.outcome === 'REAL_IMAGE_COOLDOWN_ACTIVE' || result.outcome === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || result.outcome === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED') return { outcome: result.outcome }
         throw new CreatureTransformationRequestRepositoryError('REQUEST_RESERVATION_FAILED', 'La riserva ha restituito un esito non supportato.')
     }
 

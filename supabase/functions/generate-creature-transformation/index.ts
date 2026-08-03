@@ -150,6 +150,15 @@ Deno.serve(async (request) => {
     }
     const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const { data: authorizationProfile, error: authorizationProfileError } = await supabaseAdmin
+        .from('profiles')
+        .select('can_generate_images')
+        .eq('id', authData.user.id)
+        .maybeSingle()
+    if (authorizationProfileError) {
+        console.error('Creature transformation authorization lookup failed', { requestId, code: 'INTERNAL_ERROR' })
+        return errorResponse(requestId, 'INTERNAL_ERROR', 'Autorizzazione server non disponibile.', 500)
+    }
     const resolver = new SupabaseCreatureIdentityResolver(createRepository(supabaseAdmin, requestId))
     const storage = new SupabaseCreatureTransformationStorageAdapter(
         supabaseAdmin.storage as unknown as CreatureTransformationStorageClient,
@@ -160,6 +169,7 @@ Deno.serve(async (request) => {
     const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
     const result = await orchestrateCreatureTransformation({
         profileId: authData.user.id,
+        canGenerateImages: authorizationProfile?.can_generate_images === true,
         requestId,
         body,
         policy,

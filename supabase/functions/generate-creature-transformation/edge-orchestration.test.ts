@@ -12,7 +12,7 @@ import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository, type S
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
 
 const ownedCreature: StoredPlayerCreature = { id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING' }
-const allowedPolicy: CreatureTransformationLabPolicy = { enabled: true, allowedConceptModes: new Set(['MOCK', 'AI']), allowedImageProviderModes: new Set(['MOCK']), signedUrlTtlSeconds: 300, dailyRequestLimit: 10, dailyBudgetUsd: 0, staleRequestSeconds: 900 }
+const allowedPolicy: CreatureTransformationLabPolicy = { enabled: true, allowedConceptModes: new Set(['MOCK', 'AI']), allowedImageProviderModes: new Set(['MOCK']), signedUrlTtlSeconds: 300, dailyRequestLimit: 10, dailyBudgetUsd: 0, staleRequestSeconds: 900, realImage: { enabled: false, provider: null, allowedProfileIds: new Set(['profile-1']), apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null } }
 const VERDANT_HATCHLING_IDENTITY_FEATURES = ['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari']
 
 function createResolver(record: StoredPlayerCreature | null = ownedCreature) {

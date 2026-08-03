@@ -66,11 +66,11 @@ Apri l indirizzo di rete mostrato da Vite sui due telefoni collegati alla stessa
 - Un gene esaurito non puo essere `USE`; `EVOLVE` lo recupera e, sotto il livello massimo, ne aumenta anche il livello.
 - La scelta dell avversario non viene letta dal client finche non esiste `round_results`.
 - Ogni round vinto assegna 1 punto partita.
-- Non ci sono account, matchmaking pubblico o chat.
+- L'accesso richiede un account esistente invitato da un amministratore; non esistono signup o matchmaking pubblici.
 
 ## Limiti noti dell MVP
 
-- Le policy RLS sono intenzionalmente aperte per velocita di test tra amici.
+- Le policy RLS limitano le letture di gioco ai partecipanti autenticati; le mutazioni passano da RPC controllate dal server.
 - Non c e una rivincita completa.
 - Il placeholder creatura non include asset reali.
 - La risoluzione e idempotente per effetto della combinazione `unique round_results + update assoluti`, ma non introduce lock sofisticati.

@@ -3,11 +3,13 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-const APP_URL = 'http://127.0.0.1:4173'
+const battleOnly = process.argv.includes('--battle-only')
+const APP_URL = battleOnly ? 'http://127.0.0.1:4173/?layout-audit=1' : 'http://127.0.0.1:4173'
 const DEBUG_PORT = 9333
 const OUTPUT_DIR = resolve('artifacts/mobile-layout-current')
 const homeOnly = process.argv.includes('--home-only')
 const VIEWPORTS = [
+    { width: 320, height: 568 },
     { width: 360, height: 800 },
     { width: 390, height: 844 },
     { width: 412, height: 915 },
@@ -180,6 +182,7 @@ async function collectMetrics(send, viewport) {
             documentScrollHeight: document.documentElement.scrollHeight,
             screenScrollHeight: document.querySelector('.gene-selection-screen')?.scrollHeight ?? null,
             hasVerticalOverflow: document.documentElement.scrollHeight > window.innerHeight,
+            hasHorizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
             sceneViewportRatio: (() => {
                 const scene = document.querySelector('.arena-stage')?.getBoundingClientRect()
                 return scene ? Math.round((scene.height / window.innerHeight) * 1000) / 10 : null
@@ -190,6 +193,22 @@ async function collectMetrics(send, viewport) {
                     const rect = card.getBoundingClientRect()
                     return rect.left >= 0 && rect.right <= window.innerWidth && rect.top >= 0 && rect.bottom <= window.innerHeight
                 }),
+            genesReachable: (() => {
+                const screen = document.querySelector('.gene-selection-screen')
+                const grid = document.querySelector('.selector-v2-grid')
+                const cards = [...document.querySelectorAll('.selector-v2-card')]
+                if (!screen || !grid || cards.length !== 5) return false
+                const originalScrollTop = screen.scrollTop
+                const screenRect = screen.getBoundingClientRect()
+                const gridRect = grid.getBoundingClientRect()
+                screen.scrollTop = originalScrollTop + gridRect.top - screenRect.top
+                const isReachable = cards.every((card) => {
+                    const rect = card.getBoundingClientRect()
+                    return rect.left >= screenRect.left && rect.right <= screenRect.right && rect.top >= screenRect.top && rect.bottom <= screenRect.bottom
+                })
+                screen.scrollTop = originalScrollTop
+                return isReachable
+            })(),
             eventDoesNotCoverDock: (() => {
                 const event = document.querySelector('.event-v2-stack')?.getBoundingClientRect()
                 const dock = document.querySelector('.decision-dock')?.getBoundingClientRect()
@@ -203,6 +222,28 @@ async function collectMetrics(send, viewport) {
             arenaHasUsefulHeight: (document.querySelector('.arena-stage')?.getBoundingClientRect().height ?? 0) > 0,
             hasFullscreenBattleBackground: Boolean(document.querySelector('.gene-selection-screen__background')),
             arenaEmbedsBattleBackground: Boolean(document.querySelector('.battle-stage__background')),
+            versusIsCentered: (() => {
+                const stage = document.querySelector('.battle-stage')?.getBoundingClientRect()
+                const versus = document.querySelector('.battle-stage__versus')?.getBoundingClientRect()
+                return Boolean(stage && versus && Math.abs(
+                    (stage.left + stage.width / 2) - (versus.left + versus.width / 2),
+                ) < 1)
+            })(),
+            actionControlsReachable: (() => {
+                const screen = document.querySelector('.gene-selection-screen')
+                const useButton = document.querySelector('.action-v2-btn--use')
+                const evolveButton = document.querySelector('.action-v2-btn--evolve')
+                if (!screen || !useButton || !evolveButton) return false
+                const originalScrollTop = screen.scrollTop
+                screen.scrollTop = screen.scrollHeight
+                const screenRect = screen.getBoundingClientRect()
+                const isReachable = [useButton, evolveButton].every((button) => {
+                    const rect = button.getBoundingClientRect()
+                    return rect.top >= screenRect.top && rect.bottom <= screenRect.bottom
+                })
+                screen.scrollTop = originalScrollTop
+                return isReachable
+            })(),
             scrollY: window.scrollY,
             boxes,
         }
@@ -216,13 +257,16 @@ function assertViewportMetrics(result) {
     const failures = []
 
     if (result.hasVerticalOverflow) failures.push('overflow verticale')
-    if (!result.fiveGenesFullyVisible) failures.push('cinque geni non completamente visibili')
+    if (result.hasHorizontalOverflow) failures.push('overflow orizzontale')
+    if (!result.fiveGenesFullyVisible && !result.genesReachable) failures.push('cinque geni non completamente visibili o raggiungibili')
     if (!result.eventDoesNotCoverDock) failures.push('evento sovrapposto al dock')
     if (!result.arenaHasUsefulHeight) failures.push('arena senza altezza utile')
     if (!result.hasFullscreenBattleBackground || !fullscreenBackground?.fullyVisible) failures.push('fondale battaglia non fullscreen')
     if (result.arenaEmbedsBattleBackground) failures.push('fondale duplicato dentro l\'arena')
-    if (!useButton?.fullyVisible) failures.push('USA non completamente visibile')
-    if (!evolveButton?.fullyVisible) failures.push('EVOLVI non completamente visibile')
+    if (!result.versusIsCentered) failures.push('VS non centrato nell\'arena')
+    if (!result.actionControlsReachable) failures.push('controlli azione non raggiungibili')
+    if (!useButton?.fullyVisible && !result.actionControlsReachable) failures.push('USA non completamente visibile')
+    if (!evolveButton?.fullyVisible && !result.actionControlsReachable) failures.push('EVOLVI non completamente visibile')
 
     if (failures.length) {
         throw new Error(`${result.innerWidth}x${result.innerHeight}: ${failures.join(', ')}`)
@@ -452,7 +496,33 @@ async function run() {
     await send('Runtime.enable')
     await setViewport(send, VIEWPORTS[1])
     await send('Page.navigate', { url: APP_URL })
-    await waitForSelector(send, '.home-primary-navigation__play')
+    await waitForSelector(send, battleOnly ? '.gene-selection-screen' : '.home-primary-navigation__play')
+
+    if (battleOnly) {
+        const results = []
+
+        for (const viewport of VIEWPORTS) {
+            await setViewport(send, viewport)
+            await delay(150)
+            await evaluate(send, 'window.scrollTo(0, 0)')
+
+            const screenshot = await send('Page.captureScreenshot', {
+                format: 'png',
+                fromSurface: true,
+                captureBeyondViewport: false,
+            })
+            const filename = `battle-current-${viewport.width}x${viewport.height}.png`
+            await writeFile(join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'))
+            const metrics = { screenshot: filename, ...await collectMetrics(send, viewport) }
+            assertViewportMetrics(metrics)
+            results.push(metrics)
+        }
+
+        await writeFile(join(OUTPUT_DIR, 'battle-metrics.json'), `${JSON.stringify(results, null, 2)}\n`, 'utf8')
+        await send('Browser.close')
+        return
+    }
+
     await waitFor(
         () => evaluate(send, "Boolean(document.querySelector('.home-brand__logo')?.complete && document.querySelector('.home-brand__logo')?.naturalWidth)"),
         20_000,

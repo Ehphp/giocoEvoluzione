@@ -3,6 +3,8 @@ import type { TraitType } from '../../game/types'
 export type CreatureVisual = {
     src: string
     alt: string
+    /** Direction the original asset faces before battle presentation is applied. */
+    nativeFacing?: 'left' | 'right'
     /** Multiplier applied to the shared battle-stage creature size. */
     scale?: number
     /** Percentage shift relative to the rendered creature asset. */
@@ -39,6 +41,7 @@ export const GAME_SELECTION_ASSETS = {
 export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.playerCreature,
     alt: 'Creatura del giocatore verde',
+    nativeFacing: 'right',
     scale: .82,
     offsetX: -10,
     // The supplied PNG has transparent space under the feet.
@@ -48,6 +51,7 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
 export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.opponentCreature,
     alt: 'Creatura avversaria viola',
+    nativeFacing: 'right',
     scale: .72,
     offsetX: 6,
     // The supplied PNG has transparent space under the feet.

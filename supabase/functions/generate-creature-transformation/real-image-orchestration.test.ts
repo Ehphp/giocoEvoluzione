@@ -6,7 +6,7 @@ import { CreatureImageProviderError, type CreatureImageProvider } from '../../..
 import { NoopImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { parseCreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
-import { orchestrateGenerateImage, orchestrateGetTransformationRequestStatus } from './edge-orchestration.ts'
+import { getGenerateConceptFailureStatus, orchestrateGenerateImage, orchestrateGetTransformationRequestStatus } from './edge-orchestration.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { SupabaseCreatureTransformationStorageAdapter, type CreatureTransformationStorageClient } from './supabase-creature-transformation-storage.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
@@ -131,8 +131,9 @@ describe('REAL image asynchronous orchestration', () => {
     })
 
     it('enforces backend disablement, allowlist, cost configuration and owner-only status access', async () => {
+        await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, allowedProfileIds: new Set() } } }))).resolves.toMatchObject({ code: 'IMAGE_GENERATION_NOT_ALLOWED' })
+        expect(getGenerateConceptFailureStatus('IMAGE_GENERATION_NOT_ALLOWED')).toBe(403)
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, enabled: false } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_DISABLED' })
-        await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, allowedProfileIds: new Set() } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' })
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, estimatedCostUsd: null } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' })
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, maxEstimatedCostUsd: 0.01 } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' })
 

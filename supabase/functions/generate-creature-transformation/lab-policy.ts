@@ -11,6 +11,10 @@ const DEFAULT_SIGNED_URL_TTL_SECONDS = 300
 const DEFAULT_DAILY_REQUEST_LIMIT = 10
 const DEFAULT_DAILY_BUDGET_USD = 0
 const DEFAULT_STALE_REQUEST_SECONDS = 900
+const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
+const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
+const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
+const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
 const DEFAULT_REAL_IMAGE_TIMEOUT_MS = 120000
 const REAL_IMAGE_QUALITIES = new Set(['low', 'medium', 'high'])
 
@@ -41,6 +45,10 @@ export type CreatureTransformationLabPolicy = Readonly<{
     dailyRequestLimit: number
     dailyBudgetUsd: number
     staleRequestSeconds: number
+    dailyRealImageLimit: number
+    globalDailyRealImageLimit: number
+    globalConcurrentRealImageLimit: number
+    realImageCooldownSeconds: number
     realImage: RealImagePolicy
     benchmark: BenchmarkPolicy
     visualProgression: Readonly<{
@@ -141,6 +149,10 @@ export function readCreatureTransformationLabPolicy(readEnvironment: (name: stri
     const dailyRequestLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'), DEFAULT_DAILY_REQUEST_LIMIT, 1, 1000)
     const dailyBudgetUsd = readBoundedUsd(readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'), DEFAULT_DAILY_BUDGET_USD, 10000)
     const staleRequestSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS'), DEFAULT_STALE_REQUEST_SECONDS, 60, 86400)
+    const dailyRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_DAILY_REAL_IMAGE_LIMIT, 1, 100)
+    const globalDailyRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT, 1, 1000)
+    const globalConcurrentRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100)
+    const realImageCooldownSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400)
 
-    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, realImage: readRealImagePolicy(readEnvironment), benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
+    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
 }

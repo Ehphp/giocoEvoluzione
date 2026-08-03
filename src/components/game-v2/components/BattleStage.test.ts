@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { getBattleBackgroundForEvent } from '../gameSelectionAssets'
 import { BattleStage } from './BattleStage'
+import { shouldMirrorCreature } from './creatureOrientation'
 
 describe('BattleStage', () => {
     let container: HTMLDivElement
@@ -39,6 +40,26 @@ describe('BattleStage', () => {
         const player = container.querySelector<HTMLElement>('.battle-stage__creature--player')!
         expect(player.style.getPropertyValue('--battle-creature-scale')).toBe('1.1')
         expect(player.style.getPropertyValue('--battle-creature-offset-y')).toBe('12%')
+    })
+
+    it('faces local and remote creatures toward each other without mirroring their wrappers', () => {
+        const player = container.querySelector<HTMLElement>('.battle-stage__creature--player')!
+        const opponent = container.querySelector<HTMLElement>('.battle-stage__creature--opponent')!
+
+        expect(player.dataset.facing).toBe('right')
+        expect(opponent.dataset.facing).toBe('left')
+        expect(player.classList.contains('is-mirrored')).toBe(false)
+        expect(opponent.classList.contains('is-mirrored')).toBe(false)
+        expect(opponent.querySelector('img')?.classList.contains('is-mirrored')).toBe(true)
+    })
+})
+
+describe('shouldMirrorCreature', () => {
+    it('uses one native-facing rule for both sides', () => {
+        expect(shouldMirrorCreature('right', 'right')).toBe(false)
+        expect(shouldMirrorCreature('right', 'left')).toBe(true)
+        expect(shouldMirrorCreature('left', 'left')).toBe(false)
+        expect(shouldMirrorCreature('left', 'right')).toBe(true)
     })
 })
 

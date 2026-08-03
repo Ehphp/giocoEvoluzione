@@ -105,7 +105,8 @@ function App() {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine)
   const [officialVisual, setOfficialVisual] = useState<OfficialVisual | null>(null)
   const [visualProgress, setVisualProgress] = useState<VisualProgressSummary | null>(null)
-  const [gameVisuals, setGameVisuals] = useState<{ player: OfficialVisual; opponent: OfficialVisual | null } | null>(null)
+  const [gameVisuals, setGameVisuals] = useState<{ gameId: string; player: OfficialVisual; opponent: OfficialVisual | null } | null>(null)
+  const snapshotRefreshIdRef = useRef(0)
 
   useEffect(() => {
     if (!hasSupabaseConfig || authStatus !== 'ready' || !profileId) {
@@ -125,9 +126,15 @@ function App() {
       return
     }
 
+    let active = true
+
     void (async () => {
       try {
         const restored = await restoreGameSession(session)
+
+        if (!active) {
+          return
+        }
 
         if (!isGameSnapshotPlayable(restored) || restored.me?.profile_id !== profileId) {
           clearStoredSession()
@@ -140,12 +147,23 @@ function App() {
         setSnapshot(restored)
         setStatusMessage('Sessione ripristinata.')
       } catch (error) {
+        if (!active) {
+          return
+        }
+
         clearStoredSession()
         setErrorMessage(error instanceof Error ? error.message : 'Impossibile ripristinare la sessione.')
       } finally {
-        setIsLoading(false)
+        if (active) {
+          setIsLoading(false)
+        }
       }
     })()
+
+    return () => {
+      active = false
+      snapshotRefreshIdRef.current += 1
+    }
   }, [authStatus, profileId])
 
   useEffect(() => {
@@ -220,7 +238,7 @@ function App() {
       try {
         const visuals = await getGameCreatureVisuals({ operation: 'GET_GAME_VISUALS', gameId: snapshot.game.id })
         if (!active) return
-        setGameVisuals(visuals)
+        setGameVisuals({ gameId: snapshot.game.id, ...visuals })
         const expiry = [visuals.player.expiresAt, visuals.opponent?.expiresAt].filter((value): value is string => Boolean(value)).map((value) => Date.parse(value))
         refreshTimer = window.setTimeout(() => { void load() }, Math.max(15_000, Math.min(...expiry) - Date.now() - 30_000))
       } catch {
@@ -327,15 +345,25 @@ function App() {
       return
     }
 
+    let active = true
     let unsubscribe: (() => void) | undefined
 
-    void (async () => {
-      unsubscribe = await subscribeToGame(gameId, () => {
-        void refreshSnapshot(gameId, playerId)
-      })
-    })()
+    void subscribeToGame(gameId, () => {
+      void refreshSnapshot(gameId, playerId)
+    }).then((nextUnsubscribe) => {
+      if (active) {
+        unsubscribe = nextUnsubscribe
+      } else {
+        nextUnsubscribe()
+      }
+    }).catch(() => {
+      if (active) {
+        setErrorMessage('Impossibile mantenere la sincronizzazione realtime. Riprovo al prossimo aggiornamento.')
+      }
+    })
 
     return () => {
+      active = false
       unsubscribe?.()
     }
   }, [snapshot?.game.id, snapshot?.me?.id])
@@ -439,8 +467,12 @@ function App() {
   }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, roomCode, statusMessage])
 
   async function refreshSnapshot(gameId: string, playerId: string) {
+    const refreshId = ++snapshotRefreshIdRef.current
     const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
-    setSnapshot(nextSnapshot)
+
+    if (refreshId === snapshotRefreshIdRef.current) {
+      setSnapshot((current) => current?.game.id === gameId && current.me?.id === playerId ? nextSnapshot : current)
+    }
 
     return nextSnapshot
   }
@@ -494,7 +526,8 @@ function App() {
       const created = mode === 'VS_BOT'
         ? await createVsBotGame({ ...participant, difficulty })
         : await createGame(participant)
-      saveStoredSession({ playerId, gameId: created.game.id, roomCode: created.game.room_code, profileId: auth.profile.id })
+      if (!created.me) throw new Error('Impossibile identificare il partecipante della partita appena creata.')
+      saveStoredSession({ playerId: created.me.id, gameId: created.game.id, roomCode: created.game.room_code, profileId: auth.profile.id })
       setSnapshot(created)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : mode === 'VS_BOT' ? 'Impossibile creare la partita contro il bot.' : 'Impossibile creare la partita.')
@@ -554,7 +587,8 @@ function App() {
           level: auth.creature.level,
         },
       })
-      saveStoredSession({ playerId, gameId: joined.game.id, roomCode: joined.game.room_code, profileId: auth.profile.id })
+      if (!joined.me) throw new Error('Impossibile identificare il partecipante della partita.')
+      saveStoredSession({ playerId: joined.me.id, gameId: joined.game.id, roomCode: joined.game.room_code, profileId: auth.profile.id })
       setSnapshot(joined)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Impossibile entrare nella partita.')
@@ -577,7 +611,6 @@ function App() {
       await submitRoundAction({
         gameId: snapshot.game.id,
         roundNumber: snapshot.game.current_round,
-        playerId: snapshot.me.id,
         trait,
         actionType,
       })
@@ -618,6 +651,7 @@ function App() {
   }
 
   function handleLeaveSession() {
+    snapshotRefreshIdRef.current += 1
     clearStoredSession()
     setSnapshot(null)
     setRoomCode('')
@@ -698,11 +732,10 @@ function App() {
           </div>
         </section>
       ) : !snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature) ? (
-        <AuthScreen
-          initialError={auth.error}
-          onSignIn={auth.signIn}
-          onSignUp={auth.signUp}
-        />
+          <AuthScreen
+            initialError={auth.error}
+            onSignIn={auth.signIn}
+          />
       ) : (
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature ? (
@@ -792,8 +825,8 @@ function App() {
               onContinue={() => void handleAdvanceRound()}
               isBusy={isBusy}
               errorMessage={errorMessage}
-              playerVisual={gameVisuals ? { src: gameVisuals.player.signedUrl, alt: 'Creatura del giocatore', scale: .82, offsetX: -10, offsetY: 25 } : undefined}
-              opponentVisual={gameVisuals?.opponent ? { src: gameVisuals.opponent.signedUrl, alt: 'Creatura avversaria', scale: .72, offsetX: 6, offsetY: 25 } : undefined}
+              playerVisual={gameVisuals?.gameId === snapshot.game.id ? { src: gameVisuals.player.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .82, offsetX: -10, offsetY: 25 } : undefined}
+              opponentVisual={gameVisuals?.gameId === snapshot.game.id && gameVisuals.opponent ? { src: gameVisuals.opponent.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .72, offsetX: 6, offsetY: 25 } : undefined}
             />
           ) : resultViewModel ? (
             <MatchResultScreen

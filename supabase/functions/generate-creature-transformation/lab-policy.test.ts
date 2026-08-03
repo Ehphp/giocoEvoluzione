@@ -13,6 +13,10 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
+        expect(policy.dailyRealImageLimit).toBe(3)
+        expect(policy.globalDailyRealImageLimit).toBe(10)
+        expect(policy.globalConcurrentRealImageLimit).toBe(2)
+        expect(policy.realImageCooldownSeconds).toBe(60)
         expect(policy.realImage).toMatchObject({ enabled: false, provider: null, apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null })
     })
 
@@ -25,6 +29,10 @@ describe('creature transformation lab policy', () => {
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '12',
             CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '3.25',
             CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS: '240',
+            CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT: '3',
+            CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT: '10',
+            CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT: '2',
+            CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS: '60',
             CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED: 'true',
             CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER: 'OPENAI',
             CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1, profile-2',
@@ -46,6 +54,10 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(12)
         expect(policy.dailyBudgetUsd).toBe(3.25)
         expect(policy.staleRequestSeconds).toBe(240)
+        expect(policy.dailyRealImageLimit).toBe(3)
+        expect(policy.globalDailyRealImageLimit).toBe(10)
+        expect(policy.globalConcurrentRealImageLimit).toBe(2)
+        expect(policy.realImageCooldownSeconds).toBe(60)
         expect(policy.realImage).toMatchObject({ enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1', 'profile-2']), model: 'configured-image-model', quality: 'high', timeoutMs: 90000, estimatedCostUsd: 0.12, maxEstimatedCostUsd: 0.25 })
         expect(policy.benchmark.allowedProfileIds).toEqual(new Set(['profile-1']))
         expect(policy.benchmark.reviewerProfileIds).toEqual(new Set(['profile-1']))
