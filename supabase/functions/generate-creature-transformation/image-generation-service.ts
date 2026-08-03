@@ -146,7 +146,8 @@ export async function generateImageForAuthenticatedProfile(
         })
     } catch (error) {
         if (error instanceof CreatureImageProviderError) {
-            throw new ImageGenerationServiceError(error.code, 'Il provider immagini non e disponibile.', undefined, { cause: error })
+            const providerDiagnostic = error.providerErrorCode ? ` (codice provider: ${error.providerErrorCode})` : ''
+            throw new ImageGenerationServiceError(error.code, `Il provider immagini non e disponibile.${providerDiagnostic}`, undefined, { cause: error })
         }
         throw new ImageGenerationServiceError('MOCK_PROVIDER_FAILED', 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
     }

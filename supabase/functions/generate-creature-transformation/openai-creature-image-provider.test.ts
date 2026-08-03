@@ -54,12 +54,15 @@ describe('OpenAiCreatureImageProvider', () => {
 
         for (const [status, payload, code] of [
             [429, { error: { code: 'rate_limit' } }, 'OPENAI_IMAGE_RATE_LIMITED'],
-            [400, { error: { code: 'invalid_request_error' } }, 'OPENAI_IMAGE_BAD_REQUEST'],
+            [400, { error: { code: 'invalid_request_error', message: 'not retained' } }, 'OPENAI_IMAGE_BAD_REQUEST'],
             [400, { error: { code: 'moderation_blocked' } }, 'OPENAI_IMAGE_MODERATION_BLOCKED'],
             [500, { error: { code: 'server_error' } }, 'OPENAI_IMAGE_PROVIDER_ERROR'],
         ] as const) {
             const fetchImplementation = vi.fn(async () => new Response(JSON.stringify(payload), { status }))
-            await expect(provider(fetchImplementation).transformCreature(input())).rejects.toMatchObject({ code })
+            await expect(provider(fetchImplementation).transformCreature(input())).rejects.toMatchObject({
+                code,
+                ...(status === 400 && code === 'OPENAI_IMAGE_BAD_REQUEST' ? { providerErrorCode: 'invalid_request_error' } : {}),
+            })
             expect(fetchImplementation).toHaveBeenCalledTimes(1)
         }
 
