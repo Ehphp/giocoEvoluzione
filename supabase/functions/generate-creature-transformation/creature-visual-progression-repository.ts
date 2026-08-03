@@ -12,6 +12,7 @@ export interface CreatureVisualProgressionRepositoryClient {
 
 export type StoredVisualVersion = CreatureVisualVersion & Readonly<{ assetPath: string; profileId: string }>
 export type GameVisualParticipant = Readonly<{ profileId: string; creatureId: string }>
+export type StoredExperimentOnlyResult = Readonly<{ requestId: string; warnings: string[] }>
 
 export class CreatureVisualProgressionRepositoryError extends Error {
     readonly code: string
@@ -35,6 +36,7 @@ function rpcRecord(value: unknown): Record<string, unknown> {
 function string(value: unknown): string | null { return typeof value === 'string' && value.trim() ? value : null }
 function nullableString(value: unknown): string | null { return value === null || value === undefined ? null : string(value) }
 function number(value: unknown): number { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0 }
+function strings(value: unknown): string[] { return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [] }
 
 function safeVisualErrorCode(error: unknown, fallback: string): string {
     const message = error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string'
@@ -48,7 +50,7 @@ export function mapProgressTrack(value: unknown): CreatureVisualProgressTrack {
     const row = record(value)
     if (!row || !string(row.id) || !string(row.creature_id) || !string(row.visual_trait_id)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'La track visuale restituita non e valida.')
     const status = string(row.status)
-    if (!status || !['ACTIVE', 'READY', 'GENERATING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(status)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Lo stato della track visuale non e valido.')
+    if (!status || !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(status)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Lo stato della track visuale non e valido.')
     return {
         id: string(row.id)!, creatureId: string(row.creature_id)!, visualTraitId: string(row.visual_trait_id)! as VisualTraitId,
         status: status as CreatureVisualProgressTrack['status'], progress: number(row.progress), target: number(row.target),
@@ -84,6 +86,15 @@ export class SupabaseCreatureVisualProgressionRepository {
         const { data, error } = await this.client.from('creature_visual_progress_tracks').select('*').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('started_at', { ascending: false }).limit(1).maybeSingle()
         if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare la track visuale.', { cause: error })
         return data ? mapProgressTrack(data) : null
+    }
+
+    async getLatestExperiment(input: { profileId: string; trackId: string }): Promise<StoredExperimentOnlyResult | null> {
+        const { data, error } = await this.client.from('creature_transformation_requests').select('id, asset_readiness, validation_warnings').eq('profile_id', input.profileId).eq('visual_progress_track_id', input.trackId).eq('status', 'SUCCEEDED').eq('asset_readiness', 'EXPERIMENT_ONLY').order('completed_at', { ascending: false }).limit(1).maybeSingle()
+        if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare l esito sperimentale.', { cause: error })
+        const row = record(data)
+        return row && string(row.id) && row.asset_readiness === 'EXPERIMENT_ONLY'
+            ? { requestId: string(row.id)!, warnings: strings(row.validation_warnings) }
+            : null
     }
 
     async getCurrentVersion(input: { profileId: string; creatureId: string }): Promise<StoredVisualVersion | null> {
@@ -128,6 +139,12 @@ export class SupabaseCreatureVisualProgressionRepository {
 
     async completeGeneration(input: { profileId: string; trackId: string; requestId: string; finalAsset: boolean }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('complete_creature_visual_generation', { p_profile_id: input.profileId, p_track_id: input.trackId, p_request_id: input.requestId, p_final_asset: input.finalAsset }))
+    }
+
+    async markBackgroundRemovalPending(input: { profileId: string; trackId: string; requestId: string }): Promise<CreatureVisualProgressTrack> {
+        return mapProgressTrack(await this.rpc('mark_creature_visual_background_removal_pending', {
+            p_profile_id: input.profileId, p_track_id: input.trackId, p_request_id: input.requestId,
+        }))
     }
 
     async adopt(input: { profileId: string; creatureId: string; trackId: string; requestId: string; expectedCurrentVisualVersionId: string }): Promise<StoredVisualVersion> {

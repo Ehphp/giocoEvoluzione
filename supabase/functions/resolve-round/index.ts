@@ -184,6 +184,12 @@ Deno.serve(async (request) => {
             return json({ status: 'pending', reason: 'missing_slots' })
         }
 
+        const visualParticipants = [player1, player2].map((player) => ({
+            id: String(player.id),
+            profileId: typeof player.profile_id === 'string' ? player.profile_id : null,
+            creatureId: typeof player.creature_id === 'string' ? player.creature_id : null,
+        }))
+
         const { data: existingResultData } = await supabaseAdmin
             .from('round_results')
             .select('*')
@@ -220,12 +226,6 @@ Deno.serve(async (request) => {
         if (!roundEventId) {
             return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
         }
-
-        const visualParticipants = [player1, player2].map((player) => ({
-            id: String(player.id),
-            profileId: typeof player.profile_id === 'string' ? player.profile_id : null,
-            creatureId: typeof player.creature_id === 'string' ? player.creature_id : null,
-        }))
 
         if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
             return json({ error: 'This round is no longer available.' }, 400)

@@ -15,6 +15,7 @@ export type ImageValidationProblemCode =
     | 'PNG_DIMENSIONS_INVALID'
     | 'PNG_COLOR_TYPE_UNSUPPORTED'
     | 'PNG_ALPHA_REQUIRED'
+    | 'PNG_ALPHA_COVERAGE_INVALID'
     | 'RESULT_IMAGE_UNCHANGED'
     | 'SHA256_UNAVAILABLE'
 
@@ -33,6 +34,8 @@ export type ValidatedPngMetadata = {
     height: number
     colorType: number
     hasAlpha: boolean
+    transparentPixelRatio?: number
+    visiblePixelRatio?: number
     sha256: string
     bytes: number
 }
@@ -50,6 +53,8 @@ export type ImageValidationInput = Readonly<{
     minBytes?: number
     maxBytes?: number
     profile?: ImageValidationProfile
+    /** Used only for browser-post-processed candidates, never for raw provider output. */
+    requireAlphaCoverage?: boolean
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -69,6 +74,51 @@ function isCompatibleColorType(colorType: number, bitDepth: number): boolean {
     if (colorType === 2 || colorType === 4 || colorType === 6) return [8, 16].includes(bitDepth)
     if (colorType === 3) return [1, 2, 4, 8].includes(bitDepth)
     return false
+}
+
+async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number; height: number; colorType: number; bitDepth: number }) {
+    if ((input.colorType !== 4 && input.colorType !== 6) || input.bitDepth !== 8 || typeof DecompressionStream === 'undefined') {
+        throw new Error('Il PNG non contiene un canale alpha RGBA/GA a 8 bit decodificabile.')
+    }
+    const bytesPerPixel = input.colorType === 6 ? 4 : 2
+    const stride = input.width * bytesPerPixel
+    const compressedCopy = new Uint8Array(input.compressedIdat.length)
+    compressedCopy.set(input.compressedIdat)
+    const decoded = new Uint8Array(await new Response(new Blob([compressedCopy.buffer]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())
+    if (decoded.length !== input.height * (stride + 1)) throw new Error('La dimensione dei pixel PNG decompressi non e valida.')
+
+    let offset = 0
+    let previous = new Uint8Array(stride)
+    let transparent = 0
+    let visible = 0
+    const total = input.width * input.height
+    for (let row = 0; row < input.height; row += 1) {
+        const filter = decoded[offset]
+        offset += 1
+        const scanline = decoded.slice(offset, offset + stride)
+        offset += stride
+        for (let index = 0; index < stride; index += 1) {
+            const left = index >= bytesPerPixel ? scanline[index - bytesPerPixel] : 0
+            const above = previous[index]
+            const upperLeft = index >= bytesPerPixel ? previous[index - bytesPerPixel] : 0
+            if (filter === 1) scanline[index] = (scanline[index] + left) & 0xff
+            else if (filter === 2) scanline[index] = (scanline[index] + above) & 0xff
+            else if (filter === 3) scanline[index] = (scanline[index] + Math.floor((left + above) / 2)) & 0xff
+            else if (filter === 4) {
+                const p = left + above - upperLeft
+                const pa = Math.abs(p - left); const pb = Math.abs(p - above); const pc = Math.abs(p - upperLeft)
+                scanline[index] = (scanline[index] + (pa <= pb && pa <= pc ? left : pb <= pc ? above : upperLeft)) & 0xff
+            } else if (filter !== 0) throw new Error('Il filtro PNG non e supportato.')
+        }
+        const alphaOffset = input.colorType === 6 ? 3 : 1
+        for (let pixel = 0; pixel < input.width; pixel += 1) {
+            const alpha = scanline[pixel * bytesPerPixel + alphaOffset]
+            if (alpha === 0) transparent += 1
+            if (alpha >= 128) visible += 1
+        }
+        previous = scanline
+    }
+    return { transparentPixelRatio: transparent / total, visiblePixelRatio: visible / total }
 }
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
@@ -101,6 +151,7 @@ export class ImageValidator {
         let sawIdat = false
         let sawIend = false
         let sawTransparency = false
+        const idatParts: Uint8Array[] = []
         let structureInvalid = false
 
         while (offset < input.bytes.length) {
@@ -135,6 +186,7 @@ export class ImageValidator {
                 }
             } else if (chunkType === 'IDAT') {
                 sawIdat = sawIdat || length > 0
+                if (length) idatParts.push(input.bytes.slice(dataStart, dataEnd))
             } else if (chunkType === 'tRNS') {
                 sawTransparency = true
             } else if (chunkType === 'IEND') {
@@ -157,6 +209,23 @@ export class ImageValidator {
         if (ihdr && !hasAlpha && profile === 'FINAL_CREATURE_ASSET') problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
         if (problems.length) return { valid: false, problems }
 
+        let coverage: { transparentPixelRatio: number; visiblePixelRatio: number } | null = null
+        if (input.requireAlphaCoverage) {
+            try {
+                const length = idatParts.reduce((total, part) => total + part.length, 0)
+                const compressed = new Uint8Array(length)
+                let cursor = 0
+                for (const part of idatParts) { compressed.set(part, cursor); cursor += part.length }
+                coverage = await alphaCoverage({ compressedIdat: compressed, width: ihdr!.width, height: ihdr!.height, colorType: ihdr!.colorType, bitDepth: ihdr!.bitDepth })
+                if (coverage.transparentPixelRatio < 0.005 || coverage.visiblePixelRatio < 0.01 || coverage.visiblePixelRatio > 0.98) {
+                    problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Il PNG deve contenere sia un soggetto visibile sia una porzione significativa di sfondo trasparente.'))
+                }
+            } catch {
+                problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
+            }
+        }
+        if (problems.length) return { valid: false, problems }
+
         let sha256: string
         try {
             sha256 = await sha256Hex(input.bytes)
@@ -176,6 +245,7 @@ export class ImageValidator {
                 height: ihdr!.height,
                 colorType: ihdr!.colorType,
                 hasAlpha,
+                ...(coverage ?? {}),
                 sha256,
                 bytes: input.bytes.length,
             },

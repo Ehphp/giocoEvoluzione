@@ -27,6 +27,7 @@
     "seed:creature-transformation-source": "node --experimental-strip-types tools/seed-creature-transformation-source.ts"
   },
   "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
     "@supabase/supabase-js": "^2.110.7",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

@@ -55,6 +55,7 @@ export type GenerateImageServiceInput = Readonly<{
     storage: SupabaseCreatureTransformationStorageAdapter
     provider: CreatureImageProvider
     postProcessor: ImagePostProcessor
+    storageDestination?: 'RESULT' | 'RAW_EXPERIMENT'
     validator?: ImageValidator
     promptTemplateVersion?: CreaturePromptTemplateVersion
 }>
@@ -218,11 +219,17 @@ export async function generateImageForAuthenticatedProfile(
         ...(finalValidation.valid ? finalValidation.warnings : ['RAW_RESULT_ALPHA_MISSING']),
     ])
 
-    const stored = await input.storage.saveResult({
-        profileId: input.profileId,
-        idempotencyKey: input.request.idempotencyKey,
-        image: processed.image,
-    })
+    const stored = input.storageDestination === 'RAW_EXPERIMENT'
+        ? await input.storage.saveRawResult({
+            profileId: input.profileId,
+            idempotencyKey: input.request.idempotencyKey,
+            image: processed.image,
+        })
+        : await input.storage.saveResult({
+            profileId: input.profileId,
+            idempotencyKey: input.request.idempotencyKey,
+            image: processed.image,
+        })
 
     return {
         success: true,

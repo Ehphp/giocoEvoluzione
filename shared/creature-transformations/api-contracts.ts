@@ -129,6 +129,7 @@ export type CreatureVisualProgressResponse = Readonly<{
     success: true
     requestId: string
     track: CreatureVisualProgressTrack | null
+    lastExperiment: { requestId: string; warnings: string[] } | null
     currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
     history: readonly PreviousCreatureTransformationSummary[]
 }>
@@ -176,6 +177,15 @@ export type TransformationRequestStatusResponse = {
         assetReadiness: CreatureTransformationAssetReadiness
         warnings: string[]
     }
+    /** Private raw provider output, exposed only to the authenticated request owner. */
+    rawResult?: {
+        signedUrl: string
+        expiresAt: string
+        width: number
+        height: number
+        mimeType: 'image/png'
+        sha256: string
+    }
     error?: {
         code: string
         message: string
@@ -190,6 +200,20 @@ export type TransformationRequestStatusResponse = {
     }
 }
 
+export type SubmitBackgroundRemovalCandidateResponse = Readonly<{
+    success: true
+    requestId: string
+    requestPersistence: TransformationRequestPersistence
+    candidate: {
+        assetReadiness: 'FINAL_ASSET'
+        width: number
+        height: number
+        mimeType: 'image/png'
+        sha256: string
+        warnings: string[]
+    }
+}>
+
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitExperimentReviewResponse | SubmitBackgroundRemovalCandidateResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

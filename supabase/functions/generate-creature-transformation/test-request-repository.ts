@@ -16,7 +16,8 @@ function recordFor(input: ReserveCreatureTransformationRequestInput, id: string,
         id, profileId: input.profileId, creatureId: input.creatureId, idempotencyKey: input.idempotencyKey, operation: input.operation, status: 'RESERVED',
         conceptMode: input.conceptMode ?? null, imageProviderMode: input.imageProviderMode ?? null, provider: null, model: null, providerRequestId: null,
         visualTraitId: input.visualTraitId ?? null, intensity: input.intensity ?? null, promptTemplateVersion: null, conceptSchemaVersion: null,
-        sourceSha256: null, resultSha256: null, resultPath: null, resultMimeType: null, resultWidth: null, resultHeight: null, generationLatencyMs: null,
+        sourceSha256: null, resultSha256: null, resultPath: null, resultMimeType: null, resultWidth: null, resultHeight: null,
+        rawResultSha256: null, rawResultPath: null, rawResultMimeType: null, rawResultWidth: null, rawResultHeight: null, generationLatencyMs: null,
         estimatedCostUsd: input.estimatedCostUsd ?? null, actualCostUsd: null, assetReadiness: null, validationWarnings: [], attemptCount: 0, errorCode: null, errorMessage: null,
         createdAt: now, startedAt: null, completedAt: null, updatedAt: now,
     }
@@ -76,6 +77,19 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
             const record = records.get([...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)?.[0] ?? '')
             if (!record || (record.status !== 'RESERVED' && record.status !== 'RUNNING')) throw new Error('state conflict')
             const updated = applyTransition(record, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage }, now())
+            records.set(key(updated.profileId, updated.idempotencyKey), updated)
+            return updated
+        },
+        async finalizeBackgroundRemovalCandidate(input) {
+            const record = records.get([...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)?.[0] ?? '')
+            if (!record || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY') throw new Error('state conflict')
+            const updated: CreatureTransformationRequestRecord = {
+                ...record,
+                rawResultSha256: record.resultSha256, rawResultPath: record.resultPath, rawResultMimeType: record.resultMimeType,
+                rawResultWidth: record.resultWidth, rawResultHeight: record.resultHeight,
+                resultSha256: input.candidateSha256, resultPath: input.candidatePath, resultMimeType: input.candidateMimeType,
+                resultWidth: input.candidateWidth, resultHeight: input.candidateHeight, assetReadiness: 'FINAL_ASSET', validationWarnings: input.validationWarnings,
+            }
             records.set(key(updated.profileId, updated.idempotencyKey), updated)
             return updated
         },

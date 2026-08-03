@@ -11,6 +11,7 @@ import type {
     GameCreatureVisualsResponse,
     AdoptCreatureTransformationResponse,
     SubmitExperimentReviewResponse,
+    SubmitBackgroundRemovalCandidateResponse,
     TransformationRequestStatusResponse,
 } from '../../../shared/creature-transformations/api-contracts.ts'
 import { CREATURE_TRANSFORMATION_BENCHMARK_PLAN, getCreatureTransformationBenchmarkCase, type CreatureTransformationBenchmarkCase } from '../../../shared/creature-transformations/benchmark-plan.ts'
@@ -21,6 +22,7 @@ import type { CreatureImageProvider } from '../../../shared/creature-transformat
 import { getEnabledCreatureImageGenerationProfile, type CreatureImageGenerationProfile } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import type { ImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
+import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { MockCreatureConceptGenerator } from '../../../shared/creature-transformations/mock-concept-generator.ts'
 import { classifyExperimentReview, summarizeCreatureTransformationBenchmark, type CreatureTransformationBenchmarkMetricRecord, type CreatureTransformationExperimentReview } from '../../../shared/creature-transformations/experiment-reviews.ts'
 import { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL } from '../../../shared/creature-transformations/prompt-composer.ts'
@@ -30,7 +32,7 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitExperimentReviewRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest } from './request-validation.ts'
 import {
     CreatureTransformationRequestRepositoryError,
     type CreatureTransformationRequestRecord,
@@ -147,6 +149,7 @@ export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
     if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
+    if (code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID' || code === 'PNG_ALPHA_COVERAGE_INVALID') return 422
     if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
     if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 409
     if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH') return 422
@@ -434,6 +437,7 @@ async function runUnlockedTransformationTask(
         const generated = await generateImageForAuthenticatedProfile({
             profileId: input.profileId!, requestId: input.requestId, request: imageRequest, resolver: input.resolver,
             storage: input.storage, provider: input.createRealImageProvider!(profile ?? undefined), postProcessor: input.postProcessor,
+            storageDestination: 'RAW_EXPERIMENT',
             ...(input.validator ? { validator: input.validator } : {}), promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
         })
         if (!generated.success) {
@@ -441,22 +445,21 @@ async function runUnlockedTransformationTask(
             await restoreVisualTrackAfterFailure(input, request.progressTrackId, running)
             return
         }
-        const resultPath = await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
+        const resultPath = await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey)
         const completed = await input.repository.markSucceeded({
             requestId: running.id, profileId: input.profileId!, data: {
                 provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
                 sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256, resultPath, resultMimeType: generated.result.mimeType,
                 resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
-                assetReadiness: generated.result.assetReadiness, validationWarnings: generated.validation.warnings,
+                // Production visual progression always passes through the browser experiment.
+                // Raw provider output is never directly adoptable, even if it already declares alpha.
+                assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: [...generated.validation.warnings, 'BACKGROUND_REMOVAL_PENDING_CLIENT'],
                 estimatedCostUsd: generated.generation.estimatedCostUsd ?? profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
                 promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL, promptSha256: generated.promptSha256,
                 conceptSnapshot: generated.conceptSnapshot, generationQuality: profile?.quality ?? input.policy.realImage.quality,
             },
         })
-        await input.visualRepository.completeGeneration({
-            profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id,
-            finalAsset: generated.result.assetReadiness === 'FINAL_ASSET',
-        })
+        await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
     } catch (error) {
         const details = mapThrownError(error)
         try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original outcome */ }
@@ -474,7 +477,7 @@ export async function orchestrateSelectCreatureVisualProgressTrack(input: Creatu
         const track = await input.visualRepository.selectTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId, visualTraitId: parsed.request.visualTraitId, target: input.policy.visualProgression.winsRequired })
         const current = await input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId })
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
-        return { success: true, requestId: input.requestId, track, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }) }
+        return { success: true, requestId: input.requestId, track, lastExperiment: null, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }) }
     } catch (error) {
         const details = mapThrownError(error); return failure(input.requestId, details.code, details.message)
     }
@@ -493,7 +496,8 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
             input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
         ])
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
-        return { success: true, requestId: input.requestId, track, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history }
+        const lastExperiment = track ? await input.visualRepository.getLatestExperiment({ profileId: input.profileId, trackId: track.id }) : null
+        return { success: true, requestId: input.requestId, track, lastExperiment, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }
 
@@ -761,16 +765,75 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
     }
     try {
         const signed = await input.storage.createResultSignedUrl(record.resultPath)
+        const result = {
+            signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, width: record.resultWidth, height: record.resultHeight,
+            mimeType: record.resultMimeType, sha256: record.resultSha256, assetReadiness: record.assetReadiness ?? 'FINAL_ASSET', warnings: storedWarnings(record),
+        } as const
+        const rawResult = record.rawResultPath && record.rawResultSha256 && record.rawResultMimeType && record.rawResultWidth && record.rawResultHeight
+            ? await input.storage.createResultSignedUrl(record.rawResultPath)
+            : null
         return {
             ...response,
-            result: {
-                signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, width: record.resultWidth, height: record.resultHeight,
-                mimeType: record.resultMimeType, sha256: record.resultSha256, assetReadiness: record.assetReadiness ?? 'FINAL_ASSET', warnings: storedWarnings(record),
-            },
+            result,
+            ...(record.assetReadiness === 'EXPERIMENT_ONLY' ? { rawResult: { signedUrl: result.signedUrl, expiresAt: result.expiresAt, width: result.width, height: result.height, mimeType: result.mimeType, sha256: result.sha256 } } : rawResult ? { rawResult: { signedUrl: rawResult.signedUrl, expiresAt: rawResult.expiresAt, width: record.rawResultWidth!, height: record.rawResultHeight!, mimeType: record.rawResultMimeType!, sha256: record.rawResultSha256! } } : {}),
         }
     } catch (error) {
         const details = mapThrownError(error)
         return { ...response, error: { code: details.code, message: details.message } }
+    }
+}
+
+function decodeCandidatePng(base64: string): Uint8Array | null {
+    try {
+        const binary = atob(base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+        return bytes
+    } catch {
+        return null
+    }
+}
+
+export async function orchestrateSubmitBackgroundRemovalCandidate(input: GenerateImageEdgeOrchestrationInput): Promise<SubmitBackgroundRemovalCandidateResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseSubmitBackgroundRemovalCandidateRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    if (access) return failure(input.requestId, access.code, access.message)
+    const bytes = decodeCandidatePng(parsed.request.candidatePngBase64)
+    if (!bytes) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG candidato non puo essere decodificato.')
+    let record: CreatureTransformationRequestRecord | null
+    try {
+        record = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.transformationRequestId })
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
+    }
+    if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
+    if (record.assetReadiness === 'FINAL_ASSET' && record.resultSha256 && record.resultMimeType && record.resultWidth && record.resultHeight) {
+        return { success: true, requestId: input.requestId, requestPersistence: toPersistence(record, 'EXISTING'), candidate: { assetReadiness: 'FINAL_ASSET', sha256: record.resultSha256, mimeType: record.resultMimeType, width: record.resultWidth, height: record.resultHeight, warnings: storedWarnings(record) } }
+    }
+    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY' || !record.resultSha256 || !record.resultPath || !record.visualProgressTrackId) {
+        return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La richiesta non e pronta per ricevere il candidato elaborato.')
+    }
+    const validation = await (input.validator ?? new ImageValidator()).validate({
+        bytes, mimeType: 'image/png', sourceSha256: record.resultSha256,
+        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        profile: 'FINAL_CREATURE_ASSET', requireAlphaCoverage: true,
+    })
+    if (!validation.valid) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG elaborato non ha superato i controlli server-side.', validation.problems)
+    try {
+        const candidatePath = await input.storage.createCandidateObjectPath(input.profileId, record.id)
+        await input.storage.saveBackgroundRemovalCandidate({ profileId: input.profileId, transformationRequestId: record.id, image: bytes })
+        const finalized = await input.repository.finalizeBackgroundRemovalCandidate({
+            requestId: record.id, profileId: input.profileId, candidatePath, candidateSha256: validation.metadata.sha256,
+            candidateMimeType: validation.metadata.mimeType, candidateWidth: validation.metadata.width, candidateHeight: validation.metadata.height,
+            validationWarnings: validation.warnings,
+        })
+        return { success: true, requestId: input.requestId, requestPersistence: toPersistence(finalized, 'CREATED'), candidate: { assetReadiness: 'FINAL_ASSET', sha256: validation.metadata.sha256, mimeType: validation.metadata.mimeType, width: validation.metadata.width, height: validation.metadata.height, warnings: validation.warnings } }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
     }
 }
 
@@ -877,6 +940,7 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     if (operation === 'GENERATE_IMAGE') return orchestrateGenerateImage(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
     if (operation === 'GET_REQUEST_STATUS') return orchestrateGetTransformationRequestStatus(input)
+    if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'SUBMIT_EXPERIMENT_REVIEW') return orchestrateSubmitExperimentReview(input)
     if (operation === 'GET_BENCHMARK_RESULTS') return orchestrateGetBenchmarkResults(input)
     if (operation === 'SELECT_VISUAL_PROGRESS_TRACK') return orchestrateSelectCreatureVisualProgressTrack(input)
