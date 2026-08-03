@@ -373,10 +373,9 @@ function visualProgressionReadAccessFailure(policy: CreatureTransformationLabPol
     return null
 }
 
-function visualProgressionAccessFailure(policy: CreatureTransformationLabPolicy, profileId: string, capability: 'GENERATE' | 'ADOPT'): FailureDetails | null {
+function visualProgressionAccessFailure(policy: CreatureTransformationLabPolicy, capability: 'GENERATE' | 'ADOPT'): FailureDetails | null {
     const readAccess = visualProgressionReadAccessFailure(policy)
     if (readAccess) return readAccess
-    if (!policy.visualProgression.allowedProfileIds.has(profileId)) return { code: 'VISUAL_PROFILE_NOT_ALLOWED', message: 'Il profilo autenticato non e incluso nel rollout visuale.' }
     if (capability === 'GENERATE' && !policy.visualProgression.productionGenerationEnabled) return { code: 'VISUAL_PRODUCTION_GENERATION_DISABLED', message: 'La generazione visuale di produzione non e abilitata.' }
     if (capability === 'ADOPT' && !policy.visualProgression.adoptionEnabled) return { code: 'VISUAL_ADOPTION_DISABLED', message: 'L adozione visuale non e abilitata.' }
     return null
@@ -550,7 +549,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGenerateUnlockedTransformationRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'GENERATE')
+    const access = visualProgressionAccessFailure(input.policy, 'GENERATE')
     if (access) return failure(input.requestId, access.code, access.message)
     const profile = productionImageProfile(input.policy)
     if (input.policy.visualProgression.productionGenerationProfileId && !profile) return failure(input.requestId, 'GENERATION_PROFILE_CONFIGURATION_INVALID', 'Il profilo di generazione produzione non e disponibile.')
@@ -607,7 +606,7 @@ export async function orchestrateAdoptCreatureTransformation(input: CreatureTran
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseAdoptCreatureTransformationRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'ADOPT')
+    const access = visualProgressionAccessFailure(input.policy, 'ADOPT')
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const version = await input.visualRepository.adopt({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: parsed.request.progressTrackId, requestId: parsed.request.transformationRequestId, expectedCurrentVisualVersionId: parsed.request.expectedCurrentVisualVersionId })
@@ -619,7 +618,7 @@ export async function orchestrateRollbackCreatureVisualVersion(input: CreatureTr
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseRollbackCreatureVisualVersionRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'ADOPT')
+    const access = visualProgressionAccessFailure(input.policy, 'ADOPT')
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const version = await input.visualRepository.rollback({ profileId: input.profileId, creatureId: parsed.request.creatureId, targetVersionId: parsed.request.targetVersionId, expectedCurrentVisualVersionId: parsed.request.expectedCurrentVisualVersionId })
@@ -814,7 +813,7 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseSubmitBackgroundRemovalCandidateRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'GENERATE')
+    const access = visualProgressionAccessFailure(input.policy, 'GENERATE')
     if (access) return failure(input.requestId, access.code, access.message)
     const bytes = decodeCandidatePng(parsed.request.candidatePngBase64)
     if (!bytes) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG candidato non puo essere decodificato.')
