@@ -147,6 +147,12 @@ export class SupabaseCreatureVisualProgressionRepository {
         }))
     }
 
+    async restoreNonFinalGeneration(input: { profileId: string; trackId: string; requestId: string }): Promise<CreatureVisualProgressTrack> {
+        return mapProgressTrack(await this.rpc('restore_nonfinal_creature_visual_generation', {
+            p_profile_id: input.profileId, p_track_id: input.trackId, p_request_id: input.requestId,
+        }))
+    }
+
     async adopt(input: { profileId: string; creatureId: string; trackId: string; requestId: string; expectedCurrentVisualVersionId: string }): Promise<StoredVisualVersion> {
         return mapVisualVersion(await this.rpc('adopt_creature_transformation', { p_profile_id: input.profileId, p_creature_id: input.creatureId, p_progress_track_id: input.trackId, p_transformation_request_id: input.requestId, p_expected_current_visual_version_id: input.expectedCurrentVisualVersionId }))
     }

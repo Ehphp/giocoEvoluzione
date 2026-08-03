@@ -490,12 +490,20 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
     const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
     if (access) return failure(input.requestId, access.code, access.message)
     try {
-        const [track, current, history] = await Promise.all([
+        const [initialTrack, current, history] = await Promise.all([
             input.visualRepository.getTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
             input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
             input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
         ])
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
+        const track = initialTrack?.status === 'GENERATED' && initialTrack.generatedRequestId
+            ? await (async () => {
+                const generated = await input.repository.getById({ profileId: input.profileId!, requestId: initialTrack.generatedRequestId! })
+                return generated?.assetReadiness !== 'FINAL_ASSET'
+                    ? input.visualRepository.restoreNonFinalGeneration({ profileId: input.profileId!, trackId: initialTrack.id, requestId: initialTrack.generatedRequestId! })
+                    : initialTrack
+            })()
+            : initialTrack
         const lastExperiment = track ? await input.visualRepository.getLatestExperiment({ profileId: input.profileId, trackId: track.id }) : null
         return { success: true, requestId: input.requestId, track, lastExperiment, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
