@@ -75,5 +75,15 @@ describe('MockCreatureConceptGenerator', () => {
         expect(low.primaryMutation.morphology).not.toBe(high.primaryMutation.morphology)
         expect(low.secondaryMutations.length).toBeLessThan(high.secondaryMutations.length)
     })
-})
 
+    it('proposes intentional colour evolutions frequently while retaining a deterministic conservative path', async () => {
+        const concepts = await Promise.all(Array.from({ length: 12 }, (_, index) => generator.generateConcept({
+            identity: TEST_CREATURE_IDENTITY, visualTrait: VISUAL_TRAITS[4], intensity: 3, seed: `colour-${index}`,
+        })))
+        const evolved = concepts.filter((concept) => concept.colorEvolution?.mode !== 'PRESERVE')
+
+        expect(evolved.length).toBeGreaterThan(6)
+        expect(evolved.every((concept) => concept.colorEvolution?.mode === 'SHIFT' && concept.colorEvolution.affectedBodyAreas.includes('SKIN_SURFACE'))).toBe(true)
+        expect(concepts.some((concept) => concept.colorEvolution?.mode === 'PRESERVE')).toBe(true)
+    })
+})

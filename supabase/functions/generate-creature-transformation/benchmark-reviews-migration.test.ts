@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import migration from '../../migrations/202608030001_creature_transformation_benchmark_reviews.sql?raw'
+import colorEvolutionMigration from '../../migrations/202608040002_creature_transformation_color_evolution_reviews.sql?raw'
 
 describe('benchmark and review migration', () => {
     it('persists only controlled benchmark audit metadata and never promotes a creature', () => {
@@ -25,5 +26,13 @@ describe('benchmark and review migration', () => {
         expect(migration).toContain('grant all privileges on table public.creature_transformation_experiment_reviews to service_role')
         expect(migration).toContain('on conflict (transformation_request_id, reviewer_profile_id) do update')
         expect(migration).not.toMatch(/grant\s+.*creature_transformation_experiment_reviews\s+to\s+authenticated/i)
+    })
+
+    it('adds precise colour-evolution review flags while retaining historic palette observations', () => {
+        expect(colorEvolutionMigration).toContain('UNREQUESTED_PALETTE_CHANGE')
+        expect(colorEvolutionMigration).toContain('COLOR_EVOLUTION_TOO_WEAK')
+        expect(colorEvolutionMigration).toContain('COLOR_EVOLUTION_INCOHERENT')
+        expect(colorEvolutionMigration).toContain('PALETTE_CHANGED')
+        expect(colorEvolutionMigration).toContain('create or replace function public.upsert_creature_transformation_experiment_review')
     })
 })

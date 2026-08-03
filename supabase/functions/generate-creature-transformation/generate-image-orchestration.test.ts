@@ -15,7 +15,7 @@ import {
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
 
-const identityFeatures = ['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari']
+const identityFeatures = ['grandi occhi ambrati', 'corpo squamoso e tozzo', 'cresta dorsale di spine fogliari']
 const policy: CreatureTransformationLabPolicy = {
     enabled: true,
     allowedConceptModes: new Set(['MOCK']),

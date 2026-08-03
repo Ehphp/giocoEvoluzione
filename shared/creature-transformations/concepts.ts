@@ -6,6 +6,32 @@ export type TransformationIntensity = 1 | 2 | 3
 
 export const TRANSFORMATION_INTENSITIES = Object.freeze([1, 2, 3] as const)
 
+export const COLOR_EVOLUTION_MODES = Object.freeze(['PRESERVE', 'EXPAND', 'SHIFT'] as const)
+export type ColorEvolutionMode = (typeof COLOR_EVOLUTION_MODES)[number]
+
+export type ColorEvolution = Readonly<{
+    /** PRESERVE keeps the established palette; EXPAND adds related visible hues; SHIFT changes the dominant palette. */
+    mode: ColorEvolutionMode
+    dominantColor: string
+    secondaryColors: readonly string[]
+    accentColors: readonly string[]
+    surfaceEffects: readonly string[]
+    affectedBodyAreas: readonly BodyArea[]
+    intensity: 0 | TransformationIntensity
+    biologicalRationale: string
+}>
+
+export const CONSERVATIVE_COLOR_EVOLUTION: ColorEvolution = Object.freeze({
+    mode: 'PRESERVE',
+    dominantColor: 'established palette',
+    secondaryColors: Object.freeze([]),
+    accentColors: Object.freeze([]),
+    surfaceEffects: Object.freeze([]),
+    affectedBodyAreas: Object.freeze([]),
+    intensity: 0,
+    biologicalRationale: 'No chromatic adaptation is requested for this evolution.',
+})
+
 export type CreatureTransformationConcept = {
     schemaVersion: 1
     visualTrait: VisualTraitId
@@ -21,4 +47,10 @@ export type CreatureTransformationConcept = {
     identityToPreserve: string[]
     forbiddenChanges: string[]
     intensity: TransformationIntensity
+    /** Optional so persisted schema-v1 concepts keep their conservative palette behaviour. */
+    colorEvolution?: ColorEvolution
+}
+
+export function resolveColorEvolution(concept: Pick<CreatureTransformationConcept, 'colorEvolution'>): ColorEvolution {
+    return concept.colorEvolution ?? CONSERVATIVE_COLOR_EVOLUTION
 }

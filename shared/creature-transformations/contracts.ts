@@ -8,7 +8,10 @@ export type CreatureSemanticIdentity = {
     creatureId: string
     baseCreatureKey: string
     description: string
+    /** Structural traits that must survive every evolution. */
     identityFeatures: string[]
+    /** Current, intentionally mutable visual traits such as body colour and palette. */
+    mutableVisualFeatures: string[]
     styleDefinition: string
 }
 

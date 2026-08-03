@@ -61,6 +61,7 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Creature description: ${input.identity.description}`,
         `Identity features to preserve: ${input.identity.identityFeatures.join('; ')}`,
         `Style definition: ${input.identity.styleDefinition}`,
+        `Current mutable visual appearance: ${input.identity.mutableVisualFeatures.join('; ')}. This is reference appearance, not immutable identity.`,
         `Requested visual trait: ${input.visualTrait.id}.`,
         `Requested intensity: ${input.intensity}.`,
         input.previousTransformations?.length
@@ -70,6 +71,7 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Allowed mutation archetypes: ${input.visualTrait.allowedMutationArchetypes.join(', ')}.`,
         `Creative limits: at most ${input.visualTrait.creativeLimits.maxPrimaryBodyAreas} primary body areas and ${input.visualTrait.creativeLimits.maxSecondaryMutations} secondary mutations.`,
         'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
+        'Always return colorEvolution. Use PRESERVE with intensity 0 when no chromatic adaptation serves the trait. Otherwise use EXPAND at intensity 1 or 2 for visible, material-linked hues, or SHIFT at intensity 2 or 3 when the dominant palette should evolve. At intensity 2 and 3, colour must cover significant body areas; at intensity 3 SHIFT must visibly affect SKIN_SURFACE. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.',
         'Return all required fields and no additional fields. Do not include markdown or explanations.',
         correctionFeedback,
     ].join('\n')
@@ -82,6 +84,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
         required: [
             'schemaVersion', 'visualTrait', 'conceptName', 'evolutionaryFunction', 'primaryMutation',
             'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
+            'colorEvolution',
         ],
         properties: {
             schemaVersion: { type: 'integer', enum: [1] },
@@ -112,6 +115,21 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
             intensity: { type: 'integer', enum: [input.intensity] },
+            colorEvolution: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
+                properties: {
+                    mode: { type: 'string', enum: ['PRESERVE', 'EXPAND', 'SHIFT'] },
+                    dominantColor: { type: 'string' },
+                    secondaryColors: { type: 'array', items: { type: 'string' } },
+                    accentColors: { type: 'array', items: { type: 'string' } },
+                    surfaceEffects: { type: 'array', items: { type: 'string' } },
+                    affectedBodyAreas: { type: 'array', items: { enum: input.visualTrait.allowedBodyAreas } },
+                    intensity: { type: 'integer', enum: [0, input.intensity] },
+                    biologicalRationale: { type: 'string' },
+                },
+            },
         },
     }
 }

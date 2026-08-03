@@ -28,11 +28,16 @@ describe('OpenAiStructuredConceptModel', () => {
         expect(requestBody).toContain('"store":false')
         expect(requestBody).toContain('"type":"json_schema"')
         expect(requestBody).toContain('INVALID_INTENSITY: ripristina il valore richiesto')
+        expect(requestBody).toContain('Always return colorEvolution')
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.creatureId)
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.baseCreatureKey)
         expect(payload.text.format.schema.properties.schemaVersion).toEqual({ type: 'integer', enum: [1] })
         expect(payload.text.format.schema.properties.visualTrait).toEqual({ type: 'string', enum: [input.visualTrait.id] })
         expect(payload.text.format.schema.properties.intensity).toEqual({ type: 'integer', enum: [input.intensity] })
+        expect(payload.text.format.schema.properties.colorEvolution).toMatchObject({
+            type: 'object',
+            required: expect.arrayContaining(['mode', 'dominantColor', 'affectedBodyAreas', 'biologicalRationale']),
+        })
         expect(JSON.stringify(payload.text.format.schema)).not.toContain('"const"')
     })
 

@@ -69,4 +69,19 @@ describe('evaluateCreatureTransformationConcept', () => {
         expect(evaluation).toMatchObject({ acceptable: false, identityRisk: 'HIGH' })
         expect(evaluation.problems.map((problem) => problem.code)).toContain('IDENTITY_RISK_HIGH')
     })
+
+    it('evaluates visible colour evolution separately from immutable facial identity', () => {
+        const concept: CreatureTransformationConcept = {
+            ...createValidConcept(),
+            colorEvolution: {
+                mode: 'SHIFT', dominantColor: 'ocean blue', secondaryColors: ['sea green'], accentColors: ['silver'],
+                surfaceEffects: ['iridescent scale gradients'], affectedBodyAreas: ['BACK', 'SKIN_SURFACE'], intensity: 2,
+                biologicalRationale: 'Scaglie rinforzate rifrangono la luce per mimetismo e gestione del calore da impatto.',
+            },
+        }
+
+        expect(evaluateCreatureTransformationConcept(concept, evaluationContext)).toMatchObject({ acceptable: true, identityRisk: 'LOW' })
+        const colorEvolution = concept.colorEvolution!
+        expect(evaluateCreatureTransformationConcept({ ...concept, colorEvolution: { ...colorEvolution, affectedBodyAreas: [] } }, evaluationContext).problems.map((problem) => problem.code)).toContain('COLOR_EVOLUTION_TOO_WEAK')
+    })
 })

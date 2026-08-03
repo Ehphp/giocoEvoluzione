@@ -1,4 +1,4 @@
-import type { CreatureTransformationConcept } from './concepts.ts'
+import { resolveColorEvolution, type CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { ConceptProblem } from './concept-validation.ts'
 
@@ -33,7 +33,24 @@ function preservesFeature(identityToPreserve: readonly string[], feature: string
 }
 
 function getCreativeText(concept: CreatureTransformationConcept): string {
-    return [concept.conceptName, concept.evolutionaryFunction, concept.primaryMutation.morphology, concept.primaryMutation.material, ...concept.secondaryMutations].join(' ')
+    const colorEvolution = resolveColorEvolution(concept)
+    return [concept.conceptName, concept.evolutionaryFunction, concept.primaryMutation.morphology, concept.primaryMutation.material, ...concept.secondaryMutations, colorEvolution.dominantColor, ...colorEvolution.secondaryColors, ...colorEvolution.accentColors, ...colorEvolution.surfaceEffects, colorEvolution.biologicalRationale].join(' ')
+}
+
+function evaluateColorEvolution(concept: CreatureTransformationConcept): ConceptProblem[] {
+    const colorEvolution = resolveColorEvolution(concept)
+    if (colorEvolution.mode === 'PRESERVE') {
+        return colorEvolution.intensity === 0 && !colorEvolution.affectedBodyAreas.length && !colorEvolution.secondaryColors.length && !colorEvolution.accentColors.length && !colorEvolution.surfaceEffects.length
+            ? []
+            : [{ code: 'COLOR_EVOLUTION_INCOHERENT', message: 'PRESERVE non puo richiedere nuovi colori, effetti o zone cromatiche.' }]
+    }
+    if (colorEvolution.intensity !== concept.intensity || !colorEvolution.biologicalRationale.trim() || !colorEvolution.dominantColor.trim()) {
+        return [{ code: 'COLOR_EVOLUTION_INCOHERENT', message: 'Il cambio cromatico deve avere intensita, colore dominante e motivazione biologica coerenti con la mutazione.' }]
+    }
+    if (!colorEvolution.affectedBodyAreas.length || (concept.intensity >= 2 && !colorEvolution.affectedBodyAreas.some((area) => area === 'BACK' || area === 'CHEST' || area === 'FORELIMBS' || area === 'HIND_LIMBS' || area === 'TAIL' || area === 'SKIN_SURFACE'))) {
+        return [{ code: 'COLOR_EVOLUTION_TOO_WEAK', message: 'Il cambio cromatico richiesto non interessa una porzione corporea abbastanza leggibile.' }]
+    }
+    return []
 }
 
 function evaluateIdentityRisk(concept: CreatureTransformationConcept, context: ConceptEvaluationContext, creativeText: string): IdentityRisk {
@@ -66,7 +83,7 @@ export function evaluateCreatureTransformationConcept(concept: CreatureTransform
     const creativeText = getCreativeText(concept)
     const identityRisk = evaluateIdentityRisk(concept, context, creativeText)
     const transformationStrength = evaluateTransformationStrength(concept, creativeText)
-    const problems: ConceptProblem[] = []
+    const problems: ConceptProblem[] = evaluateColorEvolution(concept)
 
     if (identityRisk === 'HIGH') problems.push({ code: 'IDENTITY_RISK_HIGH', message: 'Il concept rischia di compromettere l identita riconoscibile della creatura.' })
     if (transformationStrength === 'WEAK') problems.push({ code: 'TRANSFORMATION_TOO_WEAK', message: 'La mutazione e troppo decorativa o poco leggibile.' })

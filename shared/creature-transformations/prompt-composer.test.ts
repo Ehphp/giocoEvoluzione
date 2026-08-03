@@ -94,6 +94,36 @@ describe('composeCreatureTransformationPrompt', () => {
         expect(result.sections.technical).toContain('canvas margins')
     })
 
+    it('makes a requested palette shift visible without retaining contradictory preservation instructions', () => {
+        const concept: CreatureTransformationConcept = {
+            ...createValidConcept(),
+            colorEvolution: {
+                mode: 'SHIFT', dominantColor: 'ocean blue', secondaryColors: ['sea green'], accentColors: ['silver'],
+                surfaceEffects: ['iridescent hydrodynamic gradients'], affectedBodyAreas: ['BACK', 'SKIN_SURFACE'], intensity: 2,
+                biologicalRationale: 'Le scaglie adattate rifrangono la luce per mimetismo e gestione del calore da impatto.',
+            },
+        }
+        const v1 = compose(concept)
+        const v2 = composeCreatureTransformationPrompt({
+            identity: TEST_CREATURE_IDENTITY, concept, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+        })
+
+        expect(v1.sections.transformation).toContain('Replace the established dominant palette')
+        expect(v1.sections.transformation).toContain('ocean blue')
+        expect(v1.prompt).not.toContain('Preserve the established palette')
+        expect(v2.sections.preservation).toContain('Follow the requested colour evolution')
+        expect(v2.sections.preservation).not.toContain('Keep the dominant palette')
+        expect(v1.sections.preservation).toContain('Keep the face and expression recognisable')
+    })
+
+    it('preserves the palette for legacy concepts with no colour-evolution field', () => {
+        const result = compose(createValidConcept())
+
+        expect(result.sections.transformation).toContain('Color evolution: preserve the established palette')
+        expect(result.sections.preservation).toContain('Preserve the established palette and body proportions')
+    })
+
     it('does not expose technical catalog identifiers or internal creature identity fields', async () => {
         const { concept, composed } = await composeMock('SENSORY_EXPANSION', 2, 'identifier-check')
 
@@ -107,7 +137,7 @@ describe('composeCreatureTransformationPrompt', () => {
     it('normalizes duplicate and empty entries without collapsing distinct creative text', () => {
         const identity = {
             ...TEST_CREATURE_IDENTITY,
-            identityFeatures: [' Palette turchese ', 'palette TURCHESE', 'Coda corta', 'coda corta', 'Coda'],
+            identityFeatures: [' Volto a mezzaluna ', 'volto A MEZZALUNA', 'Coda corta', 'coda corta', 'Coda'],
         }
         const concept: CreatureTransformationConcept = {
             ...createValidConcept(),
@@ -117,7 +147,7 @@ describe('composeCreatureTransformationPrompt', () => {
         }
         const result = compose(concept, identity)
 
-        expect(result.sections.preservation).toContain('Palette turchese, Coda corta, and Coda.')
+        expect(result.sections.preservation).toContain('Volto a mezzaluna, Coda corta, and Coda.')
         expect(result.sections.transformation).toContain('Secondary mutations: Giunto laterale and Giunto laterale esteso.')
         expect(result.sections.transformation).toContain('Material: Tessuto fibroso.')
     })
@@ -159,72 +189,72 @@ describe('composeCreatureTransformationPrompt', () => {
         const { composed } = await composeMock('IMPACT_ADAPTATION', 1, 'impact-snapshot')
 
         expect(composed.prompt).toMatchInlineSnapshot(`
-"IDENTITY
-Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable identity features: volto a mezzaluna, palette turchese, and coda corta. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
+          "IDENTITY
+          Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable structural identity features: volto a mezzaluna and coda corta. Current mutable visual appearance: corpo turchese and palette turchese. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
 
-TRANSFORMATION
-Concept: Cuscini di rimbalzo. Evolutionary function: Assorbe pressioni improvvise e restituisce stabilita durante gli atterraggi. La mutazione resta sottile e facilmente leggibile. Primary mutation: elastic impact cushioning on the front limbs and skin surface. Morphology: Cuscinetti stratificati emergono lungo gli arti anteriori e si fondono con la pelle. La mutazione resta sottile e facilmente leggibile. Material: Tessuto fibroso compatto con venature ambrate appena visibili. Secondary mutations: Anelli compressibili vicino alle articolazioni. Transformation intensity: subtle but clearly visible.
+          TRANSFORMATION
+          Concept: Cuscini di rimbalzo. Evolutionary function: Assorbe pressioni improvvise e restituisce stabilita durante gli atterraggi. La mutazione resta sottile e facilmente leggibile. Primary mutation: elastic impact cushioning on the front limbs and skin surface. Morphology: Cuscinetti stratificati emergono lungo gli arti anteriori e si fondono con la pelle. La mutazione resta sottile e facilmente leggibile. Material: Tessuto fibroso compatto con venature ambrate appena visibili. Secondary mutations: Anelli compressibili vicino alle articolazioni. Transformation intensity: subtle but clearly visible. Expand the established palette with these intentionally evolved colours: dominant deep moss green; secondary colours forest jade; accents warm amber. Apply it visibly across the front limbs and skin surface with impact-responsive amber veining. Chromatic intensity 1: the change must be readable in the full image, harmonise with the material, and express this biological function: I pigmenti nelle placche cheratiniche rendono visibili i percorsi di dissipazione degli urti.
 
-PRESERVE
-Preserve these concept commitments: volto a mezzaluna, palette turchese, coda corta, and Specie, silhouette e palette cromatica riconoscibili. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition.
+          PRESERVE
+          Preserve these concept commitments: volto a mezzaluna, coda corta, and Specie e silhouette riconoscibili. Keep the face and expression recognisable. Preserve the body proportions while making the requested colour evolution clearly visible. Preserve the pose. Preserve the composition.
 
-AVOID
-Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the protective response to impacts within its approved scope: at most 2 primary body areas and up to 3 secondary mutations.
+          AVOID
+          Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the protective response to impacts within its approved scope: at most 2 primary body areas and up to 3 secondary mutations.
 
-STYLE
-Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
+          STYLE
+          Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
-TECHNICAL
-Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
-`)
+          TECHNICAL
+          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+        `)
     })
 
     it('matches the v1 sensory prompt snapshot', async () => {
         const { composed } = await composeMock('SENSORY_EXPANSION', 2, 'sensory-snapshot')
 
         expect(composed.prompt).toMatchInlineSnapshot(`
-"IDENTITY
-Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable identity features: volto a mezzaluna, palette turchese, and coda corta. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
+          "IDENTITY
+          Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable structural identity features: volto a mezzaluna and coda corta. Current mutable visual appearance: corpo turchese and palette turchese. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
 
-TRANSFORMATION
-Concept: Frange di corrente. Evolutionary function: Raccoglie variazioni dell aria e del terreno per anticipare movimenti vicini. La mutazione e chiara ma resta integrata nella forma originaria. Primary mutation: perceptive frills on the surface of the head and neck. Morphology: Frange sottili seguono la superficie del capo e sfumano nel collo senza coprire i tratti familiari. La mutazione e chiara ma resta integrata nella forma originaria. Material: Membrane semitraslucide con nervature morbide e colori coerenti. Secondary mutations: Filamenti mobili sul collo and Pieghe percettive dietro il capo. Transformation intensity: substantial and balanced.
+          TRANSFORMATION
+          Concept: Frange di corrente. Evolutionary function: Raccoglie variazioni dell aria e del terreno per anticipare movimenti vicini. La mutazione e chiara ma resta integrata nella forma originaria. Primary mutation: perceptive frills on the surface of the head and neck. Morphology: Frange sottili seguono la superficie del capo e sfumano nel collo senza coprire i tratti familiari. La mutazione e chiara ma resta integrata nella forma originaria. Material: Membrane semitraslucide con nervature morbide e colori coerenti. Secondary mutations: Filamenti mobili sul collo and Pieghe percettive dietro il capo. Transformation intensity: substantial and balanced. Expand the established palette with these intentionally evolved colours: dominant midnight indigo; secondary colours violet; accents soft cyan. Apply it visibly across the surface of the head, neck, and skin surface with subtle iridescence and sensory bioluminescence. Chromatic intensity 2: the change must be readable in the full image, harmonise with the material, and express this biological function: Cellule cromatofore e membrane percettive amplificano segnali luminosi utili alla nuova funzione sensoriale.
 
-PRESERVE
-Preserve these concept commitments: volto a mezzaluna, palette turchese, coda corta, and Specie, silhouette e palette cromatica riconoscibili. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition.
+          PRESERVE
+          Preserve these concept commitments: volto a mezzaluna, coda corta, and Specie e silhouette riconoscibili. Keep the face and expression recognisable. Preserve the body proportions while making the requested colour evolution clearly visible. Preserve the pose. Preserve the composition.
 
-AVOID
-Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the expanded perception within its approved scope: at most 2 primary body areas and up to 2 secondary mutations.
+          AVOID
+          Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the expanded perception within its approved scope: at most 2 primary body areas and up to 2 secondary mutations.
 
-STYLE
-Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
+          STYLE
+          Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
-TECHNICAL
-Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
-`)
+          TECHNICAL
+          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+        `)
     })
 
     it('matches the v1 aquatic prompt snapshot', async () => {
         const { composed } = await composeMock('AQUATIC_MORPHOLOGY', 3, 'aquatic-snapshot')
 
         expect(composed.prompt).toMatchInlineSnapshot(`
-"IDENTITY
-Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable identity features: volto a mezzaluna, palette turchese, and coda corta. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
+          "IDENTITY
+          Depict the same individual shown in the source image. Description: Piccola creatura turchese con volto a mezzaluna e coda corta. Recognisable structural identity features: volto a mezzaluna and coda corta. Current mutable visual appearance: corpo turchese and palette turchese. Established visual style: Illustrazione organica con linee morbide e materiali naturali.
 
-TRANSFORMATION
-Concept: Remi a ventaglio. Evolutionary function: Aumenta la spinta in acqua mantenendo gesti terrestri riconoscibili. La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili. Primary mutation: hydrodynamic webbing on the front limbs and rear limbs. Morphology: Membrane raccolte tra le dita si aprono a ventaglio durante la nuotata e restano discrete a riposo. La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili. Material: Tessuto elastico umido con venature delicate e bordi arrotondati. Secondary mutations: Bordi natatori rinforzati and Piega idrodinamica vicino alle dita. Transformation intensity: pronounced while preserving identity.
+          TRANSFORMATION
+          Concept: Remi a ventaglio. Evolutionary function: Aumenta la spinta in acqua mantenendo gesti terrestri riconoscibili. La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili. Primary mutation: hydrodynamic webbing on the front limbs and rear limbs. Morphology: Membrane raccolte tra le dita si aprono a ventaglio durante la nuotata e restano discrete a riposo. La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili. Material: Tessuto elastico umido con venature delicate e bordi arrotondati. Secondary mutations: Bordi natatori rinforzati and Piega idrodinamica vicino alle dita. Transformation intensity: pronounced while preserving identity. Replace the established dominant palette with this intentionally evolved palette: dominant ocean blue; secondary colours sea green; accents silver. Apply it visibly across the front limbs, rear limbs, and skin surface with water-like iridescence along the scales. Chromatic intensity 3: the change must be readable in the full image, harmonise with the material, and express this biological function: Strati di scaglie idrodinamiche rifrangono la luce e favoriscono mimetismo e leggibilita in acqua.
 
-PRESERVE
-Preserve these concept commitments: volto a mezzaluna, palette turchese, coda corta, and Specie, silhouette e palette cromatica riconoscibili. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition.
+          PRESERVE
+          Preserve these concept commitments: volto a mezzaluna, coda corta, and Specie e silhouette riconoscibili. Keep the face and expression recognisable. Preserve the body proportions while making the requested colour evolution clearly visible. Preserve the pose. Preserve the composition.
 
-AVOID
-Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the aquatic body shaping within its approved scope: at most 2 primary body areas and up to 3 secondary mutations.
+          AVOID
+          Avoid: Cambio di specie, Sostituzione del volto, Anatomia umanoide, Trasformazione totale, and Armi, abiti o accessori artificiali. Do not change the species or the individual. Do not add text, scenes, or unrequested objects. Do not reinterpret the creature as photorealistic. Keep the aquatic body shaping within its approved scope: at most 2 primary body areas and up to 3 secondary mutations.
 
-STYLE
-Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
+          STYLE
+          Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
-TECHNICAL
-Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
-`)
+          TECHNICAL
+          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+        `)
     })
 
     it('matches the isolated v2 experimental preservation snapshot without changing v1', () => {
@@ -236,9 +266,7 @@ Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserv
         })
 
         expect(experimental.templateVersion).toBe(CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL)
-        expect(experimental.sections.preservation).toMatchInlineSnapshot(`
-"Preserve these concept commitments: volto a mezzaluna, palette turchese, and coda corta. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition. Keep the face and eyes unchanged unless the requested body area explicitly requires them. Keep the same pose, overall silhouette, and dominant palette."
-`)
+        expect(experimental.sections.preservation).toMatchInlineSnapshot(`"Preserve these concept commitments: volto a mezzaluna and coda corta. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition. Keep the face and eyes unchanged unless the requested body area explicitly requires them. Keep the same pose and overall silhouette. Keep the dominant palette."`)
         expect(experimental.prompt).not.toMatch(/provider|openai|gameplay|player_creatures/i)
         expect(experimental.sections.transformation).toContain(createValidConcept().conceptName)
     })

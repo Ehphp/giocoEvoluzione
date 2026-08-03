@@ -48,7 +48,9 @@ function isCompleteIdentityDefinition(definition: CreatureIdentityDefinition): b
         && definition.description.trim()
         && definition.styleDefinition.trim()
         && definition.identityFeatures.length
-        && definition.identityFeatures.every((feature) => feature.trim()),
+        && definition.identityFeatures.every((feature) => feature.trim())
+        && definition.mutableVisualFeatures.length
+        && definition.mutableVisualFeatures.every((feature) => feature.trim())
     )
 }
 
@@ -100,6 +102,7 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
                 baseCreatureKey: definition.baseCreatureKey,
                 description: definition.description,
                 identityFeatures: [...definition.identityFeatures],
+                mutableVisualFeatures: [...definition.mutableVisualFeatures],
                 styleDefinition: definition.styleDefinition,
             },
             sourceImagePath: currentVisualVersion?.assetPath ?? definition.sourceImagePath,

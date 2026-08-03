@@ -21,6 +21,7 @@ describe('experiment reviews and descriptive benchmark metrics', () => {
         expect(classifyExperimentReview(null)).toBe('UNREVIEWED')
         expect(classifyExperimentReview(review)).toBe('PASS')
         expect(classifyExperimentReview({ ...review, issueFlags: ['FACE_CHANGED'] })).toBe('FAIL')
+        expect(classifyExperimentReview({ ...review, issueFlags: ['UNREQUESTED_PALETTE_CHANGE'] })).toBe('FAIL')
     })
 
     it('aggregates trait, profile, readiness, latency, costs and issue frequencies descriptively', () => {

@@ -84,9 +84,10 @@ function normalizedIdentityFeatures(identity: CreatureSemanticIdentity): string[
 }
 
 function conceptPreservesIdentity(concept: CreatureTransformationConcept, identityFeatures: readonly string[]): boolean {
-    const preserved = uniquePromptItems(concept.identityToPreserve).map((feature) => feature.toLowerCase())
+    const normalizeStructuralFeature = (feature: string) => feature.toLowerCase().replace(/\b(corpo|body)\s+(?:verde|lime|turchese|teal|blu|blue|viola|indaco|indigo)\b/g, '$1')
+    const preserved = uniquePromptItems(concept.identityToPreserve).map(normalizeStructuralFeature)
     return identityFeatures.every((feature) => {
-        const normalizedFeature = feature.toLowerCase()
+        const normalizedFeature = normalizeStructuralFeature(feature)
         return preserved.some((preservedFeature) => (
             preservedFeature.includes(normalizedFeature) || normalizedFeature.includes(preservedFeature)
         ))

@@ -5,7 +5,8 @@ export const TEST_CREATURE_IDENTITY: CreatureSemanticIdentity = {
     creatureId: 'creature-luma',
     baseCreatureKey: 'LUMA',
     description: 'Piccola creatura turchese con volto a mezzaluna e coda corta.',
-    identityFeatures: ['volto a mezzaluna', 'palette turchese', 'coda corta'],
+    identityFeatures: ['volto a mezzaluna', 'coda corta'],
+    mutableVisualFeatures: ['corpo turchese', 'palette turchese'],
     styleDefinition: 'Illustrazione organica con linee morbide e materiali naturali.',
 }
 
@@ -27,4 +28,3 @@ export function createValidConcept(): CreatureTransformationConcept {
         intensity: 2,
     }
 }
-

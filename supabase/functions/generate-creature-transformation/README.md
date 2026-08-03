@@ -130,7 +130,7 @@ Esempio di struttura, non di prezzo reale da copiare alla cieca:
 }
 ```
 
-Un profile abilitato richiede un costo strettamente positivo entro il limite per richiesta. JSON invalido, campo sconosciuto, ID inesistente o profile disabilitato chiudono il flusso; non esiste override dal client. Il piano iniziale ha esattamente cinque casi, uno per Visual Trait, intensità 2 e seed versionati. Il template `creature-transformation-v2-experimental` è isolato: richiede la modifica della sorgente, conserva individuo/volto/occhi/posa/silhouette/palette e limita la mutazione alle sole body area del concept; `creature-transformation-v1` non cambia.
+Un profile abilitato richiede un costo strettamente positivo entro il limite per richiesta. JSON invalido, campo sconosciuto, ID inesistente o profile disabilitato chiudono il flusso; non esiste override dal client. Il piano iniziale ha esattamente cinque casi, uno per Visual Trait, intensità 2 e seed versionati. Entrambi i template preservano individuo, volto, occhi, posa, silhouette e stile; la palette è preservata solo per i concept legacy o con `colorEvolution.mode: PRESERVE`. `EXPAND` e `SHIFT` richiedono invece una palette visibile, legata alla funzione biologica e alle zone corporee dichiarate, senza ripristinare il colore dominante precedente.
 
 La UI benchmark richiede flag non sensibile `VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED=true`, ma l'autorizzazione effettiva resta server-side. Carica solo risultati e review del reviewer autenticato. Export JSON/CSV è locale e contiene metadati, warning, rubric, costi e hash; esclude signed URL, path Storage, token, chiavi, byte e base64.
 

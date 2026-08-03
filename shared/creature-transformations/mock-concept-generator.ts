@@ -1,4 +1,4 @@
-import type { CreatureTransformationConcept, TransformationIntensity } from './concepts.ts'
+import { CONSERVATIVE_COLOR_EVOLUTION, type ColorEvolution, type CreatureTransformationConcept, type TransformationIntensity } from './concepts.ts'
 import type { BodyArea } from './body-areas.ts'
 import {
     type ConceptGeneratorMetadata,
@@ -16,6 +16,14 @@ type MockConceptVariant = Readonly<{
     morphology: string
     material: string
     secondaryMutations: readonly string[]
+}>
+
+type MockColorEvolutionProfile = Readonly<{
+    dominantColor: string
+    secondaryColors: readonly string[]
+    accentColors: readonly string[]
+    surfaceEffects: readonly string[]
+    biologicalRationale: string
 }>
 
 const MOCK_CONCEPT_VARIANTS: Readonly<Record<VisualTraitId, readonly MockConceptVariant[]>> = Object.freeze({
@@ -127,6 +135,14 @@ const INTENSITY_DESCRIPTION: Readonly<Record<TransformationIntensity, string>> =
     3: 'La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili.',
 })
 
+const MOCK_COLOR_EVOLUTION_PROFILES: Readonly<Record<VisualTraitId, MockColorEvolutionProfile>> = Object.freeze({
+    IMPACT_ADAPTATION: Object.freeze({ dominantColor: 'deep moss green', secondaryColors: ['forest jade'], accentColors: ['warm amber'], surfaceEffects: ['impact-responsive amber veining'], biologicalRationale: 'I pigmenti nelle placche cheratiniche rendono visibili i percorsi di dissipazione degli urti.' }),
+    LOCOMOTION_ADAPTATION: Object.freeze({ dominantColor: 'cool teal', secondaryColors: ['spring green'], accentColors: ['burnished gold'], surfaceEffects: ['directional gradients along the moving limbs'], biologicalRationale: 'La distribuzione dei pigmenti segue fibre e tendini per rendere leggibile la tensione necessaria agli scatti.' }),
+    SENSORY_EXPANSION: Object.freeze({ dominantColor: 'midnight indigo', secondaryColors: ['violet'], accentColors: ['soft cyan'], surfaceEffects: ['subtle iridescence and sensory bioluminescence'], biologicalRationale: 'Cellule cromatofore e membrane percettive amplificano segnali luminosi utili alla nuova funzione sensoriale.' }),
+    ENERGY_REGULATION: Object.freeze({ dominantColor: 'sunset copper', secondaryColors: ['deep burgundy'], accentColors: ['golden amber'], surfaceEffects: ['heat gradients and gentle bioluminescent veins'], biologicalRationale: 'La variazione dei pigmenti e delle vene termiche segnala accumulo, conservazione e rilascio di energia.' }),
+    AQUATIC_MORPHOLOGY: Object.freeze({ dominantColor: 'ocean blue', secondaryColors: ['sea green'], accentColors: ['silver'], surfaceEffects: ['water-like iridescence along the scales'], biologicalRationale: 'Strati di scaglie idrodinamiche rifrangono la luce e favoriscono mimetismo e leggibilita in acqua.' }),
+})
+
 function stableHash(value: string): number {
     let hash = 2166136261
     for (let index = 0; index < value.length; index += 1) {
@@ -144,6 +160,26 @@ function getControlledTrait(input: CreatureConceptGenerationInput) {
         )
     }
     return controlledTrait
+}
+
+function createColorEvolution(input: CreatureConceptGenerationInput, variant: MockConceptVariant): ColorEvolution {
+    // Three out of four deterministic concepts exercise chromatic evolution; the remaining one proves the conservative path.
+    if (stableHash(`color:${input.visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % 4 === 0) return CONSERVATIVE_COLOR_EVOLUTION
+    const profile = MOCK_COLOR_EVOLUTION_PROFILES[input.visualTrait.id]
+    const affectedBodyAreas = [...new Set([
+        ...variant.bodyAreas,
+        ...(input.intensity >= 2 ? ['SKIN_SURFACE' as const] : []),
+    ])]
+    return {
+        mode: input.intensity === 3 ? 'SHIFT' : 'EXPAND',
+        dominantColor: profile.dominantColor,
+        secondaryColors: [...profile.secondaryColors],
+        accentColors: [...profile.accentColors],
+        surfaceEffects: [...profile.surfaceEffects],
+        affectedBodyAreas,
+        intensity: input.intensity,
+        biologicalRationale: profile.biologicalRationale,
+    }
 }
 
 export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
@@ -177,7 +213,7 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
                 material: variant.material,
             },
             secondaryMutations: [...variant.secondaryMutations.slice(0, secondaryCount)],
-            identityToPreserve: [...input.identity.identityFeatures, 'Specie, silhouette e palette cromatica riconoscibili'],
+            identityToPreserve: [...input.identity.identityFeatures, 'Specie e silhouette riconoscibili'],
             forbiddenChanges: [
                 'Cambio di specie',
                 'Sostituzione del volto',
@@ -186,6 +222,7 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
                 'Armi, abiti o accessori artificiali',
             ],
             intensity: input.intensity,
+            colorEvolution: createColorEvolution(input, variant),
         }
     }
 }

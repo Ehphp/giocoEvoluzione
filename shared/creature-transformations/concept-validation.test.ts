@@ -16,11 +16,43 @@ function getProblemCodes(candidate: unknown): string[] {
 }
 
 describe('validateCreatureTransformationConcept', () => {
-    it('accepts a complete concept that matches its requested context', () => {
+    it('accepts a complete legacy concept and defaults its absent colour evolution to conservative behaviour', () => {
         const result = validateCreatureTransformationConcept(createValidConcept(), context)
 
         expect(result.valid).toBe(true)
         if (result.valid) expect(result.concept).toEqual(createValidConcept())
+    })
+
+    it('accepts an intentional, biologically motivated palette shift and rejects weak or incoherent requests', () => {
+        const shift = {
+            ...createValidConcept(),
+            colorEvolution: {
+                mode: 'SHIFT',
+                dominantColor: 'ocean blue',
+                secondaryColors: ['sea green'],
+                accentColors: ['silver'],
+                surfaceEffects: ['iridescent hydrodynamic gradients'],
+                affectedBodyAreas: ['BACK', 'SKIN_SURFACE'],
+                intensity: 2,
+                biologicalRationale: 'Pigmenti nelle scaglie rinforzate migliorano mimetismo e dispersione del calore dagli urti.',
+            },
+        }
+        expect(validateCreatureTransformationConcept(shift, context).valid).toBe(true)
+        expect(getProblemCodes({ ...shift, colorEvolution: { ...shift.colorEvolution, affectedBodyAreas: ['EYE_REGION'] } })).toContain('INVALID_COLOR_EVOLUTION')
+        expect(getProblemCodes({ ...shift, colorEvolution: { ...shift.colorEvolution, intensity: 1 } })).toContain('COLOR_EVOLUTION_INCOHERENT')
+    })
+
+    it('accepts legacy structural preservation text that included the previous body colour', () => {
+        const legacyContext = {
+            ...context,
+            identity: { ...TEST_CREATURE_IDENTITY, identityFeatures: ['volto a mezzaluna', 'corpo squamoso e tozzo', 'cresta dorsale'] },
+        }
+        const legacyConcept = {
+            ...createValidConcept(),
+            identityToPreserve: ['volto a mezzaluna', 'corpo verde squamoso e tozzo', 'cresta dorsale'],
+        }
+
+        expect(validateCreatureTransformationConcept(legacyConcept, legacyContext).valid).toBe(true)
     })
 
     it('rejects malformed objects and unknown fields', () => {
@@ -65,4 +97,3 @@ describe('validateCreatureTransformationConcept', () => {
         })).toContain('CONTRADICTORY_INSTRUCTIONS')
     })
 })
-

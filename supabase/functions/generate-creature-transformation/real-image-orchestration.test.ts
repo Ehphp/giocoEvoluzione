@@ -28,7 +28,7 @@ const policy: CreatureTransformationLabPolicy = {
 
 function request(overrides: Record<string, unknown> = {}) {
     return {
-        operation: 'GENERATE_IMAGE', creatureId: 'creature-1', concept: { ...createValidConcept(), identityToPreserve: ['grandi occhi ambrati', 'corpo verde squamoso e tozzo', 'cresta dorsale di spine fogliari'] }, imageProviderMode: 'REAL', idempotencyKey: 'real-key-1', ...overrides,
+        operation: 'GENERATE_IMAGE', creatureId: 'creature-1', concept: { ...createValidConcept(), identityToPreserve: ['grandi occhi ambrati', 'corpo squamoso e tozzo', 'cresta dorsale di spine fogliari'] }, imageProviderMode: 'REAL', idempotencyKey: 'real-key-1', ...overrides,
     }
 }
 
