@@ -370,7 +370,10 @@ function acceptedRealImage(requestId: string, record: CreatureTransformationRequ
 
 function visualProgressionAccessFailure(policy: CreatureTransformationLabPolicy, profileId: string, capability: 'READ' | 'GENERATE' | 'ADOPT'): FailureDetails | null {
     if (!policy.visualProgression.enabled) return { code: 'VISUAL_PROGRESSION_DISABLED', message: 'La progressione visiva non e abilitata.' }
-    if (!policy.visualProgression.allowedProfileIds.has(profileId)) return { code: 'VISUAL_PROFILE_NOT_ALLOWED', message: 'Il profilo autenticato non e incluso nel rollout visuale.' }
+    // The rollout is now open for read-only views. Match participants can therefore
+    // receive each other's current visual, while the costly, state-changing actions
+    // remain limited to the configured production profiles.
+    if (capability !== 'READ' && !policy.visualProgression.allowedProfileIds.has(profileId)) return { code: 'VISUAL_PROFILE_NOT_ALLOWED', message: 'Il profilo autenticato non e incluso nel rollout visuale.' }
     if (capability === 'GENERATE' && !policy.visualProgression.productionGenerationEnabled) return { code: 'VISUAL_PRODUCTION_GENERATION_DISABLED', message: 'La generazione visuale di produzione non e abilitata.' }
     if (capability === 'ADOPT' && !policy.visualProgression.adoptionEnabled) return { code: 'VISUAL_ADOPTION_DISABLED', message: 'L adozione visuale non e abilitata.' }
     return null
@@ -759,11 +762,13 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
             },
         } : {}),
         ...(record.status === 'FAILED' && record.errorCode && record.errorMessage ? { error: { code: record.errorCode, message: record.errorMessage } } : {}),
-        ...(record.visualProgressTrackId && record.sourceVisualVersionId && record.visualTraitId && record.conceptSnapshot && typeof record.conceptSnapshot.conceptName === 'string' && typeof record.conceptSnapshot.evolutionaryFunction === 'string' ? {
+        ...(record.visualProgressTrackId && record.sourceVisualVersionId && record.visualTraitId ? {
             productPreview: {
                 progressTrackId: record.visualProgressTrackId, sourceVisualVersionId: record.sourceVisualVersionId,
-                visualTraitId: record.visualTraitId, conceptName: record.conceptSnapshot.conceptName,
-                evolutionaryFunction: record.conceptSnapshot.evolutionaryFunction, warnings: storedWarnings(record),
+                visualTraitId: record.visualTraitId,
+                conceptName: record.conceptSnapshot && typeof record.conceptSnapshot.conceptName === 'string' ? record.conceptSnapshot.conceptName : 'Evoluzione visuale',
+                evolutionaryFunction: record.conceptSnapshot && typeof record.conceptSnapshot.evolutionaryFunction === 'string' ? record.conceptSnapshot.evolutionaryFunction : 'Proposta visuale generata e validata dal server.',
+                warnings: storedWarnings(record),
             },
         } : {}),
     }

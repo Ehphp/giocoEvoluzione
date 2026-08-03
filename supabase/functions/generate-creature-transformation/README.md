@@ -210,7 +210,7 @@ CREATURE_VISUAL_PRODUCTION_GENERATION_PROFILE_ID=<id-profile-server-side>
 CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON=<catalogo-json>
 ```
 
-In assenza dell'ID il percorso usa `OPENAI_IMAGE_*`. Il browser non invia modello, qualita, costo, provider, prompt o source version. Il flag frontend, puramente visuale, è `VITE_CREATURE_VISUAL_PROGRESSION_ENABLED=true`.
+In assenza dell'ID il percorso usa `OPENAI_IMAGE_*`. Il browser non invia modello, qualita, costo, provider, prompt o source version. Il flag frontend, puramente visuale, è `VITE_CREATURE_VISUAL_PROGRESSION_ENABLED=true`. Con la progressione abilitata, la lettura delle visuali è disponibile a tutti i profili autenticati; `CREATURE_VISUAL_PRODUCTION_PROFILE_IDS` limita invece le azioni di generazione e adozione, che modificano stato o possono generare costi.
 
 ### Migration e backfill remoto
 
