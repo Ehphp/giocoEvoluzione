@@ -156,8 +156,9 @@ Deno.serve(async (request) => {
         .eq('id', authData.user.id)
         .maybeSingle()
     if (authorizationProfileError) {
+        const databaseCode = getSafeDatabaseLookupCode(authorizationProfileError)
         console.error('Creature transformation authorization lookup failed', { requestId, code: 'INTERNAL_ERROR' })
-        return errorResponse(requestId, 'INTERNAL_ERROR', 'Autorizzazione server non disponibile.', 500)
+        return errorResponse(requestId, `AUTHORIZATION_PROFILE_LOOKUP_FAILED_${databaseCode}`, 'Autorizzazione server non disponibile.', 500)
     }
     const resolver = new SupabaseCreatureIdentityResolver(createRepository(supabaseAdmin, requestId))
     const storage = new SupabaseCreatureTransformationStorageAdapter(

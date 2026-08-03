@@ -38,6 +38,7 @@ The regular match flow is: home/lobby → create or join → waiting room (PvP o
 | --- | --- | --- |
 | A guest could not be proven to be on the local presentation side independently of player slot. | The V2 view model received `me`/`opponent` indirectly and had no explicit local/remote model. | Added `buildBattleParticipants`, which resolves the local participant by active participant ID and derives the remote participant from that identity. Host and guest cases are unit-tested. |
 | Generated or future left-facing creature assets could face away from the opponent. | The CSS unconditionally mirrored only the opponent layer. | Added `nativeFacing` and one `shouldMirrorCreature` rule. Only the image gets the mirroring class; its wrapper, shadows and any future labels remain unmirrored. |
+| The built-in purple bot could face away from the player. | Its PNG already faces left, but it was incorrectly declared as a right-facing asset and was mirrored again. | Marked the bot fallback as `nativeFacing: 'left'`; the fallback path also recomputes direction after a failed image load. |
 | Wide/tall PNGs could invade the centre field or clip unpredictably. | Creature images used `max-width: none`, 66–72% lanes and viewport-specific enlargement without a normalized image box. | Each sprite now has a bounded 48% side lane, `max-width: 100%`, `object-fit: contain` and a bounded height; the VS remains an independently centred layer. |
 | A realtime channel could remain subscribed if the async subscription completed after its effect had unmounted. | Cleanup ran before the promise had assigned `unsubscribe`. | The effect now tracks whether it is active and immediately disposes a late subscription. |
 | A slow snapshot response could restore stale game state after leaving, or win over a newer refresh. | Refresh responses were always committed in resolution order. | Added a monotonic refresh ID and an active game/participant guard before committing a snapshot. Leaving a session invalidates pending refreshes. |
@@ -78,7 +79,7 @@ No existing components or assets were removed.
 Completed during this refactor:
 
 - Focused Vitest: `BattleStage`, battle participant mapping and game V2 view-model tests — 3 files, 8 tests passed.
-- Full Vitest: 64 files, 313 tests passed.
+- Full Vitest: passed; the bot-orientation regression test added afterwards also passes in isolation.
 - Typecheck: `npx tsc -b` passed.
 - Lint: `npm run lint` passed.
 - Production build: `npm run build` passed. Vite reports only its existing chunk-size advisory for the 529 kB application bundle.
@@ -89,7 +90,7 @@ The browser audit verified 320×568, 360×800, 390×844, 412×915, 430×932, 768
 ## Remaining open items
 
 - Legacy rules retained in `App.css` should be removed only as a separately visual-regressed cleanup, since some may support non-V2 session states.
-- Native facing for generated creature assets currently defaults to `right`; a future image metadata contract can set `nativeFacing: 'left'` without touching presentation logic.
+- Generated creature visuals still default to `right`; a future image metadata contract can set `nativeFacing: 'left'` without touching presentation logic. The supplied bot fallback is explicitly `left`.
 - Realtime transport status is not exposed by the current API. The UI reports browser offline state and subscription setup failures, but cannot distinguish every socket reconnect phase until the client exposes that signal.
 
 ## Manual verification checklist

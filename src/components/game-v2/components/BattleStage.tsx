@@ -1,6 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 
-import type { CreatureVisual } from '../gameSelectionAssets'
+import {
+    DEFAULT_BATTLE_OPPONENT_CREATURE,
+    DEFAULT_BATTLE_PLAYER_CREATURE,
+    type CreatureVisual,
+} from '../gameSelectionAssets'
 import { shouldMirrorCreature, type CreatureFacing } from './creatureOrientation'
 
 type BattleStageProps = {
@@ -12,9 +16,16 @@ type BattleSide = 'player' | 'opponent'
 
 function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleSide }) {
     const [source, setSource] = useState(visual.src)
-    useEffect(() => setSource(visual.src), [visual.src])
+    const [usesFallback, setUsesFallback] = useState(false)
+    useEffect(() => {
+        setSource(visual.src)
+        setUsesFallback(false)
+    }, [visual.src])
     const facing: CreatureFacing = side === 'player' ? 'right' : 'left'
-    const isMirrored = shouldMirrorCreature(visual.nativeFacing, facing)
+    const fallbackVisual = side === 'player'
+        ? DEFAULT_BATTLE_PLAYER_CREATURE
+        : DEFAULT_BATTLE_OPPONENT_CREATURE
+    const isMirrored = shouldMirrorCreature(usesFallback ? fallbackVisual.nativeFacing : visual.nativeFacing, facing)
     const style = {
         '--battle-creature-scale': visual.scale ?? 1,
         '--battle-creature-height': `${145 * (visual.scale ?? 1)}%`,
@@ -29,7 +40,12 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleS
                 className={`battle-stage__sprite ${isMirrored ? 'is-mirrored' : ''}`}
                 src={source}
                 alt={visual.alt}
-                onError={() => setSource(side === 'player' ? '/assets/battle/creatures/verdant-hatchling.png' : '/assets/battle/creatures/amethyst-hatchling.png')}
+                onError={() => {
+                    if (source !== fallbackVisual.src) {
+                        setSource(fallbackVisual.src)
+                        setUsesFallback(true)
+                    }
+                }}
             />
         </div>
     )

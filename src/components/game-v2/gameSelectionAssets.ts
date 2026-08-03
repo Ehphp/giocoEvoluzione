@@ -51,7 +51,8 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
 export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.opponentCreature,
     alt: 'Creatura avversaria viola',
-    nativeFacing: 'right',
+    // The supplied bot sprite already looks toward the left.
+    nativeFacing: 'left',
     scale: .72,
     offsetX: 6,
     // The supplied PNG has transparent space under the feet.

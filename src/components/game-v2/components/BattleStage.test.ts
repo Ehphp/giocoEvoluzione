@@ -2,7 +2,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { getBattleBackgroundForEvent } from '../gameSelectionAssets'
+import { DEFAULT_BATTLE_OPPONENT_CREATURE, getBattleBackgroundForEvent } from '../gameSelectionAssets'
 import { BattleStage } from './BattleStage'
 import { shouldMirrorCreature } from './creatureOrientation'
 
@@ -51,6 +51,17 @@ describe('BattleStage', () => {
         expect(player.classList.contains('is-mirrored')).toBe(false)
         expect(opponent.classList.contains('is-mirrored')).toBe(false)
         expect(opponent.querySelector('img')?.classList.contains('is-mirrored')).toBe(true)
+    })
+
+    it('keeps the bot fallback unmirrored because its source sprite already faces left', () => {
+        act(() => {
+            root.render(createElement(BattleStage, {
+                playerCreature: { src: '/player.png', alt: 'Giocatore' },
+                opponentCreature: DEFAULT_BATTLE_OPPONENT_CREATURE,
+            }))
+        })
+
+        expect(container.querySelector('.battle-stage__creature--opponent img')?.classList.contains('is-mirrored')).toBe(false)
     })
 })
 
