@@ -94,6 +94,7 @@ export function buildGuestHomeViewModel({
 export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelInput & {
     profile: ProfileRecord
     creature: PlayerCreatureRecord
+    officialVisualUrl?: string | null
 }): HomeViewModel {
     const base = buildGuestHomeViewModel({
         nickname: input.profile.nickname,
@@ -118,6 +119,10 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
         },
         creature: {
             ...base.creature!,
+            image: {
+                ...base.creature!.image,
+                src: input.officialVisualUrl ?? base.creature!.image.src,
+            },
             id: input.creature.id,
             name: input.creature.name ?? 'Creatura iniziale',
             level: input.creature.level,

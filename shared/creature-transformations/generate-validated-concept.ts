@@ -47,6 +47,7 @@ export async function generateValidatedCreatureConcept(
             requestedVisualTrait: request.input.visualTrait,
             requestedIntensity: request.input.intensity,
             identity: request.input.identity,
+            previousTransformations: request.input.previousTransformations,
         })
         if (!validation.valid) {
             lastProblems = validation.problems

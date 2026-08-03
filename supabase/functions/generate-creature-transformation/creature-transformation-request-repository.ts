@@ -1,7 +1,8 @@
 import type { CreatureTransformationAssetReadiness } from '../../../shared/creature-transformations/api-contracts.ts'
 import type { TransformationCost, TransformationRequestStatus } from '../../../shared/creature-transformations/request-persistence.ts'
+import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 
-export type CreatureTransformationRequestOperation = 'GENERATE_CONCEPT' | 'GENERATE_IMAGE'
+export type CreatureTransformationRequestOperation = 'GENERATE_CONCEPT' | 'GENERATE_IMAGE' | 'GENERATE_UNLOCKED_TRANSFORMATION'
 
 export type CreatureTransformationRequestRecord = Readonly<{
     id: string
@@ -12,6 +13,13 @@ export type CreatureTransformationRequestRecord = Readonly<{
     status: TransformationRequestStatus
     conceptMode: 'MOCK' | 'AI' | null
     imageProviderMode: 'MOCK' | 'REAL' | null
+    benchmarkCaseId: string | null
+    generationProfileId: string | null
+    conceptSeed: string | null
+    promptSha256: string | null
+    generationQuality: 'low' | 'medium' | 'high' | null
+    visualProgressTrackId: string | null
+    sourceVisualVersionId: string | null
     provider: string | null
     model: string | null
     providerRequestId: string | null
@@ -53,6 +61,11 @@ export type ReserveCreatureTransformationRequestInput = TransformationCost & Rea
     intensity?: number
     conceptMode?: 'MOCK' | 'AI'
     imageProviderMode?: 'MOCK' | 'REAL'
+    benchmarkCaseId?: string
+    generationProfileId?: string
+    conceptSeed?: string
+    visualProgressTrackId?: string
+    sourceVisualVersionId?: string
     dailyRequestLimit: number
     dailyBudgetUsd: number
 }>
@@ -72,6 +85,9 @@ export type RequestTransitionData = TransformationCost & Readonly<{
     generationLatencyMs?: number
     assetReadiness?: CreatureTransformationAssetReadiness
     validationWarnings?: string[]
+    generationQuality?: 'low' | 'medium' | 'high'
+    promptSha256?: string
+    conceptSnapshot?: CreatureTransformationConcept
     errorCode?: string
     errorMessage?: string
 }>
@@ -148,7 +164,7 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Lo stato persistente restituito non e supportato.')
     }
     const operation = readString(record, 'operation') as CreatureTransformationRequestOperation
-    if (operation !== 'GENERATE_CONCEPT' && operation !== 'GENERATE_IMAGE') {
+    if (operation !== 'GENERATE_CONCEPT' && operation !== 'GENERATE_IMAGE' && operation !== 'GENERATE_UNLOCKED_TRANSFORMATION') {
         throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'L operazione persistente restituita non e supportata.')
     }
 
@@ -157,6 +173,10 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         idempotencyKey: readString(record, 'idempotency_key')!, operation, status,
         conceptMode: readString(record, 'concept_mode', true) as 'MOCK' | 'AI' | null,
         imageProviderMode: readString(record, 'image_provider_mode', true) as 'MOCK' | 'REAL' | null,
+        benchmarkCaseId: readString(record, 'benchmark_case_id', true), generationProfileId: readString(record, 'generation_profile_id', true),
+        conceptSeed: readString(record, 'concept_seed', true), promptSha256: readString(record, 'prompt_sha256', true),
+        generationQuality: readString(record, 'generation_quality', true) as 'low' | 'medium' | 'high' | null,
+        visualProgressTrackId: readString(record, 'visual_progress_track_id', true), sourceVisualVersionId: readString(record, 'source_visual_version_id', true),
         provider: readString(record, 'provider', true), model: readString(record, 'model', true), providerRequestId: readString(record, 'provider_request_id', true),
         visualTraitId: readString(record, 'visual_trait_id', true), intensity: readNumber(record, 'intensity', true),
         promptTemplateVersion: readString(record, 'prompt_template_version', true), conceptSchemaVersion: readNumber(record, 'concept_schema_version', true),
@@ -191,6 +211,9 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_visual_trait_id: input.visualTraitId ?? null, p_intensity: input.intensity ?? null, p_concept_mode: input.conceptMode ?? null,
                 p_image_provider_mode: input.imageProviderMode ?? null, p_estimated_cost_usd: input.estimatedCostUsd ?? null,
                 p_daily_request_limit: input.dailyRequestLimit, p_daily_budget_usd: input.dailyBudgetUsd,
+                p_benchmark_case_id: input.benchmarkCaseId ?? null, p_generation_profile_id: input.generationProfileId ?? null,
+                p_concept_seed: input.conceptSeed ?? null,
+                p_visual_progress_track_id: input.visualProgressTrackId ?? null, p_source_visual_version_id: input.sourceVisualVersionId ?? null,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_RESERVATION_FAILED', 'Non e stato possibile riservare la richiesta.', { cause: error })
@@ -248,6 +271,8 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_generation_latency_ms: data.generationLatencyMs ?? null, p_estimated_cost_usd: data.estimatedCostUsd ?? null,
                 p_actual_cost_usd: data.actualCostUsd ?? null, p_error_code: data.errorCode ?? null, p_error_message: data.errorMessage ?? null,
                 p_asset_readiness: data.assetReadiness ?? null, p_validation_warnings: data.validationWarnings ?? null,
+                p_generation_quality: data.generationQuality ?? null, p_prompt_sha256: data.promptSha256 ?? null,
+                p_concept_snapshot: data.conceptSnapshot ?? null,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile aggiornare lo stato della richiesta.', { cause: error })

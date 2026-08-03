@@ -6,6 +6,7 @@ import { TEST_CREATURE_IDENTITY, createValidConcept } from './concept-test-fixtu
 import {
     composeCreatureTransformationPrompt,
     CREATURE_PROMPT_TEMPLATE_VERSION,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
     CreaturePromptCompositionError,
     type CreaturePromptTemplateVersion,
 } from './prompt-composer.ts'
@@ -224,5 +225,35 @@ Visual style: Illustrazione organica con linee morbide e materiali naturali. Kee
 TECHNICAL
 Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
 `)
+    })
+
+    it('matches the isolated v2 experimental preservation snapshot without changing v1', () => {
+        const experimental = composeCreatureTransformationPrompt({
+            identity: TEST_CREATURE_IDENTITY,
+            concept: createValidConcept(),
+            renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+        })
+
+        expect(experimental.templateVersion).toBe(CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL)
+        expect(experimental.sections.preservation).toMatchInlineSnapshot(`
+"Preserve these concept commitments: volto a mezzaluna, palette turchese, and coda corta. Keep the face and expression recognisable. Preserve the established palette and body proportions. Preserve the pose. Preserve the composition. Keep the face and eyes unchanged unless the requested body area explicitly requires them. Keep the same pose, overall silhouette, and dominant palette."
+`)
+        expect(experimental.prompt).not.toMatch(/provider|openai|gameplay|player_creatures/i)
+        expect(experimental.sections.transformation).toContain(createValidConcept().conceptName)
+    })
+})
+
+describe('experimental prompt with prior adopted transformations', () => {
+    it('instructs the image pipeline to preserve rather than repeat prior visual evolution', () => {
+        const composed = composeCreatureTransformationPrompt({
+            identity: TEST_CREATURE_IDENTITY,
+            concept: createValidConcept(),
+            renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+            previousTransformations: [{ versionNumber: 2, visualTraitId: 'IMPACT_ADAPTATION', conceptName: 'Scudi flessibili' }],
+        })
+        expect(composed.prompt).toContain('Preserve prior adopted transformations')
+        expect(composed.prompt).toContain('Do not remove or repeat them')
     })
 })

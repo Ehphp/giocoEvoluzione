@@ -15,6 +15,7 @@ export type GenerateConceptServiceInput = Readonly<{
     resolver: CreatureIdentityResolver
     generator: CreatureConceptGenerator
     now?: () => number
+    benchmarkConceptSeed?: string
 }>
 
 export async function generateConceptForAuthenticatedProfile(
@@ -43,7 +44,8 @@ export async function generateConceptForAuthenticatedProfile(
             identity: resolvedCreature.identity,
             visualTrait,
             intensity: input.request.intensity,
-            seed: [
+            previousTransformations: resolvedCreature.previousTransformations,
+            seed: input.benchmarkConceptSeed ?? [
                 input.profileId,
                 input.request.creatureId,
                 input.request.visualTraitId,
@@ -75,6 +77,7 @@ export async function generateConceptForAuthenticatedProfile(
             concept: generated.concept,
             renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
             templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION,
+            previousTransformations: resolvedCreature.previousTransformations,
         }),
         generation: {
             generator: generated.metadata.generator,

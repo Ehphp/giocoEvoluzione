@@ -17,6 +17,7 @@ export type PlayerCreatureRecord = {
     level: number
     experience: number
     progression_state: Record<string, unknown>
+    current_visual_version_id?: string | null
     created_at: string
     updated_at: string
 }
@@ -80,6 +81,7 @@ export function mapPlayerCreatureRecord(data: Record<string, unknown>): PlayerCr
         level: Number(data.level),
         experience: Number(data.experience),
         progression_state: asRecord(data.progression_state),
+        current_visual_version_id: typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
     }

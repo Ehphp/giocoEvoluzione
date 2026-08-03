@@ -18,4 +18,11 @@ export type TransformationRequestStatusPersistence = TransformationCost & {
     createdAt: string
     startedAt?: string
     completedAt?: string
+    benchmark?: {
+        benchmarkCaseId: string
+        generationProfileId: string
+        conceptSeed: string
+        promptTemplateVersion: string
+        promptSha256: string
+    }
 }

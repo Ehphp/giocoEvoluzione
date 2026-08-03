@@ -1,14 +1,27 @@
 import type { CreatureIdentityResolver, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
 import { CREATURE_IDENTITY_REGISTRY, type CreatureIdentityDefinition } from './identity-registry.ts'
+import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 
 export type StoredPlayerCreature = Readonly<{
     id: string
     profileId: string
     baseCreatureKey: string
+    currentVisualVersionId?: string | null
+}>
+
+export type StoredCurrentVisualVersion = Readonly<{
+    id: string
+    creatureId: string
+    assetPath: string
+    assetSha256: string
+    versionNumber: number
+    isBaseVersion: boolean
 }>
 
 export interface PlayerCreatureRepository {
     findByCreatureId(creatureId: string): Promise<StoredPlayerCreature | null>
+    findCurrentVisualVersion?(input: { creatureId: string; versionId: string }): Promise<StoredCurrentVisualVersion | null>
+    listPreviousTransformations?(creatureId: string): Promise<PreviousCreatureTransformationSummary[]>
 }
 
 export type CreatureIdentityResolutionErrorCode =
@@ -71,6 +84,16 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
             throw new CreatureIdentityResolutionError('CREATURE_IDENTITY_CONFIGURATION_INVALID', 'La configurazione canonica della creatura non e completa.')
         }
 
+        const currentVisualVersion = creature.currentVisualVersionId && this.repository.findCurrentVisualVersion
+            ? await this.repository.findCurrentVisualVersion({ creatureId: creature.id, versionId: creature.currentVisualVersionId })
+            : null
+        if (creature.currentVisualVersionId && !currentVisualVersion) {
+            throw new CreatureIdentityResolutionError('CREATURE_LOOKUP_FAILED', 'La versione visuale corrente della creatura non e disponibile.')
+        }
+        const previousTransformations = creature.currentVisualVersionId && this.repository.listPreviousTransformations
+            ? await this.repository.listPreviousTransformations(creature.id)
+            : []
+
         return {
             identity: {
                 creatureId: creature.id,
@@ -79,8 +102,12 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
                 identityFeatures: [...definition.identityFeatures],
                 styleDefinition: definition.styleDefinition,
             },
-            sourceImagePath: definition.sourceImagePath,
+            sourceImagePath: currentVisualVersion?.assetPath ?? definition.sourceImagePath,
+            sourceSha256: currentVisualVersion?.assetSha256 ?? '768a79a14109c0c4a893275492fdac063a4be37346f745c6207c45baecf82d9d',
+            sourceIsBaseVersion: currentVisualVersion?.isBaseVersion ?? true,
+            currentVisualVersionId: currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
+            currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,
+            previousTransformations: previousTransformations.slice(0, 8),
         }
     }
 }
-

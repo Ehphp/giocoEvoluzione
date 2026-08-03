@@ -46,6 +46,7 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
                 identity: input.identity,
                 visualTrait: controlledTrait,
                 intensity: input.intensity,
+                previousTransformations: input.previousTransformations,
                 seed: input.seed,
                 correctionFeedback: input.correctionFeedback ?? [],
             })
@@ -62,6 +63,7 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
             requestedVisualTrait: controlledTrait,
             requestedIntensity: input.intensity,
             identity: input.identity,
+            previousTransformations: input.previousTransformations,
         })
         if (!validation.valid) {
             throw new CreatureConceptGenerationError(

@@ -13,6 +13,12 @@ type ProfileScreenProps = {
     errorMessage: string | null
     onBack: () => void
     onLogout: () => void
+    visualUrl?: string | null
+    visualVersionNumber?: number | null
+    visualTrait?: string | null
+    visualProgress?: { progress: number; target: number; status: string } | null
+    onOpenEvolution?: () => void
+    visualHistory?: ReadonlyArray<{ versionNumber: number; visualTraitId: string; conceptName: string }>
 }
 
 function formatDate(value: string) {
@@ -29,6 +35,12 @@ export function ProfileScreen({
     errorMessage,
     onBack,
     onLogout,
+    visualUrl,
+    visualVersionNumber,
+    visualTrait,
+    visualProgress,
+    onOpenEvolution,
+    visualHistory,
 }: ProfileScreenProps) {
     const experience = getExperienceProgress(creature.experience)
     const stats = useMemo(() => history.reduce((total, item) => ({
@@ -48,9 +60,17 @@ export function ProfileScreen({
             </header>
 
             <section className="profile-screen__creature">
+                {visualUrl ? <img className="profile-screen__creature-image" src={visualUrl} alt="Visuale ufficiale della creatura" /> : null}
                 <div><span>Creatura attuale</span><h2>{creature.name ?? 'Creatura iniziale'}</h2><p>{creature.base_creature_key}</p></div>
                 <div><strong>Livello {creature.level}</strong><small>Esperienza: {experience.current} / {experience.required}</small></div>
             </section>
+
+            <section className="profile-screen__visual" aria-label="Progressione visuale">
+                <div><span>Versione visuale</span><strong>{visualVersionNumber ?? 1}</strong><small>{visualTrait ?? 'Forma base'}</small></div>
+                {visualProgress ? <div><span>Percorso visivo</span><strong>{visualProgress.status === 'READY' ? 'Trasformazione sbloccata' : `${visualProgress.progress} / ${visualProgress.target} vittorie`}</strong></div> : null}
+                {onOpenEvolution ? <button type="button" onClick={onOpenEvolution}>Apri evoluzione</button> : null}
+            </section>
+            {visualHistory?.length ? <section className="profile-screen__visual-history"><h2>Storico visuale</h2><ol>{visualHistory.map((entry) => <li key={entry.versionNumber}>v{entry.versionNumber} · {entry.visualTraitId} · {entry.conceptName}</li>)}</ol></section> : null}
 
             <section className="profile-screen__stats" aria-label="Statistiche">
                 <article><span>Partite</span><strong>{stats.played}</strong></article>

@@ -12,12 +12,14 @@ import { useGeneSelectionV2Controller } from './components/game-v2/controller/us
 import { ProfileScreen } from './components/profile/ProfileScreen'
 import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
 import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
+import { CreatureVisualProgressionScreen } from './components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
 import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
 import { type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
+import { getCurrentCreatureVisual, getGameCreatureVisuals, getCreatureVisualProgress } from './lib/creature-transformations-api'
 import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
 import {
   acknowledgeReveal,
@@ -35,17 +37,23 @@ import {
   type PlayerRecord,
 } from './lib/game-api'
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
+import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
-type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab'
+type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab' | 'creature-evolution'
 
 const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
+const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
+const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
 
 function getInitialScreen(): CurrentScreen {
-  return isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH
-    ? 'creature-transformation-lab'
-    : 'home'
+  if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) return 'creature-transformation-lab'
+  if (isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH) return 'creature-evolution'
+  return 'home'
 }
+
+type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null }
+type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ versionNumber: number; visualTraitId: string; conceptName: string }> }
 
 type ResolutionData = {
   ruleVersion?: string
@@ -95,6 +103,9 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(window.navigator.onLine)
+  const [officialVisual, setOfficialVisual] = useState<OfficialVisual | null>(null)
+  const [visualProgress, setVisualProgress] = useState<VisualProgressSummary | null>(null)
+  const [gameVisuals, setGameVisuals] = useState<{ player: OfficialVisual; opponent: OfficialVisual | null } | null>(null)
 
   useEffect(() => {
     if (!hasSupabaseConfig || authStatus !== 'ready' || !profileId) {
@@ -146,12 +157,18 @@ function App() {
   }, [authStatus])
 
   useEffect(() => {
-    if (!isCreatureTransformationLabEnabled) {
+    if (!isCreatureTransformationLabEnabled && !isCreatureVisualProgressionEnabled) {
       return
     }
 
     const syncTechnicalRoute = () => {
-      setCurrentScreen(window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH ? 'creature-transformation-lab' : 'home')
+      setCurrentScreen(
+        isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH
+          ? 'creature-transformation-lab'
+          : isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH
+            ? 'creature-evolution'
+            : 'home',
+      )
     }
 
     window.addEventListener('hashchange', syncTechnicalRoute)
@@ -163,6 +180,56 @@ function App() {
       setNickname(profileNickname)
     }
   }, [profileNickname])
+
+  useEffect(() => {
+    if (!isCreatureVisualProgressionEnabled || !auth.profile || !auth.creature) {
+      setOfficialVisual(null)
+      setVisualProgress(null)
+      return
+    }
+    let active = true
+    let refreshTimer: number | undefined
+    const load = async () => {
+      try {
+        const [visual, progression] = await Promise.all([
+          getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: auth.creature!.id }),
+          getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: auth.creature!.id }),
+        ])
+        if (!active) return
+        setOfficialVisual(visual.visual)
+        setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history })
+        const wait = Math.max(15_000, Date.parse(visual.visual.expiresAt) - Date.now() - 30_000)
+        refreshTimer = window.setTimeout(() => { void load() }, wait)
+      } catch {
+        // The stable base asset remains the UI fallback during rollout or URL errors.
+        if (active) setOfficialVisual(null)
+      }
+    }
+    void load()
+    return () => { active = false; if (refreshTimer) window.clearTimeout(refreshTimer) }
+  }, [auth.creature, auth.profile])
+
+  useEffect(() => {
+    if (!isCreatureVisualProgressionEnabled || !snapshot?.game.id || !auth.profile) {
+      setGameVisuals(null)
+      return
+    }
+    let active = true
+    let refreshTimer: number | undefined
+    const load = async () => {
+      try {
+        const visuals = await getGameCreatureVisuals({ operation: 'GET_GAME_VISUALS', gameId: snapshot.game.id })
+        if (!active) return
+        setGameVisuals(visuals)
+        const expiry = [visuals.player.expiresAt, visuals.opponent?.expiresAt].filter((value): value is string => Boolean(value)).map((value) => Date.parse(value))
+        refreshTimer = window.setTimeout(() => { void load() }, Math.max(15_000, Math.min(...expiry) - Date.now() - 30_000))
+      } catch {
+        if (active) setGameVisuals(null)
+      }
+    }
+    void load()
+    return () => { active = false; if (refreshTimer) window.clearTimeout(refreshTimer) }
+  }, [auth.profile, snapshot?.game.id])
 
   useEffect(() => {
     if (currentScreen !== 'profile' || !profileId) {
@@ -367,9 +434,9 @@ function App() {
     }
 
     return auth.profile && auth.creature
-      ? buildAuthenticatedHomeViewModel({ ...input, profile: auth.profile, creature: auth.creature })
+      ? buildAuthenticatedHomeViewModel({ ...input, profile: auth.profile, creature: auth.creature, officialVisualUrl: officialVisual?.signedUrl })
       : buildGuestHomeViewModel(input)
-  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, roomCode, statusMessage])
+  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, roomCode, statusMessage])
 
   async function refreshSnapshot(gameId: string, playerId: string) {
     const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
@@ -564,6 +631,25 @@ function App() {
     setCurrentScreen('home')
   }
 
+  function handleLeaveCreatureEvolution() {
+    if (window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+    setCurrentScreen('home')
+  }
+
+  function handleOpenCreatureEvolution() {
+    if (!isCreatureVisualProgressionEnabled) return
+    window.location.hash = CREATURE_VISUAL_PROGRESSION_HASH
+    setCurrentScreen('creature-evolution')
+  }
+
+  async function handleVisualChanged() {
+    setOfficialVisual(null)
+    setGameVisuals(null)
+    await refreshProfile()
+  }
+
   async function handleLogout() {
     clearStoredSession()
     setSnapshot(null)
@@ -624,6 +710,12 @@ function App() {
               creature={auth.creature}
               onBack={handleLeaveCreatureTransformationLab}
             />
+          ) : !snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && auth.creature ? (
+            <CreatureVisualProgressionScreen
+              creature={auth.creature}
+              onBack={handleLeaveCreatureEvolution}
+              onVisualChanged={handleVisualChanged}
+            />
           ) : !snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
             <ProfileScreen
               profile={auth.profile}
@@ -633,6 +725,12 @@ function App() {
               errorMessage={historyError}
               onBack={() => setCurrentScreen('home')}
               onLogout={() => void handleLogout()}
+              visualUrl={officialVisual?.signedUrl}
+              visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
+              visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
+              visualProgress={visualProgress?.track}
+              visualHistory={visualProgress?.history}
+              onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
             />
           ) : !snapshot ? (
             <HomeScreen
@@ -694,6 +792,8 @@ function App() {
               onContinue={() => void handleAdvanceRound()}
               isBusy={isBusy}
               errorMessage={errorMessage}
+              playerVisual={gameVisuals ? { src: gameVisuals.player.signedUrl, alt: 'Creatura del giocatore', scale: .82, offsetX: -10, offsetY: 25 } : undefined}
+              opponentVisual={gameVisuals?.opponent ? { src: gameVisuals.opponent.signedUrl, alt: 'Creatura avversaria', scale: .72, offsetX: 6, offsetY: 25 } : undefined}
             />
           ) : resultViewModel ? (
             <MatchResultScreen
@@ -724,6 +824,8 @@ type ConnectedGeneSelectionScreenV2Props = {
   onContinue: () => void
   isBusy: boolean
   errorMessage: string | null
+  playerVisual?: CreatureVisual
+  opponentVisual?: CreatureVisual
 }
 
 function ConnectedGeneSelectionScreenV2({
@@ -736,6 +838,8 @@ function ConnectedGeneSelectionScreenV2({
   onContinue,
   isBusy,
   errorMessage,
+  playerVisual,
+  opponentVisual,
 }: ConnectedGeneSelectionScreenV2Props) {
   const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
     snapshot,
@@ -750,7 +854,7 @@ function ConnectedGeneSelectionScreenV2({
   return (
     <>
       <GeneSelectionScreenV2
-        viewModel={viewModel}
+        viewModel={{ ...viewModel, player: { ...viewModel.player, creatureVisual: playerVisual ?? viewModel.player.creatureVisual }, opponent: { ...viewModel.opponent, creatureVisual: opponentVisual ?? viewModel.opponent.creatureVisual } }}
         onSelectGene={onSelectGene}
         onUseGene={onUseGene}
         onEvolveGene={onEvolveGene}

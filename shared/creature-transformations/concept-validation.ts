@@ -3,6 +3,7 @@ import { TRANSFORMATION_INTENSITIES, type CreatureTransformationConcept, type Tr
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import { MUTATION_ARCHETYPES, type MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
+import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 
 export type ConceptProblemCode =
     | 'INVALID_CONCEPT'
@@ -24,6 +25,7 @@ export type ConceptProblemCode =
     | 'MISSING_REQUIRED_FIELD'
     | 'INVALID_FIELD_TYPE'
     | 'EMPTY_TEXT_FIELD'
+    | 'PREVIOUS_TRANSFORMATION_REMOVED'
 
 export type ConceptProblem = {
     code: ConceptProblemCode
@@ -35,6 +37,7 @@ export type ConceptValidationContext = {
     requestedVisualTrait: VisualTraitDefinition
     requestedIntensity: TransformationIntensity
     identity: CreatureSemanticIdentity
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }
 
 export type ConceptValidationResult =
@@ -50,6 +53,7 @@ const CONCEPT_FIELDS = new Set([
 const PRIMARY_MUTATION_FIELDS = new Set(['mutationArchetype', 'bodyAreas', 'morphology', 'material'])
 const TECHNICAL_INSTRUCTION_PATTERN = /\b(?:png|jpe?g|webp|canvas|alpha|trasparen\w*|sfondo|background|dimension\w*|pixel|risoluzione|resolution|posa|pose|path|url|1024|1536)\b/i
 const IDENTITY_BREAKING_PATTERN = /(?:nuova specie|cambio di specie|sostituzione del volto|anatomia umanoide|trasformazione totale|completamente diverso)/i
+const PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN = /(?:rimuov|elimin|cancell|sostituisc|remove|replace).*(?:mutazion|evoluzion|adaptation)/i
 
 function isRecord(value: unknown): value is UnknownRecord {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -207,6 +211,9 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
         .join(' ')
     if (IDENTITY_BREAKING_PATTERN.test(positiveText)) {
         problems.push(makeProblem('CONTRADICTORY_INSTRUCTIONS', 'La mutazione propone un cambiamento incompatibile con l identita della creatura.'))
+    }
+    if (context.previousTransformations?.length && PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN.test([...positiveText, ...(forbiddenChanges ?? [])].join(' '))) {
+        problems.push(makeProblem('PREVIOUS_TRANSFORMATION_REMOVED', 'Il concept non puo dichiarare la rimozione o sostituzione di evoluzioni precedenti.'))
     }
 
     if (problems.length || visualTrait === null || !primaryMutation || secondaryMutations === null || identityToPreserve === null || forbiddenChanges === null || intensity !== context.requestedIntensity) {

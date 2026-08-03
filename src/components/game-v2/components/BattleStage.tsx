@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 
 import type { CreatureVisual } from '../gameSelectionAssets'
 
@@ -8,6 +8,8 @@ type BattleStageProps = {
 }
 
 function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: 'player' | 'opponent' }) {
+    const [source, setSource] = useState(visual.src)
+    useEffect(() => setSource(visual.src), [visual.src])
     const style = {
         '--battle-creature-scale': visual.scale ?? 1,
         '--battle-creature-height': `${145 * (visual.scale ?? 1)}%`,
@@ -18,7 +20,7 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: 'player
     return (
         <div className={`battle-stage__creature battle-stage__creature--${side}`} style={style}>
             <span className="battle-stage__ground-shadow" aria-hidden="true" />
-            <img src={visual.src} alt={visual.alt} />
+            <img src={source} alt={visual.alt} onError={() => setSource(side === 'player' ? '/assets/battle/creatures/verdant-hatchling.png' : '/assets/battle/creatures/amethyst-hatchling.png')} />
         </div>
     )
 }

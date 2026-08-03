@@ -4,6 +4,7 @@ import { getRoundEventById, normalizeAdaptationCollection } from '../../../share
 import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
+import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion } from './visual-progression-adapter.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
@@ -81,6 +82,7 @@ async function applyStoredResolution(
     player1Id: string,
     player2Id: string,
     resolutionData: Record<string, unknown>,
+    visualParticipants: Array<{ id: string; profileId: string | null; creatureId: string | null }>,
 ) {
     const player1TraitsAfter = normalizeAdaptationCollection(resolutionData.player1TraitsAfter as AdaptationCollection)
     const player2TraitsAfter = normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection)
@@ -104,6 +106,22 @@ async function applyStoredResolution(
             })
             .eq('id', gameId),
     ])
+
+    if (Deno.env.get('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true' && statusAfter === 'FINISHED' && finishedAt) {
+        const events = createMatchCompletionEvents({
+            gameId,
+            winnerPlayerId: winnerIdAfter,
+            completedAt: finishedAt,
+            participants: visualParticipants,
+        })
+        for (const event of events) {
+            try {
+                await recordCreatureVisualProgressFromMatchCompletion(supabaseAdmin, event)
+            } catch (error) {
+                console.error('Creature visual progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
+            }
+        }
+    }
 }
 
 Deno.serve(async (request) => {
@@ -180,6 +198,7 @@ Deno.serve(async (request) => {
                 String(player1.id),
                 String(player2.id),
                 (existingResultData.resolution_data as Record<string, unknown>) ?? {},
+                visualParticipants,
             )
 
             return json({ status: 'already_resolved', result: existingResultData })
@@ -201,6 +220,12 @@ Deno.serve(async (request) => {
         if (!roundEventId) {
             return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
         }
+
+        const visualParticipants = [player1, player2].map((player) => ({
+            id: String(player.id),
+            profileId: typeof player.profile_id === 'string' ? player.profile_id : null,
+            creatureId: typeof player.creature_id === 'string' ? player.creature_id : null,
+        }))
 
         if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
             return json({ error: 'This round is no longer available.' }, 400)
@@ -298,6 +323,7 @@ Deno.serve(async (request) => {
                         String(player1.id),
                         String(player2.id),
                         (duplicateResult.resolution_data as Record<string, unknown>) ?? {},
+                        visualParticipants,
                     )
 
                     return json({ status: 'already_resolved', result: duplicateResult })
@@ -313,6 +339,7 @@ Deno.serve(async (request) => {
             String(player1.id),
             String(player2.id),
             resolution.resolution_data,
+            visualParticipants,
         )
 
         return json({ status: 'resolved', result: insertedResult })

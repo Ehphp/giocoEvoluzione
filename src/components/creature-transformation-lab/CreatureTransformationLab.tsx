@@ -21,12 +21,15 @@ import {
     generateCreatureTransformationImage,
 } from '../../lib/creature-transformations-api'
 import { canGenerateMockImage } from './lab-image-state'
+import { CreatureTransformationBenchmark } from './CreatureTransformationBenchmark'
+import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
 
 import './CreatureTransformationLab.css'
 
 type ConceptMode = 'MOCK' | 'AI'
 const REAL_IMAGE_FRONTEND_ENABLED = isRealImageExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED)
+const BENCHMARK_FRONTEND_ENABLED = isCreatureTransformationBenchmarkVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED)
 const REAL_POLL_INTERVAL_MS = 2500
 const REAL_POLL_TIMEOUT_MS = 60000
 
@@ -351,6 +354,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                     {realStatus?.error ? <p role="alert"><strong>{realStatus.error.code}</strong>: {realStatus.error.message}</p> : null}
                 </section>
             ) : null}
+            {BENCHMARK_FRONTEND_ENABLED ? <CreatureTransformationBenchmark creature={creature} /> : null}
         </section>
     )
 }

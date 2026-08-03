@@ -21,7 +21,12 @@ import {
     SupabaseCreatureTransformationRequestRepository,
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
+import {
+    SupabaseExperimentReviewRepository,
+    type ExperimentReviewRepositoryClient,
+} from './experiment-review-repository.ts'
 import { OpenAiCreatureImageProvider } from './openai-creature-image-provider.ts'
+import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
 
 declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void }
 
@@ -51,7 +56,7 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('player_creatures')
-                .select('id, profile_id, base_creature_key')
+                .select('id, profile_id, base_creature_key, current_visual_version_id')
                 .eq('id', creatureId)
                 .maybeSingle()
             if (error) {
@@ -66,7 +71,39 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
                 id: String(data.id),
                 profileId: String(data.profile_id),
                 baseCreatureKey: String(data.base_creature_key),
+                currentVisualVersionId: typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
             }
+        },
+        async findCurrentVisualVersion({ creatureId, versionId }) {
+            const { data, error } = await supabaseAdmin
+                .from('creature_visual_versions')
+                .select('id, creature_id, asset_path, asset_sha256, version_number, visual_trait_id')
+                .eq('id', versionId)
+                .eq('creature_id', creatureId)
+                .eq('status', 'ACTIVE')
+                .maybeSingle()
+            if (error) throw error
+            if (!data) return null
+            return {
+                id: String(data.id), creatureId: String(data.creature_id), assetPath: String(data.asset_path),
+                assetSha256: String(data.asset_sha256), versionNumber: Number(data.version_number), isBaseVersion: data.visual_trait_id === null,
+            }
+        },
+        async listPreviousTransformations(creatureId) {
+            const { data, error } = await supabaseAdmin
+                .from('creature_visual_versions')
+                .select('version_number, visual_trait_id, concept_name')
+                .eq('creature_id', creatureId)
+                .not('visual_trait_id', 'is', null)
+                .in('status', ['ACTIVE', 'SUPERSEDED'])
+                .order('version_number', { ascending: true })
+                .limit(8)
+            if (error) throw error
+            return (data ?? []).flatMap((entry) => (
+                typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
+                    ? [{ versionNumber: Number(entry.version_number), visualTraitId: entry.visual_trait_id as import('../../../shared/creature-transformations/visual-traits.ts').VisualTraitId, conceptName: entry.concept_name }]
+                    : []
+            ))
         },
     }
 }
@@ -119,6 +156,8 @@ Deno.serve(async (request) => {
         { signedUrlTtlSeconds: policy.signedUrlTtlSeconds },
     )
     const requestRepository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
+    const reviewRepository = new SupabaseExperimentReviewRepository(supabaseAdmin as unknown as ExperimentReviewRepositoryClient)
+    const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
     const result = await orchestrateCreatureTransformation({
         profileId: authData.user.id,
         requestId,
@@ -128,13 +167,15 @@ Deno.serve(async (request) => {
         createGenerator,
         storage,
         createImageProvider: () => new MockCreatureImageProvider(),
-        createRealImageProvider: () => new OpenAiCreatureImageProvider({
-            apiKey: policy.realImage.apiKey!, model: policy.realImage.model!, quality: policy.realImage.quality,
-            timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: policy.realImage.estimatedCostUsd!,
+        createRealImageProvider: (configuration) => new OpenAiCreatureImageProvider({
+            apiKey: policy.realImage.apiKey!, model: configuration?.model ?? policy.realImage.model!, quality: configuration?.quality ?? policy.realImage.quality,
+            timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: configuration?.estimatedCostUsd ?? policy.realImage.estimatedCostUsd!,
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         postProcessor: new NoopImagePostProcessor(),
         repository: requestRepository,
+        reviewRepository,
+        visualRepository,
     })
     if (!result.success) {
         console.error('Creature transformation request failed', {
@@ -157,9 +198,9 @@ Deno.serve(async (request) => {
     }
     console.info('Creature transformation request completed', {
         requestId,
-        transformationRequestId: result.requestPersistence.transformationRequestId,
+        transformationRequestId: 'requestPersistence' in result ? result.requestPersistence.transformationRequestId : undefined,
         operation: (body && typeof body === 'object' ? (body as { operation?: unknown }).operation : undefined),
-        status: result.requestPersistence.status,
+        status: 'requestPersistence' in result ? result.requestPersistence.status : undefined,
         ...('generation' in result ? {
             provider: 'provider' in result.generation ? result.generation.provider : result.generation.generator,
             model: result.generation.model,

@@ -1,5 +1,6 @@
 import type { CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
+import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION, type CreatureRenderSpecification } from './render-specifications.ts'
 import {
     composeCreatureTransformationPromptTemplateV1,
@@ -7,17 +8,22 @@ import {
     type CreaturePromptSections,
     type CreaturePromptTemplateVersion,
 } from './prompt-template-v1.ts'
+import {
+    composeCreatureTransformationPromptTemplateV2Experimental,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+} from './prompt-template-v2-experimental.ts'
 import { normalizePromptText, uniquePromptItems } from './prompt-normalization.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
 export type { CreaturePromptSections, CreaturePromptTemplateVersion }
-export { CREATURE_PROMPT_TEMPLATE_VERSION }
+export { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL }
 
 export type ComposeCreatureTransformationPromptInput = Readonly<{
     identity: CreatureSemanticIdentity
     concept: CreatureTransformationConcept
     renderSpecification: CreatureRenderSpecification
     templateVersion: CreaturePromptTemplateVersion
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }>
 
 export type ComposedCreatureTransformationPrompt = Readonly<{
@@ -108,7 +114,7 @@ function formatPrompt(sections: CreaturePromptSections): string {
 export function composeCreatureTransformationPrompt(
     input: ComposeCreatureTransformationPromptInput,
 ): ComposedCreatureTransformationPrompt {
-    if (input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION) {
+    if (input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION && input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL) {
         throw new CreaturePromptCompositionError('UNSUPPORTED_TEMPLATE_VERSION', 'La versione del template prompt non e supportata.')
     }
 
@@ -125,11 +131,14 @@ export function composeCreatureTransformationPrompt(
         throw new CreaturePromptCompositionError('UNSUPPORTED_VISUAL_TRAIT', 'Il Visual Trait del concept non appartiene al catalogo.')
     }
 
-    const sections = composeCreatureTransformationPromptTemplateV1({
+    const templateInput = {
         ...input,
         identity: { ...input.identity, identityFeatures },
         visualTrait,
-    })
+    }
+    const sections = input.templateVersion === CREATURE_PROMPT_TEMPLATE_VERSION
+        ? composeCreatureTransformationPromptTemplateV1(templateInput)
+        : composeCreatureTransformationPromptTemplateV2Experimental(templateInput)
     for (const section of SECTION_ORDER) {
         if (!normalizePromptText(sections[section])) {
             throw new CreaturePromptCompositionError('EMPTY_COMPOSED_SECTION', `La sezione ${SECTION_HEADINGS[section]} non puo essere vuota.`)
@@ -138,8 +147,7 @@ export function composeCreatureTransformationPrompt(
 
     return {
         prompt: formatPrompt(sections),
-        templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION,
+        templateVersion: input.templateVersion,
         sections,
     }
 }
-

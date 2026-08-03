@@ -63,10 +63,13 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Style definition: ${input.identity.styleDefinition}`,
         `Requested visual trait: ${input.visualTrait.id}.`,
         `Requested intensity: ${input.intensity}.`,
+        input.previousTransformations?.length
+            ? `Previously adopted visual transformations that must remain visible and must not be repeated: ${input.previousTransformations.map((entry) => `v${entry.versionNumber} ${entry.visualTraitId}: ${entry.conceptName}`).join('; ')}.`
+            : 'There are no prior adopted visual transformations.',
         `Allowed primary body areas: ${input.visualTrait.allowedBodyAreas.join(', ')}.`,
         `Allowed mutation archetypes: ${input.visualTrait.allowedMutationArchetypes.join(', ')}.`,
         `Creative limits: at most ${input.visualTrait.creativeLimits.maxPrimaryBodyAreas} primary body areas and ${input.visualTrait.creativeLimits.maxSecondaryMutations} secondary mutations.`,
-        'Propose exactly one primary mutation. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
+        'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
         'Return all required fields and no additional fields. Do not include markdown or explanations.',
         correctionFeedback,
     ].join('\n')

@@ -22,6 +22,7 @@ Impostare questi secret fuori dal controllo versione:
 - `OPENAI_IMAGE_QUALITY=medium`
 - `OPENAI_IMAGE_TIMEOUT_MS=120000`
 - `OPENAI_IMAGE_ESTIMATED_COST_USD` (obbligatorio e maggiore di zero per il pilot).
+- `CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD` (obbligatorio, finito e maggiore di zero per ogni richiesta `REAL`; deve essere almeno il costo stimato configurato).
 
 Valori mancanti o non validi adottano impostazioni sicure: laboratorio disabilitato, nessuna mode autorizzata, quota tecnica 10, budget `$0` e stale dopo 15 minuti. I mock consumano quota ma hanno costo stimato/effettivo `$0`. Il concept AI non inventa costi: se il provider non fornisce usage, i campi economici restano `null`.
 
@@ -95,6 +96,63 @@ La migration `202608020004_creature_transformation_real_image_pilot.sql` aggiung
 
 Il progetto locale usa gia `[edge_runtime] policy = "per_worker"` in `supabase/config.toml`, richiesto per sperimentare la task nel runtime locale.
 
+## Benchmark controllato e review (Fase 6C)
+
+La migration `202608030001_creature_transformation_benchmark_reviews.sql` aggiunge solo metadata riproducibili al ledger (`benchmark_case_id`, `generation_profile_id`, `concept_seed`, `prompt_sha256`, `concept_snapshot` validato e `generation_quality`) e la tabella RLS `creature_transformation_experiment_reviews`. Non aggiunge né aggiorna campi di `player_creatures` e non promuove asset: anche `FINAL_ASSET_CANDIDATE` è soltanto un verdict umano.
+
+Configurare inoltre, sempre come secret server-side:
+
+- `CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD=<limite-positivo-conservativo>` — nessun fallback permissivo. Se mancante/invalido o se `OPENAI_IMAGE_ESTIMATED_COST_USD` lo supera, `REAL` viene rifiutato con `REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED`.
+- `CREATURE_TRANSFORMATION_BENCHMARK_PROFILE_IDS=<uuid-di-un-solo-profilo>` — allowlist per preparare concept benchmark e avviare la singola immagine reale.
+- `CREATURE_TRANSFORMATION_BENCHMARK_REVIEWER_PROFILE_IDS=<stesso-uuid-per-il-primo-pilot>` — allowlist distinta per leggere risultati e salvare review.
+- `CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON` — catalogo JSON rigoroso. Il browser invia soltanto l'ID e non può impostare modello, qualità, provider, endpoint o costo.
+
+Esempio di struttura, non di prezzo reale da copiare alla cieca:
+
+```json
+{
+  "openai-medium-v1": {
+    "provider": "OPENAI",
+    "model": "gpt-image-1.5",
+    "quality": "medium",
+    "promptTemplateVersion": "creature-transformation-v1",
+    "estimatedCostUsd": 0,
+    "enabled": false
+  },
+  "openai-medium-v2-experimental": {
+    "provider": "OPENAI",
+    "model": "gpt-image-1.5",
+    "quality": "medium",
+    "promptTemplateVersion": "creature-transformation-v2-experimental",
+    "estimatedCostUsd": 0,
+    "enabled": false
+  }
+}
+```
+
+Un profile abilitato richiede un costo strettamente positivo entro il limite per richiesta. JSON invalido, campo sconosciuto, ID inesistente o profile disabilitato chiudono il flusso; non esiste override dal client. Il piano iniziale ha esattamente cinque casi, uno per Visual Trait, intensità 2 e seed versionati. Il template `creature-transformation-v2-experimental` è isolato: richiede la modifica della sorgente, conserva individuo/volto/occhi/posa/silhouette/palette e limita la mutazione alle sole body area del concept; `creature-transformation-v1` non cambia.
+
+La UI benchmark richiede flag non sensibile `VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED=true`, ma l'autorizzazione effettiva resta server-side. Carica solo risultati e review del reviewer autenticato. Export JSON/CSV è locale e contiene metadati, warning, rubric, costi e hash; esclude signed URL, path Storage, token, chiavi, byte e base64.
+
+### Smoke test remoto obbligatorio Fase 6C
+
+Non dichiarare completato questo smoke test finché non è stato realmente eseguito:
+
+1. Applicare la migration 6C dopo le migration 5, 6A e 6B.
+2. Deployare la Function aggiornata.
+3. Impostare entrambe le allowlist con un solo profilo di test.
+4. Impostare un limite per richiesta molto basso e un budget giornaliero ridotto.
+5. Definire un solo generation profile abilitato con modello autorizzato e costo conservativo.
+6. Pubblicare il flag Netlify `VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED=true` con build pulita.
+7. Eseguire un concept benchmark `MOCK` per un caso fisso.
+8. Eseguire un solo click `REAL`, confermando il costo mostrato.
+9. Verificare stato asincrono, hash e signed URL del risultato.
+10. Inviare una review con rubric e issue flag controllati.
+11. Aggiornare metriche, confronto affiancato ed export, verificando l'assenza di URL/path/secret nei file esportati.
+12. Verificare che `player_creatures` non sia cambiata.
+13. Riutilizzare la stessa idempotency key e verificare che non parta una seconda chiamata provider.
+14. Controllare i log: nessun prompt, byte, signed URL, header o segreto.
+
 I log della Function contengono solo request ID, transformation request ID, operation, stato, codice errore e metadati tecnici sicuri; non contengono prompt, byte, URL firmate, chiavi o header.
 
 ## Verifiche locali
@@ -128,3 +186,49 @@ npx supabase functions deploy generate-creature-transformation
 ```
 
 I test locali non sostituiscono questi controlli. Il recupero automatico di una richiesta stale e rimandato a una fase con job persistenti.
+
+## Fase 7 — progressione visiva prodotto
+
+La Fase 7 rende la visuale adottata una versione ufficiale della creatura, ma non modifica punteggio, adattamenti competitivi o scelte di un round. Il percorso riceve soltanto il risultato finale della partita: `WIN` assegna un punto, `DRAW` e `LOSS` zero.
+
+### Variabili server richieste
+
+```text
+CREATURE_VISUAL_PROGRESSION_ENABLED=true
+CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED=true
+CREATURE_VISUAL_ADOPTION_ENABLED=true
+CREATURE_VISUAL_PRODUCTION_PROFILE_IDS=<uuid-profilo-pilot>
+CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED=3
+```
+
+La soglia ha un solo default server-side (`3`), con limiti da 1 a 100. Per la generazione reale restano obbligatorie la configurazione OpenAI e i limiti Fase 6B (`CREATURE_TRANSFORMATION_REAL_IMAGE_*`, `OPENAI_IMAGE_*`, `CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD`).
+
+Se si usa un profilo immagini del catalogo controllato Fase 6C, impostare anche:
+
+```text
+CREATURE_VISUAL_PRODUCTION_GENERATION_PROFILE_ID=<id-profile-server-side>
+CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON=<catalogo-json>
+```
+
+In assenza dell'ID il percorso usa `OPENAI_IMAGE_*`. Il browser non invia modello, qualita, costo, provider, prompt o source version. Il flag frontend, puramente visuale, è `VITE_CREATURE_VISUAL_PROGRESSION_ENABLED=true`.
+
+### Migration e backfill remoto
+
+1. Caricare il PNG canonico esatto in `creature-transformation-sources/verdant-hatchling-v1.png`.
+2. Applicare `202608040001_creature_visual_progression.sql` dopo le migration Fase 6.
+3. La migration crea il catalogo base, inizializza le versioni condivise e aggiorna `player_creatures.current_visual_version_id`.
+4. Per un riesecuzione controllata, eseguire solo con service role `select public.backfill_creature_visual_base_versions();`.
+5. Deployare sia `generate-creature-transformation` sia `resolve-round`.
+
+Il backfill non duplica il PNG per profilo. Le versioni adottate riferiscono l'oggetto Storage esistente: una futura cleanup non deve eliminare alcun `result_path` presente in `creature_visual_versions`.
+
+### Smoke test Fase 7 da eseguire sul remoto
+
+1. Applicare migration/backfill, seedare Storage e deployare entrambe le Function.
+2. Configurare un solo profilo pilot e attivare i flag server-side.
+3. Completare tre vittorie e ripetere la resolve dello stesso match: deve esistere un solo evento per `(profile_id, game_id)`.
+4. Verificare `READY`, generare, attendere `FINAL_ASSET`/`GENERATED`, quindi adottare.
+5. Controllare incremento versione, Home, Profilo, bot, PvP, refresh della signed URL e assenza di cambi ai punteggi.
+6. Provare conflitto sorgente e rollback esplicito verso una versione precedente.
+
+Nessuna migration o smoke test Fase 7 è eseguito automaticamente da questa codebase.

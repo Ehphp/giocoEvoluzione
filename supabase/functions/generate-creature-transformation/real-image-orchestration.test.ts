@@ -5,6 +5,7 @@ import { createTestPng } from '../../../shared/creature-transformations/image-te
 import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
 import { NoopImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
+import { parseCreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { orchestrateGenerateImage, orchestrateGetTransformationRequestStatus } from './edge-orchestration.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { SupabaseCreatureTransformationStorageAdapter, type CreatureTransformationStorageClient } from './supabase-creature-transformation-storage.ts'
@@ -20,8 +21,9 @@ const policy: CreatureTransformationLabPolicy = {
     staleRequestSeconds: 900,
     realImage: {
         enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1']), apiKey: 'not-a-real-key', model: 'configured-image-model',
-        quality: 'medium', timeoutMs: 120000, estimatedCostUsd: 0.12,
+        quality: 'medium', timeoutMs: 120000, estimatedCostUsd: 0.12, maxEstimatedCostUsd: 0.25,
     },
+    benchmark: { allowedProfileIds: new Set(['profile-1']), reviewerProfileIds: new Set(['profile-1']), generationProfiles: parseCreatureImageGenerationProfiles('{"openai-medium-v1":{"provider":"OPENAI","model":"gpt-image-1.5","quality":"medium","promptTemplateVersion":"creature-transformation-v1","estimatedCostUsd":0.12,"enabled":true}}') },
 }
 
 function request(overrides: Record<string, unknown> = {}) {
@@ -132,6 +134,7 @@ describe('REAL image asynchronous orchestration', () => {
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, enabled: false } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_DISABLED' })
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, allowedProfileIds: new Set() } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' })
         await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, estimatedCostUsd: null } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' })
+        await expect(orchestrateGenerateImage(input({ policy: { ...policy, realImage: { ...policy.realImage, maxEstimatedCostUsd: 0.01 } } }))).resolves.toMatchObject({ code: 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' })
 
         const prepared = input()
         await orchestrateGenerateImage(prepared)

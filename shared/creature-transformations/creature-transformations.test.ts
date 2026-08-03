@@ -100,7 +100,9 @@ describe('creature transformation domain', () => {
                 ? request.visualTraitId
                 : request.operation === 'GENERATE_IMAGE'
                     ? request.concept.primaryMutation.mutationArchetype
-                    : request.transformationRequestId
+                    : request.operation === 'GET_REQUEST_STATUS' || request.operation === 'SUBMIT_EXPERIMENT_REVIEW'
+                        ? request.transformationRequestId
+                        : request.operation
         )
 
         expect(getRequestDetail(conceptRequest)).toBe('IMPACT_ADAPTATION')

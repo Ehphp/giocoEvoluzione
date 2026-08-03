@@ -5,6 +5,11 @@ import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
 import type { ComposedCreatureTransformationPrompt } from './prompt-composer.ts'
 import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
+import type { CreatureTransformationBenchmarkCase } from './benchmark-plan.ts'
+import type { CreatureImageGenerationProfile } from './image-generation-profiles.ts'
+import type { CreatureTransformationBenchmarkMetrics, CreatureTransformationExperimentReview, ExperimentReviewClassification } from './experiment-reviews.ts'
+import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
 export type CreatureTransformationAssetReadiness = 'FINAL_ASSET' | 'EXPERIMENT_ONLY'
 
@@ -70,6 +75,85 @@ export type GenerateImageAcceptedResponse = {
     requestPersistence: TransformationRequestPersistence
 }
 
+export type SubmitExperimentReviewResponse = {
+    success: true
+    requestId: string
+    review: CreatureTransformationExperimentReview
+    classification: ExperimentReviewClassification
+}
+
+export type BenchmarkResultEntry = Readonly<{
+    transformationRequestId: string
+    benchmarkCaseId: string
+    generationProfileId: string
+    conceptSeed: string
+    provider: string | null
+    model: string | null
+    quality: 'low' | 'medium' | 'high' | null
+    promptTemplateVersion: string | null
+    promptSha256: string | null
+    visualTraitId: string | null
+    intensity: number | null
+    status: 'RESERVED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'
+    assetReadiness: CreatureTransformationAssetReadiness | null
+    validationWarnings: string[]
+    generationLatencyMs: number | null
+    estimatedCostUsd: number | null
+    actualCostUsd: number | null
+    sourceSha256: string | null
+    resultSha256: string | null
+    result?: {
+        signedUrl: string
+        expiresAt: string
+        mimeType: 'image/png'
+        width: number
+        height: number
+    }
+    review: CreatureTransformationExperimentReview | null
+    classification: ExperimentReviewClassification
+}>
+
+export type GetBenchmarkResultsResponse = {
+    success: true
+    requestId: string
+    catalog: {
+        cases: readonly CreatureTransformationBenchmarkCase[]
+        profiles: readonly CreatureImageGenerationProfile[]
+        maxRealImageEstimatedCostUsd: number | null
+    }
+    entries: readonly BenchmarkResultEntry[]
+    metrics: CreatureTransformationBenchmarkMetrics
+}
+
+export type CreatureVisualProgressResponse = Readonly<{
+    success: true
+    requestId: string
+    track: CreatureVisualProgressTrack | null
+    currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
+    history: readonly PreviousCreatureTransformationSummary[]
+}>
+
+export type CurrentCreatureVisualApiResponse = Readonly<{
+    success: true
+    requestId: string
+    visual: CurrentCreatureVisualResponse
+}>
+
+export type GameCreatureVisualsResponse = Readonly<{
+    success: true
+    requestId: string
+    player: CurrentCreatureVisualResponse
+    opponent: CurrentCreatureVisualResponse | null
+}>
+
+export type AdoptCreatureTransformationResponse = Readonly<{
+    success: true
+    requestId: string
+    version: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
+}>
+
+export type RollbackCreatureVisualVersionResponse = AdoptCreatureTransformationResponse
+
 export type TransformationRequestStatusResponse = {
     success: true
     requestId: string
@@ -96,8 +180,16 @@ export type TransformationRequestStatusResponse = {
         code: string
         message: string
     }
+    productPreview?: {
+        progressTrackId: string
+        sourceVisualVersionId: string
+        visualTraitId: string
+        conceptName: string
+        evolutionaryFunction: string
+        warnings: string[]
+    }
 }
 
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

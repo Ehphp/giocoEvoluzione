@@ -1,5 +1,6 @@
 import type { CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
+import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 import type { CreatureRenderSpecification } from './render-specifications.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
 import {
@@ -12,7 +13,7 @@ import { formatPromptList, uniquePromptItems, withTerminalPunctuation } from './
 
 export const CREATURE_PROMPT_TEMPLATE_VERSION = 'creature-transformation-v1' as const
 
-export type CreaturePromptTemplateVersion = typeof CREATURE_PROMPT_TEMPLATE_VERSION
+export type CreaturePromptTemplateVersion = typeof CREATURE_PROMPT_TEMPLATE_VERSION | 'creature-transformation-v2-experimental'
 
 export type CreaturePromptSections = {
     identity: string
@@ -28,6 +29,7 @@ export type PromptTemplateV1Input = Readonly<{
     concept: CreatureTransformationConcept
     renderSpecification: CreatureRenderSpecification
     visualTrait: VisualTraitDefinition
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }>
 
 function sentence(label: string, value: string): string {

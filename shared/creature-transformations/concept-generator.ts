@@ -1,11 +1,13 @@
 import type { CreatureTransformationConcept, TransformationIntensity } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
+import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 
 export type CreatureConceptGenerationInput = {
     identity: CreatureSemanticIdentity
     visualTrait: VisualTraitDefinition
     intensity: TransformationIntensity
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
     seed?: string
     /** Internal feedback supplied only by retry orchestration. */
     correctionFeedback?: readonly string[]
@@ -36,6 +38,7 @@ export type StructuredConceptModelInput = {
     identity: CreatureSemanticIdentity
     visualTrait: VisualTraitDefinition
     intensity: TransformationIntensity
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
     seed?: string
     correctionFeedback: readonly string[]
 }

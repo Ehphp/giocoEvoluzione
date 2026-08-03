@@ -13,7 +13,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
-        expect(policy.realImage).toMatchObject({ enabled: false, provider: null, apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null })
+        expect(policy.realImage).toMatchObject({ enabled: false, provider: null, apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null })
     })
 
     it('parses the development policy without trusting client input', () => {
@@ -33,6 +33,10 @@ describe('creature transformation lab policy', () => {
             OPENAI_IMAGE_QUALITY: 'high',
             OPENAI_IMAGE_TIMEOUT_MS: '90000',
             OPENAI_IMAGE_ESTIMATED_COST_USD: '0.12',
+            CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD: '0.25',
+            CREATURE_TRANSFORMATION_BENCHMARK_PROFILE_IDS: 'profile-1',
+            CREATURE_TRANSFORMATION_BENCHMARK_REVIEWER_PROFILE_IDS: 'profile-1',
+            CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON: '{"openai-medium-v1":{"provider":"OPENAI","model":"gpt-image-1.5","quality":"medium","promptTemplateVersion":"creature-transformation-v1","estimatedCostUsd":0.12,"enabled":true}}',
         })[name])
 
         expect(policy.enabled).toBe(true)
@@ -42,7 +46,10 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(12)
         expect(policy.dailyBudgetUsd).toBe(3.25)
         expect(policy.staleRequestSeconds).toBe(240)
-        expect(policy.realImage).toMatchObject({ enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1', 'profile-2']), model: 'configured-image-model', quality: 'high', timeoutMs: 90000, estimatedCostUsd: 0.12 })
+        expect(policy.realImage).toMatchObject({ enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1', 'profile-2']), model: 'configured-image-model', quality: 'high', timeoutMs: 90000, estimatedCostUsd: 0.12, maxEstimatedCostUsd: 0.25 })
+        expect(policy.benchmark.allowedProfileIds).toEqual(new Set(['profile-1']))
+        expect(policy.benchmark.reviewerProfileIds).toEqual(new Set(['profile-1']))
+        expect(policy.benchmark.generationProfiles.profiles.get('openai-medium-v1')?.model).toBe('gpt-image-1.5')
     })
 
     it('uses bounded fail-safe defaults for invalid quote, budget and stale configuration', () => {
@@ -58,5 +65,10 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
         expect(policy.realImage).toMatchObject({ timeoutMs: 120000, estimatedCostUsd: null })
+    })
+
+    it('keeps visual progression disabled by default with one authoritative win target', () => {
+        const policy = readCreatureTransformationLabPolicy(() => undefined)
+        expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, winsRequired: 3 })
     })
 })

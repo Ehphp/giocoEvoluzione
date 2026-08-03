@@ -73,10 +73,10 @@ export class SupabaseCreatureTransformationStorageAdapter {
         this.now = options.now ?? (() => Date.now())
     }
 
-    async readCanonicalSource(sourceImagePath: string): Promise<CanonicalCreatureSourceImage> {
+    async readCanonicalSource(sourceImagePath: string, isBaseVersion = true): Promise<CanonicalCreatureSourceImage> {
         let result: { data: Blob | null; error: StorageError }
         try {
-            result = await this.client.from(this.sourceBucket).download(sourceImagePath)
+            result = await this.client.from(isBaseVersion ? this.sourceBucket : this.experimentBucket).download(sourceImagePath)
         } catch (error) {
             throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente canonica non e disponibile.', { cause: error })
         }
@@ -135,5 +135,25 @@ export class SupabaseCreatureTransformationStorageAdapter {
             signedUrl: signed.data.signedUrl,
             expiresAt: new Date(this.now() + this.signedUrlTtlSeconds * 1000).toISOString(),
         }
+    }
+
+    async createVisualVersionSignedUrl(input: { assetPath: string; isBaseVersion: boolean }): Promise<StoredCreatureTransformationImage> {
+        const bucket = input.isBaseVersion ? this.sourceBucket : this.experimentBucket
+        if (input.isBaseVersion && !/^[A-Za-z0-9._/-]{1,512}$/.test(input.assetPath)) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La sorgente visuale non e valida.')
+        }
+        if (!input.isBaseVersion && !isSafeResultObjectPath(input.assetPath)) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path della versione visuale non e valido.')
+        }
+        let signed: { data: { signedUrl?: string } | null; error: StorageError }
+        try {
+            signed = await this.client.from(bucket).createSignedUrl(input.assetPath, this.signedUrlTtlSeconds)
+        } catch (error) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo della visuale.', { cause: error })
+        }
+        if (signed.error || !signed.data?.signedUrl) {
+            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo della visuale.', { cause: signed.error ?? undefined })
+        }
+        return { signedUrl: signed.data.signedUrl, expiresAt: new Date(this.now() + this.signedUrlTtlSeconds * 1000).toISOString() }
     }
 }

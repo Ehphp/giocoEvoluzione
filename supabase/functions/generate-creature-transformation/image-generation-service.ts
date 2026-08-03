@@ -6,12 +6,16 @@ import { CreatureImageProviderError, type CreatureImageProvider } from '../../..
 import { ImagePostProcessingError, type ImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import { ImageValidator, type ImageValidationProblem } from '../../../shared/creature-transformations/image-validator.ts'
 import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION } from '../../../shared/creature-transformations/prompt-composer.ts'
+import type { CreaturePromptTemplateVersion } from '../../../shared/creature-transformations/prompt-composer.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import type { SupabaseCreatureTransformationStorageAdapter } from './supabase-creature-transformation-storage.ts'
+import { sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 
 export type GeneratedImageResponse = Omit<GenerateImageResponse, 'requestPersistence'> & {
     sourceSha256: string
+    promptSha256: string
+    conceptSnapshot: GenerateImageRequest['concept']
 }
 
 export type ImageGenerationServiceErrorCode =
@@ -52,6 +56,7 @@ export type GenerateImageServiceInput = Readonly<{
     provider: CreatureImageProvider
     postProcessor: ImagePostProcessor
     validator?: ImageValidator
+    promptTemplateVersion?: CreaturePromptTemplateVersion
 }>
 
 function conceptRejected(requestId: string, problems?: GenerateImageErrorResponse['problems']): GenerateImageErrorResponse {
@@ -83,6 +88,13 @@ function onlyAlphaIsMissing(validation: Awaited<ReturnType<ImageValidator['valid
     return !validation.valid && validation.problems.length === 1 && validation.problems[0].code === 'PNG_ALPHA_REQUIRED'
 }
 
+function safeConceptSnapshot(concept: GenerateImageRequest['concept']): GenerateImageRequest['concept'] {
+    const snapshot = JSON.parse(JSON.stringify(concept)) as GenerateImageRequest['concept']
+    const serialized = JSON.stringify(snapshot)
+    if (serialized.length > 16384) throw new ImageGenerationServiceError('CONCEPT_REJECTED', 'Il concept controllato e troppo grande per il benchmark.')
+    return snapshot
+}
+
 export async function generateImageForAuthenticatedProfile(
     input: GenerateImageServiceInput,
 ): Promise<GeneratedImageResponse | GenerateImageErrorResponse> {
@@ -101,6 +113,7 @@ export async function generateImageForAuthenticatedProfile(
         requestedVisualTrait,
         requestedIntensity,
         identity: resolvedCreature.identity,
+        previousTransformations: resolvedCreature.previousTransformations,
     })
     if (!validation.valid) return conceptRejected(input.requestId, validation.problems)
 
@@ -109,17 +122,21 @@ export async function generateImageForAuthenticatedProfile(
 
     let prompt: string
     try {
-        prompt = composeCreatureTransformationPrompt({
+        const composed = composeCreatureTransformationPrompt({
             identity: resolvedCreature.identity,
             concept: validation.concept,
             renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
-            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION,
-        }).prompt
+            templateVersion: input.promptTemplateVersion ?? CREATURE_PROMPT_TEMPLATE_VERSION,
+            previousTransformations: resolvedCreature.previousTransformations,
+        })
+        prompt = composed.prompt
     } catch {
         return conceptRejected(input.requestId)
     }
 
-    const source = await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath)
+    const promptSha256 = await sha256Hex(new TextEncoder().encode(prompt))
+    const conceptSnapshot = safeConceptSnapshot(validation.concept)
+    const source = await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath, resolvedCreature.sourceIsBaseVersion)
     const validatedSource = await validator.validate({
         bytes: source.bytes,
         mimeType: source.mimeType,
@@ -231,5 +248,7 @@ export async function generateImageForAuthenticatedProfile(
             warnings: outputWarnings,
         },
         sourceSha256: validatedSource.metadata.sha256,
+        promptSha256,
+        conceptSnapshot,
     }
 }
