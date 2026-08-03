@@ -1,4 +1,4 @@
-import { act, createElement } from 'react'
+import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -119,6 +119,51 @@ describe('HomeScreen', () => {
         expect(actions.onCreateBotGame).toHaveBeenCalledTimes(1)
         expect(actions.onJoinGame).toHaveBeenCalledTimes(1)
         expect(actions.onLeaveSession).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps room-code focus while normalizing typed or pasted input and supports Enter', () => {
+        const onJoinGame = vi.fn()
+
+        function RoomCodeHarness() {
+            const [roomCode, setRoomCode] = useState('')
+            const viewModel = createViewModel()
+            viewModel.playModes.roomCode = roomCode
+            const actions = createActions()
+            actions.onRoomCodeChange = setRoomCode
+            actions.onJoinGame = onJoinGame
+
+            return createElement(HomeScreen, { viewModel, actions })
+        }
+
+        act(() => {
+            root.render(createElement(RoomCodeHarness))
+        })
+        openPlayModes()
+
+        const roomCode = container.querySelector('#room-code') as HTMLInputElement
+        const setInputValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+
+        act(() => roomCode.focus())
+        act(() => {
+            setInputValue?.call(roomCode, 'a')
+            roomCode.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+
+        expect(container.querySelector('#room-code')).toBe(roomCode)
+        expect(document.activeElement).toBe(roomCode)
+        expect(roomCode.value).toBe('A')
+
+        act(() => {
+            setInputValue?.call(roomCode, 'ab cde')
+            roomCode.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+
+        expect(document.activeElement).toBe(roomCode)
+        expect(roomCode.value).toBe('ABCDE')
+
+        act(() => roomCode.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+
+        expect(onJoinGame).toHaveBeenCalledTimes(1)
     })
 
     it('renders application notices and disables all game actions while busy', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import type { HomeActions, HomeViewModel } from './types'
 
@@ -10,6 +10,12 @@ type HomePlayModesProps = {
     onClose: () => void
 }
 
+const ROOM_CODE_LENGTH = 5
+
+function normalizeRoomCodeInput(value: string): string {
+    return value.replace(/\s+/g, '').toUpperCase().slice(0, ROOM_CODE_LENGTH)
+}
+
 export function HomePlayModes({ mode, playModes, actions, isOpen, onClose }: HomePlayModesProps) {
     const dialogRef = useRef<HTMLElement>(null)
 
@@ -19,7 +25,7 @@ export function HomePlayModes({ mode, playModes, actions, isOpen, onClose }: Hom
         }
 
         const previousOverflow = document.body.style.overflow
-        const handleKeyDown = (event: KeyboardEvent) => {
+        const handleKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key === 'Escape') {
                 onClose()
             }
@@ -37,6 +43,15 @@ export function HomePlayModes({ mode, playModes, actions, isOpen, onClose }: Hom
 
     if (!isOpen) {
         return null
+    }
+
+    function handleRoomCodeKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+        if (event.key !== 'Enter' || playModes.isBusy) {
+            return
+        }
+
+        event.preventDefault()
+        actions.onJoinGame()
     }
 
     return (
@@ -107,15 +122,15 @@ export function HomePlayModes({ mode, playModes, actions, isOpen, onClose }: Hom
                         <input
                             id="room-code"
                             value={playModes.roomCode}
-                            onChange={(event) => actions.onRoomCodeChange(event.target.value)}
+                            onChange={(event) => actions.onRoomCodeChange(normalizeRoomCodeInput(event.target.value))}
                             placeholder="ABCDE"
-                            maxLength={5}
                             inputMode="text"
                             autoCapitalize="characters"
                             autoCorrect="off"
                             autoComplete="off"
                             spellCheck={false}
                             className="home-play-modes__code-input"
+                            onKeyDown={handleRoomCodeKeyDown}
                         />
                     </label>
                     <button type="button" className="home-play-modes__join" onClick={actions.onJoinGame} disabled={playModes.isBusy}>

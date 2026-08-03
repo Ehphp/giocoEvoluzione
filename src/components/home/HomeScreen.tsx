@@ -1,6 +1,6 @@
 import './HomeScreen.css'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { HomeBrand } from './HomeBrand'
 import { HomeCreatureStage } from './HomeCreatureStage'
@@ -18,6 +18,8 @@ type HomeScreenProps = {
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
+    const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
+    const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
 
     useEffect(() => {
         setBackgroundSource(viewModel.stage.backgroundSrc)
@@ -36,14 +38,14 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
             <HomeTopBar player={viewModel.player} isOnline={viewModel.connection.isOnline} onOpenProfile={actions.onOpenProfile} onLogout={actions.onLogout} />
             <HomeBrand />
             <HomeCreatureStage creature={viewModel.creature} shortcuts={viewModel.shortcuts} />
-            <HomePrimaryNavigation navigation={viewModel.navigation} onOpenPlayModes={() => setIsPlayModesOpen(true)} onOpenProfile={actions.onOpenProfile} />
+            <HomePrimaryNavigation navigation={viewModel.navigation} onOpenPlayModes={openPlayModes} onOpenProfile={actions.onOpenProfile} />
             <HomeNotices notices={viewModel.notices} />
             <HomePlayModes
                 mode={viewModel.mode}
                 playModes={viewModel.playModes}
                 actions={actions}
                 isOpen={isPlayModesOpen}
-                onClose={() => setIsPlayModesOpen(false)}
+                onClose={closePlayModes}
             />
         </section>
     )
