@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import migration from '../../migrations/202608030001_creature_transformation_benchmark_reviews.sql?raw'
-import colorEvolutionMigration from '../../migrations/202608040002_creature_transformation_color_evolution_reviews.sql?raw'
+import colorEvolutionMigration from '../../migrations/202608050004_creature_transformation_color_evolution_reviews.sql?raw'
 
 describe('benchmark and review migration', () => {
     it('persists only controlled benchmark audit metadata and never promotes a creature', () => {
