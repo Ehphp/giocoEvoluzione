@@ -36,6 +36,11 @@ function readSafeProviderErrorCode(payload: unknown): string | null {
     return typeof code === 'string' && /^[A-Za-z0-9_.-]{1,80}$/.test(code) ? code : null
 }
 
+function readSafeProviderErrorParam(payload: unknown): string | null {
+    const param = asRecord(asRecord(payload)?.error)?.param
+    return typeof param === 'string' && /^[A-Za-z0-9_.\x5B\x5D-]{1,120}$/.test(param) ? param : null
+}
+
 function decodeBase64(value: unknown): Uint8Array {
     if (typeof value !== 'string' || !value.length || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
         throw new CreatureImageProviderError('OPENAI_IMAGE_BASE64_INVALID', 'Il provider non ha restituito un PNG base64 valido.')
@@ -111,6 +116,7 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
             const code = providerErrorForResponse(response.status, payload)
             throw new CreatureImageProviderError(code, 'Il provider immagini ha rifiutato la richiesta.', {
                 providerErrorCode: readSafeProviderErrorCode(payload),
+                providerErrorParam: readSafeProviderErrorParam(payload),
             })
         }
         let payload: unknown
