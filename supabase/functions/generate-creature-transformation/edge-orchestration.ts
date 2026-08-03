@@ -368,12 +368,15 @@ function acceptedRealImage(requestId: string, record: CreatureTransformationRequ
     return { success: true, accepted: true, requestId, requestPersistence: toPersistence(record, idempotencyStatus) }
 }
 
-function visualProgressionAccessFailure(policy: CreatureTransformationLabPolicy, profileId: string, capability: 'READ' | 'GENERATE' | 'ADOPT'): FailureDetails | null {
+function visualProgressionReadAccessFailure(policy: CreatureTransformationLabPolicy): FailureDetails | null {
     if (!policy.visualProgression.enabled) return { code: 'VISUAL_PROGRESSION_DISABLED', message: 'La progressione visiva non e abilitata.' }
-    // The rollout is now open for read-only views. Match participants can therefore
-    // receive each other's current visual, while the costly, state-changing actions
-    // remain limited to the configured production profiles.
-    if (capability !== 'READ' && !policy.visualProgression.allowedProfileIds.has(profileId)) return { code: 'VISUAL_PROFILE_NOT_ALLOWED', message: 'Il profilo autenticato non e incluso nel rollout visuale.' }
+    return null
+}
+
+function visualProgressionAccessFailure(policy: CreatureTransformationLabPolicy, profileId: string, capability: 'GENERATE' | 'ADOPT'): FailureDetails | null {
+    const readAccess = visualProgressionReadAccessFailure(policy)
+    if (readAccess) return readAccess
+    if (!policy.visualProgression.allowedProfileIds.has(profileId)) return { code: 'VISUAL_PROFILE_NOT_ALLOWED', message: 'Il profilo autenticato non e incluso nel rollout visuale.' }
     if (capability === 'GENERATE' && !policy.visualProgression.productionGenerationEnabled) return { code: 'VISUAL_PRODUCTION_GENERATION_DISABLED', message: 'La generazione visuale di produzione non e abilitata.' }
     if (capability === 'ADOPT' && !policy.visualProgression.adoptionEnabled) return { code: 'VISUAL_ADOPTION_DISABLED', message: 'L adozione visuale non e abilitata.' }
     return null
@@ -474,7 +477,7 @@ export async function orchestrateSelectCreatureVisualProgressTrack(input: Creatu
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseSelectCreatureVisualProgressTrackRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const track = await input.visualRepository.selectTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId, visualTraitId: parsed.request.visualTraitId, target: input.policy.visualProgression.winsRequired })
@@ -490,7 +493,7 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGetCreatureVisualProgressRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const [initialTrack, current, history] = await Promise.all([
@@ -516,7 +519,7 @@ export async function orchestrateGetCurrentCreatureVisual(input: CreatureTransfo
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGetCurrentCreatureVisualRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const version = await input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId })
@@ -529,7 +532,7 @@ export async function orchestrateGetGameCreatureVisuals(input: CreatureTransform
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGetGameCreatureVisualsRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
         const participants = await input.visualRepository.listGameHumanParticipants(parsed.request.gameId)
@@ -811,7 +814,7 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseSubmitBackgroundRemovalCandidateRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
-    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'READ')
+    const access = visualProgressionAccessFailure(input.policy, input.profileId, 'GENERATE')
     if (access) return failure(input.requestId, access.code, access.message)
     const bytes = decodeCandidatePng(parsed.request.candidatePngBase64)
     if (!bytes) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG candidato non puo essere decodificato.')
