@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { createValidConcept } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
 import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
-import { NoopImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { parseCreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { getGenerateConceptFailureStatus, orchestrateGenerateImage, orchestrateGetTransformationRequestStatus } from './edge-orchestration.ts'
@@ -68,7 +67,7 @@ function input(overrides: Partial<Parameters<typeof orchestrateGenerateImage>[0]
     return {
         profileId: 'profile-1', requestId: 'http-real-1', body: request(), policy, resolver: resolver(), storage: stored.adapter,
         createImageProvider: () => { throw new Error('mock provider must not be used') }, createRealImageProvider: () => provider,
-        deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) }, postProcessor: new NoopImagePostProcessor(), repository: requests.repository,
+        deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) }, repository: requests.repository,
         ...overrides,
         test: { stored, requests, tasks },
     }

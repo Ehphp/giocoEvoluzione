@@ -6,7 +6,6 @@ import {
     type GenerateConceptRequest,
     MockCreatureImageProvider,
     MockCreatureConceptGenerator,
-    NoopImagePostProcessor,
 } from '../../../shared/creature-transformations/index.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
@@ -179,12 +178,10 @@ Deno.serve(async (request) => {
         storage,
         createImageProvider: () => new MockCreatureImageProvider(),
         createRealImageProvider: (configuration) => new OpenAiCreatureImageProvider({
-            apiKey: policy.realImage.apiKey!, model: configuration?.model ?? policy.realImage.model!, quality: configuration?.quality ?? policy.realImage.quality,
+            apiKey: policy.realImage.apiKey!, model: 'gpt-image-1.5', quality: configuration?.quality ?? policy.realImage.quality,
             timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: configuration?.estimatedCostUsd ?? policy.realImage.estimatedCostUsd!,
-            ...(configuration?.nativeTransparency ? { nativeTransparency: true } : {}),
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
-        postProcessor: new NoopImagePostProcessor(),
         repository: requestRepository,
         reviewRepository,
         visualRepository,

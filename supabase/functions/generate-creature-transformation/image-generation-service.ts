@@ -1,9 +1,8 @@
-import type { CreatureTransformationAssetReadiness, GenerateImageErrorResponse, GenerateImageResponse } from '../../../shared/creature-transformations/api-contracts.ts'
+import type { GenerateImageErrorResponse, GenerateImageResponse } from '../../../shared/creature-transformations/api-contracts.ts'
 import { evaluateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-evaluation.ts'
 import { validateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-validation.ts'
 import type { CreatureIdentityResolver, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
 import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
-import { ImagePostProcessingError, type ImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import { ImageValidator, type ImageValidationProblem } from '../../../shared/creature-transformations/image-validator.ts'
 import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION } from '../../../shared/creature-transformations/prompt-composer.ts'
 import type { CreaturePromptTemplateVersion } from '../../../shared/creature-transformations/prompt-composer.ts'
@@ -26,7 +25,6 @@ export type ImageGenerationServiceErrorCode =
     | 'RESULT_IMAGE_EMPTY'
     | 'RESULT_IMAGE_INVALID'
     | 'RESULT_IMAGE_UNCHANGED'
-    | 'POST_PROCESSING_FAILED'
     | 'OPENAI_IMAGE_TIMEOUT'
     | 'OPENAI_IMAGE_RATE_LIMITED'
     | 'OPENAI_IMAGE_MODERATION_BLOCKED'
@@ -54,9 +52,6 @@ export type GenerateImageServiceInput = Readonly<{
     resolver: CreatureIdentityResolver
     storage: SupabaseCreatureTransformationStorageAdapter
     provider: CreatureImageProvider
-    postProcessor: ImagePostProcessor
-    storageDestination?: 'RESULT' | 'RAW_EXPERIMENT'
-    experimentalNativeTransparency?: boolean
     validator?: ImageValidator
     promptTemplateVersion?: CreaturePromptTemplateVersion
 }>
@@ -84,10 +79,6 @@ function resultFailure(validation: Awaited<ReturnType<ImageValidator['validate']
 
 function uniqueWarnings(warnings: readonly string[]): string[] {
     return [...new Set(warnings)]
-}
-
-function onlyAlphaIsMissing(validation: Awaited<ReturnType<ImageValidator['validate']>>): boolean {
-    return !validation.valid && validation.problems.length === 1 && validation.problems[0].code === 'PNG_ALPHA_REQUIRED'
 }
 
 function safeConceptSnapshot(concept: GenerateImageRequest['concept']): GenerateImageRequest['concept'] {
@@ -175,88 +166,28 @@ export async function generateImageForAuthenticatedProfile(
         throw new ImageGenerationServiceError('MOCK_PROVIDER_FAILED', 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
     }
 
-    const firstValidation = await validator.validate({
+    const finalValidation = await validator.validate({
         bytes: generated.image,
         mimeType: generated.mimeType,
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
-        profile: generated.isMock ? 'FINAL_CREATURE_ASSET' : 'PROVIDER_RAW_RESULT',
-        ...(input.experimentalNativeTransparency ? { measureAlphaCoverage: true } : {}),
-    })
-    if (!firstValidation.valid) throw resultFailure(firstValidation)
-
-    if (input.experimentalNativeTransparency) {
-        const nativeTransparencyPresent = firstValidation.metadata.hasAlpha
-            && (firstValidation.metadata.transparentPixelRatio ?? 0) >= 0.005
-        const outputWarnings = uniqueWarnings([
-            ...generated.warnings,
-            ...firstValidation.warnings,
-            ...(nativeTransparencyPresent ? [] : ['NATIVE_TRANSPARENCY_MISSING']),
-        ])
-        const stored = await input.storage.saveRawResult({
-            profileId: input.profileId,
-            idempotencyKey: input.request.idempotencyKey,
-            image: generated.image,
-        })
-        return {
-            success: true, requestId: input.requestId,
-            result: {
-                signedUrl: stored.signedUrl, expiresAt: stored.expiresAt,
-                mimeType: firstValidation.metadata.mimeType, width: firstValidation.metadata.width,
-                height: firstValidation.metadata.height, sha256: firstValidation.metadata.sha256,
-                assetReadiness: 'EXPERIMENT_ONLY',
-            },
-            generation: { provider: generated.provider, model: generated.model, isMock: generated.isMock, ...(generated.providerRequestId ? { providerRequestId: generated.providerRequestId } : {}), latencyMs: generated.latencyMs, ...(generated.estimatedCostUsd === undefined ? {} : { estimatedCostUsd: generated.estimatedCostUsd }) },
-            validation: { warnings: outputWarnings }, sourceSha256: validatedSource.metadata.sha256, promptSha256, conceptSnapshot,
-        }
-    }
-
-    let processed
-    try {
-        processed = await input.postProcessor.process({
-            image: generated.image,
-            mimeType: generated.mimeType,
-            metadata: firstValidation.metadata,
-            warnings: uniqueWarnings([...generated.warnings, ...firstValidation.warnings]),
-            renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
-        })
-    } catch (error) {
-        if (error instanceof ImagePostProcessingError) {
-            throw new ImageGenerationServiceError('POST_PROCESSING_FAILED', 'Il post-processing dell immagine non e riuscito.', undefined, { cause: error })
-        }
-        throw new ImageGenerationServiceError('POST_PROCESSING_FAILED', 'Il post-processing dell immagine non e riuscito.', undefined, { cause: error })
-    }
-
-    const finalValidation = await validator.validate({
-        bytes: processed.image,
-        mimeType: processed.mimeType,
-        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
-        sourceSha256: validatedSource.metadata.sha256,
-        isMock: generated.isMock,
         profile: 'FINAL_CREATURE_ASSET',
+        ...(generated.isMock ? {} : { measureAlphaCoverage: true }),
     })
-    if (!finalValidation.valid && !onlyAlphaIsMissing(finalValidation)) throw resultFailure(finalValidation)
-
-    const assetReadiness: CreatureTransformationAssetReadiness = finalValidation.valid ? 'FINAL_ASSET' : 'EXPERIMENT_ONLY'
-    const outputMetadata = finalValidation.valid ? finalValidation.metadata : firstValidation.metadata
+    if (!finalValidation.valid) throw resultFailure(finalValidation)
+    if (!generated.isMock && finalValidation.metadata.transparentPixelRatio !== undefined && finalValidation.metadata.transparentPixelRatio < 0.005) {
+        throw new ImageGenerationServiceError('RESULT_IMAGE_INVALID', 'Il PNG OpenAI non contiene una porzione significativa di pixel trasparenti.')
+    }
+    const outputMetadata = finalValidation.metadata
     const outputWarnings = uniqueWarnings([
         ...generated.warnings,
-        ...firstValidation.warnings,
-        ...processed.warnings,
-        ...(finalValidation.valid ? finalValidation.warnings : ['RAW_RESULT_ALPHA_MISSING']),
+        ...finalValidation.warnings,
     ])
-
-    const stored = input.storageDestination === 'RAW_EXPERIMENT'
-        ? await input.storage.saveRawResult({
+    const stored = await input.storage.saveResult({
             profileId: input.profileId,
             idempotencyKey: input.request.idempotencyKey,
-            image: processed.image,
-        })
-        : await input.storage.saveResult({
-            profileId: input.profileId,
-            idempotencyKey: input.request.idempotencyKey,
-            image: processed.image,
+            image: generated.image,
         })
 
     return {
@@ -269,7 +200,7 @@ export async function generateImageForAuthenticatedProfile(
             width: outputMetadata.width,
             height: outputMetadata.height,
             sha256: outputMetadata.sha256,
-            assetReadiness,
+            assetReadiness: 'FINAL_ASSET',
         },
         generation: {
             provider: generated.provider,

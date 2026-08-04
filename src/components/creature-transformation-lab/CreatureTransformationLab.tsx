@@ -205,26 +205,6 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         }
     }
 
-    async function handleGenerateNativeTransparencyExperiment() {
-        if (!conceptResult || !imageGenerationAvailable || !realCostConfirmed || realRequestIsRunning) return
-        setIsGeneratingImage(true)
-        setError(null)
-        setRetryAction(null)
-        setRealPollingTimedOut(false)
-        try {
-            const response = await generateCreatureTransformationImage({
-                operation: 'GENERATE_IMAGE', creatureId: creature.id, concept: conceptResult.concept,
-                imageProviderMode: 'REAL', experimentalNativeTransparency: true, idempotencyKey: createImageIdempotencyKey(),
-            })
-            setRealRequestPersistence(response.requestPersistence)
-            setRealStatus(null)
-        } catch (nextError) {
-            setError(nextError instanceof Error ? nextError : new Error('Esperimento trasparenza nativa non riuscito.'))
-        } finally {
-            setIsGeneratingImage(false)
-        }
-    }
-
     return (
         <section className="creature-transformation-lab" aria-labelledby="creature-transformation-lab-title">
             <header className="creature-transformation-lab__header">
@@ -312,15 +292,12 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                         </button>
                         {REAL_IMAGE_FRONTEND_ENABLED ? (
                             <div className="creature-transformation-lab__real-image-controls">
-                                <p><strong>Pilot a pagamento:</strong> il risultato e sperimentale e non sostituisce la creatura del profilo.</p>
+                                <p><strong>Generazione nativa:</strong> GPT Image 1.5 restituisce direttamente il PNG trasparente; l adozione resta sempre manuale.</p>
                                 <label><input type="checkbox" checked={realCostConfirmed} onChange={(event) => setRealCostConfirmed(event.target.checked)} disabled={isBusy} /> Ho compreso che la richiesta reale puo avere un costo.</label>
                                 <button type="button" className="primary-button" onClick={() => void handleGenerateExperimentalImage()} disabled={!imageGenerationAvailable || !realCostConfirmed || isBusy}>
-                                    {isGeneratingImage ? 'Avvio richiesta sperimentale...' : 'Genera immagine sperimentale'}
+                                    {isGeneratingImage ? 'Avvio generazione nativa...' : 'Rielabora ultimo concept: PNG trasparente'}
                                 </button>
-                                <button type="button" className="primary-button" onClick={() => void handleGenerateNativeTransparencyExperiment()} disabled={!imageGenerationAvailable || !realCostConfirmed || isBusy}>
-                                    {isGeneratingImage ? 'Avvio test trasparenza...' : 'Rielabora ultimo concept: PNG trasparente nativo'}
-                                </button>
-                                <small>Forza GPT Image 1.5 con sfondo trasparente; il candidato resta esclusivamente sperimentale.</small>
+                                <small>Il PNG deve superare i controlli server-side su dimensioni, alpha e copertura trasparente.</small>
                             </div>
                         ) : null}
                     </section>

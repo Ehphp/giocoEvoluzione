@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { createValidConcept } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
 import type { CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
-import { NoopImagePostProcessor } from '../../../shared/creature-transformations/image-post-processor.ts'
 import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
 import { MockCreatureImageProvider } from '../../../shared/creature-transformations/mock-creature-image-provider.ts'
 import { orchestrateGenerateImage } from './edge-orchestration.ts'
@@ -82,7 +81,6 @@ function orchestrationInput(overrides: Partial<Parameters<typeof orchestrateGene
         resolver: createResolver(),
         storage: storage.adapter,
         createImageProvider: () => new MockCreatureImageProvider(),
-        postProcessor: new NoopImagePostProcessor(),
         repository: createInMemoryRequestRepository().repository,
         ...overrides,
     }
@@ -108,8 +106,7 @@ describe('GENERATE_IMAGE edge orchestration', () => {
             }
         }
         const validator = new CountingValidator()
-        const postProcessor = { process: vi.fn(async (value) => value) }
-        const result = await orchestrateGenerateImage(orchestrationInput({ createImageProvider: () => provider, validator, postProcessor }))
+        const result = await orchestrateGenerateImage(orchestrationInput({ createImageProvider: () => provider, validator }))
 
         expect(result).toMatchObject({
             success: true,
@@ -119,8 +116,7 @@ describe('GENERATE_IMAGE edge orchestration', () => {
         })
         expect(capturedPrompt).toContain('IDENTITY')
         expect(capturedPrompt).toContain('Guscio ammortizzato')
-        expect(validator.count).toBe(3)
-        expect(postProcessor.process).toHaveBeenCalledTimes(1)
+        expect(validator.count).toBe(2)
         expect(JSON.stringify(result)).not.toContain('verdant-hatchling-v1.png')
         expect(JSON.stringify(result)).not.toContain('profile-1')
     })
@@ -143,7 +139,6 @@ describe('GENERATE_IMAGE edge orchestration', () => {
 
         const invalidSource = createStorage({ source: new Uint8Array([0, 1, 2]) })
         await expect(orchestrateGenerateImage(orchestrationInput({ storage: invalidSource.adapter }))).resolves.toMatchObject({ code: 'SOURCE_IMAGE_INVALID' })
-        await expect(orchestrateGenerateImage(orchestrationInput({ postProcessor: { async process() { throw new Error('post failed') } } }))).resolves.toMatchObject({ code: 'POST_PROCESSING_FAILED' })
 
         const uploadFailure = createStorage({ uploadError: true })
         await expect(orchestrateGenerateImage(orchestrationInput({ storage: uploadFailure.adapter }))).resolves.toMatchObject({ code: 'STORAGE_UPLOAD_FAILED' })

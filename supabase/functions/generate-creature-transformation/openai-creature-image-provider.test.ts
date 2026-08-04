@@ -46,9 +46,9 @@ describe('OpenAiCreatureImageProvider', () => {
         expect(JSON.stringify(result)).not.toContain('test-key-never-logged')
     })
 
-    it('adds native transparency parameters only for the isolated experiment', async () => {
+    it('always requests the native transparent PNG output', async () => {
         const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
-        const experimental = provider(fetchImplementation, { model: 'gpt-image-1.5', nativeTransparency: true })
+        const experimental = provider(fetchImplementation, { model: 'gpt-image-1.5' })
         await experimental.transformCreature(input())
         const form = fetchImplementation.mock.calls[0][1].body as FormData
 
@@ -58,7 +58,7 @@ describe('OpenAiCreatureImageProvider', () => {
 
         const standardFetch = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
         await provider(standardFetch).transformCreature(input())
-        expect((standardFetch.mock.calls[0][1].body as FormData).get('background')).toBeNull()
+        expect((standardFetch.mock.calls[0][1].body as FormData).get('background')).toBe('transparent')
     })
 
     it('maps timeout, rate limit, bad request, moderation, provider error and invalid response without retrying', async () => {

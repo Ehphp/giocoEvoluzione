@@ -15,7 +15,6 @@ import type {
     GetBenchmarkResultsRequest,
     GetTransformationRequestStatusRequest,
     SubmitExperimentReviewRequest,
-    SubmitBackgroundRemovalCandidateRequest,
     TransformationRequestStatusResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
@@ -38,7 +37,7 @@ export class CreatureTransformationApiError extends Error {
     }
 }
 
-type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitBackgroundRemovalCandidateRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
 
 export type CreatureTransformationFunctionInvoker = {
     invoke: (name: string, options: { body: CreatureTransformationFunctionRequest }) => Promise<{ data: unknown; error: unknown }>
@@ -153,9 +152,6 @@ export async function generateUnlockedCreatureTransformation(request: GenerateUn
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, accepted: true }>>(request, invoker)
 }
 
-export async function submitBackgroundRemovalCandidate(request: SubmitBackgroundRemovalCandidateRequest, invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions) {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, candidate: unknown }>>(request, invoker)
-}
 
 export async function adoptCreatureTransformation(request: AdoptCreatureTransformationRequest, invoker: CreatureTransformationFunctionInvoker = requireSupabase().functions) {
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, version: unknown }>>(request, invoker)

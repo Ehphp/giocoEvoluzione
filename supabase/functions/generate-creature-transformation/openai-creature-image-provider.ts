@@ -15,7 +15,6 @@ export type OpenAiCreatureImageProviderOptions = Readonly<{
     quality: OpenAiImageQuality
     timeoutMs: number
     estimatedCostUsd: number
-    nativeTransparency?: boolean
     fetchImplementation?: FetchImplementation
     now?: () => number
 }>
@@ -62,7 +61,6 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
     private readonly quality: OpenAiImageQuality
     private readonly timeoutMs: number
     private readonly estimatedCostUsd: number
-    private readonly nativeTransparency: boolean
     private readonly fetchImplementation: FetchImplementation
     private readonly now: () => number
 
@@ -72,7 +70,6 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
         this.quality = options.quality
         this.timeoutMs = options.timeoutMs
         this.estimatedCostUsd = options.estimatedCostUsd
-        this.nativeTransparency = options.nativeTransparency === true
         this.fetchImplementation = options.fetchImplementation ?? fetch
         this.now = options.now ?? (() => Date.now())
     }
@@ -85,7 +82,7 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
         form.set('size', `${input.renderSpecification.width}x${input.renderSpecification.height}`)
         form.set('quality', this.quality)
         form.set('output_format', 'png')
-        if (this.nativeTransparency) form.set('background', 'transparent')
+        form.set('background', 'transparent')
         form.set('image[]', new Blob([input.source.bytes], { type: 'image/png' }), 'canonical-creature.png')
 
         const controller = new AbortController()

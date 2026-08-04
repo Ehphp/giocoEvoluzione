@@ -68,11 +68,11 @@ describe('CreatureTransformationLab real image pilot UI', () => {
         }
         await act(async () => { root.render(createElement(CreatureTransformationLab, { creature, onBack: () => undefined })) })
         await act(async () => { button('Genera concept').click() })
-        const realButton = button('Genera immagine sperimentale')
+        const realButton = button('Rielabora ultimo concept: PNG trasparente')
         expect(realButton.disabled).toBe(true)
         await act(async () => { (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click() })
-        expect(button('Genera immagine sperimentale').disabled).toBe(false)
-        await act(async () => { button('Genera immagine sperimentale').click() })
+        expect(button('Rielabora ultimo concept: PNG trasparente').disabled).toBe(false)
+        await act(async () => { button('Rielabora ultimo concept: PNG trasparente').click() })
 
         expect(mocks.generateImage).toHaveBeenCalledWith(expect.objectContaining({ imageProviderMode: 'REAL', idempotencyKey: 'real-key' }))
         expect(mocks.getStatus).toHaveBeenCalledWith({ operation: 'GET_REQUEST_STATUS', transformationRequestId: '00000000-0000-4000-8000-000000000001' })
@@ -82,7 +82,7 @@ describe('CreatureTransformationLab real image pilot UI', () => {
         await act(async () => root.unmount())
     })
 
-    it('reuses the latest concept for the isolated native-transparency experiment', async () => {
+    it('reuses the latest concept for native transparency generation', async () => {
         const { CreatureTransformationLab } = await import('./CreatureTransformationLab')
         const root = createRoot(container)
         const button = (label: string) => {
@@ -93,11 +93,11 @@ describe('CreatureTransformationLab real image pilot UI', () => {
         await act(async () => { root.render(createElement(CreatureTransformationLab, { creature, onBack: () => undefined })) })
         await act(async () => { button('Genera concept').click() })
         await act(async () => { (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click() })
-        await act(async () => { button('Rielabora ultimo concept: PNG trasparente nativo').click() })
+        await act(async () => { button('Rielabora ultimo concept: PNG trasparente').click() })
 
         expect(mocks.generateImage).toHaveBeenCalledWith(expect.objectContaining({
             creatureId: creature.id, concept: concept.concept, imageProviderMode: 'REAL',
-            experimentalNativeTransparency: true, idempotencyKey: 'real-key',
+            idempotencyKey: 'real-key',
         }))
         await act(async () => root.unmount())
     })

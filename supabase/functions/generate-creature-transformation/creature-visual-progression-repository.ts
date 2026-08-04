@@ -50,7 +50,7 @@ export function mapProgressTrack(value: unknown): CreatureVisualProgressTrack {
     const row = record(value)
     if (!row || !string(row.id) || !string(row.creature_id) || !string(row.visual_trait_id)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'La track visuale restituita non e valida.')
     const status = string(row.status)
-    if (!status || !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(status)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Lo stato della track visuale non e valido.')
+    if (!status || !['ACTIVE', 'READY', 'GENERATING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(status)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Lo stato della track visuale non e valido.')
     return {
         id: string(row.id)!, creatureId: string(row.creature_id)!, visualTraitId: string(row.visual_trait_id)! as VisualTraitId,
         status: status as CreatureVisualProgressTrack['status'], progress: number(row.progress), target: number(row.target),
@@ -141,11 +141,6 @@ export class SupabaseCreatureVisualProgressionRepository {
         return mapProgressTrack(await this.rpc('complete_creature_visual_generation', { p_profile_id: input.profileId, p_track_id: input.trackId, p_request_id: input.requestId, p_final_asset: input.finalAsset }))
     }
 
-    async markBackgroundRemovalPending(input: { profileId: string; trackId: string; requestId: string }): Promise<CreatureVisualProgressTrack> {
-        return mapProgressTrack(await this.rpc('mark_creature_visual_background_removal_pending', {
-            p_profile_id: input.profileId, p_track_id: input.trackId, p_request_id: input.requestId,
-        }))
-    }
 
     async restoreNonFinalGeneration(input: { profileId: string; trackId: string; requestId: string }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('restore_nonfinal_creature_visual_generation', {

@@ -1,17 +1,15 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitExperimentReviewRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
 const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
-const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId', 'experimentalNativeTransparency'])
+const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId'])
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
-const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64'])
-const MAX_CANDIDATE_BASE64_CHARS = 14 * 1024 * 1024
 const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId'])
 const GET_VISUAL_PROGRESS_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_CURRENT_VISUAL_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
@@ -46,19 +44,6 @@ export type ParsedVisualProgressRequest<T> = { valid: true; request: T } | Extra
 
 function asRecord(value: unknown): Record<string, unknown> | null {
     return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
-}
-
-export function parseSubmitBackgroundRemovalCandidateRequest(value: unknown): ParsedVisualProgressRequest<SubmitBackgroundRemovalCandidateRequest> {
-    const body = asRecord(value)
-    if (!body || !hasOnlyFields(body, BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS) || body.operation !== 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') {
-        return { valid: false, code: 'INVALID_REQUEST', message: 'Il candidato di rimozione sfondo non rispetta il contratto.' }
-    }
-    const transformationRequestId = readUuid(body, 'transformationRequestId')
-    const candidatePngBase64 = typeof body.candidatePngBase64 === 'string' ? body.candidatePngBase64 : null
-    if (!transformationRequestId || !candidatePngBase64 || candidatePngBase64.length > MAX_CANDIDATE_BASE64_CHARS || !/^[A-Za-z0-9+/]+={0,2}$/.test(candidatePngBase64) || candidatePngBase64.length % 4 !== 0) {
-        return { valid: false, code: 'INVALID_REQUEST', message: 'Il PNG candidato non e valido o supera il limite consentito.' }
-    }
-    return { valid: true, request: { operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64 } }
 }
 
 function hasOnlyFields(body: Record<string, unknown>, fields: Set<string>): boolean {
@@ -153,12 +138,6 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
     if (body.imageProviderMode !== 'MOCK' && body.imageProviderMode !== 'REAL') {
         return { valid: false, code: 'INVALID_REQUEST', message: 'imageProviderMode deve essere MOCK o REAL.' }
     }
-    if (body.experimentalNativeTransparency !== undefined && body.experimentalNativeTransparency !== true) {
-        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency puo essere solo true.' }
-    }
-    if (body.experimentalNativeTransparency === true && body.imageProviderMode !== 'REAL') {
-        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency richiede imageProviderMode REAL.' }
-    }
     if (!asRecord(body.concept)) {
         return { valid: false, code: 'INVALID_REQUEST', message: 'concept deve essere un oggetto strutturato.' }
     }
@@ -168,9 +147,6 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
     if (benchmarkCaseId === null || generationProfileId === null || Boolean(benchmarkCaseId) !== Boolean(generationProfileId)) {
         return { valid: false, code: 'INVALID_REQUEST', message: 'benchmarkCaseId e generationProfileId devono essere entrambi presenti e validi.' }
     }
-    if (body.experimentalNativeTransparency === true && benchmarkCaseId) {
-        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency non e disponibile nei benchmark.' }
-    }
     return {
         valid: true,
         request: {
@@ -178,7 +154,6 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
             creatureId: required.creatureId,
             concept: body.concept as CreatureTransformationConcept,
             imageProviderMode: body.imageProviderMode,
-            ...(body.experimentalNativeTransparency === true ? { experimentalNativeTransparency: true as const } : {}),
             idempotencyKey: required.idempotencyKey,
             ...(benchmarkCaseId && generationProfileId ? { benchmarkCaseId, generationProfileId } : {}),
         },
@@ -265,7 +240,6 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'SUBMIT_EXPERIMENT_REVIEW') return parseSubmitExperimentReviewRequest(body)
     if (body.operation === 'GET_BENCHMARK_RESULTS') return parseGetBenchmarkResultsRequest(body)
     if (body.operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return parseGenerateUnlockedTransformationRequest(body)
-    if (body.operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return parseSubmitBackgroundRemovalCandidateRequest(body)
     if (body.operation === 'SELECT_VISUAL_PROGRESS_TRACK') return parseSelectCreatureVisualProgressTrackRequest(body)
     if (body.operation === 'GET_VISUAL_PROGRESS') return parseGetCreatureVisualProgressRequest(body)
     if (body.operation === 'GET_CURRENT_VISUAL') return parseGetCurrentCreatureVisualRequest(body)
