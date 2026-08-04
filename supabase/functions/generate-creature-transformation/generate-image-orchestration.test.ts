@@ -108,7 +108,8 @@ describe('GENERATE_IMAGE edge orchestration', () => {
             }
         }
         const validator = new CountingValidator()
-        const result = await orchestrateGenerateImage(orchestrationInput({ createImageProvider: () => provider, validator }))
+        const postProcessor = { process: vi.fn(async (value) => value) }
+        const result = await orchestrateGenerateImage(orchestrationInput({ createImageProvider: () => provider, validator, postProcessor }))
 
         expect(result).toMatchObject({
             success: true,
@@ -119,6 +120,7 @@ describe('GENERATE_IMAGE edge orchestration', () => {
         expect(capturedPrompt).toContain('IDENTITY')
         expect(capturedPrompt).toContain('Guscio ammortizzato')
         expect(validator.count).toBe(3)
+        expect(postProcessor.process).toHaveBeenCalledTimes(1)
         expect(JSON.stringify(result)).not.toContain('verdant-hatchling-v1.png')
         expect(JSON.stringify(result)).not.toContain('profile-1')
     })

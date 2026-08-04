@@ -20,7 +20,7 @@ export type ImageValidationProblemCode =
     | 'SHA256_UNAVAILABLE'
 
 export type ImageValidationProfile = 'PROVIDER_RAW_RESULT' | 'FINAL_CREATURE_ASSET'
-export type ImageValidationWarningCode = 'RESULT_IMAGE_UNCHANGED_MOCK' | 'RAW_RESULT_ALPHA_MISSING'
+export type ImageValidationWarningCode = 'RESULT_IMAGE_UNCHANGED_MOCK' | 'RAW_RESULT_ALPHA_MISSING' | 'RAW_RESULT_ALPHA_COVERAGE_UNAVAILABLE'
 
 export type ImageValidationProblem = {
     code: ImageValidationProblemCode
@@ -55,6 +55,8 @@ export type ImageValidationInput = Readonly<{
     profile?: ImageValidationProfile
     /** Used only for browser-post-processed candidates, never for raw provider output. */
     requireAlphaCoverage?: boolean
+    /** Measure alpha coverage without making coverage a validity requirement. */
+    measureAlphaCoverage?: boolean
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -113,7 +115,7 @@ async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number;
         const alphaOffset = input.colorType === 6 ? 3 : 1
         for (let pixel = 0; pixel < input.width; pixel += 1) {
             const alpha = scanline[pixel * bytesPerPixel + alphaOffset]
-            if (alpha === 0) transparent += 1
+            if (alpha < 255) transparent += 1
             if (alpha >= 128) visible += 1
         }
         previous = scanline
@@ -210,18 +212,20 @@ export class ImageValidator {
         if (problems.length) return { valid: false, problems }
 
         let coverage: { transparentPixelRatio: number; visiblePixelRatio: number } | null = null
-        if (input.requireAlphaCoverage) {
+        let alphaCoverageUnavailable = false
+        if (input.requireAlphaCoverage || input.measureAlphaCoverage) {
             try {
                 const length = idatParts.reduce((total, part) => total + part.length, 0)
                 const compressed = new Uint8Array(length)
                 let cursor = 0
                 for (const part of idatParts) { compressed.set(part, cursor); cursor += part.length }
                 coverage = await alphaCoverage({ compressedIdat: compressed, width: ihdr!.width, height: ihdr!.height, colorType: ihdr!.colorType, bitDepth: ihdr!.bitDepth })
-                if (coverage.transparentPixelRatio < 0.005 || coverage.visiblePixelRatio < 0.01 || coverage.visiblePixelRatio > 0.98) {
+                if (input.requireAlphaCoverage && (coverage.transparentPixelRatio < 0.005 || coverage.visiblePixelRatio < 0.01 || coverage.visiblePixelRatio > 0.98)) {
                     problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Il PNG deve contenere sia un soggetto visibile sia una porzione significativa di sfondo trasparente.'))
                 }
             } catch {
-                problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
+                if (input.requireAlphaCoverage) problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
+                else alphaCoverageUnavailable = true
             }
         }
         if (problems.length) return { valid: false, problems }
@@ -252,6 +256,7 @@ export class ImageValidator {
             warnings: [
                 ...(input.sourceSha256 && sha256 === input.sourceSha256 && input.isMock ? ['RESULT_IMAGE_UNCHANGED_MOCK' as const] : []),
                 ...(!hasAlpha && profile === 'PROVIDER_RAW_RESULT' ? ['RAW_RESULT_ALPHA_MISSING' as const] : []),
+                ...(alphaCoverageUnavailable ? ['RAW_RESULT_ALPHA_COVERAGE_UNAVAILABLE' as const] : []),
             ],
         }
     }

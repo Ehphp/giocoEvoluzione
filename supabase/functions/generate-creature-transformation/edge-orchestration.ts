@@ -70,7 +70,7 @@ export type GenerateImageEdgeOrchestrationInput = Readonly<{
     resolver: CreatureIdentityResolver
     storage: SupabaseCreatureTransformationStorageAdapter
     createImageProvider: () => CreatureImageProvider
-    createRealImageProvider?: (configuration?: Pick<CreatureImageGenerationProfile, 'model' | 'quality' | 'estimatedCostUsd'>) => CreatureImageProvider
+    createRealImageProvider?: (configuration?: Pick<CreatureImageGenerationProfile, 'model' | 'quality' | 'estimatedCostUsd'> & { nativeTransparency?: boolean }) => CreatureImageProvider
     deferBackgroundTask?: BackgroundTaskScheduler
     postProcessor: ImagePostProcessor
     validator?: ImageValidator
@@ -371,10 +371,13 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
         const result = await generateImageForAuthenticatedProfile({
             profileId: input.profileId!, requestId: input.requestId, request: controlledRequest, resolver: input.resolver, storage: input.storage,
             provider, postProcessor: input.postProcessor, ...(input.validator ? { validator: input.validator } : {}),
+            ...(request.experimentalNativeTransparency ? { experimentalNativeTransparency: true } : {}),
             ...(benchmark ? { promptTemplateVersion: benchmark.profile.promptTemplateVersion } : {}),
         })
         if (!result.success) return markFailed(input.repository, input.requestId, input.profileId!, running, idempotencyStatus, { code: result.code, message: result.message, ...(result.problems ? { problems: result.problems } : {}) })
-        const resultPath = await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
+        const resultPath = request.experimentalNativeTransparency
+            ? await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey)
+            : await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
         const completed = await input.repository.markSucceeded({
             requestId: running.id, profileId: input.profileId!,
             data: {
@@ -398,7 +401,7 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
 
 async function runRealImageGenerationTask(input: GenerateImageEdgeOrchestrationInput, request: GenerateImageRequest, running: CreatureTransformationRequestRecord, benchmark?: BenchmarkImageExecution): Promise<void> {
     try {
-        await completeImageGeneration(input, request, running, input.createRealImageProvider!(benchmark?.profile), 'CREATED', benchmark)
+        await completeImageGeneration(input, request, running, input.createRealImageProvider!(request.experimentalNativeTransparency ? { model: 'gpt-image-1.5', nativeTransparency: true } : benchmark?.profile), 'CREATED', benchmark)
     } catch (error) {
         await markFailed(input.repository, input.requestId, input.profileId!, running, 'CREATED', mapThrownError(error))
     }

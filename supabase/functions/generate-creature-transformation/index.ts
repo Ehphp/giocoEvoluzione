@@ -181,6 +181,7 @@ Deno.serve(async (request) => {
         createRealImageProvider: (configuration) => new OpenAiCreatureImageProvider({
             apiKey: policy.realImage.apiKey!, model: configuration?.model ?? policy.realImage.model!, quality: configuration?.quality ?? policy.realImage.quality,
             timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: configuration?.estimatedCostUsd ?? policy.realImage.estimatedCostUsd!,
+            ...(configuration?.nativeTransparency ? { nativeTransparency: true } : {}),
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         postProcessor: new NoopImagePostProcessor(),

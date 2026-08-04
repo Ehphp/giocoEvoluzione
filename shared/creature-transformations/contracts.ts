@@ -47,6 +47,8 @@ export type GenerateImageRequest = {
     creatureId: string
     concept: CreatureTransformationConcept
     imageProviderMode: 'MOCK' | 'REAL'
+    /** Laboratory-only: tests GPT Image native alpha without post-processing. */
+    experimentalNativeTransparency?: true
     idempotencyKey: string
     benchmarkCaseId?: string
     generationProfileId?: string

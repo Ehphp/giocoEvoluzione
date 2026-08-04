@@ -56,6 +56,7 @@ export type GenerateImageServiceInput = Readonly<{
     provider: CreatureImageProvider
     postProcessor: ImagePostProcessor
     storageDestination?: 'RESULT' | 'RAW_EXPERIMENT'
+    experimentalNativeTransparency?: boolean
     validator?: ImageValidator
     promptTemplateVersion?: CreaturePromptTemplateVersion
 }>
@@ -181,8 +182,35 @@ export async function generateImageForAuthenticatedProfile(
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
         profile: generated.isMock ? 'FINAL_CREATURE_ASSET' : 'PROVIDER_RAW_RESULT',
+        ...(input.experimentalNativeTransparency ? { measureAlphaCoverage: true } : {}),
     })
     if (!firstValidation.valid) throw resultFailure(firstValidation)
+
+    if (input.experimentalNativeTransparency) {
+        const nativeTransparencyPresent = firstValidation.metadata.hasAlpha
+            && (firstValidation.metadata.transparentPixelRatio ?? 0) >= 0.005
+        const outputWarnings = uniqueWarnings([
+            ...generated.warnings,
+            ...firstValidation.warnings,
+            ...(nativeTransparencyPresent ? [] : ['NATIVE_TRANSPARENCY_MISSING']),
+        ])
+        const stored = await input.storage.saveRawResult({
+            profileId: input.profileId,
+            idempotencyKey: input.request.idempotencyKey,
+            image: generated.image,
+        })
+        return {
+            success: true, requestId: input.requestId,
+            result: {
+                signedUrl: stored.signedUrl, expiresAt: stored.expiresAt,
+                mimeType: firstValidation.metadata.mimeType, width: firstValidation.metadata.width,
+                height: firstValidation.metadata.height, sha256: firstValidation.metadata.sha256,
+                assetReadiness: 'EXPERIMENT_ONLY',
+            },
+            generation: { provider: generated.provider, model: generated.model, isMock: generated.isMock, ...(generated.providerRequestId ? { providerRequestId: generated.providerRequestId } : {}), latencyMs: generated.latencyMs, ...(generated.estimatedCostUsd === undefined ? {} : { estimatedCostUsd: generated.estimatedCostUsd }) },
+            validation: { warnings: outputWarnings }, sourceSha256: validatedSource.metadata.sha256, promptSha256, conceptSnapshot,
+        }
+    }
 
     let processed
     try {

@@ -46,6 +46,21 @@ describe('OpenAiCreatureImageProvider', () => {
         expect(JSON.stringify(result)).not.toContain('test-key-never-logged')
     })
 
+    it('adds native transparency parameters only for the isolated experiment', async () => {
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
+        const experimental = provider(fetchImplementation, { model: 'gpt-image-1.5', nativeTransparency: true })
+        await experimental.transformCreature(input())
+        const form = fetchImplementation.mock.calls[0][1].body as FormData
+
+        expect(form.get('model')).toBe('gpt-image-1.5')
+        expect(form.get('output_format')).toBe('png')
+        expect(form.get('background')).toBe('transparent')
+
+        const standardFetch = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
+        await provider(standardFetch).transformCreature(input())
+        expect((standardFetch.mock.calls[0][1].body as FormData).get('background')).toBeNull()
+    })
+
     it('maps timeout, rate limit, bad request, moderation, provider error and invalid response without retrying', async () => {
         const timeout = provider(async (_url, init) => new Promise((_resolve, reject) => {
             init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))

@@ -5,7 +5,7 @@ import type { VisualTraitId } from '../../../shared/creature-transformations/vis
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
 const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
-const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId'])
+const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId', 'experimentalNativeTransparency'])
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
@@ -153,6 +153,12 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
     if (body.imageProviderMode !== 'MOCK' && body.imageProviderMode !== 'REAL') {
         return { valid: false, code: 'INVALID_REQUEST', message: 'imageProviderMode deve essere MOCK o REAL.' }
     }
+    if (body.experimentalNativeTransparency !== undefined && body.experimentalNativeTransparency !== true) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency puo essere solo true.' }
+    }
+    if (body.experimentalNativeTransparency === true && body.imageProviderMode !== 'REAL') {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency richiede imageProviderMode REAL.' }
+    }
     if (!asRecord(body.concept)) {
         return { valid: false, code: 'INVALID_REQUEST', message: 'concept deve essere un oggetto strutturato.' }
     }
@@ -162,6 +168,9 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
     if (benchmarkCaseId === null || generationProfileId === null || Boolean(benchmarkCaseId) !== Boolean(generationProfileId)) {
         return { valid: false, code: 'INVALID_REQUEST', message: 'benchmarkCaseId e generationProfileId devono essere entrambi presenti e validi.' }
     }
+    if (body.experimentalNativeTransparency === true && benchmarkCaseId) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalNativeTransparency non e disponibile nei benchmark.' }
+    }
     return {
         valid: true,
         request: {
@@ -169,6 +178,7 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
             creatureId: required.creatureId,
             concept: body.concept as CreatureTransformationConcept,
             imageProviderMode: body.imageProviderMode,
+            ...(body.experimentalNativeTransparency === true ? { experimentalNativeTransparency: true as const } : {}),
             idempotencyKey: required.idempotencyKey,
             ...(benchmarkCaseId && generationProfileId ? { benchmarkCaseId, generationProfileId } : {}),
         },
