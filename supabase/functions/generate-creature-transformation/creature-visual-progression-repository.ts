@@ -83,7 +83,7 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
 }
 
 export class SupabaseCreatureVisualProgressionRepository {
-    constructor(private readonly client: CreatureVisualProgressionRepositoryClient) {}
+    constructor(private readonly client: CreatureVisualProgressionRepositoryClient) { }
 
     async selectTrack(input: { profileId: string; creatureId: string; visualTraitId: VisualTraitId; target: number }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('select_creature_visual_progress_track', {
