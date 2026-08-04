@@ -45,4 +45,17 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
         await expect(new SupabaseCreatureTransformationStorageAdapter(createStorageClient({ signedError: { message: 'nope' } }).client).saveResult({ profileId: 'profile-1', idempotencyKey: 'key', image: createTestPng() }))
             .rejects.toMatchObject({ code: 'SIGNED_URL_FAILED' } satisfies Partial<CreatureTransformationStorageError>)
     })
+
+    it('signs a constrained legacy raw proposal only for the owner review flow', async () => {
+        const mock = createStorageClient()
+        const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client, { signedUrlTtlSeconds: 120, now: () => 0 })
+        const legacyPath = `experiments/raw/profile-1/${'a'.repeat(64)}.png`
+
+        await expect(adapter.createVisualVersionSignedUrl({ assetPath: legacyPath, isBaseVersion: false }))
+            .resolves.toEqual({ signedUrl: 'https://signed.example/result', expiresAt: '1970-01-01T00:02:00.000Z' })
+        await expect(adapter.createVisualVersionSignedUrl({ assetPath: `candidates/profile-1/${'b'.repeat(64)}.png`, isBaseVersion: false }))
+            .resolves.toEqual({ signedUrl: 'https://signed.example/result', expiresAt: '1970-01-01T00:02:00.000Z' })
+        await expect(adapter.createVisualVersionSignedUrl({ assetPath: 'experiments/raw/profile-1/not-a-hash.png', isBaseVersion: false }))
+            .rejects.toMatchObject({ code: 'SIGNED_URL_FAILED' } satisfies Partial<CreatureTransformationStorageError>)
+    })
 })
