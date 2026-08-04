@@ -42,8 +42,17 @@ function safeVisualErrorCode(error: unknown, fallback: string): string {
     const message = error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string'
         ? (error as { message: string }).message
         : ''
-    const code = message.match(/\b(VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED)\b/)?.[1]
+    const code = message.match(/\b(CREATURE_NOT_OWNED|VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED)\b/)?.[1]
     return code ?? fallback
+}
+
+function visualProgressionErrorMessage(code: string): string {
+    if (code === 'VISUAL_TRACK_ALREADY_ACTIVE') return 'Esiste gia un percorso visuale aperto. Il suo stato e stato ricaricato.'
+    if (code === 'CREATURE_NOT_OWNED') return 'La creatura non appartiene al profilo autenticato.'
+    if (code === 'VISUAL_TRACK_NOT_READY') return 'Il percorso non e ancora pronto per questa operazione.'
+    if (code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 'La generazione non e disponibile per l adozione.'
+    if (code === 'CREATURE_VISUAL_VERSION_CONFLICT') return 'La versione visuale e cambiata. Ricarica il percorso e riprova.'
+    return 'La transizione visuale non e riuscita.'
 }
 
 export function mapProgressTrack(value: unknown): CreatureVisualProgressTrack {
@@ -162,7 +171,8 @@ export class SupabaseCreatureVisualProgressionRepository {
             if (error) throw error
             return rpcRecord(data)
         } catch (error) {
-            throw new CreatureVisualProgressionRepositoryError(safeVisualErrorCode(error, 'VISUAL_TRACK_STATE_CONFLICT'), 'La transizione visuale non e riuscita.', { cause: error })
+            const code = safeVisualErrorCode(error, 'VISUAL_TRACK_STATE_CONFLICT')
+            throw new CreatureVisualProgressionRepositoryError(code, visualProgressionErrorMessage(code), { cause: error })
         }
     }
 }
