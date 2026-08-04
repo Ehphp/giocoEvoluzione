@@ -14,6 +14,14 @@ type ExperimentOnlyResult = { requestId: string; warnings: string[] }
 type Props = { creature: PlayerCreatureRecord; onBack: () => void; onVisualChanged: () => Promise<void> | void }
 
 function traitLabel(id: VisualTraitId) { return VISUAL_TRAITS.find((trait) => trait.id === id)?.displayName ?? id }
+function pngBytesToBase64(bytes: Uint8Array): string {
+    const chunkSize = 0x8000
+    let binary = ''
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize))
+    }
+    return btoa(binary)
+}
 function validationLabel(code: string) {
     if (code === 'PNG_ALPHA_REQUIRED' || code === 'RAW_RESULT_ALPHA_MISSING') return 'Il PNG non dichiara trasparenza nativa.'
     if (code === 'PNG_ALPHA_COVERAGE_INVALID' || code === 'BACKGROUND_REMOVAL_PENDING_CLIENT') return 'La trasparenza nativa non e stata verificata.'
@@ -71,7 +79,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             setPostProcessingMessage('Rimozione dello sfondo nel browser...')
             const transparentPng = await removeCreatureBackground(await response.blob())
             const bytes = new Uint8Array(await transparentPng.arrayBuffer())
-            const base64 = btoa(String.fromCharCode(...bytes))
+            const base64 = pngBytesToBase64(bytes)
             setPostProcessingMessage('Validazione del PNG trasparente...')
             await submitBackgroundRemovalCandidate({ operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: base64 })
             postProcessingAttempts.current = 0
