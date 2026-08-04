@@ -19,8 +19,7 @@ export type ImageValidationProblemCode =
     | 'RESULT_IMAGE_UNCHANGED'
     | 'SHA256_UNAVAILABLE'
 
-export type ImageValidationProfile = 'PROVIDER_RAW_RESULT' | 'FINAL_CREATURE_ASSET'
-export type ImageValidationWarningCode = 'RESULT_IMAGE_UNCHANGED_MOCK' | 'RAW_RESULT_ALPHA_MISSING' | 'RAW_RESULT_ALPHA_COVERAGE_UNAVAILABLE'
+export type ImageValidationWarningCode = 'RESULT_IMAGE_UNCHANGED_MOCK'
 
 export type ImageValidationProblem = {
     code: ImageValidationProblemCode
@@ -52,11 +51,7 @@ export type ImageValidationInput = Readonly<{
     isMock?: boolean
     minBytes?: number
     maxBytes?: number
-    profile?: ImageValidationProfile
-    /** Used only for browser-post-processed candidates, never for raw provider output. */
     requireAlphaCoverage?: boolean
-    /** Measure alpha coverage without making coverage a validity requirement. */
-    measureAlphaCoverage?: boolean
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -134,7 +129,6 @@ export class ImageValidator {
         const problems: ImageValidationProblem[] = []
         const minBytes = input.minBytes ?? DEFAULT_MIN_BYTES
         const maxBytes = input.maxBytes ?? DEFAULT_MAX_BYTES
-        const profile = input.profile ?? 'FINAL_CREATURE_ASSET'
 
         if (!input.bytes.length) problems.push(problem('IMAGE_EMPTY', 'L immagine non contiene byte.'))
         if (input.mimeType !== 'image/png') problems.push(problem('MIME_TYPE_INVALID', 'Il MIME type dell immagine deve essere image/png.'))
@@ -208,12 +202,11 @@ export class ImageValidator {
             problems.push(problem('PNG_COLOR_TYPE_UNSUPPORTED', 'Il color type PNG non e compatibile con la pipeline.'))
         }
         const hasAlpha = Boolean(ihdr && (ihdr.colorType === 4 || ihdr.colorType === 6 || sawTransparency))
-        if (ihdr && !hasAlpha && profile === 'FINAL_CREATURE_ASSET') problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
+        if (ihdr && !hasAlpha) problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
         if (problems.length) return { valid: false, problems }
 
         let coverage: { transparentPixelRatio: number; visiblePixelRatio: number } | null = null
-        let alphaCoverageUnavailable = false
-        if (input.requireAlphaCoverage || input.measureAlphaCoverage) {
+        if (input.requireAlphaCoverage) {
             try {
                 const length = idatParts.reduce((total, part) => total + part.length, 0)
                 const compressed = new Uint8Array(length)
@@ -224,8 +217,7 @@ export class ImageValidator {
                     problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Il PNG deve contenere sia un soggetto visibile sia una porzione significativa di sfondo trasparente.'))
                 }
             } catch {
-                if (input.requireAlphaCoverage) problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
-                else alphaCoverageUnavailable = true
+                problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
             }
         }
         if (problems.length) return { valid: false, problems }
@@ -255,8 +247,6 @@ export class ImageValidator {
             },
             warnings: [
                 ...(input.sourceSha256 && sha256 === input.sourceSha256 && input.isMock ? ['RESULT_IMAGE_UNCHANGED_MOCK' as const] : []),
-                ...(!hasAlpha && profile === 'PROVIDER_RAW_RESULT' ? ['RAW_RESULT_ALPHA_MISSING' as const] : []),
-                ...(alphaCoverageUnavailable ? ['RAW_RESULT_ALPHA_COVERAGE_UNAVAILABLE' as const] : []),
             ],
         }
     }

@@ -33,11 +33,6 @@ export type CreatureTransformationRequestRecord = Readonly<{
     resultMimeType: 'image/png' | null
     resultWidth: number | null
     resultHeight: number | null
-    rawResultSha256: string | null
-    rawResultPath: string | null
-    rawResultMimeType: 'image/png' | null
-    rawResultWidth: number | null
-    rawResultHeight: number | null
     generationLatencyMs: number | null
     estimatedCostUsd: number | null
     actualCostUsd: number | null
@@ -107,7 +102,6 @@ export interface CreatureTransformationRequestRepository {
     markRunning(input: { requestId: string; profileId: string }): Promise<CreatureTransformationRequestRecord>
     markSucceeded(input: { requestId: string; profileId: string; data: RequestTransitionData }): Promise<CreatureTransformationRequestRecord>
     markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord>
-    finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[] }): Promise<CreatureTransformationRequestRecord>
     getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null>
     getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null>
 }
@@ -193,8 +187,6 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         promptTemplateVersion: readString(record, 'prompt_template_version', true), conceptSchemaVersion: readNumber(record, 'concept_schema_version', true),
         sourceSha256: readString(record, 'source_sha256', true), resultSha256: readString(record, 'result_sha256', true), resultPath: readString(record, 'result_path', true),
         resultMimeType: readString(record, 'result_mime_type', true) as 'image/png' | null, resultWidth: readNumber(record, 'result_width', true), resultHeight: readNumber(record, 'result_height', true),
-        rawResultSha256: readString(record, 'raw_result_sha256', true), rawResultPath: readString(record, 'raw_result_path', true),
-        rawResultMimeType: readString(record, 'raw_result_mime_type', true) as 'image/png' | null, rawResultWidth: readNumber(record, 'raw_result_width', true), rawResultHeight: readNumber(record, 'raw_result_height', true),
         generationLatencyMs: readNumber(record, 'generation_latency_ms', true), estimatedCostUsd: readNumber(record, 'estimated_cost_usd', true), actualCostUsd: readNumber(record, 'actual_cost_usd', true),
         assetReadiness: readString(record, 'asset_readiness', true) as CreatureTransformationAssetReadiness | null, validationWarnings: readWarnings(record),
         attemptCount: readNumber(record, 'attempt_count') ?? 0, errorCode: readString(record, 'error_code', true), errorMessage: readString(record, 'error_message', true),
@@ -256,25 +248,6 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
 
     async markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord> {
         return this.transition(input, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage })
-    }
-
-    async finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[] }): Promise<CreatureTransformationRequestRecord> {
-        let response: { data: unknown; error: DatabaseError }
-        try {
-            response = await this.client.rpc('finalize_creature_background_removal_candidate', {
-                p_profile_id: input.profileId, p_request_id: input.requestId, p_candidate_path: input.candidatePath,
-                p_candidate_sha256: input.candidateSha256, p_candidate_mime_type: input.candidateMimeType,
-                p_candidate_width: input.candidateWidth, p_candidate_height: input.candidateHeight,
-                p_validation_warnings: input.validationWarnings,
-            })
-        } catch (error) {
-            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile finalizzare il candidato.', { cause: error })
-        }
-        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile finalizzare il candidato.', { cause: response.error })
-        const result = readRpcResult(response.data)
-        if (result.outcome === 'CONFLICT') throw new CreatureTransformationRequestRepositoryError('REQUEST_STATE_CONFLICT', 'Il candidato non appartiene a una richiesta pronta per il post-processing.')
-        if (result.outcome !== 'UPDATED' || !result.record) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'La finalizzazione non ha restituito il record aggiornato.')
-        return result.record
     }
 
     async getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null> {

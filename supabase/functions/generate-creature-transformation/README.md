@@ -80,7 +80,7 @@ Le response espongono `requestPersistence` con ID record, stato, esito idempoten
 
 ## Flusso immagini mock
 
-`GENERATE_IMAGE` riserva, marca `RUNNING`, legge la sorgente privata, rivalida concept/immagini, usa `MockCreatureImageProvider`, post-processa, salva e marca `SUCCEEDED` con hash e path deterministico `profileId/sha256(idempotencyKey).png`. Il mock copia i byte a costo zero; `MOCK_PROVIDER_NO_VISUAL_TRANSFORMATION` e `RESULT_IMAGE_UNCHANGED_MOCK` sono warning attesi.
+`GENERATE_IMAGE` riserva, marca `RUNNING`, legge la sorgente privata, rivalida concept e immagini, usa `MockCreatureImageProvider`, salva e marca `SUCCEEDED` con hash e path deterministico `profileId/sha256(idempotencyKey).png`. Il mock copia i byte a costo zero; `MOCK_PROVIDER_NO_VISUAL_TRANSFORMATION` e `RESULT_IMAGE_UNCHANGED_MOCK` sono warning attesi.
 
 Ogni errore controllato marca `FAILED`.
 
@@ -92,7 +92,7 @@ La richiesta `GENERATE_IMAGE` reale viene riservata con il costo `OPENAI_IMAGE_E
 
 `GET_REQUEST_STATUS` accetta soltanto un `transformationRequestId`, verifica il proprietario server-side e restituisce stato, metadati e una nuova signed URL per il risultato `SUCCEEDED`. Non restituisce mai `result_path`.
 
-La migration `202608020004_creature_transformation_real_image_pilot.sql` aggiunge soltanto `asset_readiness` e `validation_warnings`. Il PNG provider viene prima validato con il profilo `PROVIDER_RAW_RESULT`: senza alpha e valido diventa `EXPERIMENT_ONLY` con `RAW_RESULT_ALPHA_MISSING`; con alpha e validazione finale superata diventa `FINAL_ASSET`. In nessun caso il risultato aggiorna `player_creatures` o promuove uno sprite ufficiale.
+La migration `202608020004_creature_transformation_real_image_pilot.sql` aggiunge soltanto `asset_readiness` e `validation_warnings`. Il PNG provider deve avere alpha e una copertura alpha verificabile; se uno dei controlli fallisce la richiesta termina in `FAILED`, senza fallback o post-processing. Un PNG validato viene salvato direttamente come `FINAL_ASSET`. In nessun caso il risultato aggiorna `player_creatures` o promuove uno sprite ufficiale.
 
 Il progetto locale usa gia `[edge_runtime] policy = "per_worker"` in `supabase/config.toml`, richiesto per sperimentare la task nel runtime locale.
 

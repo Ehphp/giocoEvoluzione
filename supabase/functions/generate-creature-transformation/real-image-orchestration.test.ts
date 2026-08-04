@@ -3,12 +3,29 @@ import { describe, expect, it } from 'vitest'
 import { createValidConcept } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
 import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
+import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { parseCreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { getGenerateConceptFailureStatus, orchestrateGenerateImage, orchestrateGetTransformationRequestStatus } from './edge-orchestration.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { SupabaseCreatureTransformationStorageAdapter, type CreatureTransformationStorageClient } from './supabase-creature-transformation-storage.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
+
+class AlphaValidatedImageValidator extends ImageValidator {
+    private validationCount = 0
+
+    override async validate() {
+        this.validationCount += 1
+        return {
+            valid: true as const,
+            metadata: {
+                mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true,
+                transparentPixelRatio: 0.5, visiblePixelRatio: 0.5, sha256: this.validationCount === 1 ? 'a'.repeat(64) : 'b'.repeat(64), bytes: 256,
+            },
+            warnings: [],
+        }
+    }
+}
 
 const policy: CreatureTransformationLabPolicy = {
     enabled: true,
@@ -59,7 +76,7 @@ function input(overrides: Partial<Parameters<typeof orchestrateGenerateImage>[0]
     const provider: CreatureImageProvider = {
         async transformCreature() {
             return {
-                image: createTestPng({ colorType: 2 }), mimeType: 'image/png', provider: 'openai-image-api', model: 'configured-image-model', isMock: false,
+                image: createTestPng(), mimeType: 'image/png', provider: 'openai-image-api', model: 'configured-image-model', isMock: false,
                 providerRequestId: 'openai-request-1', latencyMs: 25, estimatedCostUsd: 0.12, warnings: [],
             }
         },
@@ -68,13 +85,14 @@ function input(overrides: Partial<Parameters<typeof orchestrateGenerateImage>[0]
         profileId: 'profile-1', requestId: 'http-real-1', body: request(), policy, resolver: resolver(), storage: stored.adapter,
         createImageProvider: () => { throw new Error('mock provider must not be used') }, createRealImageProvider: () => provider,
         deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) }, repository: requests.repository,
+        validator: new AlphaValidatedImageValidator(),
         ...overrides,
         test: { stored, requests, tasks },
     }
 }
 
 describe('REAL image asynchronous orchestration', () => {
-    it('accepts one request, completes it in the background and keeps a raw no-alpha result experiment-only', async () => {
+    it('accepts one request and persists a native transparent PNG as the final asset', async () => {
         const prepared = input()
         const result = await orchestrateGenerateImage(prepared)
         expect(result).toMatchObject({ success: true, accepted: true, requestPersistence: { status: 'RUNNING', idempotencyStatus: 'CREATED', estimatedCostUsd: 0.12 } })
@@ -83,13 +101,28 @@ describe('REAL image asynchronous orchestration', () => {
         expect(prepared.test.requests.get('profile-1', 'real-key-1')).toMatchObject({
             status: 'SUCCEEDED', provider: 'openai-image-api', model: 'configured-image-model', providerRequestId: 'openai-request-1',
             sourceSha256: expect.stringMatching(/^[a-f0-9]{64}$/), resultSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-            assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: ['RAW_RESULT_ALPHA_MISSING'], estimatedCostUsd: 0.12, actualCostUsd: null,
+            assetReadiness: 'FINAL_ASSET', validationWarnings: [], estimatedCostUsd: 0.12, actualCostUsd: null,
         })
         expect(prepared.test.stored.uploadCalls).toHaveLength(1)
 
         const status = await orchestrateGetTransformationRequestStatus({ ...prepared, requestId: 'status-1', body: { operation: 'GET_REQUEST_STATUS', transformationRequestId: '00000000-0000-4000-8000-000000000001' } })
-        expect(status).toMatchObject({ success: true, requestPersistence: { status: 'SUCCEEDED' }, generation: { providerRequestId: 'openai-request-1' }, result: { assetReadiness: 'EXPERIMENT_ONLY', warnings: ['RAW_RESULT_ALPHA_MISSING'] } })
+        expect(status).toMatchObject({ success: true, requestPersistence: { status: 'SUCCEEDED' }, generation: { providerRequestId: 'openai-request-1' }, result: { assetReadiness: 'FINAL_ASSET', warnings: [] } })
         expect(JSON.stringify(status)).not.toContain('resultPath')
+    })
+
+    it('fails an opaque provider result instead of persisting an experimental fallback', async () => {
+        const prepared = input({
+            validator: new ImageValidator(),
+            createRealImageProvider: () => ({
+                async transformCreature() {
+                    return { image: createTestPng({ colorType: 2 }), mimeType: 'image/png' as const, provider: 'openai-image-api', model: 'configured-image-model', isMock: false, latencyMs: 25, estimatedCostUsd: 0.12, warnings: [] }
+                },
+            }),
+        })
+        await orchestrateGenerateImage(prepared)
+        await prepared.test.tasks[0]
+        expect(prepared.test.requests.get('profile-1', 'real-key-1')).toMatchObject({ status: 'FAILED', errorCode: 'RESULT_IMAGE_INVALID', resultPath: null })
+        expect(prepared.test.stored.uploadCalls).toHaveLength(0)
     })
 
     it('does not schedule a second task for the same running key and keeps failed records terminal', async () => {

@@ -41,16 +41,4 @@ describe('ImageValidator', () => {
         await expect(validate(changed, { sourceSha256: sourceResult.metadata.sha256, isMock: false })).resolves.toMatchObject({ valid: true, warnings: [] })
     })
 
-    it('accepts a provider raw PNG without alpha as experiment-only input while preserving final alpha requirements', async () => {
-        const withoutAlpha = createTestPng({ colorType: 2 })
-        await expect(validate(withoutAlpha, { profile: 'PROVIDER_RAW_RESULT' })).resolves.toMatchObject({
-            valid: true,
-            metadata: { hasAlpha: false },
-            warnings: ['RAW_RESULT_ALPHA_MISSING'],
-        })
-        await expect(validate(withoutAlpha, { profile: 'FINAL_CREATURE_ASSET' })).resolves.toMatchObject({
-            valid: false,
-            problems: [{ code: 'PNG_ALPHA_REQUIRED' }],
-        })
-    })
 })

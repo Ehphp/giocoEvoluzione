@@ -58,14 +58,6 @@ function isSafeResultObjectPath(path: string): boolean {
     return /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
 }
 
-function isSafeRawObjectPath(path: string): boolean {
-    return /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
-}
-
-function isSafeCandidateObjectPath(path: string): boolean {
-    return /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
-}
-
 export class SupabaseCreatureTransformationStorageAdapter {
     private readonly client: CreatureTransformationStorageClient
     private readonly sourceBucket: string
@@ -103,42 +95,12 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return `${profileSegment}/${idempotencyDigest}.png`
     }
 
-    async createRawResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {
-        const profileSegment = profilePathSegment(profileId)
-        const idempotencyDigest = await sha256Hex(new TextEncoder().encode(idempotencyKey))
-        return `experiments/raw/${profileSegment}/${idempotencyDigest}.png`
-    }
-
-    async createCandidateObjectPath(profileId: string, transformationRequestId: string): Promise<string> {
-        const profileSegment = profilePathSegment(profileId)
-        const requestDigest = await sha256Hex(new TextEncoder().encode(transformationRequestId))
-        return `candidates/${profileSegment}/${requestDigest}.png`
-    }
-
     async saveResult(input: {
         profileId: string
         idempotencyKey: string
         image: Uint8Array
     }): Promise<StoredCreatureTransformationImage> {
         const objectPath = await this.createResultObjectPath(input.profileId, input.idempotencyKey)
-        return this.savePng(objectPath, input.image)
-    }
-
-    async saveRawResult(input: {
-        profileId: string
-        idempotencyKey: string
-        image: Uint8Array
-    }): Promise<StoredCreatureTransformationImage> {
-        const objectPath = await this.createRawResultObjectPath(input.profileId, input.idempotencyKey)
-        return this.savePng(objectPath, input.image)
-    }
-
-    async saveBackgroundRemovalCandidate(input: {
-        profileId: string
-        transformationRequestId: string
-        image: Uint8Array
-    }): Promise<StoredCreatureTransformationImage> {
-        const objectPath = await this.createCandidateObjectPath(input.profileId, input.transformationRequestId)
         return this.savePng(objectPath, input.image)
     }
 
@@ -160,7 +122,7 @@ export class SupabaseCreatureTransformationStorageAdapter {
     }
 
     async createResultSignedUrl(resultPath: string): Promise<StoredCreatureTransformationImage> {
-        if (!isSafeResultObjectPath(resultPath) && !isSafeRawObjectPath(resultPath) && !isSafeCandidateObjectPath(resultPath)) {
+        if (!isSafeResultObjectPath(resultPath)) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path persistito del risultato non e valido.')
         }
         let signed: { data: { signedUrl?: string } | null; error: StorageError }
@@ -184,7 +146,7 @@ export class SupabaseCreatureTransformationStorageAdapter {
         if (input.isBaseVersion && !/^[A-Za-z0-9._/-]{1,512}$/.test(input.assetPath)) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La sorgente visuale non e valida.')
         }
-        if (!input.isBaseVersion && !isSafeResultObjectPath(input.assetPath) && !isSafeCandidateObjectPath(input.assetPath)) {
+        if (!input.isBaseVersion && !isSafeResultObjectPath(input.assetPath)) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path della versione visuale non e valido.')
         }
         let signed: { data: { signedUrl?: string } | null; error: StorageError }

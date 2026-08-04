@@ -173,12 +173,9 @@ export async function generateImageForAuthenticatedProfile(
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
         profile: 'FINAL_CREATURE_ASSET',
-        ...(generated.isMock ? {} : { measureAlphaCoverage: true }),
+        ...(generated.isMock ? {} : { requireAlphaCoverage: true }),
     })
     if (!finalValidation.valid) throw resultFailure(finalValidation)
-    if (!generated.isMock && finalValidation.metadata.transparentPixelRatio !== undefined && finalValidation.metadata.transparentPixelRatio < 0.005) {
-        throw new ImageGenerationServiceError('RESULT_IMAGE_INVALID', 'Il PNG OpenAI non contiene una porzione significativa di pixel trasparenti.')
-    }
     const outputMetadata = finalValidation.metadata
     const outputWarnings = uniqueWarnings([
         ...generated.warnings,
