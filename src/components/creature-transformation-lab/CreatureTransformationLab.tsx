@@ -205,6 +205,26 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         }
     }
 
+    async function handleGenerateNativeTransparencyExperiment() {
+        if (!conceptResult || !imageGenerationAvailable || !realCostConfirmed || realRequestIsRunning) return
+        setIsGeneratingImage(true)
+        setError(null)
+        setRetryAction(null)
+        setRealPollingTimedOut(false)
+        try {
+            const response = await generateCreatureTransformationImage({
+                operation: 'GENERATE_IMAGE', creatureId: creature.id, concept: conceptResult.concept,
+                imageProviderMode: 'REAL', experimentalNativeTransparency: true, idempotencyKey: createImageIdempotencyKey(),
+            })
+            setRealRequestPersistence(response.requestPersistence)
+            setRealStatus(null)
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError : new Error('Esperimento trasparenza nativa non riuscito.'))
+        } finally {
+            setIsGeneratingImage(false)
+        }
+    }
+
     return (
         <section className="creature-transformation-lab" aria-labelledby="creature-transformation-lab-title">
             <header className="creature-transformation-lab__header">
@@ -297,6 +317,10 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                                 <button type="button" className="primary-button" onClick={() => void handleGenerateExperimentalImage()} disabled={!imageGenerationAvailable || !realCostConfirmed || isBusy}>
                                     {isGeneratingImage ? 'Avvio richiesta sperimentale...' : 'Genera immagine sperimentale'}
                                 </button>
+                                <button type="button" className="primary-button" onClick={() => void handleGenerateNativeTransparencyExperiment()} disabled={!imageGenerationAvailable || !realCostConfirmed || isBusy}>
+                                    {isGeneratingImage ? 'Avvio test trasparenza...' : 'Rielabora ultimo concept: PNG trasparente nativo'}
+                                </button>
+                                <small>Forza GPT Image 1.5 con sfondo trasparente; il candidato resta esclusivamente sperimentale.</small>
                             </div>
                         ) : null}
                     </section>

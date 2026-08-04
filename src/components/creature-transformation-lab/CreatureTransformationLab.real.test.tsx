@@ -81,4 +81,24 @@ describe('CreatureTransformationLab real image pilot UI', () => {
         expect(container.textContent).toContain('RAW_RESULT_ALPHA_MISSING')
         await act(async () => root.unmount())
     })
+
+    it('reuses the latest concept for the isolated native-transparency experiment', async () => {
+        const { CreatureTransformationLab } = await import('./CreatureTransformationLab')
+        const root = createRoot(container)
+        const button = (label: string) => {
+            const found = [...container.querySelectorAll('button')].find((element) => element.textContent === label)
+            if (!found) throw new Error(`button ${label} not found`)
+            return found as HTMLButtonElement
+        }
+        await act(async () => { root.render(createElement(CreatureTransformationLab, { creature, onBack: () => undefined })) })
+        await act(async () => { button('Genera concept').click() })
+        await act(async () => { (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click() })
+        await act(async () => { button('Rielabora ultimo concept: PNG trasparente nativo').click() })
+
+        expect(mocks.generateImage).toHaveBeenCalledWith(expect.objectContaining({
+            creatureId: creature.id, concept: concept.concept, imageProviderMode: 'REAL',
+            experimentalNativeTransparency: true, idempotencyKey: 'real-key',
+        }))
+        await act(async () => root.unmount())
+    })
 })
