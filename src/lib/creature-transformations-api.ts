@@ -81,17 +81,23 @@ export function createImageIdempotencyKey(): string {
 
 export const createVisualTransformationIdempotencyKey = createImageIdempotencyKey
 
+async function requireRefreshedSession() {
+    const supabase = requireSupabase()
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error || !data.session?.access_token) {
+        await supabase.auth.signOut({ scope: 'local' })
+        throw new Error('La sessione non e piu valida. Accedi di nuovo per usare l evoluzione della creatura.')
+    }
+    return { supabase, accessToken: data.session.access_token }
+}
+
 async function createAuthenticatedInvoker(): Promise<CreatureTransformationFunctionInvoker> {
     const supabase = requireSupabase()
     const { data: initial } = await supabase.auth.getSession()
     const expiresSoon = initial.session?.expires_at !== undefined && initial.session.expires_at * 1000 <= Date.now() + 60_000
     let accessToken = initial.session?.access_token ?? null
     if (!initial.session || expiresSoon) {
-        const { data, error } = await supabase.auth.refreshSession()
-        if (error || !data.session?.access_token) {
-            throw new Error('La sessione e scaduta. Accedi di nuovo per usare l evoluzione della creatura.')
-        }
-        accessToken = data.session.access_token
+        accessToken = (await requireRefreshedSession()).accessToken
     }
     if (!accessToken) {
         throw new Error('La sessione e scaduta. Accedi di nuovo per usare l evoluzione della creatura.')
@@ -114,25 +120,21 @@ async function invokeCreatureTransformation<TResponse extends Extract<CreatureTr
     if (error) {
         const response = await readFunctionError(error)
         if (!invoker && response?.code === 'UNAUTHENTICATED') {
-            const supabase = requireSupabase()
-            const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-            if (!refreshError && refreshed.session?.access_token) {
-                const accessToken = refreshed.session.access_token
-                activeInvoker = {
-                    invoke: (name, options) => supabase.functions.invoke(name, {
-                        ...options,
-                        headers: { ...options.headers, Authorization: `Bearer ${accessToken}` },
-                    }),
-                }
-                    ; ({ data, error } = await activeInvoker.invoke('generate-creature-transformation', { body: request }))
-                if (!error) {
-                    if (isErrorResponse(data)) throw new CreatureTransformationApiError(data)
-                    if (!isSuccessResponse(data)) throw new Error('Il laboratorio ha restituito una risposta non riconosciuta.')
-                    return data as TResponse
-                }
-                const retryResponse = await readFunctionError(error)
-                if (retryResponse) throw new CreatureTransformationApiError(retryResponse)
+            const refreshed = await requireRefreshedSession()
+            activeInvoker = {
+                invoke: (name, options) => refreshed.supabase.functions.invoke(name, {
+                    ...options,
+                    headers: { ...options.headers, Authorization: `Bearer ${refreshed.accessToken}` },
+                }),
             }
+            ; ({ data, error } = await activeInvoker.invoke('generate-creature-transformation', { body: request }))
+            if (!error) {
+                if (isErrorResponse(data)) throw new CreatureTransformationApiError(data)
+                if (!isSuccessResponse(data)) throw new Error('Il laboratorio ha restituito una risposta non riconosciuta.')
+                return data as TResponse
+            }
+            const retryResponse = await readFunctionError(error)
+            if (retryResponse) throw new CreatureTransformationApiError(retryResponse)
         }
         if (response) throw new CreatureTransformationApiError(response)
         throw new Error(error instanceof Error ? error.message : 'Impossibile contattare il laboratorio trasformazioni.')
