@@ -371,7 +371,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                         <div><dt>Costo effettivo</dt><dd>{realStatus.generation.actualCostUsd === undefined ? 'Non disponibile' : `$${realStatus.generation.actualCostUsd}`}</dd></div>
                     </dl> : null}
                     {realStatus?.result ? <>
-                        <figure><img src={realStatus.result.signedUrl} alt="Risultato sperimentale della trasformazione" /><figcaption>{realStatus.result.assetReadiness}</figcaption></figure>
+                        <figure className="creature-transformation-lab__experimental-image"><img src={realStatus.result.signedUrl} alt="Risultato sperimentale della trasformazione" /><figcaption>{realStatus.result.assetReadiness}</figcaption></figure>
                         <p><strong>Asset:</strong> {realStatus.result.assetReadiness}</p>
                         {realStatus.result.warnings.length ? <ul className="creature-transformation-lab__warnings">{realStatus.result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}
                     </> : null}
