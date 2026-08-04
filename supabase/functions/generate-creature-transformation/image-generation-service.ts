@@ -182,10 +182,10 @@ export async function generateImageForAuthenticatedProfile(
         ...finalValidation.warnings,
     ])
     const stored = await input.storage.saveResult({
-            profileId: input.profileId,
-            idempotencyKey: input.request.idempotencyKey,
-            image: generated.image,
-        })
+        profileId: input.profileId,
+        idempotencyKey: input.request.idempotencyKey,
+        image: generated.image,
+    })
 
     return {
         success: true,

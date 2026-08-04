@@ -21,7 +21,7 @@ vi.mock('../../lib/creature-transformations-api', () => ({
     generateCreatureTransformationConcept: mocks.generateConcept,
     generateCreatureTransformationImage: mocks.generateImage,
     getCreatureTransformationRequestStatus: mocks.getStatus,
-    CreatureTransformationApiError: class CreatureTransformationApiError extends Error {},
+    CreatureTransformationApiError: class CreatureTransformationApiError extends Error { },
 }))
 
 const creature = { id: 'creature-1', profile_id: 'profile-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Creatura', level: 1, experience: 0, progression_state: {}, created_at: '', updated_at: '' }
