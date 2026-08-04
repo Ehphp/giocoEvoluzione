@@ -101,7 +101,30 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
 
     const currentTrait = useMemo(() => progress?.track ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
     async function selectTrait(visualTraitId: VisualTraitId) { setBusy(true); setError(null); try { setProgress(await selectCreatureVisualProgressTrack({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: creature.id, visualTraitId }) as unknown as ProgressResponse) } catch (nextError) { if (nextError instanceof CreatureTransformationApiError && nextError.code === 'VISUAL_TRACK_ALREADY_ACTIVE') { try { await refresh() } catch { } setError('Esiste gia un percorso visuale aperto. Il suo stato e stato ricaricato.') } else setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile avviare il percorso.') } finally { setBusy(false) } }
-    async function generate() { if (!progress?.track) return; setBusy(true); setError(null); setExperimentOnly(null); try { await generateUnlockedCreatureTransformation({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, idempotencyKey: createVisualTransformationIdempotencyKey() }); await refresh() } catch (nextError) { setError(nextError instanceof Error ? nextError.message : 'La generazione non e stata avviata.') } finally { setBusy(false) } }
+    async function generate() {
+        if (!progress?.track) return
+        setBusy(true); setError(null); setExperimentOnly(null)
+        const start = (idempotencyKey: string) => generateUnlockedCreatureTransformation({
+            operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: creature.id,
+            progressTrackId: progress.track!.id, idempotencyKey,
+        })
+        try {
+            await start(createVisualTransformationIdempotencyKey())
+            await refresh()
+        } catch (nextError) {
+            if (nextError instanceof CreatureTransformationApiError && nextError.code === 'REQUEST_PREVIOUSLY_FAILED') {
+                try {
+                    await start(createVisualTransformationIdempotencyKey())
+                    await refresh()
+                    return
+                } catch (retryError) {
+                    setError(retryError instanceof Error ? retryError.message : 'La nuova generazione non e stata avviata.')
+                    return
+                }
+            }
+            setError(nextError instanceof Error ? nextError.message : 'La generazione non e stata avviata.')
+        } finally { setBusy(false) }
+    }
     async function adopt() { if (!progress?.track || !preview) return; setBusy(true); setError(null); try { await adoptCreatureTransformation({ operation: 'ADOPT_CREATURE_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, transformationRequestId: preview.requestId, expectedCurrentVisualVersionId: preview.sourceVersionId }); await onVisualChanged(); await refresh() } catch (nextError) { setError(nextError instanceof Error ? nextError.message : 'L adozione non e riuscita.') } finally { setBusy(false) } }
 
     return <section className="visual-progression-screen" aria-labelledby="visual-progression-title">
