@@ -56,6 +56,7 @@ function profilePathSegment(profileId: string): string {
 
 function isSafeResultObjectPath(path: string): boolean {
     return /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
+        || /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
 }
 
 export class SupabaseCreatureTransformationStorageAdapter {

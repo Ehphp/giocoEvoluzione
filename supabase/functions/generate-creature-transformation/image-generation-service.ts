@@ -166,20 +166,29 @@ export async function generateImageForAuthenticatedProfile(
         throw new ImageGenerationServiceError('MOCK_PROVIDER_FAILED', 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
     }
 
-    const finalValidation = await validator.validate({
+    const assetValidation = await validator.validate({
         bytes: generated.image,
         mimeType: generated.mimeType,
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
         profile: 'FINAL_CREATURE_ASSET',
-        ...(generated.isMock ? {} : { requireAlphaCoverage: true }),
+        requireAlpha: false,
     })
-    if (!finalValidation.valid) throw resultFailure(finalValidation)
-    const outputMetadata = finalValidation.metadata
+    if (!assetValidation.valid) throw resultFailure(assetValidation)
+    const transparencyValidation = generated.isMock ? assetValidation : await validator.validate({
+        bytes: generated.image,
+        mimeType: generated.mimeType,
+        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        sourceSha256: validatedSource.metadata.sha256,
+        isMock: generated.isMock,
+        profile: 'FINAL_CREATURE_ASSET',
+        requireAlphaCoverage: true,
+    })
+    const outputMetadata = assetValidation.metadata
     const outputWarnings = uniqueWarnings([
         ...generated.warnings,
-        ...finalValidation.warnings,
+        ...(transparencyValidation.valid ? transparencyValidation.warnings : transparencyValidation.problems.map((problem) => problem.code)),
     ])
     const stored = await input.storage.saveResult({
         profileId: input.profileId,

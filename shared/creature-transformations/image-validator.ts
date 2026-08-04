@@ -51,6 +51,7 @@ export type ImageValidationInput = Readonly<{
     isMock?: boolean
     minBytes?: number
     maxBytes?: number
+    requireAlpha?: boolean
     requireAlphaCoverage?: boolean
 }>
 
@@ -202,7 +203,7 @@ export class ImageValidator {
             problems.push(problem('PNG_COLOR_TYPE_UNSUPPORTED', 'Il color type PNG non e compatibile con la pipeline.'))
         }
         const hasAlpha = Boolean(ihdr && (ihdr.colorType === 4 || ihdr.colorType === 6 || sawTransparency))
-        if (ihdr && !hasAlpha) problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
+        if (ihdr && input.requireAlpha !== false && !hasAlpha) problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
         if (problems.length) return { valid: false, problems }
 
         let coverage: { transparentPixelRatio: number; visiblePixelRatio: number } | null = null
