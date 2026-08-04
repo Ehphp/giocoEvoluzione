@@ -53,6 +53,7 @@ export type ImageValidationInput = Readonly<{
     maxBytes?: number
     requireAlpha?: boolean
     requireAlphaCoverage?: boolean
+    requireTransparentEdges?: boolean
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -89,6 +90,13 @@ async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number;
     let previous = new Uint8Array(stride)
     let transparent = 0
     let visible = 0
+    let edgeTransparent = 0
+    let edgePixels = 0
+    let cornerTransparent = 0
+    let cornerPixels = 0
+    const border = Math.max(1, Math.floor(Math.min(input.width, input.height) * 0.02))
+    const cornerWidth = Math.max(1, Math.floor(input.width * 0.05))
+    const cornerHeight = Math.max(1, Math.floor(input.height * 0.05))
     const total = input.width * input.height
     for (let row = 0; row < input.height; row += 1) {
         const filter = decoded[offset]
@@ -113,10 +121,26 @@ async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number;
             const alpha = scanline[pixel * bytesPerPixel + alphaOffset]
             if (alpha < 255) transparent += 1
             if (alpha >= 128) visible += 1
+            const isEdge = row < border || row >= input.height - border || pixel < border || pixel >= input.width - border
+            if (isEdge) {
+                edgePixels += 1
+                if (alpha < 255) edgeTransparent += 1
+            }
+            const isCorner = (row < cornerHeight || row >= input.height - cornerHeight)
+                && (pixel < cornerWidth || pixel >= input.width - cornerWidth)
+            if (isCorner) {
+                cornerPixels += 1
+                if (alpha < 255) cornerTransparent += 1
+            }
         }
         previous = scanline
     }
-    return { transparentPixelRatio: transparent / total, visiblePixelRatio: visible / total }
+    return {
+        transparentPixelRatio: transparent / total,
+        visiblePixelRatio: visible / total,
+        edgeTransparentPixelRatio: edgeTransparent / edgePixels,
+        cornerTransparentPixelRatio: cornerTransparent / cornerPixels,
+    }
 }
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
@@ -206,8 +230,8 @@ export class ImageValidator {
         if (ihdr && input.requireAlpha !== false && !hasAlpha) problems.push(problem('PNG_ALPHA_REQUIRED', 'Il PNG deve dichiarare un canale alpha o un chunk tRNS.'))
         if (problems.length) return { valid: false, problems }
 
-        let coverage: { transparentPixelRatio: number; visiblePixelRatio: number } | null = null
-        if (input.requireAlphaCoverage) {
+        let coverage: { transparentPixelRatio: number; visiblePixelRatio: number; edgeTransparentPixelRatio: number; cornerTransparentPixelRatio: number } | null = null
+        if (input.requireAlphaCoverage || input.requireTransparentEdges) {
             try {
                 const length = idatParts.reduce((total, part) => total + part.length, 0)
                 const compressed = new Uint8Array(length)
@@ -216,6 +240,9 @@ export class ImageValidator {
                 coverage = await alphaCoverage({ compressedIdat: compressed, width: ihdr!.width, height: ihdr!.height, colorType: ihdr!.colorType, bitDepth: ihdr!.bitDepth })
                 if (input.requireAlphaCoverage && (coverage.transparentPixelRatio < 0.005 || coverage.visiblePixelRatio < 0.01 || coverage.visiblePixelRatio > 0.98)) {
                     problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Il PNG deve contenere sia un soggetto visibile sia una porzione significativa di sfondo trasparente.'))
+                }
+                if (input.requireTransparentEdges && (coverage.edgeTransparentPixelRatio < 0.5 || coverage.cornerTransparentPixelRatio < 0.75)) {
+                    problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'I bordi e gli angoli del PNG devono essere prevalentemente trasparenti.'))
                 }
             } catch {
                 problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
@@ -242,7 +269,7 @@ export class ImageValidator {
                 height: ihdr!.height,
                 colorType: ihdr!.colorType,
                 hasAlpha,
-                ...(coverage ?? {}),
+                ...(coverage ? { transparentPixelRatio: coverage.transparentPixelRatio, visiblePixelRatio: coverage.visiblePixelRatio } : {}),
                 sha256,
                 bytes: input.bytes.length,
             },

@@ -77,6 +77,12 @@ export type GenerateUnlockedTransformationRequest = {
     idempotencyKey: string
 }
 
+export type SubmitBackgroundRemovalCandidateRequest = {
+    operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE'
+    transformationRequestId: string
+    candidatePngBase64: string
+}
+
 
 export type SelectCreatureVisualProgressTrackRequest = {
     operation: 'SELECT_VISUAL_PROGRESS_TRACK'
@@ -122,4 +128,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest

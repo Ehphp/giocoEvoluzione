@@ -90,7 +90,7 @@ describe('composeCreatureTransformationPrompt', () => {
         expect(result.sections.style).toContain(TEST_CREATURE_IDENTITY.styleDefinition)
         expect(result.sections.technical).toContain('PNG')
         expect(result.sections.technical).toContain('1024 × 1536')
-        expect(result.sections.technical).toContain('transparent background')
+        expect(result.sections.technical).toContain('uniform, neutral light-grey background')
         expect(result.sections.technical).toContain('canvas margins')
     })
 
@@ -205,7 +205,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 
@@ -229,7 +229,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 
@@ -253,7 +253,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Use a transparent background. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 

@@ -82,7 +82,7 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
         form.set('size', `${input.renderSpecification.width}x${input.renderSpecification.height}`)
         form.set('quality', this.quality)
         form.set('output_format', 'png')
-        form.set('background', 'transparent')
+        form.set('background', 'opaque')
         form.set('image[]', new Blob([input.source.bytes], { type: 'image/png' }), 'canonical-creature.png')
 
         const controller = new AbortController()

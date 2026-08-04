@@ -5,6 +5,7 @@ import type {
     GenerateImageAcceptedResponse,
     GenerateImageApiResponse,
     GenerateImageResponse,
+    SubmitBackgroundRemovalCandidateResponse,
     GetBenchmarkResultsResponse,
     CreatureVisualProgressResponse,
     CurrentCreatureVisualApiResponse,
@@ -30,7 +31,7 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitExperimentReviewRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest } from './request-validation.ts'
 import {
     CreatureTransformationRequestRepositoryError,
     type CreatureTransformationRequestRecord,
@@ -148,7 +149,7 @@ export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
     if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
-    if (code === 'PNG_ALPHA_COVERAGE_INVALID') return 422
+    if (code === 'PNG_ALPHA_COVERAGE_INVALID' || code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID') return 422
     if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
     if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 409
     if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH') return 422
@@ -480,25 +481,25 @@ async function runUnlockedTransformationTask(
             profileId: input.profileId!, requestId: input.requestId, request: imageRequest, resolver: input.resolver,
             storage: input.storage, provider: input.createRealImageProvider!(profile ?? undefined),
             ...(input.validator ? { validator: input.validator } : {}), promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+            storageDestination: 'RAW_EXPERIMENT',
         })
         if (!generated.success) {
             await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: generated.code, errorMessage: generated.message })
             await restoreVisualTrackAfterFailure(input, request.progressTrackId, running)
             return
         }
-        const resultPath = await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
         const completed = await input.repository.markSucceeded({
             requestId: running.id, profileId: input.profileId!, data: {
                 provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
-                sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256, resultPath, resultMimeType: generated.result.mimeType,
+                sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256, resultPath: await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey), resultMimeType: generated.result.mimeType,
                 resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
-                assetReadiness: generated.result.assetReadiness, validationWarnings: generated.validation.warnings,
+                assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: [...generated.validation.warnings, 'BACKGROUND_REMOVAL_PENDING_CLIENT'],
                 estimatedCostUsd: generated.generation.estimatedCostUsd ?? profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
                 promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL, promptSha256: generated.promptSha256,
                 conceptSnapshot: generated.conceptSnapshot, generationQuality: profile?.quality ?? input.policy.realImage.quality,
             },
         })
-        await input.visualRepository.completeGeneration({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id, finalAsset: true })
+        await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
     } catch (error) {
         const details = mapThrownError(error)
         try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original outcome */ }
@@ -638,6 +639,58 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, track.visualTraitId, profile))
         return acceptedRealImage(input.requestId, running, 'CREATED')
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
+}
+
+function decodeBackgroundRemovalCandidate(base64: string): Uint8Array | null {
+    if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return null
+    try {
+        const binary = atob(base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+        return bytes
+    } catch {
+        return null
+    }
+}
+
+export async function orchestrateSubmitBackgroundRemovalCandidate(input: GenerateImageEdgeOrchestrationInput): Promise<SubmitBackgroundRemovalCandidateResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseSubmitBackgroundRemovalCandidateRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const bytes = decodeBackgroundRemovalCandidate(parsed.request.candidatePngBase64)
+    if (!bytes) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG elaborato non puo essere decodificato.')
+    let record: CreatureTransformationRequestRecord | null
+    try {
+        record = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.transformationRequestId })
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
+    }
+    if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
+    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY' || !record.visualProgressTrackId) {
+        return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La richiesta non e pronta per il PNG elaborato.')
+    }
+    const validation = await (input.validator ?? new ImageValidator()).validate({
+        bytes, mimeType: 'image/png', sourceSha256: record.resultSha256 ?? undefined,
+        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION, requireAlphaCoverage: true, requireTransparentEdges: true,
+    })
+    if (!validation.valid) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG elaborato non ha superato la validazione alpha.', validation.problems)
+    try {
+        const candidatePath = await input.storage.createCandidateObjectPath(input.profileId, record.id)
+        await input.storage.saveBackgroundRemovalCandidate({ profileId: input.profileId, transformationRequestId: record.id, image: bytes })
+        const finalized = await input.repository.finalizeBackgroundRemovalCandidate({
+            requestId: record.id, profileId: input.profileId, candidatePath, candidateSha256: validation.metadata.sha256,
+            candidateMimeType: validation.metadata.mimeType, candidateWidth: validation.metadata.width,
+            candidateHeight: validation.metadata.height, validationWarnings: validation.warnings,
+        })
+        return {
+            success: true, requestId: input.requestId, requestPersistence: toPersistence(finalized, 'CREATED'),
+            candidate: { assetReadiness: 'FINAL_ASSET', sha256: validation.metadata.sha256, mimeType: validation.metadata.mimeType, width: validation.metadata.width, height: validation.metadata.height, warnings: validation.warnings },
+        }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
+    }
 }
 
 export async function orchestrateAdoptCreatureTransformation(input: CreatureTransformationEdgeOrchestrationInput): Promise<AdoptCreatureTransformationResponse | CreatureTransformationErrorResponse> {
@@ -828,7 +881,7 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
             signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, width: record.resultWidth, height: record.resultHeight,
             mimeType: record.resultMimeType, sha256: record.resultSha256, assetReadiness: record.assetReadiness ?? 'FINAL_ASSET', warnings: storedWarnings(record),
         } as const
-        return { ...response, result }
+        return { ...response, result, ...(record.assetReadiness === 'EXPERIMENT_ONLY' ? { rawResult: { signedUrl: result.signedUrl, expiresAt: result.expiresAt, width: result.width, height: result.height, mimeType: result.mimeType, sha256: result.sha256 } } : {}) }
     } catch (error) {
         const details = mapThrownError(error)
         return { ...response, error: { code: details.code, message: details.message } }
@@ -937,6 +990,7 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     const operation = input.body && typeof input.body === 'object' && !Array.isArray(input.body) ? (input.body as { operation?: unknown }).operation : undefined
     if (operation === 'GENERATE_IMAGE') return orchestrateGenerateImage(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
+    if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'GET_REQUEST_STATUS') return orchestrateGetTransformationRequestStatus(input)
     if (operation === 'SUBMIT_EXPERIMENT_REVIEW') return orchestrateSubmitExperimentReview(input)
     if (operation === 'GET_BENCHMARK_RESULTS') return orchestrateGetBenchmarkResults(input)

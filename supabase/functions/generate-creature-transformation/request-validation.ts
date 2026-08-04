@@ -1,6 +1,6 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitExperimentReviewRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
@@ -10,6 +10,7 @@ const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
+const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64'])
 const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId'])
 const GET_VISUAL_PROGRESS_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_CURRENT_VISUAL_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
@@ -196,6 +197,15 @@ export function parseGenerateUnlockedTransformationRequest(value: unknown): Pars
     return { valid: true, request: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: required.creatureId, progressTrackId, idempotencyKey: required.idempotencyKey } }
 }
 
+export function parseSubmitBackgroundRemovalCandidateRequest(value: unknown): ParsedVisualProgressRequest<SubmitBackgroundRemovalCandidateRequest> {
+    const body = asRecord(value)
+    const transformationRequestId = body ? readUuid(body, 'transformationRequestId') : null
+    if (!body || !hasOnlyFields(body, BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS) || body.operation !== 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE' || !transformationRequestId || typeof body.candidatePngBase64 !== 'string' || !body.candidatePngBase64.length || body.candidatePngBase64.length > 14_000_000) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'Il candidato PNG non rispetta il contratto.' }
+    }
+    return { valid: true, request: { operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: body.candidatePngBase64 } }
+}
+
 export function parseSelectCreatureVisualProgressTrackRequest(value: unknown): ParsedVisualProgressRequest<SelectCreatureVisualProgressTrackRequest> {
     const body = asRecord(value)
     if (!body || !hasOnlyFields(body, SELECT_TRACK_REQUEST_FIELDS) || body.operation !== 'SELECT_VISUAL_PROGRESS_TRACK' || typeof body.creatureId !== 'string' || !body.creatureId.trim()) return { valid: false, code: 'INVALID_REQUEST', message: 'La scelta del percorso visuale non rispetta il contratto.' }
@@ -240,6 +250,7 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'SUBMIT_EXPERIMENT_REVIEW') return parseSubmitExperimentReviewRequest(body)
     if (body.operation === 'GET_BENCHMARK_RESULTS') return parseGetBenchmarkResultsRequest(body)
     if (body.operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return parseGenerateUnlockedTransformationRequest(body)
+    if (body.operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return parseSubmitBackgroundRemovalCandidateRequest(body)
     if (body.operation === 'SELECT_VISUAL_PROGRESS_TRACK') return parseSelectCreatureVisualProgressTrackRequest(body)
     if (body.operation === 'GET_VISUAL_PROGRESS') return parseGetCreatureVisualProgressRequest(body)
     if (body.operation === 'GET_CURRENT_VISUAL') return parseGetCurrentCreatureVisualRequest(body)

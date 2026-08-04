@@ -75,6 +75,20 @@ export type GenerateImageAcceptedResponse = {
     requestPersistence: TransformationRequestPersistence
 }
 
+export type SubmitBackgroundRemovalCandidateResponse = {
+    success: true
+    requestId: string
+    requestPersistence: TransformationRequestPersistence
+    candidate: {
+        assetReadiness: 'FINAL_ASSET'
+        sha256: string
+        mimeType: 'image/png'
+        width: number
+        height: number
+        warnings: string[]
+    }
+}
+
 export type SubmitExperimentReviewResponse = {
     success: true
     requestId: string
@@ -177,6 +191,14 @@ export type TransformationRequestStatusResponse = {
         assetReadiness: CreatureTransformationAssetReadiness
         warnings: string[]
     }
+    rawResult?: {
+        signedUrl: string
+        expiresAt: string
+        width: number
+        height: number
+        mimeType: 'image/png'
+        sha256: string
+    }
     error?: {
         code: string
         message: string
@@ -193,4 +215,4 @@ export type TransformationRequestStatusResponse = {
 
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

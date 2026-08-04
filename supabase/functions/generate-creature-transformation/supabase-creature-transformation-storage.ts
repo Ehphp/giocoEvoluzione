@@ -97,6 +97,18 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return `${profileSegment}/${idempotencyDigest}.png`
     }
 
+    async createRawResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {
+        const profileSegment = profilePathSegment(profileId)
+        const idempotencyDigest = await sha256Hex(new TextEncoder().encode(idempotencyKey))
+        return `experiments/raw/${profileSegment}/${idempotencyDigest}.png`
+    }
+
+    async createCandidateObjectPath(profileId: string, requestId: string): Promise<string> {
+        const profileSegment = profilePathSegment(profileId)
+        const requestDigest = await sha256Hex(new TextEncoder().encode(requestId))
+        return `candidates/${profileSegment}/${requestDigest}.png`
+    }
+
     async saveResult(input: {
         profileId: string
         idempotencyKey: string
@@ -104,6 +116,14 @@ export class SupabaseCreatureTransformationStorageAdapter {
     }): Promise<StoredCreatureTransformationImage> {
         const objectPath = await this.createResultObjectPath(input.profileId, input.idempotencyKey)
         return this.savePng(objectPath, input.image)
+    }
+
+    async saveRawResult(input: { profileId: string; idempotencyKey: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
+        return this.savePng(await this.createRawResultObjectPath(input.profileId, input.idempotencyKey), input.image)
+    }
+
+    async saveBackgroundRemovalCandidate(input: { profileId: string; transformationRequestId: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
+        return this.savePng(await this.createCandidateObjectPath(input.profileId, input.transformationRequestId), input.image)
     }
 
     private async savePng(objectPath: string, image: Uint8Array): Promise<StoredCreatureTransformationImage> {

@@ -12,7 +12,7 @@ export type MatchCompletionEvent = Readonly<{
     completedAt: string
 }>
 
-export type CreatureVisualProgressTrackStatus = 'ACTIVE' | 'READY' | 'GENERATING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'
+export type CreatureVisualProgressTrackStatus = 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'
 
 export type CreatureVisualProgressTrack = Readonly<{
     id: string

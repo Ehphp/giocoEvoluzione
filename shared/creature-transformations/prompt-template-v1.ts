@@ -118,7 +118,7 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
         ].join(' '),
         technical: [
             `Output a ${renderSpecification.outputMimeType === 'image/png' ? 'PNG' : renderSpecification.outputMimeType} image at ${renderSpecification.width} × ${renderSpecification.height} pixels.`,
-            renderSpecification.transparentBackground ? 'Use a transparent background.' : '',
+            'Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature.',
             renderSpecification.preservePose ? 'Preserve the pose.' : '',
             renderSpecification.preserveComposition ? 'Preserve the composition.' : '',
             renderSpecification.preserveCanvasMargins ? 'Keep the canvas margins intact.' : '',

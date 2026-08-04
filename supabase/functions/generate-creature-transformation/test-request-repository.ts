@@ -15,6 +15,8 @@ function recordFor(input: ReserveCreatureTransformationRequestInput, id: string,
     return {
         id, profileId: input.profileId, creatureId: input.creatureId, idempotencyKey: input.idempotencyKey, operation: input.operation, status: 'RESERVED',
         conceptMode: input.conceptMode ?? null, imageProviderMode: input.imageProviderMode ?? null, provider: null, model: null, providerRequestId: null,
+        benchmarkCaseId: input.benchmarkCaseId ?? null, generationProfileId: input.generationProfileId ?? null, conceptSeed: input.conceptSeed ?? null,
+        promptSha256: null, generationQuality: null, visualProgressTrackId: input.visualProgressTrackId ?? null, sourceVisualVersionId: input.sourceVisualVersionId ?? null,
         visualTraitId: input.visualTraitId ?? null, intensity: input.intensity ?? null, promptTemplateVersion: null, conceptSchemaVersion: null,
         sourceSha256: null, resultSha256: null, resultPath: null, resultMimeType: null, resultWidth: null, resultHeight: null,
         generationLatencyMs: null,
@@ -40,7 +42,7 @@ function applyTransition(record: CreatureTransformationRequestRecord, status: 'R
 
 export function createInMemoryRequestRepository(options: RepositoryOptions = {}) {
     const records = new Map<string, CreatureTransformationRequestRecord>()
-    const calls = { reserve: 0, markRunning: 0, markSucceeded: 0, markFailed: 0 }
+    const calls = { reserve: 0, markRunning: 0, markSucceeded: 0, markFailed: 0, finalizeBackgroundRemovalCandidate: 0 }
     let sequence = 0
     const key = (profileId: string, idempotencyKey: string) => `${profileId}:${idempotencyKey}`
     const now = options.now ?? (() => new Date().toISOString())
@@ -78,6 +80,18 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
             if (!record || (record.status !== 'RESERVED' && record.status !== 'RUNNING')) throw new Error('state conflict')
             const updated = applyTransition(record, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage }, now())
             records.set(key(updated.profileId, updated.idempotencyKey), updated)
+            return updated
+        },
+        async finalizeBackgroundRemovalCandidate(input) {
+            calls.finalizeBackgroundRemovalCandidate += 1
+            const entry = [...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)
+            const record = entry?.[1]
+            if (!record || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY') throw new Error('state conflict')
+            const updated: CreatureTransformationRequestRecord = {
+                ...record, resultPath: input.candidatePath, resultSha256: input.candidateSha256, resultMimeType: input.candidateMimeType,
+                resultWidth: input.candidateWidth, resultHeight: input.candidateHeight, assetReadiness: 'FINAL_ASSET', validationWarnings: input.validationWarnings, updatedAt: now(),
+            }
+            records.set(entry![0], updated)
             return updated
         },
         async getByIdempotencyKey(input) {

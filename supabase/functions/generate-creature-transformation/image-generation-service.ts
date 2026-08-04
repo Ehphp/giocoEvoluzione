@@ -54,6 +54,7 @@ export type GenerateImageServiceInput = Readonly<{
     provider: CreatureImageProvider
     validator?: ImageValidator
     promptTemplateVersion?: CreaturePromptTemplateVersion
+    storageDestination?: 'FINAL_ASSET' | 'RAW_EXPERIMENT'
 }>
 
 function conceptRejected(requestId: string, problems?: GenerateImageErrorResponse['problems']): GenerateImageErrorResponse {
@@ -166,6 +167,7 @@ export async function generateImageForAuthenticatedProfile(
         throw new ImageGenerationServiceError('MOCK_PROVIDER_FAILED', 'Il provider immagini mock non e disponibile.', undefined, { cause: error })
     }
 
+    const rawExperiment = input.storageDestination === 'RAW_EXPERIMENT'
     const assetValidation = await validator.validate({
         bytes: generated.image,
         mimeType: generated.mimeType,
@@ -173,10 +175,10 @@ export async function generateImageForAuthenticatedProfile(
         sourceSha256: validatedSource.metadata.sha256,
         isMock: generated.isMock,
         profile: 'FINAL_CREATURE_ASSET',
-        requireAlpha: false,
+        requireAlpha: !rawExperiment,
     })
     if (!assetValidation.valid) throw resultFailure(assetValidation)
-    const transparencyValidation = generated.isMock ? assetValidation : await validator.validate({
+    const transparencyValidation = rawExperiment || generated.isMock ? assetValidation : await validator.validate({
         bytes: generated.image,
         mimeType: generated.mimeType,
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
@@ -185,12 +187,17 @@ export async function generateImageForAuthenticatedProfile(
         profile: 'FINAL_CREATURE_ASSET',
         requireAlphaCoverage: true,
     })
+    if (!transparencyValidation.valid) throw resultFailure(transparencyValidation)
     const outputMetadata = assetValidation.metadata
     const outputWarnings = uniqueWarnings([
         ...generated.warnings,
         ...(transparencyValidation.valid ? transparencyValidation.warnings : transparencyValidation.problems.map((problem) => problem.code)),
     ])
-    const stored = await input.storage.saveResult({
+    const stored = rawExperiment ? await input.storage.saveRawResult({
+        profileId: input.profileId,
+        idempotencyKey: input.request.idempotencyKey,
+        image: generated.image,
+    }) : await input.storage.saveResult({
         profileId: input.profileId,
         idempotencyKey: input.request.idempotencyKey,
         image: generated.image,
@@ -206,7 +213,7 @@ export async function generateImageForAuthenticatedProfile(
             width: outputMetadata.width,
             height: outputMetadata.height,
             sha256: outputMetadata.sha256,
-            assetReadiness: 'FINAL_ASSET',
+            assetReadiness: rawExperiment ? 'EXPERIMENT_ONLY' : 'FINAL_ASSET',
         },
         generation: {
             provider: generated.provider,

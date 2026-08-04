@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { VISUAL_TRAITS, type VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import type { PlayerCreatureRecord } from '../../lib/profile-api'
-import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, selectCreatureVisualProgressTrack } from '../../lib/creature-transformations-api'
+import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, selectCreatureVisualProgressTrack, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
+import { removeCreatureBackground } from '../../lib/remove-creature-background'
 
 import './CreatureVisualProgressionScreen.css'
 
-type Track = { id: string; status: 'ACTIVE' | 'READY' | 'GENERATING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'; visualTraitId: VisualTraitId; progress: number; target: number; generatedRequestId: string | null }
+type Track = { id: string; status: 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'; visualTraitId: VisualTraitId; progress: number; target: number; generatedRequestId: string | null }
 type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId; conceptName: string }> }
 type Preview = { requestId: string; sourceUrl: string | null; resultUrl: string | null; sourceVersionId: string; conceptName: string; evolutionaryFunction: string; visualTraitId: VisualTraitId; warnings: string[] }
 type ExperimentOnlyResult = { requestId: string; warnings: string[] }
@@ -26,6 +27,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [experimentOnly, setExperimentOnly] = useState<ExperimentOnlyResult | null>(null)
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [postProcessingMessage, setPostProcessingMessage] = useState<string | null>(null)
+    const postProcessingRequest = useRef<string | null>(null)
+    const postProcessingAttempts = useRef(0)
 
     const refresh = useCallback(async () => {
         const result = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as unknown as ProgressResponse
@@ -50,6 +54,43 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         return () => window.clearInterval(interval)
     }, [progress?.track?.generatedRequestId, progress?.track?.status, refresh])
 
+    const runBackgroundRemoval = useCallback(async (transformationRequestId: string) => {
+        if (postProcessingRequest.current === transformationRequestId) return
+        if (postProcessingAttempts.current >= 3) {
+            setError('La rimozione dello sfondo non e riuscita dopo tre tentativi. Riprova piu tardi senza rigenerare la creatura.')
+            return
+        }
+        postProcessingRequest.current = transformationRequestId
+        postProcessingAttempts.current += 1
+        setBusy(true); setError(null); setPostProcessingMessage('Preparazione dell immagine per la rimozione dello sfondo...')
+        try {
+            const status = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId })
+            if (!status.rawResult) throw new Error('Il PNG raw temporaneo non e disponibile.')
+            const response = await fetch(status.rawResult.signedUrl)
+            if (!response.ok) throw new Error('Non e stato possibile scaricare il PNG raw.')
+            setPostProcessingMessage('Rimozione dello sfondo nel browser...')
+            const transparentPng = await removeCreatureBackground(await response.blob())
+            const bytes = new Uint8Array(await transparentPng.arrayBuffer())
+            const base64 = btoa(String.fromCharCode(...bytes))
+            setPostProcessingMessage('Validazione del PNG trasparente...')
+            await submitBackgroundRemovalCandidate({ operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: base64 })
+            postProcessingAttempts.current = 0
+            setPostProcessingMessage(null)
+            await refresh()
+        } catch (nextError) {
+            setPostProcessingMessage(null)
+            setError(nextError instanceof Error ? nextError.message : 'La rimozione dello sfondo non e riuscita.')
+        } finally {
+            postProcessingRequest.current = null
+            setBusy(false)
+        }
+    }, [refresh])
+
+    useEffect(() => {
+        const requestId = progress?.track?.generatedRequestId
+        if (progress?.track?.status === 'POST_PROCESSING' && requestId) void runBackgroundRemoval(requestId)
+    }, [progress?.track?.generatedRequestId, progress?.track?.status, runBackgroundRemoval])
+
     const currentTrait = useMemo(() => progress?.track ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
     async function selectTrait(visualTraitId: VisualTraitId) { setBusy(true); setError(null); try { setProgress(await selectCreatureVisualProgressTrack({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: creature.id, visualTraitId }) as unknown as ProgressResponse) } catch (nextError) { if (nextError instanceof CreatureTransformationApiError && nextError.code === 'VISUAL_TRACK_ALREADY_ACTIVE') { try { await refresh() } catch { } setError('Esiste gia un percorso visuale aperto. Il suo stato e stato ricaricato.') } else setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile avviare il percorso.') } finally { setBusy(false) } }
     async function generate() { if (!progress?.track) return; setBusy(true); setError(null); setExperimentOnly(null); try { await generateUnlockedCreatureTransformation({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, idempotencyKey: createVisualTransformationIdempotencyKey() }); await refresh() } catch (nextError) { setError(nextError instanceof Error ? nextError.message : 'La generazione non e stata avviata.') } finally { setBusy(false) } }
@@ -61,13 +102,14 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         {!progress ? <p>Caricamento percorso…</p> : null}
         {progress && !progress.track ? <section className="visual-progression-screen__traits"><h2>Scegli un tratto visivo</h2><p>Il progresso si ottiene solo con le vittorie.</p><div>{VISUAL_TRAITS.map((trait) => <button key={trait.id} type="button" disabled={busy} onClick={() => void selectTrait(trait.id)}><strong>{trait.displayName}</strong><span>{trait.description}</span></button>)}</div></section> : null}
         {progress?.track?.status === 'ACTIVE' ? <section className="visual-progression-screen__card"><h2>{currentTrait}</h2><p>Vittorie ottenute: <strong>{progress.track.progress} / {progress.track.target}</strong></p><progress value={progress.track.progress} max={progress.track.target} /></section> : null}
-        {progress?.track?.status === 'READY' ? <section className="visual-progression-screen__card"><h2>Trasformazione sbloccata</h2><p>{currentTrait} è pronta: puoi generare l’evoluzione della forma attuale.</p><button type="button" disabled={busy} onClick={() => void generate()}>{busy ? 'Avvio…' : 'Inizia evoluzione'}</button><small>GPT Image genera direttamente un PNG trasparente validato dal server.</small></section> : null}
+        {progress?.track?.status === 'READY' ? <section className="visual-progression-screen__card"><h2>Trasformazione sbloccata</h2><p>{currentTrait} è pronta: puoi generare l’evoluzione della forma attuale.</p><button type="button" disabled={busy} onClick={() => void generate()}>{busy ? 'Avvio…' : 'Inizia evoluzione'}</button><small>Il PNG viene validato dal server dopo la rimozione dello sfondo nel browser.</small></section> : null}
         {progress?.track?.status === 'READY' && experimentOnly ? <aside className="visual-progression-screen__experiment" role="status"><strong>Immagine non adottabile.</strong><span>Il PNG non ha superato la validazione di trasparenza nativa.</span>{experimentOnly.warnings.length ? <small>Diagnostica: {experimentOnly.warnings.join(', ')}</small> : null}</aside> : null}
-        {progress?.track?.status === 'GENERATING' ? <section className="visual-progression-screen__card"><h2>Generazione in corso</h2><p>Stiamo preparando il concept e il PNG trasparente della tua evoluzione.</p><progress /></section> : null}
+        {progress?.track?.status === 'GENERATING' ? <section className="visual-progression-screen__card"><h2>Generazione in corso</h2><p>Stiamo preparando il concept e l immagine della tua evoluzione.</p><progress /></section> : null}
+        {progress?.track?.status === 'POST_PROCESSING' ? <section className="visual-progression-screen__card"><h2>Rimozione sfondo</h2><p>{postProcessingMessage ?? 'L elaborazione viene eseguita localmente nel browser.'}</p><progress />{!busy && progress.track.generatedRequestId ? <button type="button" onClick={() => void runBackgroundRemoval(progress.track!.generatedRequestId!)}>Riprova rimozione sfondo</button> : null}</section> : null}
         {progress?.track?.status === 'GENERATED' && preview ? <section className="visual-progression-screen__preview"><h2>La tua creatura può evolversi</h2><div className="visual-progression-screen__images"><figure>{preview.sourceUrl ? <img src={preview.sourceUrl} alt="Creatura attuale" /> : null}<figcaption>Versione {progress.currentVersion.versionNumber}</figcaption></figure><figure>{preview.resultUrl ? <img src={preview.resultUrl} alt="Nuova evoluzione proposta" /> : null}<figcaption>Versione {progress.currentVersion.versionNumber + 1}</figcaption></figure></div><h3>{preview.conceptName}</h3><p>{preview.evolutionaryFunction}</p><p>Tratto: <strong>{traitLabel(preview.visualTraitId)}</strong></p>{preview.warnings.length ? <p>Verifica: {preview.warnings.map(validationLabel).join(' ')}</p> : null}<div><button type="button" disabled={busy} onClick={() => void adopt()}>Adotta evoluzione</button><button type="button" disabled={busy} onClick={onBack}>Mantieni creatura attuale</button></div></section> : null}
         {progress?.track?.status === 'GENERATED' && !preview ? <section className="visual-progression-screen__card"><h2>Anteprima in verifica</h2><button type="button" disabled={busy} onClick={() => void refresh()}>Ricarica proposta</button></section> : null}
         {progress?.track?.status === 'COMPLETED' ? <section className="visual-progression-screen__card"><h2>Nuova versione attiva</h2><p>La tua creatura usa ora la versione {progress.currentVersion.versionNumber}.</p><button type="button" disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Inizia un nuovo percorso</button></section> : null}
-        {progress?.track && !['ACTIVE', 'READY', 'GENERATING', 'GENERATED', 'COMPLETED'].includes(progress.track.status) ? <section className="visual-progression-screen__card"><h2>Percorso visivo da riavviare</h2><button type="button" disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Scegli un nuovo tratto</button></section> : null}
+        {progress?.track && !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED'].includes(progress.track.status) ? <section className="visual-progression-screen__card"><h2>Percorso visivo da riavviare</h2><button type="button" disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Scegli un nuovo tratto</button></section> : null}
         {progress?.history.length ? <section className="visual-progression-screen__history"><h2>Storico evoluzioni</h2><ol>{progress.history.map((entry) => <li key={entry.versionNumber}>v{entry.versionNumber} · {traitLabel(entry.visualTraitId)} · {entry.conceptName}</li>)}</ol></section> : null}
     </section>
 }

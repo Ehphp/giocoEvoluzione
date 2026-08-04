@@ -110,7 +110,7 @@ describe('REAL image asynchronous orchestration', () => {
         expect(JSON.stringify(status)).not.toContain('resultPath')
     })
 
-    it('persists an opaque provider result with a transparency diagnostic for the owner to review', async () => {
+    it('fails an opaque provider result without uploading or promoting an asset', async () => {
         const prepared = input({
             validator: new ImageValidator(),
             createRealImageProvider: () => ({
@@ -122,9 +122,9 @@ describe('REAL image asynchronous orchestration', () => {
         await orchestrateGenerateImage(prepared)
         await prepared.test.tasks[0]
         expect(prepared.test.requests.get('profile-1', 'real-key-1')).toMatchObject({
-            status: 'SUCCEEDED', assetReadiness: 'FINAL_ASSET', validationWarnings: ['PNG_ALPHA_REQUIRED'],
+            status: 'FAILED', errorCode: 'RESULT_IMAGE_INVALID',
         })
-        expect(prepared.test.stored.uploadCalls).toHaveLength(1)
+        expect(prepared.test.stored.uploadCalls).toHaveLength(0)
     })
 
     it('does not schedule a second task for the same running key and keeps failed records terminal', async () => {
