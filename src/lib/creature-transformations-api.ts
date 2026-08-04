@@ -127,7 +127,7 @@ async function invokeCreatureTransformation<TResponse extends Extract<CreatureTr
                     headers: { ...options.headers, Authorization: `Bearer ${refreshed.accessToken}` },
                 }),
             }
-            ; ({ data, error } = await activeInvoker.invoke('generate-creature-transformation', { body: request }))
+                ; ({ data, error } = await activeInvoker.invoke('generate-creature-transformation', { body: request }))
             if (!error) {
                 if (isErrorResponse(data)) throw new CreatureTransformationApiError(data)
                 if (!isSuccessResponse(data)) throw new Error('Il laboratorio ha restituito una risposta non riconosciuta.')
