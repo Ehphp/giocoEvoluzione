@@ -624,7 +624,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             ? await input.visualRepository.resolveTrackTrait({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: track.id, visualTraitId: direction.visualTraitId })
             : track
         if (!resolvedTrack.visualTraitId) return failure(input.requestId, 'VISUAL_TRACK_STATE_CONFLICT', 'Il percorso non ha una direzione funzionale risolvibile.')
-        const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: resolvedTrack.visualTraitId, evolutionTargetId: resolvedTrack.evolutionTargetId, sourceVisualVersionId: source.currentVisualVersionId })
+        const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: resolvedTrack.visualTraitId, evolutionTargetId: resolvedTrack.evolutionTargetId, sourceVisualVersionId: source.currentVisualVersionId, idempotencyKey: parsed.request.idempotencyKey })
         const reservation = await input.repository.reserve({
             profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', visualTraitId: resolvedTrack.visualTraitId, intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL',
