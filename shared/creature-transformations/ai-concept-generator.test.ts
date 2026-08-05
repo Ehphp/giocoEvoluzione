@@ -14,7 +14,7 @@ const input = {
 }
 
 describe('AiCreatureConceptGenerator', () => {
-    it('adapts a provider-independent structured model and validates its output', async () => {
+    it('adapts a provider-independent structured model for the validated generation loop', async () => {
         const model: StructuredConceptModel = {
             generateStructuredConcept: vi.fn(async () => createValidConcept()),
         }
@@ -30,16 +30,14 @@ describe('AiCreatureConceptGenerator', () => {
         expect(generator.metadata).toEqual({ generator: 'structured-adapter', model: 'test-model', isMock: false })
     })
 
-    it('reports an uninterpretable structured response as a domain error', async () => {
+    it('returns malformed structured output so the validated generation loop can retry it', async () => {
         const generator = new AiCreatureConceptGenerator({
             async generateStructuredConcept() {
                 return { schemaVersion: 1 }
             },
         })
 
-        await expect(generator.generateConcept(input)).rejects.toMatchObject({
-            code: 'UNINTERPRETABLE_RESPONSE',
-        } satisfies Partial<CreatureConceptGenerationError>)
+        await expect(generator.generateConcept(input)).resolves.toEqual({ schemaVersion: 1 })
     })
 
     it('wraps provider dependency failures without assuming a provider SDK', async () => {

@@ -6,7 +6,6 @@ import {
     CreatureConceptGenerationError,
     type StructuredConceptModel,
 } from './concept-generator.ts'
-import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
 export type AiCreatureConceptGeneratorOptions = Readonly<{
@@ -62,23 +61,8 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
             )
         }
 
-        const validation = validateCreatureTransformationConcept(candidate, {
-            requestedVisualTrait: controlledTrait,
-            ...(input.evolutionTarget ? {
-                requestedEvolutionTarget: input.evolutionTarget,
-                requestedEvolutionFunction: input.evolutionFunction,
-            } : {}),
-            requestedIntensity: input.intensity,
-            identity: input.identity,
-            previousTransformations: input.previousTransformations,
-        })
-        if (!validation.valid) {
-            throw new CreatureConceptGenerationError(
-                'UNINTERPRETABLE_RESPONSE',
-                'Il modello ha restituito un concept non valido.',
-                { cause: validation.problems },
-            )
-        }
-        return validation.concept
+        // The validated-generation wrapper owns semantic validation and retries.
+        // Returning the raw structured value lets it send concrete correction feedback.
+        return candidate as CreatureTransformationConcept
     }
 }

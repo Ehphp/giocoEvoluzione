@@ -9,6 +9,7 @@ import {
 import { createValidConcept, TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
 import { generateValidatedCreatureConcept } from './generate-validated-concept.ts'
 import { MockCreatureConceptGenerator } from './mock-concept-generator.ts'
+import { AiCreatureConceptGenerator } from './ai-concept-generator.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
 const input = {
@@ -49,6 +50,20 @@ describe('generateValidatedCreatureConcept', () => {
         expect(result).toMatchObject({ success: true, attempts: 2, metadata: { attempt: 2 } })
         expect(calls).toHaveLength(2)
         expect(calls[1].correctionFeedback?.join(' ')).toContain('INVALID_INTENSITY')
+    })
+
+    it('retries a malformed AI structured response instead of treating it as a provider outage', async () => {
+        let calls = 0
+        const generator = new AiCreatureConceptGenerator({
+            async generateStructuredConcept() {
+                calls += 1
+                return calls === 1 ? { schemaVersion: 1 } : createValidConcept()
+            },
+        })
+
+        const result = await generateValidatedCreatureConcept({ generator, input })
+
+        expect(result).toMatchObject({ success: true, attempts: 2 })
     })
 
     it('returns a normal failed result after both attempts and never selects a fallback generator', async () => {
