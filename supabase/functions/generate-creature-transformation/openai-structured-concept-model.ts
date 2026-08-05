@@ -132,21 +132,23 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
             intensity: { type: 'integer', enum: [input.intensity] },
-            ...(target ? { colorEvolution: {
-                type: 'object',
-                additionalProperties: false,
-                required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
-                properties: {
-                    mode: { type: 'string', enum: ['PRESERVE', 'EXPAND', 'SHIFT'] },
-                    dominantColor: { type: 'string' },
-                    secondaryColors: { type: 'array', items: { type: 'string' } },
-                    accentColors: { type: 'array', items: { type: 'string' } },
-                    surfaceEffects: { type: 'array', items: { type: 'string' } },
-                    affectedBodyAreas: { type: 'array', items: { enum: allowedConceptAreas } },
-                    intensity: { type: 'integer', enum: [0, input.intensity] },
-                    biologicalRationale: { type: 'string' },
-                },
-            } } : {}),
+            ...(target ? {
+                colorEvolution: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
+                    properties: {
+                        mode: { type: 'string', enum: ['PRESERVE', 'EXPAND', 'SHIFT'] },
+                        dominantColor: { type: 'string' },
+                        secondaryColors: { type: 'array', items: { type: 'string' } },
+                        accentColors: { type: 'array', items: { type: 'string' } },
+                        surfaceEffects: { type: 'array', items: { type: 'string' } },
+                        affectedBodyAreas: { type: 'array', items: { enum: allowedConceptAreas } },
+                        intensity: { type: 'integer', enum: [0, input.intensity] },
+                        biologicalRationale: { type: 'string' },
+                    },
+                }
+            } : {}),
         },
     }
 }
