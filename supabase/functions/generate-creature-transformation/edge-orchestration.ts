@@ -635,7 +635,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         if (reservation.record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION') return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La idempotency key appartiene a un operazione diversa.')
         if (reservation.outcome === 'EXISTING') {
             const existing = existingStateFailure(input.requestId, reservation.record, input.policy)
-            return existing ?? acceptedRealImage(input.requestId, reservation.record, 'EXISTING')
+            return existing ?? failure(input.requestId, 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED', 'Questa generazione visuale e gia stata completata; avvia un nuovo tentativo.', undefined, toPersistence(reservation.record, 'EXISTING'))
         }
         let startedTrack
         try {
