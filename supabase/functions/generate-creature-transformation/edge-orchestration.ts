@@ -482,7 +482,9 @@ async function runUnlockedTransformationTask(
             resolver: input.resolver, generator: input.createGenerator('AI'), now: input.now,
         })
         if (!concept.success) {
-            await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: concept.code, errorMessage: concept.message })
+            const diagnostics = concept.problems?.map((problem) => problem.code).filter((code, index, codes) => codes.indexOf(code) === index).slice(0, 3)
+            const errorMessage = diagnostics?.length ? `${concept.message} Diagnostica: ${diagnostics.join(', ')}.` : concept.message
+            await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: concept.code, errorMessage })
             await restoreVisualTrackAfterFailure(input, request.progressTrackId, running)
             return
         }
