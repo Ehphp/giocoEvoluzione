@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { createValidConcept, TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
+import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
 
 const context = {
     requestedVisualTrait: VISUAL_TRAIT_BY_ID.IMPACT_ADAPTATION,
@@ -83,6 +84,43 @@ describe('validateCreatureTransformationConcept', () => {
             ...createValidConcept(),
             secondaryMutations: ['Uno', 'Due', 'Tre', 'Quattro'],
         })).toContain('TOO_MANY_SECONDARY_MUTATIONS')
+    })
+
+    it('enforces the selected anatomical target, one primary area and one compatible supporting area', () => {
+        const targetContext = {
+            ...context,
+            requestedVisualTrait: VISUAL_TRAIT_BY_ID.LOCOMOTION_ADAPTATION,
+            requestedEvolutionTarget: EVOLUTION_TARGET_BY_ID.TAIL,
+            requestedEvolutionFunction: 'BALANCE' as const,
+        }
+        const targetConcept = {
+            ...createValidConcept(), schemaVersion: 2, visualTrait: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL', evolutionFunction: 'BALANCE',
+            primaryMutation: { ...createValidConcept().primaryMutation, mutationArchetype: 'BALANCE_TAIL', bodyAreas: ['TAIL'], supportingBodyAreas: ['BACK'] },
+        }
+
+        expect(validateCreatureTransformationConcept(targetConcept, targetContext).valid).toBe(true)
+        expect(validateCreatureTransformationConcept({ ...targetConcept, primaryMutation: { ...targetConcept.primaryMutation, bodyAreas: ['TAIL', 'BACK'] } }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'TOO_MANY_BODY_AREAS' })]) })
+        expect(validateCreatureTransformationConcept({ ...targetConcept, primaryMutation: { ...targetConcept.primaryMutation, supportingBodyAreas: ['BACK', 'SKIN_SURFACE'] } }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'TOO_MANY_SUPPORTING_BODY_AREAS' })]) })
+        expect(validateCreatureTransformationConcept({ ...targetConcept, visualTrait: 'SENSORY_EXPANSION' }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'INVALID_VISUAL_TRAIT' })]) })
+    })
+
+    it('rejects an already adopted target, function and archetype combination', () => {
+        const targetContext = {
+            ...context,
+            requestedVisualTrait: VISUAL_TRAIT_BY_ID.LOCOMOTION_ADAPTATION,
+            requestedEvolutionTarget: EVOLUTION_TARGET_BY_ID.TAIL,
+            requestedEvolutionFunction: 'BALANCE' as const,
+            previousTransformations: [{
+                versionNumber: 2, conceptName: 'Coda stabilizzatrice', visualTraitId: 'LOCOMOTION_ADAPTATION' as const,
+                evolutionTargetId: 'TAIL' as const, evolutionFunction: 'BALANCE' as const, mutationArchetype: 'BALANCE_TAIL' as const,
+            }],
+        }
+        const repeated = {
+            ...createValidConcept(), schemaVersion: 2, visualTrait: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL', evolutionFunction: 'BALANCE',
+            primaryMutation: { ...createValidConcept().primaryMutation, mutationArchetype: 'BALANCE_TAIL', bodyAreas: ['TAIL'] },
+        }
+
+        expect(validateCreatureTransformationConcept(repeated, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'REPEATED_EVOLUTION_DIRECTION' })]) })
     })
 
     it('requires identity features and rejects technical or contradictory instructions', () => {

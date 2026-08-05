@@ -8,11 +8,11 @@ export function composeCreatureTransformationPromptTemplateV2Experimental(input:
     const v1 = composeCreatureTransformationPromptTemplateV1(input)
     const colorEvolution = resolveColorEvolution(input.concept)
     const previous = input.previousTransformations?.length
-        ? ` Preserve prior adopted transformations: ${input.previousTransformations.map((entry) => `v${entry.versionNumber} ${entry.visualTraitId} (${entry.conceptName})`).join('; ')}. Do not remove or repeat them.`
+        ? ` Preserve prior adopted transformations: ${input.previousTransformations.map((entry) => `v${entry.versionNumber} ${entry.conceptName}`).join('; ')}. Keep them visible, develop rather than replace them. Do not remove or repeat them.`
         : ''
     return {
         identity: `${v1.identity} Edit the provided source image; do not create a new character. Keep the same creature and the same individual.`,
-        transformation: `${v1.transformation} Limit the mutation to the requested body areas and concept commitments only.${previous}`,
+        transformation: `${v1.transformation} Limit the mutation to the requested body areas and concept commitments only. The requested anatomical focus must remain the dominant new visual change.${previous}`,
         preservation: `${v1.preservation} Keep the face and eyes unchanged unless the requested body area explicitly requires them. Keep the same pose and overall silhouette.${colorEvolution.mode === 'PRESERVE' ? ' Keep the dominant palette.' : ' Follow the requested colour evolution instead of restoring the prior dominant palette.'}`,
         prohibitions: `${v1.prohibitions} Do not introduce global changes outside the concept. Do not create a new species or replace the anatomy.`,
         style: `${v1.style} Preserve the source image composition and visual identity without global reinterpretation.`,

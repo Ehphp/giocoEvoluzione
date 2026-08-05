@@ -1,4 +1,5 @@
 import type { VisualTraitId } from './visual-traits.ts'
+import type { EvolutionTargetId } from './evolution-targets.ts'
 
 /**
  * Application-level event received after a match is already definitive. It is
@@ -17,7 +18,9 @@ export type CreatureVisualProgressTrackStatus = 'ACTIVE' | 'READY' | 'GENERATING
 export type CreatureVisualProgressTrack = Readonly<{
     id: string
     creatureId: string
-    visualTraitId: VisualTraitId
+    /** Legacy tracks contain a trait; target tracks resolve it when generation starts. */
+    visualTraitId: VisualTraitId | null
+    evolutionTargetId: EvolutionTargetId | null
     status: CreatureVisualProgressTrackStatus
     progress: number
     target: number

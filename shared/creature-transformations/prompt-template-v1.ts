@@ -77,7 +77,11 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
     const { concept, identity, renderSpecification, visualTrait, backgroundGenerationMode } = input
     const colorEvolution = resolveColorEvolution(concept)
     const bodyAreas = concept.primaryMutation.bodyAreas.map((area) => BODY_AREA_PROMPT_LABELS[area])
+    const supportingBodyAreas = concept.primaryMutation.supportingBodyAreas?.map((area) => BODY_AREA_PROMPT_LABELS[area]) ?? []
     const primaryMutation = MUTATION_ARCHETYPE_PROMPT_LABELS[concept.primaryMutation.mutationArchetype]
+    const anatomicalFocus = concept.evolutionTargetId
+        ? `Chosen anatomical focus: ${formatPromptList(bodyAreas)}. Make this one local, incremental addition the dominant new visual change; do not add a major mutation to another region.${supportingBodyAreas.length ? ` The only permitted supporting anatomy is ${formatPromptList(supportingBodyAreas)}.` : ''}`
+        : ''
     const preservedFeatures = uniquePromptItems([
         ...concept.identityToPreserve,
         ...identity.identityFeatures,
@@ -94,6 +98,7 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
         transformation: [
             sentence('Concept', concept.conceptName),
             sentence('Evolutionary function', concept.evolutionaryFunction),
+            anatomicalFocus,
             `Primary mutation: ${withTerminalPunctuation(`${primaryMutation} on the ${formatPromptList(bodyAreas)}`)}`,
             sentence('Morphology', concept.primaryMutation.morphology),
             sentence('Material', concept.primaryMutation.material),
@@ -102,10 +107,11 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
                 : 'Secondary mutations: none.',
             sentence('Transformation intensity', INTENSITY_PROMPT_LABELS[concept.intensity]),
             colorEvolutionInstruction(colorEvolution),
-        ].join(' '),
+        ].filter(Boolean).join(' '),
         preservation: [
             listSentence('Preserve these concept commitments', preservedFeatures),
             'Keep the face and expression recognisable.',
+            concept.evolutionTargetId ? 'Keep the pose, proportions, overall silhouette, and every non-target body region visually stable.' : '',
             colorEvolution.mode === 'PRESERVE'
                 ? 'Preserve the established palette and body proportions.'
                 : 'Preserve the body proportions while making the requested colour evolution clearly visible.',
@@ -115,10 +121,11 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
         prohibitions: [
             listSentence('Avoid', concept.forbiddenChanges),
             'Do not change the species or the individual.',
+            concept.evolutionTargetId ? 'Do not replace prior adaptations or introduce a new major mutation outside the chosen anatomical focus.' : '',
             'Do not add text, scenes, or unrequested objects.',
             'Do not reinterpret the creature as photorealistic.',
             describeVisualTraitLimits(visualTrait),
-        ].join(' '),
+        ].filter(Boolean).join(' '),
         style: [
             sentence('Visual style', identity.styleDefinition),
             'Keep an illustrated treatment coherent with the creature.',

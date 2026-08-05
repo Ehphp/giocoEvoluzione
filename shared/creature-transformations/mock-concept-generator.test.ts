@@ -5,6 +5,7 @@ import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
 import { TRANSFORMATION_INTENSITIES } from './concepts.ts'
 import { VISUAL_TRAITS } from './visual-traits.ts'
+import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
 
 const generator = new MockCreatureConceptGenerator()
 
@@ -74,6 +75,23 @@ describe('MockCreatureConceptGenerator', () => {
         expect(high.intensity).toBe(3)
         expect(low.primaryMutation.morphology).not.toBe(high.primaryMutation.morphology)
         expect(low.secondaryMutations.length).toBeLessThan(high.secondaryMutations.length)
+    })
+
+    it('generates one local primary mutation for a target-based evolution', async () => {
+        const evolutionTarget = EVOLUTION_TARGET_BY_ID.TAIL
+        const concept = await generator.generateConcept({
+            identity: TEST_CREATURE_IDENTITY, visualTrait: VISUAL_TRAITS[1], intensity: 1, seed: 'target-tail',
+            evolutionTarget, evolutionTargetId: evolutionTarget.id, evolutionFunction: 'BALANCE',
+        })
+        const result = validateCreatureTransformationConcept(concept, {
+            requestedVisualTrait: VISUAL_TRAITS[1], requestedEvolutionTarget: evolutionTarget,
+            requestedEvolutionFunction: 'BALANCE', requestedIntensity: 1, identity: TEST_CREATURE_IDENTITY,
+        })
+
+        expect(result.valid).toBe(true)
+        expect(concept.schemaVersion).toBe(2)
+        expect(concept.primaryMutation.bodyAreas).toEqual(['TAIL'])
+        expect(concept.evolutionTargetId).toBe('TAIL')
     })
 
     it('proposes intentional colour evolutions frequently while retaining a deterministic conservative path', async () => {

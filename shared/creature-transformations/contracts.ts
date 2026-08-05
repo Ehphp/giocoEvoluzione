@@ -1,4 +1,5 @@
 import type { CreatureTransformationConcept, TransformationIntensity } from './concepts.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
 import type { VisualTraitId } from './visual-traits.ts'
 import type { ExperimentReviewScores, ExperimentReviewVerdict, CreatureTransformationVisualIssue } from './experiment-reviews.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
@@ -36,6 +37,8 @@ export type GenerateConceptRequest = {
     operation: 'GENERATE_CONCEPT'
     creatureId: string
     visualTraitId: VisualTraitId
+    evolutionTargetId?: EvolutionTargetId
+    evolutionFunction?: EvolutionFunctionId
     intensity: TransformationIntensity
     conceptMode: 'MOCK' | 'AI'
     idempotencyKey: string
@@ -97,7 +100,9 @@ export type SubmitVisualBackgroundCleanupRequest = {
 export type SelectCreatureVisualProgressTrackRequest = {
     operation: 'SELECT_VISUAL_PROGRESS_TRACK'
     creatureId: string
-    visualTraitId: VisualTraitId
+    /** Legacy callers can still send visualTraitId; new UI sends evolutionTargetId. */
+    visualTraitId?: VisualTraitId
+    evolutionTargetId?: EvolutionTargetId
 }
 
 export type GetCreatureVisualProgressRequest = {

@@ -1,4 +1,5 @@
 import type { CreatureVisualVersion, PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { CreatureVisualProgressTrack } from '../../../shared/creature-transformations/visual-progression.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 
@@ -43,7 +44,7 @@ function safeVisualErrorCode(error: unknown, fallback: string): string {
     const message = error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string'
         ? (error as { message: string }).message
         : ''
-    const code = message.match(/\b(CREATURE_NOT_OWNED|VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED|BACKGROUND_CLEANUP_VERSION_CONFLICT|BACKGROUND_CLEANUP_CANDIDATE_INVALID)\b/)?.[1]
+    const code = message.match(/\b(CREATURE_NOT_OWNED|VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|EVOLUTION_TARGET_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED|BACKGROUND_CLEANUP_VERSION_CONFLICT|BACKGROUND_CLEANUP_CANDIDATE_INVALID)\b/)?.[1]
     return code ?? fallback
 }
 
@@ -58,11 +59,12 @@ function visualProgressionErrorMessage(code: string): string {
 
 export function mapProgressTrack(value: unknown): CreatureVisualProgressTrack {
     const row = record(value)
-    if (!row || !string(row.id) || !string(row.creature_id) || !string(row.visual_trait_id)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'La track visuale restituita non e valida.')
+    if (!row || !string(row.id) || !string(row.creature_id) || (!string(row.visual_trait_id) && !string(row.evolution_target_id))) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'La track visuale restituita non e valida.')
     const status = string(row.status)
     if (!status || !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(status)) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Lo stato della track visuale non e valido.')
     return {
-        id: string(row.id)!, creatureId: string(row.creature_id)!, visualTraitId: string(row.visual_trait_id)! as VisualTraitId,
+        id: string(row.id)!, creatureId: string(row.creature_id)!, visualTraitId: nullableString(row.visual_trait_id) as VisualTraitId | null,
+        evolutionTargetId: nullableString(row.evolution_target_id) as EvolutionTargetId | null,
         status: status as CreatureVisualProgressTrack['status'], progress: number(row.progress), target: number(row.target),
         readyAt: nullableString(row.ready_at), generatedRequestId: nullableString(row.generated_request_id), completedVersionId: nullableString(row.completed_version_id),
     }
@@ -76,6 +78,8 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
     return {
         id: string(row.id)!, creatureId: string(row.creature_id)!, profileId: string(row.profile_id)!, versionNumber: number(row.version_number),
         previousVersionId: nullableString(row.previous_version_id), visualTraitId: nullableString(row.visual_trait_id) as VisualTraitId | null,
+        evolutionTargetId: nullableString(row.evolution_target_id) as EvolutionTargetId | null,
+        evolutionFunction: nullableString(row.evolution_function) as EvolutionFunctionId | null,
         conceptName: nullableString(row.concept_name), conceptSnapshot: row.concept_snapshot && typeof row.concept_snapshot === 'object' ? row.concept_snapshot as StoredVisualVersion['conceptSnapshot'] : null,
         promptTemplateVersion: nullableString(row.prompt_template_version), promptSha256: nullableString(row.prompt_sha256), assetPath: string(row.asset_path)!,
         assetSha256: string(row.asset_sha256)!, mimeType: row.mime_type === 'image/png' ? 'image/png' : 'image/png', width: number(row.width), height: number(row.height),
@@ -86,9 +90,9 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
 export class SupabaseCreatureVisualProgressionRepository {
     constructor(private readonly client: CreatureVisualProgressionRepositoryClient) { }
 
-    async selectTrack(input: { profileId: string; creatureId: string; visualTraitId: VisualTraitId; target: number }): Promise<CreatureVisualProgressTrack> {
+    async selectTrack(input: { profileId: string; creatureId: string; visualTraitId?: VisualTraitId; evolutionTargetId?: EvolutionTargetId; target: number }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('select_creature_visual_progress_track', {
-            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_visual_trait_id: input.visualTraitId, p_target: input.target,
+            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_visual_trait_id: input.visualTraitId ?? null, p_evolution_target_id: input.evolutionTargetId ?? null, p_target: input.target,
         }))
     }
 
@@ -142,13 +146,13 @@ export class SupabaseCreatureVisualProgressionRepository {
     }
 
     async listHistory(input: { profileId: string; creatureId: string }): Promise<PreviousCreatureTransformationSummary[]> {
-        const { data, error } = await this.client.from('creature_visual_versions').select('version_number, visual_trait_id, concept_name').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('version_number', { ascending: true }).limit(8)
+        const { data, error } = await this.client.from('creature_visual_versions').select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('version_number', { ascending: true }).limit(8)
         if (error) throw new CreatureVisualProgressionRepositoryError('CURRENT_VISUAL_UNAVAILABLE', 'Impossibile recuperare lo storico visuale.', { cause: error })
         const rows = Array.isArray(data) ? data : data ? [data] : []
         return rows.flatMap((row) => {
             const item = record(row)
             return item && string(item.visual_trait_id) && string(item.concept_name)
-                ? [{ versionNumber: number(item.version_number), visualTraitId: string(item.visual_trait_id)! as VisualTraitId, conceptName: string(item.concept_name)! }]
+                ? [{ versionNumber: number(item.version_number), visualTraitId: string(item.visual_trait_id)! as VisualTraitId, conceptName: string(item.concept_name)!, evolutionTargetId: nullableString(item.evolution_target_id) as EvolutionTargetId | null, evolutionFunction: nullableString(item.evolution_function) as EvolutionFunctionId | null, mutationArchetype: nullableString(item.mutation_archetype) as PreviousCreatureTransformationSummary['mutationArchetype'], primaryBodyArea: nullableString(item.primary_body_area) as PreviousCreatureTransformationSummary['primaryBodyArea'], supportingBodyAreas: strings(item.supporting_body_areas) }]
                 : []
         })
     }
@@ -173,6 +177,12 @@ export class SupabaseCreatureVisualProgressionRepository {
 
     async startGeneration(input: { profileId: string; creatureId: string; trackId: string; requestId: string }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('start_creature_visual_generation', { p_profile_id: input.profileId, p_creature_id: input.creatureId, p_track_id: input.trackId, p_request_id: input.requestId }))
+    }
+
+    async resolveTrackTrait(input: { profileId: string; creatureId: string; trackId: string; visualTraitId: VisualTraitId }): Promise<CreatureVisualProgressTrack> {
+        return mapProgressTrack(await this.rpc('resolve_creature_visual_progress_track_trait', {
+            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_track_id: input.trackId, p_visual_trait_id: input.visualTraitId,
+        }))
     }
 
     async completeGeneration(input: { profileId: string; trackId: string; requestId: string; finalAsset: boolean }): Promise<CreatureVisualProgressTrack> {

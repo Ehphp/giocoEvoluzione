@@ -3,6 +3,7 @@ import { validateExperimentReviewInput } from '../../../shared/creature-transfor
 import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
+import { EVOLUTION_TARGET_BY_ID, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
 const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId'])
@@ -13,7 +14,7 @@ const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTra
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64'])
 const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
 const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64'])
-const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId'])
+const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'evolutionTargetId'])
 const GET_VISUAL_PROGRESS_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_CURRENT_VISUAL_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_GAME_VISUALS_REQUEST_FIELDS = new Set(['operation', 'gameId'])
@@ -225,8 +226,16 @@ export function parseSubmitVisualBackgroundCleanupRequest(value: unknown): Parse
 export function parseSelectCreatureVisualProgressTrackRequest(value: unknown): ParsedVisualProgressRequest<SelectCreatureVisualProgressTrackRequest> {
     const body = asRecord(value)
     if (!body || !hasOnlyFields(body, SELECT_TRACK_REQUEST_FIELDS) || body.operation !== 'SELECT_VISUAL_PROGRESS_TRACK' || typeof body.creatureId !== 'string' || !body.creatureId.trim()) return { valid: false, code: 'INVALID_REQUEST', message: 'La scelta del percorso visuale non rispetta il contratto.' }
-    if (typeof body.visualTraitId !== 'string' || !VISUAL_TRAIT_BY_ID[body.visualTraitId as VisualTraitId]) return { valid: false, code: 'INVALID_VISUAL_TRAIT', message: 'Il Visual Trait richiesto non e supportato.' }
-    return { valid: true, request: { operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: body.creatureId.trim(), visualTraitId: body.visualTraitId as VisualTraitId } }
+    const visualTraitId = typeof body.visualTraitId === 'string' && VISUAL_TRAIT_BY_ID[body.visualTraitId as VisualTraitId]
+        ? body.visualTraitId as VisualTraitId
+        : undefined
+    const evolutionTargetId = typeof body.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId]
+        ? body.evolutionTargetId as EvolutionTargetId
+        : undefined
+    if (Boolean(visualTraitId) === Boolean(evolutionTargetId)) {
+        return { valid: false, code: visualTraitId || evolutionTargetId ? 'INVALID_REQUEST' : 'INVALID_VISUAL_TRAIT', message: 'La track richiede un solo Visual Trait legacy o un solo target anatomico valido.' }
+    }
+    return { valid: true, request: { operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: body.creatureId.trim(), ...(visualTraitId ? { visualTraitId } : { evolutionTargetId: evolutionTargetId! }) } }
 }
 
 function parseCreatureOnly<T extends 'GET_VISUAL_PROGRESS' | 'GET_CURRENT_VISUAL'>(value: unknown, operation: T, fields: Set<string>): ParsedVisualProgressRequest<T extends 'GET_VISUAL_PROGRESS' ? GetCreatureVisualProgressRequest : GetCurrentCreatureVisualRequest> {

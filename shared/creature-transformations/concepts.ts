@@ -1,4 +1,5 @@
 import type { BodyArea } from './body-areas.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
 import type { MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitId } from './visual-traits.ts'
 
@@ -33,13 +34,19 @@ export const CONSERVATIVE_COLOR_EVOLUTION: ColorEvolution = Object.freeze({
 })
 
 export type CreatureTransformationConcept = {
-    schemaVersion: 1
+    /** Schema v1 concepts are retained for existing adopted versions. */
+    schemaVersion: 1 | 2
     visualTrait: VisualTraitId
+    /** Present for target-based evolutions introduced by schema v2. */
+    evolutionTargetId?: EvolutionTargetId
+    evolutionFunction?: EvolutionFunctionId
     conceptName: string
     evolutionaryFunction: string
     primaryMutation: {
         mutationArchetype: MutationArchetype
         bodyAreas: BodyArea[]
+        /** At most one supporting area; schema-v1 concepts omit it. */
+        supportingBodyAreas?: BodyArea[]
         morphology: string
         material: string
     }

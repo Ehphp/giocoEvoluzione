@@ -91,7 +91,7 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
         async listPreviousTransformations(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('creature_visual_versions')
-                .select('version_number, visual_trait_id, concept_name')
+                .select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name')
                 .eq('creature_id', creatureId)
                 .not('visual_trait_id', 'is', null)
                 .in('status', ['ACTIVE', 'SUPERSEDED'])
@@ -100,7 +100,16 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
             if (error) throw error
             return (data ?? []).flatMap((entry) => (
                 typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
-                    ? [{ versionNumber: Number(entry.version_number), visualTraitId: entry.visual_trait_id as import('../../../shared/creature-transformations/visual-traits.ts').VisualTraitId, conceptName: entry.concept_name }]
+                    ? [{
+                        versionNumber: Number(entry.version_number),
+                        visualTraitId: entry.visual_trait_id as import('../../../shared/creature-transformations/visual-traits.ts').VisualTraitId,
+                        conceptName: entry.concept_name,
+                        evolutionTargetId: typeof entry.evolution_target_id === 'string' ? entry.evolution_target_id as import('../../../shared/creature-transformations/evolution-targets.ts').EvolutionTargetId : null,
+                        evolutionFunction: typeof entry.evolution_function === 'string' ? entry.evolution_function as import('../../../shared/creature-transformations/evolution-targets.ts').EvolutionFunctionId : null,
+                        mutationArchetype: typeof entry.mutation_archetype === 'string' ? entry.mutation_archetype as import('../../../shared/creature-transformations/mutation-archetypes.ts').MutationArchetype : null,
+                        primaryBodyArea: typeof entry.primary_body_area === 'string' ? entry.primary_body_area as import('../../../shared/creature-transformations/body-areas.ts').BodyArea : null,
+                        supportingBodyAreas: Array.isArray(entry.supporting_body_areas) ? entry.supporting_body_areas.filter((area): area is import('../../../shared/creature-transformations/body-areas.ts').BodyArea => typeof area === 'string') : [],
+                    }]
                     : []
             ))
         },

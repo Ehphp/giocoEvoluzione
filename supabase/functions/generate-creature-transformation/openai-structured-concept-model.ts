@@ -63,6 +63,9 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Style definition: ${input.identity.styleDefinition}`,
         `Current mutable visual appearance: ${input.identity.mutableVisualFeatures.join('; ')}. This is reference appearance, not immutable identity.`,
         `Requested visual trait: ${input.visualTrait.id}.`,
+        input.evolutionTarget
+            ? `Requested anatomical target: ${input.evolutionTarget.id}. Focus the dominant new mutation on exactly one of: ${input.evolutionTarget.primaryBodyAreas.join(', ')}. Supporting anatomy is optional and may use at most one of: ${input.evolutionTarget.supportingBodyAreas.join(', ')}. The resolved evolution function is ${input.evolutionFunction}. Do not add a major mutation to any other region.`
+            : 'This is a legacy trait-based concept with no anatomical target.',
         `Requested intensity: ${input.intensity}.`,
         input.previousTransformations?.length
             ? `Previously adopted visual transformations that must remain visible and must not be repeated: ${input.previousTransformations.map((entry) => `v${entry.versionNumber} ${entry.visualTraitId}: ${entry.conceptName}`).join('; ')}.`
@@ -78,17 +81,23 @@ function createInstructions(input: StructuredConceptModelInput): string {
 }
 
 function createConceptJsonSchema(input: StructuredConceptModelInput): Record<string, unknown> {
+    const target = input.evolutionTarget
+    const allowedConceptAreas = target ? [...target.primaryBodyAreas, ...target.supportingBodyAreas] : input.visualTrait.allowedBodyAreas
     return {
         type: 'object',
         additionalProperties: false,
         required: [
-            'schemaVersion', 'visualTrait', 'conceptName', 'evolutionaryFunction', 'primaryMutation',
+            'schemaVersion', 'visualTrait', ...(target ? ['evolutionTargetId', 'evolutionFunction'] : []), 'conceptName', 'evolutionaryFunction', 'primaryMutation',
             'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
             'colorEvolution',
         ],
         properties: {
-            schemaVersion: { type: 'integer', enum: [1] },
+            schemaVersion: { type: 'integer', enum: [target ? 2 : 1] },
             visualTrait: { type: 'string', enum: [input.visualTrait.id] },
+            ...(target ? {
+                evolutionTargetId: { type: 'string', enum: [target.id] },
+                evolutionFunction: { type: 'string', enum: [input.evolutionFunction] },
+            } : {}),
             conceptName: { type: 'string' },
             evolutionaryFunction: { type: 'string' },
             primaryMutation: {
@@ -100,9 +109,15 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
                     bodyAreas: {
                         type: 'array',
                         minItems: 1,
-                        maxItems: input.visualTrait.creativeLimits.maxPrimaryBodyAreas,
-                        items: { enum: input.visualTrait.allowedBodyAreas },
+                        maxItems: target ? 1 : input.visualTrait.creativeLimits.maxPrimaryBodyAreas,
+                        items: { enum: target ? target.primaryBodyAreas : input.visualTrait.allowedBodyAreas },
                     },
+                    ...(target ? {
+                        supportingBodyAreas: {
+                            type: 'array', maxItems: 1,
+                            items: { enum: target.supportingBodyAreas },
+                        },
+                    } : {}),
                     morphology: { type: 'string' },
                     material: { type: 'string' },
                 },
@@ -125,7 +140,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
                     secondaryColors: { type: 'array', items: { type: 'string' } },
                     accentColors: { type: 'array', items: { type: 'string' } },
                     surfaceEffects: { type: 'array', items: { type: 'string' } },
-                    affectedBodyAreas: { type: 'array', items: { enum: input.visualTrait.allowedBodyAreas } },
+                    affectedBodyAreas: { type: 'array', items: { enum: allowedConceptAreas } },
                     intensity: { type: 'integer', enum: [0, input.intensity] },
                     biologicalRationale: { type: 'string' },
                 },

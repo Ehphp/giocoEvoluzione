@@ -1,6 +1,7 @@
 import { BODY_AREAS, type BodyArea } from './body-areas.ts'
 import { COLOR_EVOLUTION_MODES, TRANSFORMATION_INTENSITIES, type ColorEvolution, type ColorEvolutionMode, type CreatureTransformationConcept, type TransformationIntensity } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
+import { EVOLUTION_FUNCTION_IDS, type EvolutionFunctionId, type EvolutionTargetDefinition } from './evolution-targets.ts'
 import { MUTATION_ARCHETYPES, type MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
@@ -26,6 +27,12 @@ export type ConceptProblemCode =
     | 'INVALID_FIELD_TYPE'
     | 'EMPTY_TEXT_FIELD'
     | 'PREVIOUS_TRANSFORMATION_REMOVED'
+    | 'INVALID_EVOLUTION_TARGET'
+    | 'INVALID_EVOLUTION_FUNCTION'
+    | 'SUPPORTING_BODY_AREA_NOT_ALLOWED'
+    | 'TOO_MANY_SUPPORTING_BODY_AREAS'
+    | 'REPEATED_EVOLUTION_DIRECTION'
+    | 'GLOBAL_MUTATION_NOT_ALLOWED'
     | 'INVALID_COLOR_EVOLUTION'
     | 'INVALID_COLOR_EVOLUTION_MODE'
     | 'COLOR_EVOLUTION_TOO_WEAK'
@@ -39,6 +46,8 @@ export type ConceptProblem = {
 
 export type ConceptValidationContext = {
     requestedVisualTrait: VisualTraitDefinition
+    requestedEvolutionTarget?: EvolutionTargetDefinition
+    requestedEvolutionFunction?: EvolutionFunctionId
     requestedIntensity: TransformationIntensity
     identity: CreatureSemanticIdentity
     previousTransformations?: readonly PreviousCreatureTransformationSummary[]
@@ -51,11 +60,11 @@ export type ConceptValidationResult =
 type UnknownRecord = Record<string, unknown>
 
 const CONCEPT_FIELDS = new Set([
-    'schemaVersion', 'visualTrait', 'conceptName', 'evolutionaryFunction', 'primaryMutation',
+    'schemaVersion', 'visualTrait', 'evolutionTargetId', 'evolutionFunction', 'conceptName', 'evolutionaryFunction', 'primaryMutation',
     'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
     'colorEvolution',
 ])
-const PRIMARY_MUTATION_FIELDS = new Set(['mutationArchetype', 'bodyAreas', 'morphology', 'material'])
+const PRIMARY_MUTATION_FIELDS = new Set(['mutationArchetype', 'bodyAreas', 'supportingBodyAreas', 'morphology', 'material'])
 const COLOR_EVOLUTION_FIELDS = new Set([
     'mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale',
 ])
@@ -64,6 +73,7 @@ const VISUALLY_SIGNIFICANT_COLOR_AREAS = new Set<BodyArea>(['NECK', 'BACK', 'CHE
 const TECHNICAL_INSTRUCTION_PATTERN = /\b(?:png|jpe?g|webp|canvas|alpha|trasparen\w*|sfondo|background|dimension\w*|pixel|risoluzione|resolution|posa|pose|path|url|1024|1536)\b/i
 const IDENTITY_BREAKING_PATTERN = /(?:nuova specie|cambio di specie|sostituzione del volto|anatomia umanoide|trasformazione totale|completamente diverso)/i
 const PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN = /(?:rimuov|elimin|cancell|sostituisc|remove|replace).*(?:mutazion|evoluzion|adaptation)/i
+const GLOBAL_MUTATION_PATTERN = /(?:intero corpo|corpo intero|globale|global|silhouette|proporzioni)/i
 
 function isRecord(value: unknown): value is UnknownRecord {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -120,6 +130,10 @@ function isMutationArchetype(value: string): value is MutationArchetype {
     return MUTATION_ARCHETYPES.includes(value as MutationArchetype)
 }
 
+function isEvolutionFunction(value: string): value is EvolutionFunctionId {
+    return EVOLUTION_FUNCTION_IDS.includes(value as EvolutionFunctionId)
+}
+
 function isColorEvolutionMode(value: string): value is ColorEvolutionMode {
     return COLOR_EVOLUTION_MODES.includes(value as ColorEvolutionMode)
 }
@@ -169,7 +183,10 @@ function readColorEvolution(candidate: UnknownRecord, context: ConceptValidation
     } else {
         affectedBodyAreas = []
         for (const [index, area] of evolution.affectedBodyAreas.entries()) {
-            if (!isBodyArea(area) || !context.requestedVisualTrait.allowedBodyAreas.includes(area)) {
+            const targetAllowsArea = !context.requestedEvolutionTarget
+                || context.requestedEvolutionTarget.primaryBodyAreas.includes(area as BodyArea)
+                || context.requestedEvolutionTarget.supportingBodyAreas.includes(area as BodyArea)
+            if (!isBodyArea(area) || !context.requestedVisualTrait.allowedBodyAreas.includes(area) || !targetAllowsArea) {
                 problems.push(makeProblem('INVALID_COLOR_EVOLUTION', `L area cromatica ${area} non e ammessa dal Visual Trait richiesto.`, `colorEvolution.affectedBodyAreas.${index}`))
             } else {
                 affectedBodyAreas.push(area)
@@ -206,18 +223,34 @@ function readColorEvolution(candidate: UnknownRecord, context: ConceptValidation
 
 export function validateCreatureTransformationConcept(candidate: unknown, context: ConceptValidationContext): ConceptValidationResult {
     const problems: ConceptProblem[] = []
+    const requestedTarget = context.requestedEvolutionTarget
     if (!isRecord(candidate)) {
         return { valid: false, problems: [makeProblem('INVALID_CONCEPT', 'Il concept deve essere un oggetto JSON.')] }
     }
 
     checkUnknownFields(candidate, CONCEPT_FIELDS, '', problems)
-    if (candidate.schemaVersion !== 1) {
-        problems.push(makeProblem('INVALID_SCHEMA_VERSION', 'schemaVersion deve essere 1.', 'schemaVersion'))
+    if (candidate.schemaVersion !== (requestedTarget ? 2 : 1)) {
+        problems.push(makeProblem('INVALID_SCHEMA_VERSION', requestedTarget ? 'Le evoluzioni anatomiche richiedono schemaVersion 2.' : 'I concept legacy richiedono schemaVersion 1.', 'schemaVersion'))
     }
 
     const visualTrait = readNonEmptyString(candidate, 'visualTrait', 'visualTrait', problems)
     if (visualTrait !== null && visualTrait !== context.requestedVisualTrait.id) {
         problems.push(makeProblem('INVALID_VISUAL_TRAIT', 'Il Visual Trait non corrisponde a quello richiesto.', 'visualTrait'))
+    }
+    const evolutionTargetId = candidate.evolutionTargetId
+    const evolutionFunction = candidate.evolutionFunction
+    if (requestedTarget) {
+        if (evolutionTargetId !== requestedTarget.id) {
+            problems.push(makeProblem('INVALID_EVOLUTION_TARGET', 'Il target anatomico non corrisponde alla scelta della track.', 'evolutionTargetId'))
+        }
+        if (typeof evolutionFunction !== 'string' || !isEvolutionFunction(evolutionFunction)) {
+            problems.push(makeProblem('INVALID_EVOLUTION_FUNCTION', 'La funzione evolutiva non appartiene al catalogo.', 'evolutionFunction'))
+        } else if (context.requestedEvolutionFunction && evolutionFunction !== context.requestedEvolutionFunction) {
+            problems.push(makeProblem('INVALID_EVOLUTION_FUNCTION', 'La funzione evolutiva non corrisponde alla direzione risolta.', 'evolutionFunction'))
+        }
+        if (visualTrait !== null && !requestedTarget.compatibleVisualTraits.includes(visualTrait as VisualTraitDefinition['id'])) {
+            problems.push(makeProblem('INVALID_VISUAL_TRAIT', 'Il Visual Trait non e compatibile con il target anatomico.', 'visualTrait'))
+        }
     }
     const conceptName = readNonEmptyString(candidate, 'conceptName', 'conceptName', problems)
     const evolutionaryFunction = readNonEmptyString(candidate, 'evolutionaryFunction', 'evolutionaryFunction', problems)
@@ -241,6 +274,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
         const morphology = readNonEmptyString(mutation, 'morphology', 'primaryMutation.morphology', problems)
         const material = readNonEmptyString(mutation, 'material', 'primaryMutation.material', problems)
         let bodyAreas: BodyArea[] | null = null
+        let supportingBodyAreas: BodyArea[] | undefined
 
         if (!Array.isArray(mutation.bodyAreas) || !mutation.bodyAreas.length || mutation.bodyAreas.some((area) => typeof area !== 'string')) {
             problems.push(makeProblem('MISSING_PRIMARY_MUTATION', 'primaryMutation.bodyAreas deve contenere almeno un area valida.', 'primaryMutation.bodyAreas'))
@@ -260,11 +294,35 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
         if (bodyAreas !== null && bodyAreas.length > context.requestedVisualTrait.creativeLimits.maxPrimaryBodyAreas) {
             problems.push(makeProblem('TOO_MANY_BODY_AREAS', 'La mutazione primaria supera il limite di aree corporee.', 'primaryMutation.bodyAreas'))
         }
+        if (requestedTarget && bodyAreas !== null) {
+            if ((Array.isArray(mutation.bodyAreas) ? mutation.bodyAreas.length : 0) !== 1) {
+                problems.push(makeProblem('TOO_MANY_BODY_AREAS', 'Un evoluzione anatomica deve avere una sola area primaria.', 'primaryMutation.bodyAreas'))
+            } else if (!requestedTarget.primaryBodyAreas.includes(bodyAreas[0]!)) {
+                problems.push(makeProblem('BODY_AREA_NOT_ALLOWED', 'L area primaria non appartiene al target anatomico scelto.', 'primaryMutation.bodyAreas.0'))
+            }
+        }
+        if (mutation.supportingBodyAreas !== undefined) {
+            if (!Array.isArray(mutation.supportingBodyAreas) || mutation.supportingBodyAreas.some((area) => typeof area !== 'string')) {
+                problems.push(makeProblem('SUPPORTING_BODY_AREA_NOT_ALLOWED', 'Le aree di supporto devono contenere solo aree corporee valide.', 'primaryMutation.supportingBodyAreas'))
+            } else {
+                supportingBodyAreas = []
+                for (const [index, supportingArea] of mutation.supportingBodyAreas.entries()) {
+                    if (!isBodyArea(supportingArea) || !requestedTarget?.supportingBodyAreas.includes(supportingArea)) {
+                        problems.push(makeProblem('SUPPORTING_BODY_AREA_NOT_ALLOWED', `L area di supporto ${supportingArea} non e ammessa dal target scelto.`, `primaryMutation.supportingBodyAreas.${index}`))
+                    } else {
+                        supportingBodyAreas.push(supportingArea)
+                    }
+                }
+                if (supportingBodyAreas.length > 1) {
+                    problems.push(makeProblem('TOO_MANY_SUPPORTING_BODY_AREAS', 'L evoluzione puo avere al massimo una area di supporto.', 'primaryMutation.supportingBodyAreas'))
+                }
+            }
+        }
         if (mutationArchetype !== null && (!isMutationArchetype(mutationArchetype) || !context.requestedVisualTrait.allowedMutationArchetypes.includes(mutationArchetype))) {
             problems.push(makeProblem('INVALID_MUTATION_ARCHETYPE', 'Il mutation archetype non e ammesso dal Visual Trait richiesto.', 'primaryMutation.mutationArchetype'))
         }
         if (mutationArchetype !== null && morphology !== null && material !== null && bodyAreas !== null && isMutationArchetype(mutationArchetype)) {
-            primaryMutation = { mutationArchetype, bodyAreas, morphology, material }
+            primaryMutation = { mutationArchetype, bodyAreas, ...(supportingBodyAreas?.length ? { supportingBodyAreas } : {}), morphology, material }
         }
     }
 
@@ -300,6 +358,17 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
     if (context.previousTransformations?.length && PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN.test([...positiveText, ...(forbiddenChanges ?? [])].join(' '))) {
         problems.push(makeProblem('PREVIOUS_TRANSFORMATION_REMOVED', 'Il concept non puo dichiarare la rimozione o sostituzione di evoluzioni precedenti.'))
     }
+    if (requestedTarget && GLOBAL_MUTATION_PATTERN.test(positiveText)) {
+        problems.push(makeProblem('GLOBAL_MUTATION_NOT_ALLOWED', 'Una evoluzione anatomica non puo ridisegnare corpo intero, silhouette o proporzioni.', 'primaryMutation.morphology'))
+    }
+    if (requestedTarget && typeof evolutionFunction === 'string' && primaryMutation && context.previousTransformations?.some((previous) => (
+        previous.evolutionTargetId === requestedTarget.id
+        && previous.evolutionFunction === evolutionFunction
+        && previous.visualTraitId === context.requestedVisualTrait.id
+        && previous.mutationArchetype === primaryMutation.mutationArchetype
+    ))) {
+        problems.push(makeProblem('REPEATED_EVOLUTION_DIRECTION', 'La combinazione target, funzione e archetipo e gia stata adottata.', 'primaryMutation.mutationArchetype'))
+    }
 
     if (problems.length || visualTrait === null || !primaryMutation || secondaryMutations === null || identityToPreserve === null || forbiddenChanges === null || intensity !== context.requestedIntensity) {
         return { valid: false, problems }
@@ -308,8 +377,11 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
     return {
         valid: true,
         concept: {
-            schemaVersion: 1,
+            schemaVersion: requestedTarget ? 2 : candidate.schemaVersion as 1,
             visualTrait: context.requestedVisualTrait.id,
+            ...(requestedTarget && typeof evolutionFunction === 'string' && isEvolutionFunction(evolutionFunction)
+                ? { evolutionTargetId: requestedTarget.id, evolutionFunction }
+                : {}),
             conceptName: conceptName!,
             evolutionaryFunction: evolutionaryFunction!,
             primaryMutation,

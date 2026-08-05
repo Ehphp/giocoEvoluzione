@@ -29,6 +29,7 @@ import { classifyExperimentReview, summarizeCreatureTransformationBenchmark, typ
 import { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL } from '../../../shared/creature-transformations/prompt-composer.ts'
 import type { TransformationCost, TransformationRequestIdempotencyStatus, TransformationRequestPersistence, TransformationRequestStatusPersistence } from '../../../shared/creature-transformations/request-persistence.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
+import { resolveEvolutionDirection, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse } from './generation-service.ts'
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
@@ -450,7 +451,7 @@ async function toVisualHistoryResponse(input: GenerateImageEdgeOrchestrationInpu
     const versions = await input.visualRepository.listVisualHistory({ profileId, creatureId })
     return Promise.all(versions.map(async (version) => {
         const signed = await input.storage.createVisualVersionSignedUrl({ assetPath: version.assetPath, isBaseVersion: version.visualTraitId === null })
-        return { id: version.id, versionNumber: version.versionNumber, visualTraitId: version.visualTraitId, conceptName: version.conceptName, signedUrl: signed.signedUrl, expiresAt: signed.expiresAt }
+        return { id: version.id, versionNumber: version.versionNumber, visualTraitId: version.visualTraitId, evolutionTargetId: version.evolutionTargetId ?? null, evolutionFunction: version.evolutionFunction ?? null, conceptName: version.conceptName, signedUrl: signed.signedUrl, expiresAt: signed.expiresAt }
     }))
 }
 
@@ -467,11 +468,13 @@ async function runUnlockedTransformationTask(
     request: GenerateUnlockedTransformationRequest,
     running: CreatureTransformationRequestRecord,
     visualTraitId: GenerateConceptRequest['visualTraitId'],
+    evolutionTargetId: EvolutionTargetId | undefined,
+    evolutionFunction: EvolutionFunctionId | undefined,
     profile: CreatureImageGenerationProfile | null,
 ): Promise<void> {
     try {
         const conceptRequest: GenerateConceptRequest = {
-            operation: 'GENERATE_CONCEPT', creatureId: request.creatureId, visualTraitId, intensity: 2,
+            operation: 'GENERATE_CONCEPT', creatureId: request.creatureId, visualTraitId, evolutionTargetId, evolutionFunction, intensity: 2,
             conceptMode: 'AI', idempotencyKey: request.idempotencyKey,
         }
         const concept = await generateConceptForAuthenticatedProfile({
@@ -524,7 +527,7 @@ export async function orchestrateSelectCreatureVisualProgressTrack(input: Creatu
     const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
-        const track = await input.visualRepository.selectTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId, visualTraitId: parsed.request.visualTraitId, target: input.policy.visualProgression.winsRequired })
+        const track = await input.visualRepository.selectTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId, visualTraitId: parsed.request.visualTraitId, evolutionTargetId: parsed.request.evolutionTargetId, target: input.policy.visualProgression.winsRequired })
         const current = await input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId })
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
         return { success: true, requestId: input.requestId, track, lastExperiment: null, lastFailure: null, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId) }
@@ -612,14 +615,21 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         if (!track || track.id !== parsed.request.progressTrackId) return failure(input.requestId, 'VISUAL_TRACK_NOT_FOUND', 'Il percorso visuale non e disponibile.')
         if (track.status === 'GENERATING') return failure(input.requestId, 'VISUAL_GENERATION_ALREADY_RUNNING', 'La generazione visuale e gia in corso.')
         if (track.status !== 'READY') return failure(input.requestId, 'VISUAL_TRACK_NOT_READY', 'Il percorso deve essere sbloccato prima della generazione.')
-        const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: track.visualTraitId, sourceVisualVersionId: source.currentVisualVersionId })
+        const direction = track.evolutionTargetId
+            ? resolveEvolutionDirection({ evolutionTargetId: track.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
+            : null
+        const resolvedTrack = direction
+            ? await input.visualRepository.resolveTrackTrait({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: track.id, visualTraitId: direction.visualTraitId })
+            : track
+        if (!resolvedTrack.visualTraitId) return failure(input.requestId, 'VISUAL_TRACK_STATE_CONFLICT', 'Il percorso non ha una direzione funzionale risolvibile.')
+        const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: resolvedTrack.visualTraitId, evolutionTargetId: resolvedTrack.evolutionTargetId, sourceVisualVersionId: source.currentVisualVersionId })
         const reservation = await input.repository.reserve({
             profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
-            operation: 'GENERATE_UNLOCKED_TRANSFORMATION', visualTraitId: track.visualTraitId, intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL',
+            operation: 'GENERATE_UNLOCKED_TRANSFORMATION', visualTraitId: resolvedTrack.visualTraitId, intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL',
             estimatedCostUsd: profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
             dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
             requestFingerprint: fingerprint, ...realImageReservationLimits(input.policy),
-            visualProgressTrackId: track.id, sourceVisualVersionId: source.currentVisualVersionId,
+            visualProgressTrackId: resolvedTrack.id, sourceVisualVersionId: source.currentVisualVersionId,
         })
         if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
         if (reservation.record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION') return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La idempotency key appartiene a un operazione diversa.')
@@ -629,7 +639,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         }
         let startedTrack
         try {
-            startedTrack = await input.visualRepository.startGeneration({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: track.id, requestId: reservation.record.id })
+            startedTrack = await input.visualRepository.startGeneration({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: resolvedTrack.id, requestId: reservation.record.id })
         } catch (error) {
             try { await input.repository.markFailed({ requestId: reservation.record.id, profileId: input.profileId, errorCode: 'VISUAL_TRACK_STATE_CONFLICT', errorMessage: 'Il percorso visuale non puo iniziare la generazione.' }) } catch { /* the track remains authoritative */ }
             throw error
@@ -639,7 +649,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         try {
             running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId })
         } catch (error) {
-            await restoreVisualTrackAfterFailure(input, track.id, reservation.record)
+            await restoreVisualTrackAfterFailure(input, resolvedTrack.id, reservation.record)
             const details = mapThrownError(error)
             return failure(input.requestId, details.code, details.message)
         }
@@ -648,7 +658,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             await restoreVisualTrackAfterFailure(input, track.id, running)
             return failure(input.requestId, 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', 'La generazione visuale non e disponibile.')
         }
-        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, track.visualTraitId, profile))
+        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, resolvedTrack.visualTraitId, resolvedTrack.evolutionTargetId ?? undefined, direction?.evolutionFunction, profile))
         return acceptedRealImage(input.requestId, running, 'CREATED')
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }

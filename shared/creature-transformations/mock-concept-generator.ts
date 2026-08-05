@@ -162,12 +162,12 @@ function getControlledTrait(input: CreatureConceptGenerationInput) {
     return controlledTrait
 }
 
-function createColorEvolution(input: CreatureConceptGenerationInput, variant: MockConceptVariant): ColorEvolution {
+function createColorEvolution(input: CreatureConceptGenerationInput, variant: MockConceptVariant, bodyAreas: readonly BodyArea[] = variant.bodyAreas): ColorEvolution {
     // Three out of four deterministic concepts exercise chromatic evolution; the remaining one proves the conservative path.
     if (stableHash(`color:${input.visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % 4 === 0) return CONSERVATIVE_COLOR_EVOLUTION
     const profile = MOCK_COLOR_EVOLUTION_PROFILES[input.visualTrait.id]
     const affectedBodyAreas = [...new Set([
-        ...variant.bodyAreas,
+        ...bodyAreas,
         ...(input.intensity >= 2 ? ['SKIN_SURFACE' as const] : []),
     ])]
     return {
@@ -199,16 +199,27 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
         }
 
         const variant = variants[stableHash(`${visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % variants.length]
-        const secondaryCount = Math.min(input.intensity, variant.secondaryMutations.length, visualTrait.creativeLimits.maxSecondaryMutations)
+        const target = input.evolutionTarget
+        const primaryBodyAreas = target
+            ? [target.primaryBodyAreas[stableHash(`${target.id}:${input.seed ?? ''}`) % target.primaryBodyAreas.length]!]
+            : [...variant.bodyAreas]
+        const supportingBodyAreas = target
+            ? variant.bodyAreas.filter((area) => target.supportingBodyAreas.includes(area)).slice(0, 1)
+            : []
+        const secondaryCount = Math.min(input.intensity, variant.secondaryMutations.length, visualTrait.creativeLimits.maxSecondaryMutations, target ? 1 : Infinity)
 
         return {
-            schemaVersion: 1,
+            schemaVersion: target ? 2 : 1,
             visualTrait: visualTrait.id,
+            ...(target && input.evolutionTargetId === target.id && input.evolutionFunction
+                ? { evolutionTargetId: target.id, evolutionFunction: input.evolutionFunction }
+                : {}),
             conceptName: variant.conceptName,
             evolutionaryFunction: `${variant.evolutionaryFunction} ${INTENSITY_DESCRIPTION[input.intensity]}`,
             primaryMutation: {
                 mutationArchetype: variant.mutationArchetype,
-                bodyAreas: [...variant.bodyAreas],
+                bodyAreas: primaryBodyAreas,
+                ...(supportingBodyAreas.length ? { supportingBodyAreas } : {}),
                 morphology: `${variant.morphology} ${INTENSITY_DESCRIPTION[input.intensity]}`,
                 material: variant.material,
             },
@@ -222,7 +233,7 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
                 'Armi, abiti o accessori artificiali',
             ],
             intensity: input.intensity,
-            colorEvolution: createColorEvolution(input, variant),
+            colorEvolution: createColorEvolution(input, variant, [...primaryBodyAreas, ...supportingBodyAreas]),
         }
     }
 }

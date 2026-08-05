@@ -45,6 +45,9 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
                 task: 'CREATE_CREATURE_TRANSFORMATION_CONCEPT',
                 identity: input.identity,
                 visualTrait: controlledTrait,
+                evolutionTarget: input.evolutionTarget,
+                evolutionTargetId: input.evolutionTargetId,
+                evolutionFunction: input.evolutionFunction,
                 intensity: input.intensity,
                 previousTransformations: input.previousTransformations,
                 seed: input.seed,
@@ -61,6 +64,10 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
 
         const validation = validateCreatureTransformationConcept(candidate, {
             requestedVisualTrait: controlledTrait,
+            ...(input.evolutionTarget ? {
+                requestedEvolutionTarget: input.evolutionTarget,
+                requestedEvolutionFunction: input.evolutionFunction,
+            } : {}),
             requestedIntensity: input.intensity,
             identity: input.identity,
             previousTransformations: input.previousTransformations,

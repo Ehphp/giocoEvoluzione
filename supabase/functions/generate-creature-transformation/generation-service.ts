@@ -4,6 +4,7 @@ import { generateValidatedCreatureConcept } from '../../../shared/creature-trans
 import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION } from '../../../shared/creature-transformations/prompt-composer.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import type { GenerateConceptRequest, CreatureIdentityResolver } from '../../../shared/creature-transformations/contracts.ts'
+import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
 export type GeneratedConceptResponse = Omit<GenerateConceptResponse, 'requestPersistence'>
@@ -28,6 +29,7 @@ export async function generateConceptForAuthenticatedProfile(
         creatureId: input.request.creatureId,
     })
     const visualTrait = VISUAL_TRAIT_BY_ID[input.request.visualTraitId]
+    const evolutionTarget = input.request.evolutionTargetId ? EVOLUTION_TARGET_BY_ID[input.request.evolutionTargetId] : undefined
 
     if (!visualTrait) {
         return {
@@ -43,6 +45,9 @@ export async function generateConceptForAuthenticatedProfile(
         input: {
             identity: resolvedCreature.identity,
             visualTrait,
+            evolutionTarget,
+            evolutionTargetId: input.request.evolutionTargetId,
+            evolutionFunction: input.request.evolutionFunction,
             intensity: input.request.intensity,
             previousTransformations: resolvedCreature.previousTransformations,
             seed: input.benchmarkConceptSeed ?? [

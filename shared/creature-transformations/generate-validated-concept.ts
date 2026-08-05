@@ -45,6 +45,10 @@ export async function generateValidatedCreatureConcept(
         })
         const validation = validateCreatureTransformationConcept(candidate, {
             requestedVisualTrait: request.input.visualTrait,
+            ...(request.input.evolutionTarget ? {
+                requestedEvolutionTarget: request.input.evolutionTarget,
+                requestedEvolutionFunction: request.input.evolutionFunction,
+            } : {}),
             requestedIntensity: request.input.intensity,
             identity: request.input.identity,
             previousTransformations: request.input.previousTransformations,

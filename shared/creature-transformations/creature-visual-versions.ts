@@ -1,4 +1,7 @@
 import type { CreatureTransformationConcept } from './concepts.ts'
+import type { BodyArea } from './body-areas.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
+import type { MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitId } from './visual-traits.ts'
 
 export type CreatureVisualVersionStatus = 'BASE' | 'ACTIVE' | 'SUPERSEDED' | 'REVOKED'
@@ -7,12 +10,19 @@ export type PreviousCreatureTransformationSummary = Readonly<{
     versionNumber: number
     visualTraitId: VisualTraitId
     conceptName: string
+    evolutionTargetId?: EvolutionTargetId | null
+    evolutionFunction?: EvolutionFunctionId | null
+    mutationArchetype?: MutationArchetype | null
+    primaryBodyArea?: BodyArea | null
+    supportingBodyAreas?: readonly BodyArea[]
 }>
 
 export type SelectableCreatureVisualVersion = Readonly<{
     id: string
     versionNumber: number
     visualTraitId: VisualTraitId | null
+    evolutionTargetId?: EvolutionTargetId | null
+    evolutionFunction?: EvolutionFunctionId | null
     conceptName: string | null
     signedUrl: string
     expiresAt: string
@@ -24,6 +34,8 @@ export type CreatureVisualVersion = Readonly<{
     versionNumber: number
     previousVersionId: string | null
     visualTraitId: VisualTraitId | null
+    evolutionTargetId?: EvolutionTargetId | null
+    evolutionFunction?: EvolutionFunctionId | null
     conceptName: string | null
     conceptSnapshot: CreatureTransformationConcept | null
     promptTemplateVersion: string | null
