@@ -22,6 +22,8 @@ export function VisualBackgroundCleanupScreen({ onBack, onVisualChanged }: Props
     const [loading, setLoading] = useState(true)
     const [running, setRunning] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [currentEntry, setCurrentEntry] = useState<CleanupEntry | null>(null)
+    const [currentStep, setCurrentStep] = useState<string | null>(null)
     const stopRequested = useRef(false)
 
     const refresh = useCallback(async () => {
@@ -40,10 +42,14 @@ export function VisualBackgroundCleanupScreen({ onBack, onVisualChanged }: Props
         const localResults: Result[] = []
         for (const entry of entries) {
             if (stopRequested.current) break
+            setCurrentEntry(entry)
             try {
+                setCurrentStep('Download del PNG sorgente...')
                 const response = await fetch(entry.signedUrl)
                 if (!response.ok) throw new Error('Download della sorgente non riuscito.')
+                setCurrentStep('Caricamento del modello di scontorno ad alta qualita: il primo avvio puo richiedere piu tempo...')
                 const transparent = await removeCreatureBackground(await response.blob())
+                setCurrentStep('Validazione e attivazione del PNG trasparente...')
                 const pngBytes = new Uint8Array(await transparent.arrayBuffer())
                 await submitVisualBackgroundCleanup({ operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId: entry.visualVersionId, candidatePngBase64: pngBytesToBase64(pngBytes) })
                 localResults.push({ visualVersionId: entry.visualVersionId, state: 'DONE', message: 'Versione trasparente attivata.' })
@@ -52,6 +58,7 @@ export function VisualBackgroundCleanupScreen({ onBack, onVisualChanged }: Props
             }
             setResults([...localResults])
         }
+        setCurrentEntry(null); setCurrentStep(null)
         setRunning(false)
         if (localResults.some((result) => result.state === 'DONE')) await onVisualChanged()
     }
@@ -62,8 +69,9 @@ export function VisualBackgroundCleanupScreen({ onBack, onVisualChanged }: Props
         {error ? <p className="visual-background-cleanup__error" role="alert">{error}</p> : null}
         {loading ? <p>Caricamento visuali…</p> : <>
             <section className="visual-background-cleanup__summary"><strong>{entries.length}</strong><span>visuali da elaborare</span><button type="button" disabled={running || !entries.length} onClick={() => void processAll()}>{running ? `Elaborazione ${results.length + 1} / ${entries.length}` : 'Processa tutte'}</button>{running ? <button type="button" onClick={() => { stopRequested.current = true }}>Interrompi</button> : <button type="button" onClick={() => void refresh()}>Ricarica</button>}</section>
+            {currentEntry && currentStep ? <p className="visual-background-cleanup__current" role="status">Creatura {currentEntry.creatureId.slice(0, 8)} · v{currentEntry.versionNumber}: {currentStep}</p> : null}
             {results.length ? <p className="visual-background-cleanup__progress" role="status">Completate: {completed}. Non riuscite: {results.length - completed}.</p> : null}
-            <ol className="visual-background-cleanup__list">{entries.map((entry) => { const result = results.find((item) => item.visualVersionId === entry.visualVersionId); return <li key={entry.visualVersionId}><span>Creatura {entry.creatureId.slice(0, 8)} · v{entry.versionNumber}</span><strong className={result?.state === 'FAILED' ? 'is-failed' : result?.state === 'DONE' ? 'is-done' : ''}>{result?.message ?? 'In attesa'}</strong></li> })}</ol>
+            <ol className="visual-background-cleanup__list">{entries.map((entry) => { const result = results.find((item) => item.visualVersionId === entry.visualVersionId); const isCurrent = currentEntry?.visualVersionId === entry.visualVersionId; return <li key={entry.visualVersionId}><span>Creatura {entry.creatureId.slice(0, 8)} · v{entry.versionNumber}</span><strong className={result?.state === 'FAILED' ? 'is-failed' : result?.state === 'DONE' ? 'is-done' : ''}>{result?.message ?? (isCurrent ? 'Elaborazione in corso...' : 'In attesa')}</strong></li> })}</ol>
         </>}
     </section>
 }

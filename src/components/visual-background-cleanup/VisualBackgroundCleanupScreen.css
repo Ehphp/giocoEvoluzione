@@ -6,6 +6,7 @@
 .visual-background-cleanup__summary strong { font-size: 1.35rem; }
 .visual-background-cleanup__summary button:first-of-type { margin-left: auto; }
 .visual-background-cleanup__error { color: #9d1d20; font-weight: 700; }
+.visual-background-cleanup__current { margin: 0; font-weight: 700; }
 .visual-background-cleanup__progress { margin: 0; }
 .visual-background-cleanup__list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
 .visual-background-cleanup__list li { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem; border-bottom: 1px solid var(--line, #c9ced4); }
