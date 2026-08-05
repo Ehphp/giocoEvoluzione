@@ -115,7 +115,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             await start(createVisualTransformationIdempotencyKey())
             await refresh()
         } catch (nextError) {
-            if (nextError instanceof CreatureTransformationApiError && nextError.code === 'REQUEST_PREVIOUSLY_FAILED') {
+            if (nextError instanceof CreatureTransformationApiError && ['REQUEST_PREVIOUSLY_FAILED', 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED'].includes(nextError.code)) {
                 try {
                     await start(createVisualTransformationIdempotencyKey())
                     await refresh()
