@@ -9,6 +9,15 @@ export type PreviousCreatureTransformationSummary = Readonly<{
     conceptName: string
 }>
 
+export type SelectableCreatureVisualVersion = Readonly<{
+    id: string
+    versionNumber: number
+    visualTraitId: VisualTraitId | null
+    conceptName: string | null
+    signedUrl: string
+    expiresAt: string
+}>
+
 export type CreatureVisualVersion = Readonly<{
     id: string
     creatureId: string

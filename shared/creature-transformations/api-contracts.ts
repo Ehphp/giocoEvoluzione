@@ -8,7 +8,7 @@ import type { TransformationRequestPersistence, TransformationRequestStatusPersi
 import type { CreatureTransformationBenchmarkCase } from './benchmark-plan.ts'
 import type { CreatureImageGenerationProfile } from './image-generation-profiles.ts'
 import type { CreatureTransformationBenchmarkMetrics, CreatureTransformationExperimentReview, ExperimentReviewClassification } from './experiment-reviews.ts'
-import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { CurrentCreatureVisualResponse, CreatureVisualVersion, SelectableCreatureVisualVersion } from './creature-visual-versions.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
 export type CreatureTransformationAssetReadiness = 'FINAL_ASSET' | 'EXPERIMENT_ONLY'
@@ -167,7 +167,7 @@ export type CreatureVisualProgressResponse = Readonly<{
     lastExperiment: { requestId: string; warnings: string[] } | null
     lastFailure: { requestId: string; code: string; message: string } | null
     currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
-    history: readonly PreviousCreatureTransformationSummary[]
+    history: readonly SelectableCreatureVisualVersion[]
 }>
 
 export type CurrentCreatureVisualApiResponse = Readonly<{

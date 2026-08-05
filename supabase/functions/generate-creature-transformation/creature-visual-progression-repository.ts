@@ -153,6 +153,12 @@ export class SupabaseCreatureVisualProgressionRepository {
         })
     }
 
+    async listVisualHistory(input: { profileId: string; creatureId: string }): Promise<StoredVisualVersion[]> {
+        const { data, error } = await this.client.from('creature_visual_versions').select('*').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).in!('status', ['ACTIVE', 'SUPERSEDED']).order('version_number', { ascending: true }).limit(16)
+        if (error) throw new CreatureVisualProgressionRepositoryError('CURRENT_VISUAL_UNAVAILABLE', 'Impossibile recuperare le versioni visuali.', { cause: error })
+        return (Array.isArray(data) ? data : []).map(mapVisualVersion)
+    }
+
     async listGameHumanParticipants(gameId: string): Promise<GameVisualParticipant[]> {
         const { data, error } = await this.client.from('players').select('profile_id, creature_id, player_type').eq('game_id', gameId)
         if (error) throw new CreatureVisualProgressionRepositoryError('OPPONENT_VISUAL_NOT_AUTHORIZED', 'Impossibile recuperare i partecipanti alla partita.', { cause: error })

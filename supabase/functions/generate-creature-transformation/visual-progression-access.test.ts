@@ -38,6 +38,7 @@ function visualRepository(lastFailure: { requestId: string; code: string; messag
         async getLatestExperiment() { return null },
         async getLatestFailure() { return lastFailure },
         async listHistory() { return [] },
+        async listVisualHistory({ profileId, creatureId }) { return [version(profileId, creatureId)] },
         async getCurrentVersion({ profileId, creatureId }) {
             return version(profileId, creatureId, profileId === PILOT_PROFILE ? 'IMPACT_ADAPTATION' : null)
         },

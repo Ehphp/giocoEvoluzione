@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
@@ -19,7 +19,9 @@ type ProfileScreenProps = {
     visualProgress?: { progress: number; target: number; status: string } | null
     onOpenEvolution?: () => void
     onOpenBackgroundCleanup?: () => void
-    visualHistory?: ReadonlyArray<{ versionNumber: number; visualTraitId: string; conceptName: string }>
+    visualHistory?: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }>
+    currentVisualVersionId?: string | null
+    onSelectVisualVersion?: (versionId: string) => Promise<void>
 }
 
 function formatDate(value: string) {
@@ -43,6 +45,8 @@ export function ProfileScreen({
     onOpenEvolution,
     onOpenBackgroundCleanup,
     visualHistory,
+    currentVisualVersionId,
+    onSelectVisualVersion,
 }: ProfileScreenProps) {
     const experience = getExperienceProgress(creature.experience)
     const stats = useMemo(() => history.reduce((total, item) => ({
@@ -52,6 +56,21 @@ export function ProfileScreen({
         losses: total.losses + (item.outcome === 'loss' ? 1 : 0),
     }), { played: 0, wins: 0, draws: 0, losses: 0 }), [history])
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
+    const [selectedVisualVersionId, setSelectedVisualVersionId] = useState<string | null>(null)
+    const [isSelectingVisual, setIsSelectingVisual] = useState(false)
+    const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
+    const selectedVersionId = selectedVisualVersionId ?? currentVisualVersionId ?? null
+    const selectedIndex = Math.max(0, visualHistory?.findIndex((entry) => entry.id === selectedVersionId) ?? 0)
+
+    async function selectVisualVersion(versionId: string) {
+        if (!onSelectVisualVersion || versionId === currentVisualVersionId) return
+        setSelectedVisualVersionId(versionId)
+        setVisualSelectionError(null)
+        setIsSelectingVisual(true)
+        try { await onSelectVisualVersion(versionId) }
+        catch (error) { setSelectedVisualVersionId(null); setVisualSelectionError(error instanceof Error ? error.message : 'Non e stato possibile cambiare la versione visuale.') }
+        finally { setIsSelectingVisual(false) }
+    }
 
     return (
         <section className="profile-screen" aria-labelledby="profile-title">
@@ -73,7 +92,7 @@ export function ProfileScreen({
                 {onOpenEvolution ? <button type="button" onClick={onOpenEvolution}>Apri evoluzione</button> : null}
                 {onOpenBackgroundCleanup ? <button type="button" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</button> : null}
             </section>
-            {visualHistory?.length ? <section className="profile-screen__visual-history"><h2>Storico visuale</h2><ol>{visualHistory.map((entry) => <li key={entry.versionNumber}>v{entry.versionNumber} · {entry.visualTraitId} · {entry.conceptName}</li>)}</ol></section> : null}
+            {visualHistory?.length ? <section className="profile-screen__visual-history"><h2>Versione attiva</h2><div className="profile-screen__visual-selector"><figure>{visualHistory[selectedIndex] ? <img src={visualHistory[selectedIndex].signedUrl} alt={`Versione ${visualHistory[selectedIndex].versionNumber} della creatura`} /> : null}<figcaption>v{visualHistory[selectedIndex]?.versionNumber ?? 1} · {visualHistory[selectedIndex]?.conceptName ?? 'Forma base'}</figcaption></figure><input type="range" min="0" max={Math.max(0, visualHistory.length - 1)} value={selectedIndex} disabled={isSelectingVisual || !onSelectVisualVersion} onChange={(event) => { const next = visualHistory[Number(event.target.value)]; if (next) void selectVisualVersion(next.id) }} aria-label="Scegli la versione visuale della creatura" /><div>{visualHistory.map((entry) => <button key={entry.id} type="button" className={entry.id === currentVisualVersionId ? 'is-active' : ''} disabled={isSelectingVisual || !onSelectVisualVersion} onClick={() => void selectVisualVersion(entry.id)}>v{entry.versionNumber}</button>)}</div>{visualSelectionError ? <p className="profile-screen__error" role="alert">{visualSelectionError}</p> : null}</div></section> : null}
 
             <section className="profile-screen__stats" aria-label="Statistiche">
                 <article><span>Partite</span><strong>{stats.played}</strong></article>

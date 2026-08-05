@@ -20,7 +20,7 @@ import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
 import { type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
-import { getCurrentCreatureVisual, getGameCreatureVisuals, getCreatureVisualProgress } from './lib/creature-transformations-api'
+import { getCurrentCreatureVisual, getGameCreatureVisuals, getCreatureVisualProgress, rollbackCreatureVisualVersion } from './lib/creature-transformations-api'
 import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
 import {
   acknowledgeReveal,
@@ -57,7 +57,7 @@ function getInitialScreen(): CurrentScreen {
 }
 
 type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null }
-type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ versionNumber: number; visualTraitId: string; conceptName: string }> }
+type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
 
 type ResolutionData = {
   ruleVersion?: string
@@ -703,6 +703,18 @@ function App() {
     await refreshProfile()
   }
 
+  async function handleSelectVisualVersion(targetVersionId: string) {
+    if (!auth.creature || !visualProgress) return
+    await rollbackCreatureVisualVersion({ operation: 'ROLLBACK_CREATURE_VISUAL_VERSION', creatureId: auth.creature.id, targetVersionId, expectedCurrentVisualVersionId: visualProgress.currentVersion.id })
+    const [visual, progression] = await Promise.all([
+      getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: auth.creature.id }),
+      getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: auth.creature.id }),
+    ])
+    setOfficialVisual(visual.visual)
+    setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history })
+    await refreshProfile()
+  }
+
   async function handleLogout() {
     clearStoredSession()
     setSnapshot(null)
@@ -787,6 +799,8 @@ function App() {
               visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
               visualProgress={visualProgress?.track}
               visualHistory={visualProgress?.history}
+              currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
+              onSelectVisualVersion={isCreatureVisualProgressionEnabled && visualProgress ? handleSelectVisualVersion : undefined}
               onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
               onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
             />

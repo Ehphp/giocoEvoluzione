@@ -446,6 +446,14 @@ async function toCurrentVisualResponse(input: GenerateImageEdgeOrchestrationInpu
     } as const
 }
 
+async function toVisualHistoryResponse(input: GenerateImageEdgeOrchestrationInput, profileId: string, creatureId: string) {
+    const versions = await input.visualRepository.listVisualHistory({ profileId, creatureId })
+    return Promise.all(versions.map(async (version) => {
+        const signed = await input.storage.createVisualVersionSignedUrl({ assetPath: version.assetPath, isBaseVersion: version.visualTraitId === null })
+        return { id: version.id, versionNumber: version.versionNumber, visualTraitId: version.visualTraitId, conceptName: version.conceptName, signedUrl: signed.signedUrl, expiresAt: signed.expiresAt }
+    }))
+}
+
 async function restoreVisualTrackAfterFailure(input: GenerateImageEdgeOrchestrationInput, trackId: string, record: CreatureTransformationRequestRecord) {
     try {
         await input.visualRepository.completeGeneration({ profileId: input.profileId!, trackId, requestId: record.id, finalAsset: false })
@@ -519,7 +527,7 @@ export async function orchestrateSelectCreatureVisualProgressTrack(input: Creatu
         const track = await input.visualRepository.selectTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId, visualTraitId: parsed.request.visualTraitId, target: input.policy.visualProgression.winsRequired })
         const current = await input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId })
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
-        return { success: true, requestId: input.requestId, track, lastExperiment: null, lastFailure: null, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }) }
+        return { success: true, requestId: input.requestId, track, lastExperiment: null, lastFailure: null, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId) }
     } catch (error) {
         const details = mapThrownError(error); return failure(input.requestId, details.code, details.message)
     }
@@ -532,10 +540,9 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
     const access = visualProgressionReadAccessFailure(input.policy)
     if (access) return failure(input.requestId, access.code, access.message)
     try {
-        const [initialTrack, current, history] = await Promise.all([
+        const [initialTrack, current] = await Promise.all([
             input.visualRepository.getTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
             input.visualRepository.getCurrentVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
-            input.visualRepository.listHistory({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
         ])
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
         const track = initialTrack?.status === 'GENERATED' && initialTrack.generatedRequestId
@@ -550,7 +557,7 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
             input.visualRepository.getLatestExperiment({ profileId: input.profileId, trackId: track.id }),
             input.visualRepository.getLatestFailure({ profileId: input.profileId, trackId: track.id }),
         ]) : [null, null]
-        return { success: true, requestId: input.requestId, track, lastExperiment, lastFailure, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history }
+        return { success: true, requestId: input.requestId, track, lastExperiment, lastFailure, currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName }, history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId) }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }
 
