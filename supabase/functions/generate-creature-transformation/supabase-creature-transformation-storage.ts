@@ -58,6 +58,7 @@ function isSafeResultObjectPath(path: string): boolean {
     return /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
         || /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
         || /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
+        || /^cleanup\/[a-f0-9]{64}\.png$/.test(path)
 }
 
 export class SupabaseCreatureTransformationStorageAdapter {
@@ -109,6 +110,11 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return `candidates/${profileSegment}/${requestDigest}.png`
     }
 
+    async createCleanupObjectPath(visualVersionId: string): Promise<string> {
+        const digest = await sha256Hex(new TextEncoder().encode(visualVersionId))
+        return `cleanup/${digest}.png`
+    }
+
     async saveResult(input: {
         profileId: string
         idempotencyKey: string
@@ -124,6 +130,10 @@ export class SupabaseCreatureTransformationStorageAdapter {
 
     async saveBackgroundRemovalCandidate(input: { profileId: string; transformationRequestId: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
         return this.savePng(await this.createCandidateObjectPath(input.profileId, input.transformationRequestId), input.image)
+    }
+
+    async saveCleanedVisual(input: { visualVersionId: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
+        return this.savePng(await this.createCleanupObjectPath(input.visualVersionId), input.image)
     }
 
     private async savePng(objectPath: string, image: Uint8Array): Promise<StoredCreatureTransformationImage> {
@@ -164,8 +174,9 @@ export class SupabaseCreatureTransformationStorageAdapter {
     }
 
     async createVisualVersionSignedUrl(input: { assetPath: string; isBaseVersion: boolean }): Promise<StoredCreatureTransformationImage> {
-        const bucket = input.isBaseVersion ? this.sourceBucket : this.experimentBucket
-        if (input.isBaseVersion && !/^[A-Za-z0-9._/-]{1,512}$/.test(input.assetPath)) {
+        const isCleanupPath = /^cleanup\/[a-f0-9]{64}\.png$/.test(input.assetPath)
+        const bucket = !input.isBaseVersion || isCleanupPath ? this.experimentBucket : this.sourceBucket
+        if (input.isBaseVersion && !isCleanupPath && !/^[A-Za-z0-9._/-]{1,512}$/.test(input.assetPath)) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La sorgente visuale non e valida.')
         }
         if (!input.isBaseVersion && !isSafeResultObjectPath(input.assetPath)) {

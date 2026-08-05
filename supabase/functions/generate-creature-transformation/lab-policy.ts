@@ -55,6 +55,7 @@ export type CreatureTransformationLabPolicy = Readonly<{
         enabled: boolean
         productionGenerationEnabled: boolean
         adoptionEnabled: boolean
+        backgroundCleanupEnabled: boolean
         allowedProfileIds: ReadonlySet<string>
         winsRequired: number
         productionGenerationProfileId: string | null
@@ -118,6 +119,7 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         enabled: readEnvironment('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true',
         productionGenerationEnabled: readEnvironment('CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED') === 'true',
         adoptionEnabled: readEnvironment('CREATURE_VISUAL_ADOPTION_ENABLED') === 'true',
+        backgroundCleanupEnabled: readEnvironment('CREATURE_VISUAL_BACKGROUND_CLEANUP_ENABLED') === 'true',
         allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_VISUAL_PRODUCTION_PROFILE_IDS')),
         winsRequired: readCreatureVisualProgressionWinsRequired(readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED')),
         productionGenerationProfileId: profileId && /^[a-z][a-z0-9-]{1,63}$/.test(profileId) ? profileId : null,

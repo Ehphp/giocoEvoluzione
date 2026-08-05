@@ -1,6 +1,6 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
@@ -11,6 +11,8 @@ const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', '
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64'])
+const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
+const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64'])
 const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId'])
 const GET_VISUAL_PROGRESS_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_CURRENT_VISUAL_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
@@ -33,6 +35,7 @@ export type ParsedGenerateImageRequest =
 export type ParsedGetTransformationRequestStatusRequest =
     | { valid: true; request: GetTransformationRequestStatusRequest }
     | Extract<ParsedCreatureTransformationRequest, { valid: false }>
+export type ParsedVisualBackgroundCleanupRequest<T> = { valid: true; request: T } | Extract<ParsedCreatureTransformationRequest, { valid: false }>
 
 export type ParsedSubmitExperimentReviewRequest =
     | { valid: true; request: SubmitExperimentReviewRequest }
@@ -204,6 +207,19 @@ export function parseSubmitBackgroundRemovalCandidateRequest(value: unknown): Pa
         return { valid: false, code: 'INVALID_REQUEST', message: 'Il candidato PNG non rispetta il contratto.' }
     }
     return { valid: true, request: { operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: body.candidatePngBase64 } }
+}
+
+export function parseListVisualBackgroundCleanupRequest(value: unknown): ParsedVisualBackgroundCleanupRequest<ListVisualBackgroundCleanupRequest> {
+    const body = asRecord(value)
+    if (!body || !hasOnlyFields(body, VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS) || body.operation !== 'LIST_VISUAL_BACKGROUND_CLEANUP') return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta batch non rispetta il contratto.' }
+    return { valid: true, request: { operation: 'LIST_VISUAL_BACKGROUND_CLEANUP' } }
+}
+
+export function parseSubmitVisualBackgroundCleanupRequest(value: unknown): ParsedVisualBackgroundCleanupRequest<SubmitVisualBackgroundCleanupRequest> {
+    const body = asRecord(value)
+    const visualVersionId = body ? readUuid(body, 'visualVersionId') : null
+    if (!body || !hasOnlyFields(body, VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS) || body.operation !== 'SUBMIT_VISUAL_BACKGROUND_CLEANUP' || !visualVersionId || typeof body.candidatePngBase64 !== 'string' || !body.candidatePngBase64.length || body.candidatePngBase64.length > 14_000_000) return { valid: false, code: 'INVALID_REQUEST', message: 'Il PNG batch non rispetta il contratto.' }
+    return { valid: true, request: { operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId, candidatePngBase64: body.candidatePngBase64 } }
 }
 
 export function parseSelectCreatureVisualProgressTrackRequest(value: unknown): ParsedVisualProgressRequest<SelectCreatureVisualProgressTrackRequest> {

@@ -89,6 +89,27 @@ export type SubmitBackgroundRemovalCandidateResponse = {
     }
 }
 
+export type ListVisualBackgroundCleanupResponse = {
+    success: true
+    requestId: string
+    entries: Array<{
+        visualVersionId: string
+        creatureId: string
+        profileId: string
+        versionNumber: number
+        signedUrl: string
+        expiresAt: string
+    }>
+}
+
+export type SubmitVisualBackgroundCleanupResponse = {
+    success: true
+    requestId: string
+    visualVersionId: string
+    creatureId: string
+    versionNumber: number
+}
+
 export type SubmitExperimentReviewResponse = {
     success: true
     requestId: string
@@ -216,4 +237,4 @@ export type TransformationRequestStatusResponse = {
 
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

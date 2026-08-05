@@ -13,6 +13,7 @@ import { ProfileScreen } from './components/profile/ProfileScreen'
 import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
 import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
 import { CreatureVisualProgressionScreen } from './components/creature-visual-progression/CreatureVisualProgressionScreen'
+import { VisualBackgroundCleanupScreen } from './components/visual-background-cleanup/VisualBackgroundCleanupScreen'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
 import { getRoundExplanation } from './game/round-result-explainer'
@@ -40,15 +41,18 @@ import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSessio
 import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
-type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab' | 'creature-evolution'
+type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
 
 const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
 const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
+const isVisualBackgroundCleanupEnabled = import.meta.env.VITE_CREATURE_VISUAL_BACKGROUND_CLEANUP_ENABLED === 'true'
 const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
+const VISUAL_BACKGROUND_CLEANUP_HASH = '#visual-background-cleanup'
 
 function getInitialScreen(): CurrentScreen {
   if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) return 'creature-transformation-lab'
   if (isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH) return 'creature-evolution'
+  if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) return 'visual-background-cleanup'
   return 'home'
 }
 
@@ -175,7 +179,7 @@ function App() {
   }, [authStatus])
 
   useEffect(() => {
-    if (!isCreatureTransformationLabEnabled && !isCreatureVisualProgressionEnabled) {
+    if (!isCreatureTransformationLabEnabled && !isCreatureVisualProgressionEnabled && !isVisualBackgroundCleanupEnabled) {
       return
     }
 
@@ -185,6 +189,8 @@ function App() {
           ? 'creature-transformation-lab'
           : isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH
             ? 'creature-evolution'
+            : isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH
+              ? 'visual-background-cleanup'
             : 'home',
       )
     }
@@ -672,10 +678,23 @@ function App() {
     setCurrentScreen('home')
   }
 
+  function handleLeaveVisualBackgroundCleanup() {
+    if (window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+    setCurrentScreen('profile')
+  }
+
   function handleOpenCreatureEvolution() {
     if (!isCreatureVisualProgressionEnabled) return
     window.location.hash = CREATURE_VISUAL_PROGRESSION_HASH
     setCurrentScreen('creature-evolution')
+  }
+
+  function handleOpenVisualBackgroundCleanup() {
+    if (!isVisualBackgroundCleanupEnabled) return
+    window.location.hash = VISUAL_BACKGROUND_CLEANUP_HASH
+    setCurrentScreen('visual-background-cleanup')
   }
 
   async function handleVisualChanged() {
@@ -749,6 +768,11 @@ function App() {
               onBack={handleLeaveCreatureEvolution}
               onVisualChanged={handleVisualChanged}
             />
+          ) : !snapshot && currentScreen === 'visual-background-cleanup' && isVisualBackgroundCleanupEnabled ? (
+            <VisualBackgroundCleanupScreen
+              onBack={handleLeaveVisualBackgroundCleanup}
+              onVisualChanged={handleVisualChanged}
+            />
           ) : !snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
             <ProfileScreen
               profile={auth.profile}
@@ -764,6 +788,7 @@ function App() {
               visualProgress={visualProgress?.track}
               visualHistory={visualProgress?.history}
               onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
+              onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
             />
           ) : !snapshot ? (
             <HomeScreen

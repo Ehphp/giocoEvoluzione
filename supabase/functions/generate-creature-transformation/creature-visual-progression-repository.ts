@@ -43,7 +43,7 @@ function safeVisualErrorCode(error: unknown, fallback: string): string {
     const message = error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string'
         ? (error as { message: string }).message
         : ''
-    const code = message.match(/\b(CREATURE_NOT_OWNED|VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED)\b/)?.[1]
+    const code = message.match(/\b(CREATURE_NOT_OWNED|VISUAL_TRACK_ALREADY_ACTIVE|VISUAL_TRACK_NOT_FOUND|VISUAL_TRACK_NOT_READY|VISUAL_TRACK_STATE_CONFLICT|VISUAL_TRAIT_INVALID|VISUAL_GENERATION_NOT_ADOPTABLE|VISUAL_VERSION_NOT_FOUND|CREATURE_VISUAL_VERSION_CONFLICT|CREATURE_VISUAL_ALREADY_ADOPTED|VISUAL_ROLLBACK_FAILED|BACKGROUND_CLEANUP_VERSION_CONFLICT|BACKGROUND_CLEANUP_CANDIDATE_INVALID)\b/)?.[1]
     return code ?? fallback
 }
 
@@ -114,6 +114,19 @@ export class SupabaseCreatureVisualProgressionRepository {
         return row && string(row.id) && string(row.error_code) && string(row.error_message)
             ? { requestId: string(row.id)!, code: string(row.error_code)!, message: string(row.error_message)! }
             : null
+    }
+
+    async listActiveVisualsForCleanup(): Promise<StoredVisualVersion[]> {
+        const { data, error } = await this.client.from('creature_visual_versions').select('*').eq('status', 'ACTIVE').order('created_at', { ascending: true }).limit(100)
+        if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare le visuali da ripulire.', { cause: error })
+        return (Array.isArray(data) ? data : []).map(mapVisualVersion)
+    }
+
+    async promoteCleanedVisual(input: { visualVersionId: string; assetPath: string; assetSha256: string; width: number; height: number }): Promise<StoredVisualVersion> {
+        return mapVisualVersion(await this.rpc('promote_cleaned_creature_visual', {
+            p_visual_version_id: input.visualVersionId, p_asset_path: input.assetPath,
+            p_asset_sha256: input.assetSha256, p_width: input.width, p_height: input.height,
+        }))
     }
 
     async getCurrentVersion(input: { profileId: string; creatureId: string }): Promise<StoredVisualVersion | null> {

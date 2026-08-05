@@ -13,9 +13,14 @@ import type {
     AdoptCreatureTransformationRequest,
     RollbackCreatureVisualVersionRequest,
     GetBenchmarkResultsRequest,
+    GetBenchmarkResultsResponse,
     GetTransformationRequestStatusRequest,
     SubmitExperimentReviewRequest,
     SubmitBackgroundRemovalCandidateRequest,
+    ListVisualBackgroundCleanupRequest,
+    SubmitVisualBackgroundCleanupRequest,
+    ListVisualBackgroundCleanupResponse,
+    SubmitVisualBackgroundCleanupResponse,
     TransformationRequestStatusResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
@@ -38,7 +43,7 @@ export class CreatureTransformationApiError extends Error {
     }
 }
 
-type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitBackgroundRemovalCandidateRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
 
 export type CreatureTransformationFunctionInvoker = {
     invoke: (name: string, options: { body: CreatureTransformationFunctionRequest; headers?: Record<string, string> }) => Promise<{ data: unknown; error: unknown }>
@@ -176,8 +181,8 @@ export async function submitCreatureTransformationExperimentReview(
 export async function getCreatureTransformationBenchmarkResults(
     request: GetBenchmarkResultsRequest = { operation: 'GET_BENCHMARK_RESULTS' },
     invoker?: CreatureTransformationFunctionInvoker,
-): Promise<Extract<CreatureTransformationApiResponse, { success: true, entries: unknown }>> {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, entries: unknown }>>(request, invoker)
+): Promise<GetBenchmarkResultsResponse> {
+    return invokeCreatureTransformation<GetBenchmarkResultsResponse>(request, invoker)
 }
 
 export async function selectCreatureVisualProgressTrack(request: SelectCreatureVisualProgressTrackRequest, invoker?: CreatureTransformationFunctionInvoker) {
@@ -202,6 +207,14 @@ export async function generateUnlockedCreatureTransformation(request: GenerateUn
 
 export async function submitBackgroundRemovalCandidate(request: SubmitBackgroundRemovalCandidateRequest, invoker?: CreatureTransformationFunctionInvoker) {
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, candidate: unknown }>>(request, invoker)
+}
+
+export async function listVisualBackgroundCleanup(request: ListVisualBackgroundCleanupRequest = { operation: 'LIST_VISUAL_BACKGROUND_CLEANUP' }, invoker?: CreatureTransformationFunctionInvoker): Promise<ListVisualBackgroundCleanupResponse> {
+    return invokeCreatureTransformation<ListVisualBackgroundCleanupResponse>(request, invoker)
+}
+
+export async function submitVisualBackgroundCleanup(request: SubmitVisualBackgroundCleanupRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<SubmitVisualBackgroundCleanupResponse> {
+    return invokeCreatureTransformation<SubmitVisualBackgroundCleanupResponse>(request, invoker)
 }
 
 

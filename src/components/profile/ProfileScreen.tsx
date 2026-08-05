@@ -18,6 +18,7 @@ type ProfileScreenProps = {
     visualTrait?: string | null
     visualProgress?: { progress: number; target: number; status: string } | null
     onOpenEvolution?: () => void
+    onOpenBackgroundCleanup?: () => void
     visualHistory?: ReadonlyArray<{ versionNumber: number; visualTraitId: string; conceptName: string }>
 }
 
@@ -40,6 +41,7 @@ export function ProfileScreen({
     visualTrait,
     visualProgress,
     onOpenEvolution,
+    onOpenBackgroundCleanup,
     visualHistory,
 }: ProfileScreenProps) {
     const experience = getExperienceProgress(creature.experience)
@@ -69,6 +71,7 @@ export function ProfileScreen({
                 <div><span>Versione visuale</span><strong>{visualVersionNumber ?? 1}</strong><small>{visualTrait ?? 'Forma base'}</small></div>
                 {visualProgress ? <div><span>Percorso visivo</span><strong>{visualProgress.status === 'READY' ? 'Trasformazione sbloccata' : `${visualProgress.progress} / ${visualProgress.target} vittorie`}</strong></div> : null}
                 {onOpenEvolution ? <button type="button" onClick={onOpenEvolution}>Apri evoluzione</button> : null}
+                {onOpenBackgroundCleanup ? <button type="button" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</button> : null}
             </section>
             {visualHistory?.length ? <section className="profile-screen__visual-history"><h2>Storico visuale</h2><ol>{visualHistory.map((entry) => <li key={entry.versionNumber}>v{entry.versionNumber} · {entry.visualTraitId} · {entry.conceptName}</li>)}</ol></section> : null}
 

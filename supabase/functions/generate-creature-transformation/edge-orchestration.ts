@@ -6,6 +6,8 @@ import type {
     GenerateImageApiResponse,
     GenerateImageResponse,
     SubmitBackgroundRemovalCandidateResponse,
+    ListVisualBackgroundCleanupResponse,
+    SubmitVisualBackgroundCleanupResponse,
     GetBenchmarkResultsResponse,
     CreatureVisualProgressResponse,
     CurrentCreatureVisualApiResponse,
@@ -31,7 +33,7 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import {
     CreatureTransformationRequestRepositoryError,
     type CreatureTransformationRequestRecord,
@@ -144,14 +146,14 @@ function withImagePersistence(response: GeneratedImageResponse, record: Creature
 export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'METHOD_NOT_ALLOWED') return 405
     if (code === 'UNAUTHENTICATED') return 401
-    if (code === 'LAB_DISABLED' || code === 'CONCEPT_MODE_NOT_ALLOWED' || code === 'IMAGE_PROVIDER_MODE_NOT_ALLOWED' || code === 'CREATURE_NOT_OWNED' || code === 'REAL_IMAGE_PROVIDER_DISABLED' || code === 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' || code === 'IMAGE_GENERATION_NOT_ALLOWED' || code === 'BENCHMARK_NOT_ALLOWED' || code === 'BENCHMARK_REVIEWER_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'VISUAL_PROFILE_NOT_ALLOWED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
+    if (code === 'LAB_DISABLED' || code === 'CONCEPT_MODE_NOT_ALLOWED' || code === 'IMAGE_PROVIDER_MODE_NOT_ALLOWED' || code === 'CREATURE_NOT_OWNED' || code === 'REAL_IMAGE_PROVIDER_DISABLED' || code === 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' || code === 'IMAGE_GENERATION_NOT_ALLOWED' || code === 'BENCHMARK_NOT_ALLOWED' || code === 'BENCHMARK_REVIEWER_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'BACKGROUND_CLEANUP_DISABLED' || code === 'VISUAL_PROFILE_NOT_ALLOWED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
     if (code === 'CREATURE_NOT_FOUND' || code === 'SOURCE_IMAGE_NOT_FOUND' || code === 'REQUEST_NOT_FOUND' || code === 'VISUAL_TRACK_NOT_FOUND' || code === 'VISUAL_VERSION_NOT_FOUND' || code === 'CURRENT_VISUAL_UNAVAILABLE') return 404
     if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
     if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
-    if (code === 'PNG_ALPHA_COVERAGE_INVALID' || code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID') return 422
+    if (code === 'PNG_ALPHA_COVERAGE_INVALID' || code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID' || code === 'BACKGROUND_CLEANUP_CANDIDATE_INVALID') return 422
     if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
-    if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE') return 409
+    if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE' || code === 'BACKGROUND_CLEANUP_VERSION_CONFLICT') return 409
     if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH') return 422
     if (code === 'AI_AUTHENTICATION_FAILED' || code === 'AI_PERMISSION_DENIED' || code === 'AI_NETWORK_ERROR' || code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID') return 502
     if (code === 'REQUEST_RESERVATION_FAILED' || code === 'REQUEST_PERSISTENCE_FAILED' || code === 'INTERNAL_ERROR' || code === 'CREATURE_LOOKUP_FAILED') return 500
@@ -696,6 +698,50 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
     }
 }
 
+function backgroundCleanupAccessFailure(policy: CreatureTransformationLabPolicy): FailureDetails | null {
+    return policy.visualProgression.backgroundCleanupEnabled ? null : { code: 'BACKGROUND_CLEANUP_DISABLED', message: 'La pulizia batch delle visuali non e abilitata.' }
+}
+
+export async function orchestrateListVisualBackgroundCleanup(input: GenerateImageEdgeOrchestrationInput): Promise<ListVisualBackgroundCleanupResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseListVisualBackgroundCleanupRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const access = backgroundCleanupAccessFailure(input.policy)
+    if (access) return failure(input.requestId, access.code, access.message)
+    try {
+        const versions = await input.visualRepository.listActiveVisualsForCleanup()
+        const entries = await Promise.all(versions.map(async (version) => {
+            const signed = await input.storage.createVisualVersionSignedUrl({ assetPath: version.assetPath, isBaseVersion: version.visualTraitId === null })
+            return { visualVersionId: version.id, creatureId: version.creatureId, profileId: version.profileId, versionNumber: version.versionNumber, signedUrl: signed.signedUrl, expiresAt: signed.expiresAt }
+        }))
+        return { success: true, requestId: input.requestId, entries }
+    } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
+}
+
+export async function orchestrateSubmitVisualBackgroundCleanup(input: GenerateImageEdgeOrchestrationInput): Promise<SubmitVisualBackgroundCleanupResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseSubmitVisualBackgroundCleanupRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const access = backgroundCleanupAccessFailure(input.policy)
+    if (access) return failure(input.requestId, access.code, access.message)
+    const bytes = decodeBackgroundRemovalCandidate(parsed.request.candidatePngBase64)
+    if (!bytes) return failure(input.requestId, 'BACKGROUND_CLEANUP_CANDIDATE_INVALID', 'Il PNG ripulito non puo essere decodificato.')
+    const validation = await (input.validator ?? new ImageValidator()).validate({
+        bytes, mimeType: 'image/png', renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        requireAlphaCoverage: true, requireTransparentEdges: true,
+    })
+    if (!validation.valid) return failure(input.requestId, 'BACKGROUND_CLEANUP_CANDIDATE_INVALID', 'Il PNG ripulito non ha superato la validazione alpha.', validation.problems)
+    try {
+        const assetPath = await input.storage.createCleanupObjectPath(parsed.request.visualVersionId)
+        await input.storage.saveCleanedVisual({ visualVersionId: parsed.request.visualVersionId, image: bytes })
+        const version = await input.visualRepository.promoteCleanedVisual({
+            visualVersionId: parsed.request.visualVersionId, assetPath, assetSha256: validation.metadata.sha256,
+            width: validation.metadata.width, height: validation.metadata.height,
+        })
+        return { success: true, requestId: input.requestId, visualVersionId: version.id, creatureId: version.creatureId, versionNumber: version.versionNumber }
+    } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message, details.problems) }
+}
+
 export async function orchestrateAdoptCreatureTransformation(input: CreatureTransformationEdgeOrchestrationInput): Promise<AdoptCreatureTransformationResponse | CreatureTransformationErrorResponse> {
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseAdoptCreatureTransformationRequest(input.body)
@@ -994,6 +1040,8 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     if (operation === 'GENERATE_IMAGE') return orchestrateGenerateImage(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
     if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
+    if (operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return orchestrateListVisualBackgroundCleanup(input)
+    if (operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return orchestrateSubmitVisualBackgroundCleanup(input)
     if (operation === 'GET_REQUEST_STATUS') return orchestrateGetTransformationRequestStatus(input)
     if (operation === 'SUBMIT_EXPERIMENT_REVIEW') return orchestrateSubmitExperimentReview(input)
     if (operation === 'GET_BENCHMARK_RESULTS') return orchestrateGetBenchmarkResults(input)

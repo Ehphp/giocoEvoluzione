@@ -83,6 +83,16 @@ export type SubmitBackgroundRemovalCandidateRequest = {
     candidatePngBase64: string
 }
 
+export type ListVisualBackgroundCleanupRequest = {
+    operation: 'LIST_VISUAL_BACKGROUND_CLEANUP'
+}
+
+export type SubmitVisualBackgroundCleanupRequest = {
+    operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP'
+    visualVersionId: string
+    candidatePngBase64: string
+}
+
 
 export type SelectCreatureVisualProgressTrackRequest = {
     operation: 'SELECT_VISUAL_PROGRESS_TRACK'
@@ -128,4 +138,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
