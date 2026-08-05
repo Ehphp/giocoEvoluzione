@@ -13,6 +13,7 @@ export interface CreatureVisualProgressionRepositoryClient {
 export type StoredVisualVersion = CreatureVisualVersion & Readonly<{ assetPath: string; profileId: string }>
 export type GameVisualParticipant = Readonly<{ profileId: string; creatureId: string }>
 export type StoredExperimentOnlyResult = Readonly<{ requestId: string; warnings: string[] }>
+export type StoredVisualGenerationFailure = Readonly<{ requestId: string; code: string; message: string }>
 
 export class CreatureVisualProgressionRepositoryError extends Error {
     readonly code: string
@@ -103,6 +104,15 @@ export class SupabaseCreatureVisualProgressionRepository {
         const row = record(data)
         return row && string(row.id) && row.asset_readiness === 'EXPERIMENT_ONLY'
             ? { requestId: string(row.id)!, warnings: strings(row.validation_warnings) }
+            : null
+    }
+
+    async getLatestFailure(input: { profileId: string; trackId: string }): Promise<StoredVisualGenerationFailure | null> {
+        const { data, error } = await this.client.from('creature_transformation_requests').select('id, error_code, error_message').eq('profile_id', input.profileId).eq('visual_progress_track_id', input.trackId).eq('status', 'FAILED').order('completed_at', { ascending: false }).limit(1).maybeSingle()
+        if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare l errore di generazione.', { cause: error })
+        const row = record(data)
+        return row && string(row.id) && string(row.error_code) && string(row.error_message)
+            ? { requestId: string(row.id)!, code: string(row.error_code)!, message: string(row.error_message)! }
             : null
     }
 

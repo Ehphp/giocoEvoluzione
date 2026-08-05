@@ -144,6 +144,7 @@ export type CreatureVisualProgressResponse = Readonly<{
     requestId: string
     track: CreatureVisualProgressTrack | null
     lastExperiment: { requestId: string; warnings: string[] } | null
+    lastFailure: { requestId: string; code: string; message: string } | null
     currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
     history: readonly PreviousCreatureTransformationSummary[]
 }>

@@ -8,7 +8,7 @@ import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import './CreatureVisualProgressionScreen.css'
 
 type Track = { id: string; status: 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'; visualTraitId: VisualTraitId; progress: number; target: number; generatedRequestId: string | null }
-type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId; conceptName: string }> }
+type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; lastFailure: { requestId: string; code: string; message: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId; conceptName: string }> }
 type Preview = { requestId: string; sourceUrl: string | null; resultUrl: string | null; sourceVersionId: string; conceptName: string; evolutionaryFunction: string; visualTraitId: VisualTraitId; warnings: string[] }
 type ExperimentOnlyResult = { requestId: string; warnings: string[] }
 type Props = { creature: PlayerCreatureRecord; onBack: () => void; onVisualChanged: () => Promise<void> | void }
@@ -42,6 +42,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const refresh = useCallback(async () => {
         const result = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as unknown as ProgressResponse
         setProgress(result); setExperimentOnly(result.lastExperiment)
+        if (result.track?.status === 'READY' && result.lastFailure) {
+            setError(`Generazione non riuscita (${result.lastFailure.code}): ${result.lastFailure.message}`)
+        }
         const requestId = result.track?.generatedRequestId
         if (result.track?.status !== 'GENERATED' || !requestId) { setPreview(null); return }
         const [status, source] = await Promise.all([

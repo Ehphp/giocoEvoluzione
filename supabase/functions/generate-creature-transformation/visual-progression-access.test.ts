@@ -26,10 +26,17 @@ function version(profileId: string, creatureId: string, visualTraitId: StoredVis
     }
 }
 
-function visualRepository(): SupabaseCreatureVisualProgressionRepository {
+function visualRepository(lastFailure: { requestId: string; code: string; message: string } | null = null): SupabaseCreatureVisualProgressionRepository {
     return {
-        async getTrack() { return null },
+        async getTrack() {
+            return lastFailure ? {
+                id: 'track-1', creatureId: CREATURE_ID, visualTraitId: 'IMPACT_ADAPTATION',
+                status: 'READY', progress: 3, target: 3, readyAt: '2026-08-05T09:00:00.000Z',
+                generatedRequestId: null, completedVersionId: null,
+            } : null
+        },
         async getLatestExperiment() { return null },
+        async getLatestFailure() { return lastFailure },
         async listHistory() { return [] },
         async getCurrentVersion({ profileId, creatureId }) {
             return version(profileId, creatureId, profileId === PILOT_PROFILE ? 'IMPACT_ADAPTATION' : null)
@@ -66,6 +73,12 @@ describe('visual progression access', () => {
             .resolves.toMatchObject({ success: true, currentVersion: { versionNumber: 1 } })
         await expect(orchestrateGetCurrentCreatureVisual(input({ operation: 'GET_CURRENT_VISUAL', creatureId: CREATURE_ID }) as never))
             .resolves.toMatchObject({ success: true, visual: { signedUrl: 'https://signed.example/verdant-hatchling-v1.png' } })
+    })
+
+    it('returns the latest failed generation for an otherwise ready track', async () => {
+        const failure = { requestId: 'failed-request', code: 'REAL_IMAGE_PROVIDER_FAILED', message: 'Il provider immagini non ha completato la richiesta.' }
+        await expect(orchestrateGetCreatureVisualProgress({ ...input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }), visualRepository: visualRepository(failure) } as never))
+            .resolves.toMatchObject({ success: true, lastFailure: failure })
     })
 
     it('shares the opponent current visual only with a participant of that game', async () => {
