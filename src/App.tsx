@@ -191,7 +191,7 @@ function App() {
             ? 'creature-evolution'
             : isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH
               ? 'visual-background-cleanup'
-            : 'home',
+              : 'home',
       )
     }
 
@@ -751,10 +751,10 @@ function App() {
           </div>
         </section>
       ) : !snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature) ? (
-          <AuthScreen
-            initialError={auth.error}
-            onSignIn={auth.signIn}
-          />
+        <AuthScreen
+          initialError={auth.error}
+          onSignIn={auth.signIn}
+        />
       ) : (
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
           {!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature ? (
@@ -1031,75 +1031,75 @@ function RoundResultModal({ snapshot, resolutionData, onContinue, isBusy, errorM
       }}
     >
       <section ref={contentRef} className="round-result-screen" aria-live="polite" onPointerDown={skipRevealAnimation} tabIndex={-1}>
-      <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
-        <span className="eyebrow">Esito round {snapshot.game.current_round} · {roundEventLabel}</span>
-        <h2>{outcomeTitle}</h2>
-        <div
-          className={`round-result-hero__values ${animationPhase < 1 ? 'is-hidden' : ''}`}
-          aria-label={`Valore tuo ${myRoundValue}, avversario ${opponentRoundValue}`}
-        >
-          <p>
-            <span>Tu</span>
-            <strong>{myRoundValue}</strong>
-          </p>
-          <p>
-            <span>Avversario</span>
-            <strong>{opponentRoundValue}</strong>
-          </p>
+        <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
+          <span className="eyebrow">Esito round {snapshot.game.current_round} · {roundEventLabel}</span>
+          <h2>{outcomeTitle}</h2>
+          <div
+            className={`round-result-hero__values ${animationPhase < 1 ? 'is-hidden' : ''}`}
+            aria-label={`Valore tuo ${myRoundValue}, avversario ${opponentRoundValue}`}
+          >
+            <p>
+              <span>Tu</span>
+              <strong>{myRoundValue}</strong>
+            </p>
+            <p>
+              <span>Avversario</span>
+              <strong>{opponentRoundValue}</strong>
+            </p>
+          </div>
+          <p className="round-result-hero__subtitle">{winnerNickname ? `${winnerNickname} vince il round.` : 'Nessun vincitore nel round.'}</p>
+          {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l’animazione</small> : null}
         </div>
-        <p className="round-result-hero__subtitle">{winnerNickname ? `${winnerNickname} vince il round.` : 'Nessun vincitore nel round.'}</p>
-        {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l’animazione</small> : null}
-      </div>
 
-      {errorMessage ? <p className="message error" role="alert">{errorMessage}</p> : null}
+        {errorMessage ? <p className="message error" role="alert">{errorMessage}</p> : null}
 
-      <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
-        {!hasCurrentRuleVersion ? (
-          <p className="round-breakdown-card__legacy" role="status">
-            Risultato calcolato con regole non riconosciute. Distribuisci la Edge Function aggiornata e avvia una nuova partita.
-          </p>
-        ) : null}
-        <RoundBreakdownCard
-          title={snapshot.me?.nickname ?? 'Tu'}
-          action={myResolvedAction}
-          breakdown={myBreakdown}
-          total={myRoundValue}
-          awardedPoints={myRoundPoints}
-          roundEventLabel={roundEventLabel}
-          showContributions={animationPhase >= 2}
-          showTotal={animationPhase >= 3}
-          isMe
-        />
-        <RoundBreakdownCard
-          title={snapshot.opponent?.nickname ?? 'Avversario'}
-          action={opponentResolvedAction}
-          breakdown={opponentBreakdown}
-          total={opponentRoundValue}
-          awardedPoints={opponentRoundPoints}
-          roundEventLabel={roundEventLabel}
-          showContributions={animationPhase >= 2}
-          showTotal={animationPhase >= 3}
-        />
-      </div>
+        <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
+          {!hasCurrentRuleVersion ? (
+            <p className="round-breakdown-card__legacy" role="status">
+              Risultato calcolato con regole non riconosciute. Distribuisci la Edge Function aggiornata e avvia una nuova partita.
+            </p>
+          ) : null}
+          <RoundBreakdownCard
+            title={snapshot.me?.nickname ?? 'Tu'}
+            action={myResolvedAction}
+            breakdown={myBreakdown}
+            total={myRoundValue}
+            awardedPoints={myRoundPoints}
+            roundEventLabel={roundEventLabel}
+            showContributions={animationPhase >= 2}
+            showTotal={animationPhase >= 3}
+            isMe
+          />
+          <RoundBreakdownCard
+            title={snapshot.opponent?.nickname ?? 'Avversario'}
+            action={opponentResolvedAction}
+            breakdown={opponentBreakdown}
+            total={opponentRoundValue}
+            awardedPoints={opponentRoundPoints}
+            roundEventLabel={roundEventLabel}
+            showContributions={animationPhase >= 2}
+            showTotal={animationPhase >= 3}
+          />
+        </div>
 
-      <p className={`round-result-explanation ${animationPhase < 3 ? 'is-hidden' : ''}`}>{explanation}</p>
+        <p className={`round-result-explanation ${animationPhase < 3 ? 'is-hidden' : ''}`}>{explanation}</p>
 
-      <div className="button-row round-result-screen__actions">
-        <button
-          type="button"
-          className="primary-button"
-          onClick={onContinue}
-          aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
-          disabled={isBusy || snapshot.game.status === 'REVEALING'}
-        >
-          {continueLabel}
-        </button>
-        {snapshot.game.status === 'REVEALING' ? (
-          <span id="round-continue-reason" className="button-row__reason" role="status">
-            Disponibile al termine della rivelazione.
-          </span>
-        ) : null}
-      </div>
+        <div className="button-row round-result-screen__actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={onContinue}
+            aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
+            disabled={isBusy || snapshot.game.status === 'REVEALING'}
+          >
+            {continueLabel}
+          </button>
+          {snapshot.game.status === 'REVEALING' ? (
+            <span id="round-continue-reason" className="button-row__reason" role="status">
+              Disponibile al termine della rivelazione.
+            </span>
+          ) : null}
+        </div>
       </section>
     </div>
   )
