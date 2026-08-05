@@ -35,6 +35,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [progress, setProgress] = useState<ProgressResponse | null>(null)
     const [preview, setPreview] = useState<Preview | null>(null)
     const [experimentOnly, setExperimentOnly] = useState<ExperimentOnlyResult | null>(null)
+    const [lastFailure, setLastFailure] = useState<ProgressResponse['lastFailure']>(null)
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [postProcessingMessage, setPostProcessingMessage] = useState<string | null>(null)
@@ -43,10 +44,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
 
     const refresh = useCallback(async () => {
         const result = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as unknown as ProgressResponse
-        setProgress(result); setExperimentOnly(result.lastExperiment)
-        if (result.track?.status === 'READY' && result.lastFailure) {
-            setError(`Generazione non riuscita (${result.lastFailure.code}): ${result.lastFailure.message}`)
-        }
+        setProgress(result); setExperimentOnly(result.lastExperiment); setLastFailure(result.lastFailure)
         const requestId = result.track?.generatedRequestId
         if (result.track?.status !== 'GENERATED' || !requestId) { setPreview(null); return }
         const [status, source] = await Promise.all([
@@ -138,7 +136,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         {!progress ? <p>Caricamento percorso…</p> : null}
         {progress && !progress.track ? <section className="visual-progression-screen__traits"><h2>Scegli la regione da evolvere</h2><p>Il progresso si ottiene solo con le vittorie.</p><div>{EVOLUTION_TARGETS.map((target) => <button key={target.id} type="button" disabled={busy} onClick={() => void selectTarget(target.id)}><strong>{target.label}</strong><span>{target.description}</span></button>)}</div></section> : null}
         {progress?.track?.status === 'ACTIVE' ? <section className="visual-progression-screen__card"><h2>{currentTarget}</h2><p>Regione in sviluppo. Vittorie ottenute: <strong>{progress.track.progress} / {progress.track.target}</strong></p><progress value={progress.track.progress} max={progress.track.target} /></section> : null}
-        {progress?.track?.status === 'READY' ? <section className="visual-progression-screen__card"><h2>Trasformazione sbloccata</h2><p>{currentTarget} è pronta: puoi generare l’evoluzione della forma attuale.</p><button type="button" disabled={busy} onClick={() => void generate()}>{busy ? 'Avvio…' : 'Inizia evoluzione'}</button><small>Il PNG viene validato dal server dopo la rimozione dello sfondo nel browser.</small></section> : null}
+        {progress?.track?.status === 'READY' ? <section className="visual-progression-screen__card"><h2>Trasformazione sbloccata</h2><p>{currentTarget} è pronta: puoi generare l’evoluzione della forma attuale.</p>{lastFailure ? <aside className="visual-progression-screen__previous-failure" role="status"><strong>Ultimo tentativo non riuscito.</strong><span>{lastFailure.message}</span><small>Codice: {lastFailure.code}</small></aside> : null}<button type="button" disabled={busy} onClick={() => void generate()}>{busy ? 'Avvio…' : 'Inizia evoluzione'}</button><small>Il PNG viene validato dal server dopo la rimozione dello sfondo nel browser.</small></section> : null}
         {progress?.track?.status === 'READY' && experimentOnly ? <aside className="visual-progression-screen__experiment" role="status"><strong>Immagine non adottabile.</strong><span>Il PNG non ha superato la validazione di trasparenza nativa.</span>{experimentOnly.warnings.length ? <small>Diagnostica: {experimentOnly.warnings.join(', ')}</small> : null}</aside> : null}
         {progress?.track?.status === 'GENERATING' ? <section className="visual-progression-screen__card"><h2>Generazione in corso</h2><p>Stiamo preparando il concept e l immagine della tua evoluzione.</p><progress /></section> : null}
         {progress?.track?.status === 'POST_PROCESSING' ? <section className="visual-progression-screen__card"><h2>Rimozione sfondo</h2><p>{postProcessingMessage ?? 'L elaborazione viene eseguita localmente nel browser.'}</p><progress />{!busy && progress.track.generatedRequestId ? <button type="button" onClick={() => void runBackgroundRemoval(progress.track!.generatedRequestId!)}>Riprova rimozione sfondo</button> : null}</section> : null}
