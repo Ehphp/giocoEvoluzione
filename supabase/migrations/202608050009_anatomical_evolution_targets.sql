@@ -45,8 +45,7 @@ create trigger creature_transformation_requests_sync_anatomy_metadata
 before insert or update of concept_snapshot on public.creature_transformation_requests
 for each row execute function public.sync_creature_transformation_anatomy_metadata();
 
-drop function if exists public.select_creature_visual_progress_track(uuid, uuid, text, integer);
-create function public.select_creature_visual_progress_track(
+create or replace function public.select_creature_visual_progress_track(
   p_profile_id uuid, p_creature_id uuid, p_visual_trait_id text, p_evolution_target_id text, p_target integer
 )
 returns jsonb language plpgsql security definer set search_path = public as $$
