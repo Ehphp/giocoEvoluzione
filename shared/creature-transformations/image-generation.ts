@@ -1,5 +1,7 @@
 import type { CreatureRenderSpecification } from './render-specifications.ts'
 
+export type BackgroundGenerationMode = 'SOLID_FOR_POST_PROCESSING' | 'NATIVE_TRANSPARENCY'
+
 export type CreatureImageGenerationInput = {
     requestId: string
     idempotencyKey: string
@@ -12,6 +14,7 @@ export type CreatureImageGenerationInput = {
         sha256: string
     }
     renderSpecification: CreatureRenderSpecification
+    backgroundGenerationMode: BackgroundGenerationMode
 }
 
 export type CreatureImageGenerationResult = {

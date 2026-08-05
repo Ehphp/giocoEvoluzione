@@ -8,11 +8,12 @@ function base64(bytes: Uint8Array): string {
     return btoa(String.fromCharCode(...bytes))
 }
 
-function input() {
+function input(backgroundGenerationMode: 'SOLID_FOR_POST_PROCESSING' | 'NATIVE_TRANSPARENCY' = 'SOLID_FOR_POST_PROCESSING') {
     return {
         requestId: 'http-request-1', idempotencyKey: 'intentional-key-1', prompt: 'SERVER COMPOSED PROMPT ONLY',
         source: { bytes: createTestPng(), mimeType: 'image/png' as const, width: 1024, height: 1536, sha256: 'a'.repeat(64) },
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        backgroundGenerationMode,
     }
 }
 
@@ -59,6 +60,14 @@ describe('OpenAiCreatureImageProvider', () => {
         const standardFetch = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
         await provider(standardFetch).transformCreature(input())
         expect((standardFetch.mock.calls[0][1].body as FormData).get('background')).toBe('opaque')
+    })
+
+    it('preserves native transparency for the explicit GPT experiment', async () => {
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
+
+        await provider(fetchImplementation, { model: 'gpt-image-1.5' }).transformCreature(input('NATIVE_TRANSPARENCY'))
+
+        expect((fetchImplementation.mock.calls[0][1].body as FormData).get('background')).toBe('transparent')
     })
 
     it('maps timeout, rate limit, bad request, moderation, provider error and invalid response without retrying', async () => {

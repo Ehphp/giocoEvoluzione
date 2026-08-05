@@ -1,6 +1,7 @@
 import type { CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { BackgroundGenerationMode } from './image-generation.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION, type CreatureRenderSpecification } from './render-specifications.ts'
 import {
     composeCreatureTransformationPromptTemplateV1,
@@ -23,6 +24,7 @@ export type ComposeCreatureTransformationPromptInput = Readonly<{
     concept: CreatureTransformationConcept
     renderSpecification: CreatureRenderSpecification
     templateVersion: CreaturePromptTemplateVersion
+    backgroundGenerationMode?: BackgroundGenerationMode
     previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }>
 
@@ -134,6 +136,7 @@ export function composeCreatureTransformationPrompt(
 
     const templateInput = {
         ...input,
+        backgroundGenerationMode: input.backgroundGenerationMode ?? 'SOLID_FOR_POST_PROCESSING' as const,
         identity: { ...input.identity, identityFeatures },
         visualTrait,
     }

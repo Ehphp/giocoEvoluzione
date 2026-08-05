@@ -5,6 +5,8 @@ export class CreatureBackgroundRemovalError extends Error {
     }
 }
 
+const BACKGROUND_REMOVAL_MODEL = 'isnet_fp16' as const
+
 export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
     if (rawImage.type && rawImage.type !== 'image/png') {
         throw new CreatureBackgroundRemovalError('Il raw della creatura non e un PNG valido.')
@@ -13,7 +15,7 @@ export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
         const { removeBackground } = await import('@imgly/background-removal')
         const result = await removeBackground(rawImage, {
             device: 'cpu',
-            model: 'isnet_quint8',
+            model: BACKGROUND_REMOVAL_MODEL,
             output: { format: 'image/png' },
         })
         if (result.type !== 'image/png' || !result.size) {

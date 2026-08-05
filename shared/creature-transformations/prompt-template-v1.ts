@@ -1,6 +1,7 @@
 import { resolveColorEvolution, type ColorEvolution, type CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { BackgroundGenerationMode } from './image-generation.ts'
 import type { CreatureRenderSpecification } from './render-specifications.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
 import {
@@ -29,6 +30,7 @@ export type PromptTemplateV1Input = Readonly<{
     concept: CreatureTransformationConcept
     renderSpecification: CreatureRenderSpecification
     visualTrait: VisualTraitDefinition
+    backgroundGenerationMode: BackgroundGenerationMode
     previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }>
 
@@ -64,8 +66,15 @@ function colorEvolutionInstruction(colorEvolution: ColorEvolution): string {
     ].join(' ')
 }
 
+function backgroundInstruction(backgroundGenerationMode: BackgroundGenerationMode): string {
+    if (backgroundGenerationMode === 'NATIVE_TRANSPARENCY') {
+        return 'Use a transparent background. Do not render a checkerboard transparency pattern, scenery, floor, shadow, reflection, glow, aura, particles, smoke, fog, mist, vignette, or coloured rim lighting.'
+    }
+    return 'BACKGROUND FOR AUTOMATIC CUTOUT: Render the creature against one perfectly uniform, solid, opaque and matte background. Choose a single background color that is absent from the creature and maximally different from every part of its body in both hue and brightness. Prefer a vivid chroma color such as magenta, cyan or orange, selecting whichever color has the greatest contrast with the creature dominant palette. The background must contain no gradient, texture, floor, horizon line, scenery, decorative elements, cast shadow, contact shadow, reflection, glow, aura, particles, sparks, smoke, fog, mist or vignette. Use neutral and even studio lighting. Do not allow the background color to spill onto the creature. Do not add colored rim lighting around its silhouette. Keep the entire creature visible, centered and sharply focused, with approximately 10-15% empty background around every extremity. Preserve crisp and clearly separated edges around claws, horns, spikes, fins, wings, tentacles, leaves and other thin anatomical details. Do not render transparency and do not render a checkerboard transparency pattern. The background will be removed by a dedicated post-processing stage.'
+}
+
 export function composeCreatureTransformationPromptTemplateV1(input: PromptTemplateV1Input): CreaturePromptSections {
-    const { concept, identity, renderSpecification, visualTrait } = input
+    const { concept, identity, renderSpecification, visualTrait, backgroundGenerationMode } = input
     const colorEvolution = resolveColorEvolution(concept)
     const bodyAreas = concept.primaryMutation.bodyAreas.map((area) => BODY_AREA_PROMPT_LABELS[area])
     const primaryMutation = MUTATION_ARCHETYPE_PROMPT_LABELS[concept.primaryMutation.mutationArchetype]
@@ -118,7 +127,9 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
         ].join(' '),
         technical: [
             `Output a ${renderSpecification.outputMimeType === 'image/png' ? 'PNG' : renderSpecification.outputMimeType} image at ${renderSpecification.width} × ${renderSpecification.height} pixels.`,
-            'Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature.',
+            'Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part.',
+            backgroundInstruction(backgroundGenerationMode),
+            'Do not crop any part of the creature.',
             renderSpecification.preservePose ? 'Preserve the pose.' : '',
             renderSpecification.preserveComposition ? 'Preserve the composition.' : '',
             renderSpecification.preserveCanvasMargins ? 'Keep the canvas margins intact.' : '',

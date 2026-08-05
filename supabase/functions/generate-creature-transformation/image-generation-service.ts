@@ -2,7 +2,7 @@ import type { GenerateImageErrorResponse, GenerateImageResponse } from '../../..
 import { evaluateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-evaluation.ts'
 import { validateCreatureTransformationConcept } from '../../../shared/creature-transformations/concept-validation.ts'
 import type { CreatureIdentityResolver, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
-import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
+import { CreatureImageProviderError, type BackgroundGenerationMode, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
 import { ImageValidator, type ImageValidationProblem } from '../../../shared/creature-transformations/image-validator.ts'
 import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION } from '../../../shared/creature-transformations/prompt-composer.ts'
 import type { CreaturePromptTemplateVersion } from '../../../shared/creature-transformations/prompt-composer.ts'
@@ -92,6 +92,9 @@ function safeConceptSnapshot(concept: GenerateImageRequest['concept']): Generate
 export async function generateImageForAuthenticatedProfile(
     input: GenerateImageServiceInput,
 ): Promise<GeneratedImageResponse | GenerateImageErrorResponse> {
+    const backgroundGenerationMode: BackgroundGenerationMode = input.storageDestination === 'RAW_EXPERIMENT'
+        ? 'SOLID_FOR_POST_PROCESSING'
+        : 'NATIVE_TRANSPARENCY'
     const validator = input.validator ?? new ImageValidator()
     const resolvedCreature = await input.resolver.resolve({
         profileId: input.profileId,
@@ -121,6 +124,7 @@ export async function generateImageForAuthenticatedProfile(
             concept: validation.concept,
             renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
             templateVersion: input.promptTemplateVersion ?? CREATURE_PROMPT_TEMPLATE_VERSION,
+            backgroundGenerationMode,
             previousTransformations: resolvedCreature.previousTransformations,
         })
         prompt = composed.prompt
@@ -154,6 +158,7 @@ export async function generateImageForAuthenticatedProfile(
                 sha256: validatedSource.metadata.sha256,
             },
             renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+            backgroundGenerationMode,
         })
     } catch (error) {
         if (error instanceof CreatureImageProviderError) {

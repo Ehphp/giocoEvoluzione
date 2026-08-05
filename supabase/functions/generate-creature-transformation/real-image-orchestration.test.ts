@@ -73,8 +73,10 @@ function input(overrides: Partial<Parameters<typeof orchestrateGenerateImage>[0]
     const stored = storage()
     const requests = createInMemoryRequestRepository()
     const tasks: Promise<void>[] = []
+    const backgroundGenerationModes: string[] = []
     const provider: CreatureImageProvider = {
-        async transformCreature() {
+        async transformCreature(generationInput) {
+            backgroundGenerationModes.push(generationInput.backgroundGenerationMode)
             return {
                 image: createTestPng(), mimeType: 'image/png', provider: 'openai-image-api', model: 'configured-image-model', isMock: false,
                 providerRequestId: 'openai-request-1', latencyMs: 25, estimatedCostUsd: 0.12, warnings: [],
@@ -87,7 +89,7 @@ function input(overrides: Partial<Parameters<typeof orchestrateGenerateImage>[0]
         deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) }, repository: requests.repository,
         validator: new AlphaValidatedImageValidator(),
         ...overrides,
-        test: { stored, requests, tasks },
+        test: { stored, requests, tasks, backgroundGenerationModes },
     }
 }
 
@@ -98,6 +100,7 @@ describe('REAL image asynchronous orchestration', () => {
         expect(result).toMatchObject({ success: true, accepted: true, requestPersistence: { status: 'RUNNING', idempotencyStatus: 'CREATED', estimatedCostUsd: 0.12 } })
         expect(prepared.test.tasks).toHaveLength(1)
         await prepared.test.tasks[0]
+        expect(prepared.test.backgroundGenerationModes).toEqual(['NATIVE_TRANSPARENCY'])
         expect(prepared.test.requests.get('profile-1', 'real-key-1')).toMatchObject({
             status: 'SUCCEEDED', provider: 'openai-image-api', model: 'configured-image-model', providerRequestId: 'openai-request-1',
             sourceSha256: expect.stringMatching(/^[a-f0-9]{64}$/), resultSha256: expect.stringMatching(/^[a-f0-9]{64}$/),

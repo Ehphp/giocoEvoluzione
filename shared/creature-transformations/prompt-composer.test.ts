@@ -23,12 +23,17 @@ import { VISUAL_TRAIT_BY_ID, VISUAL_TRAIT_IDS, type VisualTraitId } from './visu
 
 const generator = new MockCreatureConceptGenerator()
 
-function compose(concept: CreatureTransformationConcept, identity = TEST_CREATURE_IDENTITY) {
+function compose(
+    concept: CreatureTransformationConcept,
+    identity = TEST_CREATURE_IDENTITY,
+    backgroundGenerationMode: 'SOLID_FOR_POST_PROCESSING' | 'NATIVE_TRANSPARENCY' = 'SOLID_FOR_POST_PROCESSING',
+) {
     return composeCreatureTransformationPrompt({
         identity,
         concept,
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION,
+        backgroundGenerationMode,
     })
 }
 
@@ -90,8 +95,25 @@ describe('composeCreatureTransformationPrompt', () => {
         expect(result.sections.style).toContain(TEST_CREATURE_IDENTITY.styleDefinition)
         expect(result.sections.technical).toContain('PNG')
         expect(result.sections.technical).toContain('1024 × 1536')
-        expect(result.sections.technical).toContain('uniform, neutral light-grey background')
+        expect(result.sections.technical).toContain('BACKGROUND FOR AUTOMATIC CUTOUT')
         expect(result.sections.technical).toContain('canvas margins')
+    })
+
+    it('uses a solid cutout background without a generic transparent-background request', () => {
+        const technical = compose(createValidConcept()).sections.technical
+
+        expect(technical).toContain('perfectly uniform, solid, opaque and matte background')
+        expect(technical).not.toContain('Use a transparent background')
+        for (const forbidden of ['gradient', 'shadow', 'glow', 'particles', 'checkerboard', 'spill onto the creature']) {
+            expect(technical).toContain(forbidden)
+        }
+    })
+
+    it('keeps native transparency instructions separate from browser post-processing', () => {
+        const technical = compose(createValidConcept(), TEST_CREATURE_IDENTITY, 'NATIVE_TRANSPARENCY').sections.technical
+
+        expect(technical).toContain('Use a transparent background')
+        expect(technical).not.toContain('BACKGROUND FOR AUTOMATIC CUTOUT')
     })
 
     it('makes a requested palette shift visible without retaining contradictory preservation instructions', () => {
@@ -205,7 +227,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. BACKGROUND FOR AUTOMATIC CUTOUT: Render the creature against one perfectly uniform, solid, opaque and matte background. Choose a single background color that is absent from the creature and maximally different from every part of its body in both hue and brightness. Prefer a vivid chroma color such as magenta, cyan or orange, selecting whichever color has the greatest contrast with the creature dominant palette. The background must contain no gradient, texture, floor, horizon line, scenery, decorative elements, cast shadow, contact shadow, reflection, glow, aura, particles, sparks, smoke, fog, mist or vignette. Use neutral and even studio lighting. Do not allow the background color to spill onto the creature. Do not add colored rim lighting around its silhouette. Keep the entire creature visible, centered and sharply focused, with approximately 10-15% empty background around every extremity. Preserve crisp and clearly separated edges around claws, horns, spikes, fins, wings, tentacles, leaves and other thin anatomical details. Do not render transparency and do not render a checkerboard transparency pattern. The background will be removed by a dedicated post-processing stage. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 
@@ -229,7 +251,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. BACKGROUND FOR AUTOMATIC CUTOUT: Render the creature against one perfectly uniform, solid, opaque and matte background. Choose a single background color that is absent from the creature and maximally different from every part of its body in both hue and brightness. Prefer a vivid chroma color such as magenta, cyan or orange, selecting whichever color has the greatest contrast with the creature dominant palette. The background must contain no gradient, texture, floor, horizon line, scenery, decorative elements, cast shadow, contact shadow, reflection, glow, aura, particles, sparks, smoke, fog, mist or vignette. Use neutral and even studio lighting. Do not allow the background color to spill onto the creature. Do not add colored rim lighting around its silhouette. Keep the entire creature visible, centered and sharply focused, with approximately 10-15% empty background around every extremity. Preserve crisp and clearly separated edges around claws, horns, spikes, fins, wings, tentacles, leaves and other thin anatomical details. Do not render transparency and do not render a checkerboard transparency pattern. The background will be removed by a dedicated post-processing stage. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 
@@ -253,7 +275,7 @@ describe('composeCreatureTransformationPrompt', () => {
           Visual style: Illustrazione organica con linee morbide e materiali naturali. Keep an illustrated treatment coherent with the creature. Integrate the mutation naturally into its anatomy. Use controlled detail.
 
           TECHNICAL
-          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. Use a flat, uniform, neutral light-grey background that is easy to segment. Do not use a checkerboard, transparency simulation, scenery, environment, panel, frame, gradient, texture, floor, background cast shadow, external halo, particles, or effects connected to the background. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
+          Output a PNG image at 1024 × 1536 pixels. Show the complete creature centred with a clear, well-separated silhouette and free margin around every body part. BACKGROUND FOR AUTOMATIC CUTOUT: Render the creature against one perfectly uniform, solid, opaque and matte background. Choose a single background color that is absent from the creature and maximally different from every part of its body in both hue and brightness. Prefer a vivid chroma color such as magenta, cyan or orange, selecting whichever color has the greatest contrast with the creature dominant palette. The background must contain no gradient, texture, floor, horizon line, scenery, decorative elements, cast shadow, contact shadow, reflection, glow, aura, particles, sparks, smoke, fog, mist or vignette. Use neutral and even studio lighting. Do not allow the background color to spill onto the creature. Do not add colored rim lighting around its silhouette. Keep the entire creature visible, centered and sharply focused, with approximately 10-15% empty background around every extremity. Preserve crisp and clearly separated edges around claws, horns, spikes, fins, wings, tentacles, leaves and other thin anatomical details. Do not render transparency and do not render a checkerboard transparency pattern. The background will be removed by a dedicated post-processing stage. Do not crop any part of the creature. Preserve the pose. Preserve the composition. Keep the canvas margins intact."
         `)
     })
 

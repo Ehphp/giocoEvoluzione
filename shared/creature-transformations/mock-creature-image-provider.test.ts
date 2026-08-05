@@ -12,6 +12,7 @@ function input() {
         prompt: 'server-side prompt',
         source: { bytes, mimeType: 'image/png' as const, width: 1024, height: 1536, sha256: 'source-hash' },
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        backgroundGenerationMode: 'SOLID_FOR_POST_PROCESSING' as const,
     }
 }
 

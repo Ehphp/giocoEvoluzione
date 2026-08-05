@@ -79,7 +79,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             if (!status.rawResult) throw new Error('Il PNG raw temporaneo non e disponibile.')
             const response = await fetch(status.rawResult.signedUrl)
             if (!response.ok) throw new Error('Non e stato possibile scaricare il PNG raw.')
-            setPostProcessingMessage('Rimozione dello sfondo nel browser...')
+            setPostProcessingMessage('Caricamento del modello di scontorno ad alta qualita: il primo avvio puo richiedere piu tempo...')
             const transparentPng = await removeCreatureBackground(await response.blob())
             const bytes = new Uint8Array(await transparentPng.arrayBuffer())
             const base64 = pngBytesToBase64(bytes)
