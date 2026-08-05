@@ -766,6 +766,7 @@ function App() {
         <AuthScreen
           initialError={auth.error}
           onSignIn={auth.signIn}
+          onSignUp={auth.signUp}
         />
       ) : (
         <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>

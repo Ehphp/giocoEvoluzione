@@ -42,6 +42,7 @@ type AuthContextValue = {
     profile: ProfileRecord | null
     creature: PlayerCreatureRecord | null
     error: string | null
+    signUp: (input: { username: string; password: string }) => Promise<{ requiresEmailConfirmation: boolean }>
     signIn: (input: { username: string; password: string }) => Promise<void>
     signOut: () => Promise<void>
     refreshProfile: () => Promise<void>
@@ -137,6 +138,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await resolveSession(session)
     }, [resolveSession, session])
 
+    const signUp = useCallback(async ({ username, password }: { username: string; password: string }) => {
+        const accountUsername = requireUsername(username)
+        const { data, error: signUpError } = await requireSupabase().auth.signUp({
+            email: getAuthEmail(accountUsername),
+            password,
+            options: {
+                data: { nickname: accountUsername },
+            },
+        })
+
+        if (signUpError) {
+            throw new Error(signUpError.message)
+        }
+
+        return { requiresEmailConfirmation: !data.session }
+    }, [])
+
     const signIn = useCallback(async ({ username, password }: { username: string; password: string }) => {
         const { error: signInError } = await requireSupabase().auth.signInWithPassword({
             email: getAuthEmail(username),
@@ -168,11 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         creature,
         error,
+        signUp,
         signIn,
         signOut,
         refreshProfile,
         updateNickname,
-    }), [creature, error, profile, refreshProfile, session, signIn, signOut, status, updateNickname])
+    }), [creature, error, profile, refreshProfile, session, signIn, signOut, signUp, status, updateNickname])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
