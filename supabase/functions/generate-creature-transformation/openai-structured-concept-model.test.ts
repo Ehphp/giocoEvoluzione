@@ -28,17 +28,38 @@ describe('OpenAiStructuredConceptModel', () => {
         expect(requestBody).toContain('"store":false')
         expect(requestBody).toContain('"type":"json_schema"')
         expect(requestBody).toContain('INVALID_INTENSITY: ripristina il valore richiesto')
-        expect(requestBody).toContain('Always return colorEvolution')
+        expect(requestBody).toContain('Do not return colorEvolution for this legacy trait-based concept')
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.creatureId)
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.baseCreatureKey)
         expect(payload.text.format.schema.properties.schemaVersion).toEqual({ type: 'integer', enum: [1] })
         expect(payload.text.format.schema.properties.visualTrait).toEqual({ type: 'string', enum: [input.visualTrait.id] })
         expect(payload.text.format.schema.properties.intensity).toEqual({ type: 'integer', enum: [input.intensity] })
-        expect(payload.text.format.schema.properties.colorEvolution).toMatchObject({
-            type: 'object',
-            required: expect.arrayContaining(['mode', 'dominantColor', 'affectedBodyAreas', 'biologicalRationale']),
-        })
+        expect(payload.text.format.schema.properties.colorEvolution).toBeUndefined()
         expect(JSON.stringify(payload.text.format.schema)).not.toContain('"const"')
+    })
+
+    it('requires constrained colour evolution for anatomy-targeted concepts', async () => {
+        let requestBody = ''
+        const targetInput = {
+            ...input,
+            evolutionTarget: { id: 'TAIL', primaryBodyAreas: ['TAIL'], supportingBodyAreas: ['BACK'] },
+            evolutionTargetId: 'TAIL' as const,
+            evolutionFunction: 'BALANCE' as const,
+        }
+        const model = new OpenAiStructuredConceptModel({
+            apiKey: 'test-key', model: 'test-model',
+            fetchImplementation: async (_url, options) => {
+                requestBody = String(options?.body)
+                return new Response(JSON.stringify({ output_text: JSON.stringify(createValidConcept()) }), { status: 200 })
+            },
+        })
+
+        await model.generateStructuredConcept(targetInput)
+
+        const schema = (JSON.parse(requestBody) as { text: { format: { schema: { required: string[], properties: Record<string, unknown> } } } }).text.format.schema
+        expect(requestBody).toContain('Always return colorEvolution')
+        expect(schema.required).toContain('colorEvolution')
+        expect(schema.properties.colorEvolution).toMatchObject({ type: 'object' })
     })
 
     it('maps malformed output and provider statuses without retries', async () => {

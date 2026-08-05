@@ -74,7 +74,9 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Allowed mutation archetypes: ${input.visualTrait.allowedMutationArchetypes.join(', ')}.`,
         `Creative limits: at most ${input.visualTrait.creativeLimits.maxPrimaryBodyAreas} primary body areas and ${input.visualTrait.creativeLimits.maxSecondaryMutations} secondary mutations.`,
         'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
-        'Always return colorEvolution. Use PRESERVE with intensity 0 when no chromatic adaptation serves the trait. Otherwise use EXPAND at intensity 1 or 2 for visible, material-linked hues, or SHIFT at intensity 2 or 3 when the dominant palette should evolve. At intensity 2 and 3, colour must cover significant body areas; at intensity 3 SHIFT must visibly affect SKIN_SURFACE. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.',
+        input.evolutionTarget
+            ? 'Always return colorEvolution. Use PRESERVE with intensity 0 when no chromatic adaptation serves the target. Otherwise use EXPAND at intensity 1 or 2 for visible, material-linked hues, or SHIFT at intensity 2 or 3 when the dominant palette should evolve. At intensity 2 and 3, colour must cover significant body areas; at intensity 3 SHIFT must visibly affect SKIN_SURFACE. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.'
+            : 'Do not return colorEvolution for this legacy trait-based concept; retain the established palette.',
         'Return all required fields and no additional fields. Do not include markdown or explanations.',
         correctionFeedback,
     ].join('\n')
@@ -89,7 +91,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
         required: [
             'schemaVersion', 'visualTrait', ...(target ? ['evolutionTargetId', 'evolutionFunction'] : []), 'conceptName', 'evolutionaryFunction', 'primaryMutation',
             'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
-            'colorEvolution',
+            ...(target ? ['colorEvolution'] : []),
         ],
         properties: {
             schemaVersion: { type: 'integer', enum: [target ? 2 : 1] },
@@ -130,7 +132,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
             intensity: { type: 'integer', enum: [input.intensity] },
-            colorEvolution: {
+            ...(target ? { colorEvolution: {
                 type: 'object',
                 additionalProperties: false,
                 required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
@@ -144,7 +146,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
                     intensity: { type: 'integer', enum: [0, input.intensity] },
                     biologicalRationale: { type: 'string' },
                 },
-            },
+            } } : {}),
         },
     }
 }
