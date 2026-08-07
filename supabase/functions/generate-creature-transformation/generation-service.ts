@@ -91,11 +91,12 @@ export async function generateConceptForAuthenticatedProfile(
     })
 
     if (!generated.success) {
+        const problemCodes = [...new Set(generated.problems.map((problem) => problem.code))]
         return {
             success: false,
             requestId: input.requestId,
             code: 'CONCEPT_REJECTED',
-            message: 'Il concept non ha superato i controlli richiesti.',
+            message: `Il concept non ha superato i controlli richiesti.${problemCodes.length ? ` Controlli: ${problemCodes.join(', ')}.` : ''}`,
             problems: generated.problems,
         }
     }

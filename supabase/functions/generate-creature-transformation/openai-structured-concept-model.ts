@@ -71,7 +71,7 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Current mutable visual appearance: ${input.identity.mutableVisualFeatures.join('; ')}. This is reference appearance, not immutable identity.`,
         `Requested visual trait: ${input.visualTrait.id}.`,
         input.evolutionTarget
-            ? `Requested anatomical target: ${input.evolutionTarget.id}. Focus the dominant new mutation on exactly one of: ${constraints.allowedPrimaryBodyAreas.join(', ')}. Supporting anatomy is optional and may use at most one of: ${constraints.allowedSupportingBodyAreas.join(', ')}. The resolved evolution function is ${input.evolutionFunction}. Do not add a major mutation to any other region.`
+            ? `Requested anatomical target: ${input.evolutionTarget.id}. Focus the dominant new mutation on exactly one of: ${constraints.allowedPrimaryBodyAreas.join(', ')}. Always include primaryMutation.supportingBodyAreas: use [] when no supporting anatomy is needed, otherwise use at most one of: ${constraints.allowedSupportingBodyAreas.join(', ')}. The resolved evolution function is ${input.evolutionFunction}. Do not add a major mutation to any other region.`
             : 'This is a legacy trait-based concept with no anatomical target.',
         `Requested intensity: ${input.intensity}.`,
         input.previousTransformations?.length

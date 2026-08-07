@@ -103,6 +103,7 @@ describe('generate concept edge orchestration', () => {
 
         const rejected = await orchestrateGenerateConcept({ ...base, resolver: createResolver(), createGenerator: () => sequenceGenerator([invalid]), repository: createInMemoryRequestRepository().repository })
         expect(rejected).toMatchObject({ success: false, code: 'CONCEPT_REJECTED' })
+        expect(rejected.message).toContain('INVALID_INTENSITY')
     })
 
     it('maps technical AI failures to stable application errors', async () => {
