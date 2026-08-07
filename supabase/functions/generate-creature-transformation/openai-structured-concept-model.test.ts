@@ -64,12 +64,21 @@ describe('OpenAiStructuredConceptModel', () => {
         const schema = (JSON.parse(requestBody) as { text: { format: { schema: { required: string[], properties: Record<string, unknown> } } } }).text.format.schema
         expect(requestBody).toContain('Always return colorEvolution')
         expect(schema.required).toContain('colorEvolution')
-        const colorEvolution = schema.properties.colorEvolution as { oneOf: Array<{ properties: { mode: { enum: string[] }, intensity: { enum: number[] }, affectedBodyAreas: { items: { enum: string[] } } } }> }
+        const colorEvolution = schema.properties.colorEvolution as {
+            required: string[]
+            properties: { mode: { enum: string[] }, intensity: { enum: number[] }, affectedBodyAreas: { items: { enum: string[] } } }
+        }
         const constraints = getEvolutionConstraints({ evolutionTarget, visualTrait, evolutionFunction: 'PERCEPTION', intensity: 2 })
-        expect(colorEvolution.oneOf.map((branch) => branch.properties.mode.enum[0])).toEqual(constraints.colorEvolution.allowedModes)
-        expect(colorEvolution.oneOf.find((branch) => branch.properties.mode.enum[0] === 'SHIFT')?.properties.intensity.enum).toEqual([2])
-        expect(colorEvolution.oneOf.find((branch) => branch.properties.mode.enum[0] === 'SHIFT')?.properties.affectedBodyAreas.items.enum).toEqual([...constraints.allowedColorBodyAreas])
-        expect((schema.properties.primaryMutation as { properties: { bodyAreas: { items: { enum: string[] } } } }).properties.bodyAreas.items.enum).toEqual([...constraints.allowedPrimaryBodyAreas])
+        expect(colorEvolution.required).toEqual(['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'])
+        expect(colorEvolution.properties.mode.enum).toEqual(constraints.colorEvolution.allowedModes)
+        expect(colorEvolution.properties.intensity.enum).toEqual([0, 2])
+        expect(colorEvolution.properties.affectedBodyAreas.items.enum).toEqual([...constraints.allowedColorBodyAreas])
+        const primaryMutation = schema.properties.primaryMutation as {
+            required: string[]
+            properties: { bodyAreas: { items: { enum: string[] } } }
+        }
+        expect(primaryMutation.properties.bodyAreas.items.enum).toEqual([...constraints.allowedPrimaryBodyAreas])
+        expect(primaryMutation.required).toContain('supportingBodyAreas')
         expect(requestBody).not.toContain('exactly one of: FACE')
     })
 

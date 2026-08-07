@@ -99,43 +99,22 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
     })
     const colorEvolutionSchema = !target ? {} : {
         colorEvolution: {
-            oneOf: constraints.colorEvolution.allowedModes.map((mode) => ({
-                type: 'object',
-                additionalProperties: false,
-                required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
-                properties: {
-                    mode: { type: 'string', enum: [mode] },
-                    dominantColor: { type: 'string' },
-                    secondaryColors: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
-                    accentColors: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
-                    surfaceEffects: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
-                    affectedBodyAreas: {
-                        type: 'array',
-                        items: { enum: constraints.allowedColorBodyAreas },
-                        ...(mode === 'PRESERVE'
-                            ? { maxItems: 0 }
-                            : {
-                                minItems: 1,
-                                ...((constraints.colorEvolution.requiresSkinSurfaceForModes.includes(mode)
-                                    ? ['SKIN_SURFACE']
-                                    : constraints.colorEvolution.requiresVisuallySignificantAreaForModes.includes(mode)
-                                        ? constraints.colorEvolution.visuallySignificantBodyAreas
-                                        : []).length
-                                    ? {
-                                        contains: {
-                                            enum: constraints.colorEvolution.requiresSkinSurfaceForModes.includes(mode)
-                                                ? ['SKIN_SURFACE']
-                                                : constraints.colorEvolution.visuallySignificantBodyAreas,
-                                        },
-                                        minContains: 1,
-                                    }
-                                    : {}),
-                            }),
-                    },
-                    intensity: { type: 'integer', enum: constraints.colorEvolution.allowedIntensities[mode] },
-                    biologicalRationale: { type: 'string' },
+            type: 'object',
+            additionalProperties: false,
+            required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
+            properties: {
+                mode: { type: 'string', enum: constraints.colorEvolution.allowedModes },
+                dominantColor: { type: 'string' },
+                secondaryColors: { type: 'array', items: { type: 'string' } },
+                accentColors: { type: 'array', items: { type: 'string' } },
+                surfaceEffects: { type: 'array', items: { type: 'string' } },
+                affectedBodyAreas: { type: 'array', items: { enum: constraints.allowedColorBodyAreas } },
+                intensity: {
+                    type: 'integer',
+                    enum: [...new Set(constraints.colorEvolution.allowedModes.flatMap((mode) => constraints.colorEvolution.allowedIntensities[mode]))],
                 },
-            })),
+                biologicalRationale: { type: 'string' },
+            },
         },
     }
     return {
@@ -158,7 +137,10 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             primaryMutation: {
                 type: 'object',
                 additionalProperties: false,
-                required: ['mutationArchetype', 'bodyAreas', 'morphology', 'material'],
+                required: [
+                    'mutationArchetype', 'bodyAreas', 'morphology', 'material',
+                    ...(target ? ['supportingBodyAreas'] : []),
+                ],
                 properties: {
                     mutationArchetype: { enum: input.visualTrait.allowedMutationArchetypes },
                     bodyAreas: {
