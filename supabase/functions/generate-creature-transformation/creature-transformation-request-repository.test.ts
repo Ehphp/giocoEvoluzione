@@ -9,6 +9,7 @@ function databaseRecord(overrides: Record<string, unknown> = {}) {
     return {
         id: 'request-1', profile_id: 'profile-1', creature_id: 'creature-1', idempotency_key: 'key-1', operation: 'GENERATE_IMAGE', status: 'RESERVED',
         concept_mode: null, image_provider_mode: 'MOCK', provider: null, model: null, provider_request_id: null,
+        evolution_target_id: null, evolution_function: null,
         visual_trait_id: 'IMPACT_ADAPTATION', intensity: 2, prompt_template_version: null, concept_schema_version: null,
         source_sha256: null, result_sha256: null, result_path: null, result_mime_type: null, result_width: null, result_height: null, generation_latency_ms: null,
         estimated_cost_usd: '0', actual_cost_usd: null, attempt_count: 0, error_code: null, error_message: null,
@@ -34,12 +35,14 @@ describe('SupabaseCreatureTransformationRequestRepository', () => {
         const result = await repository.reserve({
             profileId: 'profile-1', creatureId: 'creature-1', idempotencyKey: 'key-1', operation: 'GENERATE_IMAGE',
             visualTraitId: 'IMPACT_ADAPTATION', intensity: 2, imageProviderMode: 'MOCK', estimatedCostUsd: 0,
+            evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: 'DEFENSE',
             dailyRequestLimit: 10, dailyBudgetUsd: 0,
         })
 
-        expect(result).toMatchObject({ outcome: 'CREATED', record: { id: 'request-1', status: 'RESERVED', estimatedCostUsd: 0 } })
+        expect(result).toMatchObject({ outcome: 'CREATED', record: { id: 'request-1', status: 'RESERVED', estimatedCostUsd: 0, evolutionTargetId: null, evolutionFunction: null } })
         expect(mock.rpc).toHaveBeenCalledWith('reserve_creature_transformation_request', expect.objectContaining({
-            p_profile_id: 'profile-1', p_idempotency_key: 'key-1', p_daily_request_limit: 10, p_daily_budget_usd: 0,
+            p_profile_id: 'profile-1', p_idempotency_key: 'key-1', p_evolution_target_id: 'TORSO_AND_BACK', p_evolution_function: 'DEFENSE',
+            p_daily_request_limit: 10, p_daily_budget_usd: 0,
         }))
         expect(JSON.stringify(mock.rpc.mock.calls)).not.toContain('prompt')
         expect(JSON.stringify(mock.rpc.mock.calls)).not.toContain('signedUrl')

@@ -1,4 +1,5 @@
 import type { StructuredConceptModel, StructuredConceptModelInput } from '../../../shared/creature-transformations/concept-generator.ts'
+import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
 
 type FetchLike = typeof fetch
 
@@ -51,6 +52,12 @@ async function readSafeProviderErrorCode(response: Response): Promise<string | n
 }
 
 function createInstructions(input: StructuredConceptModelInput): string {
+    const constraints = getEvolutionConstraints({
+        evolutionTarget: input.evolutionTarget,
+        visualTrait: input.visualTrait,
+        evolutionFunction: input.evolutionFunction,
+        intensity: input.intensity,
+    })
     const correctionFeedback = input.correctionFeedback.length
         ? `Correction feedback from the prior attempt: ${input.correctionFeedback.join(' | ')}.`
         : 'There is no correction feedback for this first attempt.'
@@ -64,18 +71,18 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Current mutable visual appearance: ${input.identity.mutableVisualFeatures.join('; ')}. This is reference appearance, not immutable identity.`,
         `Requested visual trait: ${input.visualTrait.id}.`,
         input.evolutionTarget
-            ? `Requested anatomical target: ${input.evolutionTarget.id}. Focus the dominant new mutation on exactly one of: ${input.evolutionTarget.primaryBodyAreas.join(', ')}. Supporting anatomy is optional and may use at most one of: ${input.evolutionTarget.supportingBodyAreas.join(', ')}. The resolved evolution function is ${input.evolutionFunction}. Do not add a major mutation to any other region.`
+            ? `Requested anatomical target: ${input.evolutionTarget.id}. Focus the dominant new mutation on exactly one of: ${constraints.allowedPrimaryBodyAreas.join(', ')}. Supporting anatomy is optional and may use at most one of: ${constraints.allowedSupportingBodyAreas.join(', ')}. The resolved evolution function is ${input.evolutionFunction}. Do not add a major mutation to any other region.`
             : 'This is a legacy trait-based concept with no anatomical target.',
         `Requested intensity: ${input.intensity}.`,
         input.previousTransformations?.length
             ? `Previously adopted visual transformations that must remain visible and must not be repeated: ${input.previousTransformations.map((entry) => `v${entry.versionNumber} ${entry.visualTraitId}: ${entry.conceptName}`).join('; ')}.`
             : 'There are no prior adopted visual transformations.',
-        `Allowed primary body areas: ${input.visualTrait.allowedBodyAreas.join(', ')}.`,
+        `Allowed primary body areas: ${constraints.allowedPrimaryBodyAreas.join(', ')}.`,
         `Allowed mutation archetypes: ${input.visualTrait.allowedMutationArchetypes.join(', ')}.`,
         `Creative limits: at most ${input.visualTrait.creativeLimits.maxPrimaryBodyAreas} primary body areas and ${input.visualTrait.creativeLimits.maxSecondaryMutations} secondary mutations.`,
         'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
         input.evolutionTarget
-            ? 'Always return colorEvolution. Use PRESERVE with intensity 0 when no chromatic adaptation serves the target. Otherwise use EXPAND at intensity 1 or 2 for visible, material-linked hues, or SHIFT at intensity 2 or 3 when the dominant palette should evolve. At intensity 2 and 3, colour must cover significant body areas; at intensity 3 SHIFT must visibly affect SKIN_SURFACE. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.'
+            ? `Always return colorEvolution. Allowed modes: ${constraints.colorEvolution.allowedModes.join(', ')}. PRESERVE uses intensity 0 with no added colours, effects or affected areas. Non-preserve modes use intensity ${input.intensity}, must affect only: ${constraints.allowedColorBodyAreas.join(', ')}${constraints.colorEvolution.requiresVisuallySignificantAreaForModes.length ? `, and must include one of the readable full-image areas: ${constraints.colorEvolution.visuallySignificantBodyAreas.join(', ')}` : ''}${constraints.colorEvolution.requiresSkinSurfaceForModes.length ? ', and must include SKIN_SURFACE' : ''}. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.`
             : 'Do not return colorEvolution for this legacy trait-based concept; retain the established palette.',
         'Return all required fields and no additional fields. Do not include markdown or explanations.',
         correctionFeedback,
@@ -84,7 +91,53 @@ function createInstructions(input: StructuredConceptModelInput): string {
 
 function createConceptJsonSchema(input: StructuredConceptModelInput): Record<string, unknown> {
     const target = input.evolutionTarget
-    const allowedConceptAreas = target ? [...target.primaryBodyAreas, ...target.supportingBodyAreas] : input.visualTrait.allowedBodyAreas
+    const constraints = getEvolutionConstraints({
+        evolutionTarget: target,
+        visualTrait: input.visualTrait,
+        evolutionFunction: input.evolutionFunction,
+        intensity: input.intensity,
+    })
+    const colorEvolutionSchema = !target ? {} : {
+        colorEvolution: {
+            oneOf: constraints.colorEvolution.allowedModes.map((mode) => ({
+                type: 'object',
+                additionalProperties: false,
+                required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
+                properties: {
+                    mode: { type: 'string', enum: [mode] },
+                    dominantColor: { type: 'string' },
+                    secondaryColors: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
+                    accentColors: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
+                    surfaceEffects: { type: 'array', items: { type: 'string' }, ...(mode === 'PRESERVE' ? { maxItems: 0 } : {}) },
+                    affectedBodyAreas: {
+                        type: 'array',
+                        items: { enum: constraints.allowedColorBodyAreas },
+                        ...(mode === 'PRESERVE'
+                            ? { maxItems: 0 }
+                            : {
+                                minItems: 1,
+                                ...((constraints.colorEvolution.requiresSkinSurfaceForModes.includes(mode)
+                                    ? ['SKIN_SURFACE']
+                                    : constraints.colorEvolution.requiresVisuallySignificantAreaForModes.includes(mode)
+                                        ? constraints.colorEvolution.visuallySignificantBodyAreas
+                                        : []).length
+                                    ? {
+                                        contains: {
+                                            enum: constraints.colorEvolution.requiresSkinSurfaceForModes.includes(mode)
+                                                ? ['SKIN_SURFACE']
+                                                : constraints.colorEvolution.visuallySignificantBodyAreas,
+                                        },
+                                        minContains: 1,
+                                    }
+                                    : {}),
+                            }),
+                    },
+                    intensity: { type: 'integer', enum: constraints.colorEvolution.allowedIntensities[mode] },
+                    biologicalRationale: { type: 'string' },
+                },
+            })),
+        },
+    }
     return {
         type: 'object',
         additionalProperties: false,
@@ -112,12 +165,12 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
                         type: 'array',
                         minItems: 1,
                         maxItems: target ? 1 : input.visualTrait.creativeLimits.maxPrimaryBodyAreas,
-                        items: { enum: target ? target.primaryBodyAreas : input.visualTrait.allowedBodyAreas },
+                        items: { enum: constraints.allowedPrimaryBodyAreas },
                     },
                     ...(target ? {
                         supportingBodyAreas: {
                             type: 'array', maxItems: 1,
-                            items: { enum: target.supportingBodyAreas },
+                            items: { enum: constraints.allowedSupportingBodyAreas },
                         },
                     } : {}),
                     morphology: { type: 'string' },
@@ -132,23 +185,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
             intensity: { type: 'integer', enum: [input.intensity] },
-            ...(target ? {
-                colorEvolution: {
-                    type: 'object',
-                    additionalProperties: false,
-                    required: ['mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale'],
-                    properties: {
-                        mode: { type: 'string', enum: ['PRESERVE', 'EXPAND', 'SHIFT'] },
-                        dominantColor: { type: 'string' },
-                        secondaryColors: { type: 'array', items: { type: 'string' } },
-                        accentColors: { type: 'array', items: { type: 'string' } },
-                        surfaceEffects: { type: 'array', items: { type: 'string' } },
-                        affectedBodyAreas: { type: 'array', items: { enum: allowedConceptAreas } },
-                        intensity: { type: 'integer', enum: [0, input.intensity] },
-                        biologicalRationale: { type: 'string' },
-                    },
-                }
-            } : {}),
+            ...colorEvolutionSchema,
         },
     }
 }

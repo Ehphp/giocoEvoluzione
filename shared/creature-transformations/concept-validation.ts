@@ -2,6 +2,7 @@ import { BODY_AREAS, type BodyArea } from './body-areas.ts'
 import { COLOR_EVOLUTION_MODES, TRANSFORMATION_INTENSITIES, type ColorEvolution, type ColorEvolutionMode, type CreatureTransformationConcept, type TransformationIntensity } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import { EVOLUTION_FUNCTION_IDS, type EvolutionFunctionId, type EvolutionTargetDefinition } from './evolution-targets.ts'
+import { getColorEvolutionConstraintViolations, getEvolutionConstraints, type EvolutionConstraints } from './evolution-constraints.ts'
 import { MUTATION_ARCHETYPES, type MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
@@ -69,7 +70,6 @@ const COLOR_EVOLUTION_FIELDS = new Set([
     'mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale',
 ])
 const COLOR_EVOLUTION_INTENSITIES = new Set([0, ...TRANSFORMATION_INTENSITIES])
-const VISUALLY_SIGNIFICANT_COLOR_AREAS = new Set<BodyArea>(['NECK', 'BACK', 'CHEST', 'FORELIMBS', 'HIND_LIMBS', 'TAIL', 'SKIN_SURFACE'])
 const TECHNICAL_INSTRUCTION_PATTERN = /\b(?:png|jpe?g|webp|canvas|alpha|trasparen\w*|sfondo|background|dimension\w*|pixel|risoluzione|resolution|posa|pose|path|url|1024|1536)\b/i
 const IDENTITY_BREAKING_PATTERN = /(?:nuova specie|cambio di specie|sostituzione del volto|anatomia umanoide|trasformazione totale|completamente diverso)/i
 const PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN = /(?:rimuov|elimin|cancell|sostituisc|remove|replace).*(?:mutazion|evoluzion|adaptation)/i
@@ -154,7 +154,7 @@ function preservesFeature(identityToPreserve: readonly string[], requiredFeature
     })
 }
 
-function readColorEvolution(candidate: UnknownRecord, context: ConceptValidationContext, problems: ConceptProblem[]): ColorEvolution | undefined {
+function readColorEvolution(candidate: UnknownRecord, constraints: EvolutionConstraints, problems: ConceptProblem[]): ColorEvolution | undefined {
     if (candidate.colorEvolution === undefined) return undefined
     if (!isRecord(candidate.colorEvolution)) {
         problems.push(makeProblem('INVALID_COLOR_EVOLUTION', 'colorEvolution deve essere un oggetto completo.', 'colorEvolution'))
@@ -183,10 +183,7 @@ function readColorEvolution(candidate: UnknownRecord, context: ConceptValidation
     } else {
         affectedBodyAreas = []
         for (const [index, area] of evolution.affectedBodyAreas.entries()) {
-            const targetAllowsArea = !context.requestedEvolutionTarget
-                || context.requestedEvolutionTarget.primaryBodyAreas.includes(area as BodyArea)
-                || context.requestedEvolutionTarget.supportingBodyAreas.includes(area as BodyArea)
-            if (!isBodyArea(area) || !context.requestedVisualTrait.allowedBodyAreas.includes(area) || !targetAllowsArea) {
+            if (!isBodyArea(area) || !constraints.allowedColorBodyAreas.includes(area)) {
                 problems.push(makeProblem('INVALID_COLOR_EVOLUTION', `L area cromatica ${area} non e ammessa dal Visual Trait richiesto.`, `colorEvolution.affectedBodyAreas.${index}`))
             } else {
                 affectedBodyAreas.push(area)
@@ -194,36 +191,35 @@ function readColorEvolution(candidate: UnknownRecord, context: ConceptValidation
         }
     }
 
-    if (isColorEvolutionMode(mode ?? '') && typeof intensity === 'number' && affectedBodyAreas !== null) {
-        if (mode === 'PRESERVE') {
-            if (intensity !== 0 || affectedBodyAreas.length || secondaryColors?.length || accentColors?.length || surfaceEffects?.length) {
-                problems.push(makeProblem('COLOR_EVOLUTION_INCOHERENT', 'PRESERVE non puo richiedere nuovi colori, effetti o zone cromatiche.', 'colorEvolution'))
-            }
-        } else {
-            if (intensity !== context.requestedIntensity) {
-                problems.push(makeProblem('COLOR_EVOLUTION_INCOHERENT', 'L intensita cromatica deve corrispondere all intensita della trasformazione.', 'colorEvolution.intensity'))
-            }
-            if (!affectedBodyAreas.length || (intensity >= 2 && !affectedBodyAreas.some((area) => VISUALLY_SIGNIFICANT_COLOR_AREAS.has(area)))) {
-                problems.push(makeProblem('COLOR_EVOLUTION_TOO_WEAK', 'Il cambiamento cromatico deve interessare porzioni corporee leggibili nell immagine completa.', 'colorEvolution.affectedBodyAreas'))
-            }
-            if ((mode === 'SHIFT' && intensity < 2) || (mode === 'EXPAND' && intensity === 3)) {
-                problems.push(makeProblem('COLOR_EVOLUTION_INCOHERENT', 'SHIFT richiede intensita 2 o 3, mentre l intensita 3 richiede SHIFT della palette dominante.', 'colorEvolution.mode'))
-            }
-            if (intensity === 3 && !affectedBodyAreas.includes('SKIN_SURFACE')) {
-                problems.push(makeProblem('COLOR_EVOLUTION_TOO_WEAK', 'All intensita 3 il cambio della palette dominante deve essere visibile sull insieme del corpo.', 'colorEvolution.affectedBodyAreas'))
-            }
-        }
-    }
-
     if (mode === null || dominantColor === null || secondaryColors === null || accentColors === null || surfaceEffects === null || biologicalRationale === null || affectedBodyAreas === null || !isColorEvolutionMode(mode) || !COLOR_EVOLUTION_INTENSITIES.has(intensity as number)) {
         return undefined
     }
-    return { mode, dominantColor, secondaryColors, accentColors, surfaceEffects, affectedBodyAreas, intensity: intensity as ColorEvolution['intensity'], biologicalRationale }
+    const colorEvolution = { mode, dominantColor, secondaryColors, accentColors, surfaceEffects, affectedBodyAreas, intensity: intensity as ColorEvolution['intensity'], biologicalRationale }
+    for (const violation of getColorEvolutionConstraintViolations(colorEvolution, constraints)) {
+        const weak = violation === 'AFFECTED_BODY_AREA_REQUIRED' || violation === 'VISUALLY_SIGNIFICANT_AREA_REQUIRED' || violation === 'SKIN_SURFACE_REQUIRED'
+        const message = violation === 'PRESERVE_PAYLOAD_NOT_EMPTY'
+            ? 'PRESERVE non puo richiedere nuovi colori, effetti o zone cromatiche.'
+            : violation === 'AFFECTED_BODY_AREA_REQUIRED'
+                ? 'Il cambiamento cromatico deve indicare almeno una zona corporea.'
+                : violation === 'VISUALLY_SIGNIFICANT_AREA_REQUIRED'
+                    ? 'Il cambiamento cromatico deve interessare porzioni corporee leggibili nell immagine completa.'
+                    : violation === 'SKIN_SURFACE_REQUIRED'
+                        ? 'All intensita 3 il cambio della palette dominante deve interessare SKIN_SURFACE.'
+                        : 'Mode o intensita cromatica non sono ammessi per questa evoluzione.'
+        problems.push(makeProblem(weak ? 'COLOR_EVOLUTION_TOO_WEAK' : 'COLOR_EVOLUTION_INCOHERENT', message, 'colorEvolution'))
+    }
+    return colorEvolution
 }
 
 export function validateCreatureTransformationConcept(candidate: unknown, context: ConceptValidationContext): ConceptValidationResult {
     const problems: ConceptProblem[] = []
     const requestedTarget = context.requestedEvolutionTarget
+    const constraints = getEvolutionConstraints({
+        evolutionTarget: requestedTarget,
+        visualTrait: context.requestedVisualTrait,
+        evolutionFunction: context.requestedEvolutionFunction,
+        intensity: context.requestedIntensity,
+    })
     if (!isRecord(candidate)) {
         return { valid: false, problems: [makeProblem('INVALID_CONCEPT', 'Il concept deve essere un oggetto JSON.')] }
     }
@@ -240,6 +236,12 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
     const evolutionTargetId = candidate.evolutionTargetId
     const evolutionFunction = candidate.evolutionFunction
     if (requestedTarget) {
+        for (const reason of constraints.structuralReasons) {
+            problems.push(makeProblem(
+                reason.code === 'NO_ALLOWED_PRIMARY_BODY_AREA' ? 'BODY_AREA_NOT_ALLOWED' : 'INVALID_VISUAL_TRAIT',
+                reason.message,
+            ))
+        }
         if (evolutionTargetId !== requestedTarget.id) {
             problems.push(makeProblem('INVALID_EVOLUTION_TARGET', 'Il target anatomico non corrisponde alla scelta della track.', 'evolutionTargetId'))
         }
@@ -257,7 +259,10 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
     const secondaryMutations = readStringArray(candidate, 'secondaryMutations', 'secondaryMutations', problems)
     const identityToPreserve = readStringArray(candidate, 'identityToPreserve', 'identityToPreserve', problems)
     const forbiddenChanges = readStringArray(candidate, 'forbiddenChanges', 'forbiddenChanges', problems)
-    const colorEvolution = readColorEvolution(candidate, context, problems)
+    const colorEvolution = readColorEvolution(candidate, constraints, problems)
+    if (constraints.colorEvolution.required && candidate.colorEvolution === undefined) {
+        problems.push(makeProblem('MISSING_REQUIRED_FIELD', 'colorEvolution e obbligatorio per le evoluzioni anatomiche.', 'colorEvolution'))
+    }
 
     const intensity = candidate.intensity
     if (!TRANSFORMATION_INTENSITIES.includes(intensity as TransformationIntensity) || intensity !== context.requestedIntensity) {
@@ -283,7 +288,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
             for (const [index, bodyArea] of mutation.bodyAreas.entries()) {
                 if (!isBodyArea(bodyArea)) {
                     problems.push(makeProblem('BODY_AREA_NOT_ALLOWED', `L area ${bodyArea} non appartiene al catalogo.`, `primaryMutation.bodyAreas.${index}`))
-                } else if (!context.requestedVisualTrait.allowedBodyAreas.includes(bodyArea)) {
+                } else if (!constraints.allowedPrimaryBodyAreas.includes(bodyArea)) {
                     problems.push(makeProblem('BODY_AREA_NOT_ALLOWED', `L area ${bodyArea} non e ammessa dal Visual Trait richiesto.`, `primaryMutation.bodyAreas.${index}`))
                 } else {
                     bodyAreas.push(bodyArea)
@@ -297,7 +302,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
         if (requestedTarget && bodyAreas !== null) {
             if ((Array.isArray(mutation.bodyAreas) ? mutation.bodyAreas.length : 0) !== 1) {
                 problems.push(makeProblem('TOO_MANY_BODY_AREAS', 'Un evoluzione anatomica deve avere una sola area primaria.', 'primaryMutation.bodyAreas'))
-            } else if (!requestedTarget.primaryBodyAreas.includes(bodyAreas[0]!)) {
+            } else if (!constraints.allowedPrimaryBodyAreas.includes(bodyAreas[0]!)) {
                 problems.push(makeProblem('BODY_AREA_NOT_ALLOWED', 'L area primaria non appartiene al target anatomico scelto.', 'primaryMutation.bodyAreas.0'))
             }
         }
@@ -307,7 +312,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
             } else {
                 supportingBodyAreas = []
                 for (const [index, supportingArea] of mutation.supportingBodyAreas.entries()) {
-                    if (!isBodyArea(supportingArea) || !requestedTarget?.supportingBodyAreas.includes(supportingArea)) {
+                    if (!isBodyArea(supportingArea) || !constraints.allowedSupportingBodyAreas.includes(supportingArea)) {
                         problems.push(makeProblem('SUPPORTING_BODY_AREA_NOT_ALLOWED', `L area di supporto ${supportingArea} non e ammessa dal target scelto.`, `primaryMutation.supportingBodyAreas.${index}`))
                     } else {
                         supportingBodyAreas.push(supportingArea)

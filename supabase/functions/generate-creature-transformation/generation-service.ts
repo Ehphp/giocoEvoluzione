@@ -4,6 +4,7 @@ import { generateValidatedCreatureConcept } from '../../../shared/creature-trans
 import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION } from '../../../shared/creature-transformations/prompt-composer.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import type { GenerateConceptRequest, CreatureIdentityResolver } from '../../../shared/creature-transformations/contracts.ts'
+import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
 import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 
@@ -37,6 +38,34 @@ export async function generateConceptForAuthenticatedProfile(
             requestId: input.requestId,
             code: 'INVALID_VISUAL_TRAIT',
             message: 'Il Visual Trait richiesto non e supportato.',
+        }
+    }
+    if (input.request.evolutionTargetId) {
+        if (!evolutionTarget) {
+            return {
+                success: false,
+                requestId: input.requestId,
+                code: 'INVALID_EVOLUTION_TARGET',
+                message: 'Il target anatomico richiesto non e supportato.',
+            }
+        }
+        const constraints = getEvolutionConstraints({
+            evolutionTarget,
+            visualTrait,
+            evolutionFunction: input.request.evolutionFunction,
+            intensity: input.request.intensity,
+        })
+        if (!constraints.isGeneratable) {
+            return {
+                success: false,
+                requestId: input.requestId,
+                code: 'CONCEPT_REJECTED',
+                message: 'La direzione evolutiva non e generabile per il target anatomico scelto.',
+                problems: constraints.structuralReasons.map((reason) => ({
+                    code: reason.code === 'NO_ALLOWED_PRIMARY_BODY_AREA' ? 'BODY_AREA_NOT_ALLOWED' as const : 'INVALID_VISUAL_TRAIT' as const,
+                    message: reason.message,
+                })),
+            }
         }
     }
 

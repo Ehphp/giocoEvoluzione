@@ -35,4 +35,22 @@ describe('request persistence state contract', () => {
         await expect(requests.repository.markRunning({ requestId: reserved.record.id, profileId: 'profile-1' })).rejects.toThrow('state conflict')
         await expect(requests.repository.markFailed({ requestId: reserved.record.id, profileId: 'profile-1', errorCode: 'FAIL', errorMessage: 'fail' })).rejects.toThrow('state conflict')
     })
+
+    it('retains reserved target direction metadata after a failed request', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const reservation = await persistence.repository.reserve({
+            profileId: 'profile-1', creatureId: 'creature-1', idempotencyKey: 'target-failed', operation: 'GENERATE_UNLOCKED_TRANSFORMATION',
+            visualTraitId: 'ENERGY_REGULATION', evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: 'THERMOREGULATION',
+            intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL', estimatedCostUsd: 0.12,
+            dailyRequestLimit: 10, dailyBudgetUsd: 1,
+        })
+        if (reservation.outcome !== 'CREATED') throw new Error('test reservation failed')
+
+        const running = await persistence.repository.markRunning({ requestId: reservation.record.id, profileId: 'profile-1' })
+        await persistence.repository.markFailed({ requestId: running.id, profileId: 'profile-1', errorCode: 'CONCEPT_REJECTED', errorMessage: 'rejected' })
+
+        expect(persistence.get('profile-1', 'target-failed')).toMatchObject({
+            status: 'FAILED', errorCode: 'CONCEPT_REJECTED', evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: 'THERMOREGULATION',
+        })
+    })
 })

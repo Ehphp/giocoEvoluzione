@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { createValidConcept, TEST_CREATURE_IDENTITY } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
+import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
+import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { OpenAiStructuredConceptModel, OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
 
@@ -40,11 +42,14 @@ describe('OpenAiStructuredConceptModel', () => {
 
     it('requires constrained colour evolution for anatomy-targeted concepts', async () => {
         let requestBody = ''
+        const evolutionTarget = EVOLUTION_TARGET_BY_ID.HEAD_AND_SENSES
+        const visualTrait = VISUAL_TRAIT_BY_ID.SENSORY_EXPANSION
         const targetInput = {
             ...input,
-            evolutionTarget: { id: 'TAIL', primaryBodyAreas: ['TAIL'], supportingBodyAreas: ['BACK'] },
-            evolutionTargetId: 'TAIL' as const,
-            evolutionFunction: 'BALANCE' as const,
+            visualTrait,
+            evolutionTarget,
+            evolutionTargetId: 'HEAD_AND_SENSES' as const,
+            evolutionFunction: 'PERCEPTION' as const,
         }
         const model = new OpenAiStructuredConceptModel({
             apiKey: 'test-key', model: 'test-model',
@@ -59,7 +64,13 @@ describe('OpenAiStructuredConceptModel', () => {
         const schema = (JSON.parse(requestBody) as { text: { format: { schema: { required: string[], properties: Record<string, unknown> } } } }).text.format.schema
         expect(requestBody).toContain('Always return colorEvolution')
         expect(schema.required).toContain('colorEvolution')
-        expect(schema.properties.colorEvolution).toMatchObject({ type: 'object' })
+        const colorEvolution = schema.properties.colorEvolution as { oneOf: Array<{ properties: { mode: { enum: string[] }, intensity: { enum: number[] }, affectedBodyAreas: { items: { enum: string[] } } } }> }
+        const constraints = getEvolutionConstraints({ evolutionTarget, visualTrait, evolutionFunction: 'PERCEPTION', intensity: 2 })
+        expect(colorEvolution.oneOf.map((branch) => branch.properties.mode.enum[0])).toEqual(constraints.colorEvolution.allowedModes)
+        expect(colorEvolution.oneOf.find((branch) => branch.properties.mode.enum[0] === 'SHIFT')?.properties.intensity.enum).toEqual([2])
+        expect(colorEvolution.oneOf.find((branch) => branch.properties.mode.enum[0] === 'SHIFT')?.properties.affectedBodyAreas.items.enum).toEqual([...constraints.allowedColorBodyAreas])
+        expect((schema.properties.primaryMutation as { properties: { bodyAreas: { items: { enum: string[] } } } }).properties.bodyAreas.items.enum).toEqual([...constraints.allowedPrimaryBodyAreas])
+        expect(requestBody).not.toContain('exactly one of: FACE')
     })
 
     it('maps malformed output and provider statuses without retries', async () => {

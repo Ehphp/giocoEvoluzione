@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { CreatureTransformationConcept } from './concepts.ts'
 import { evaluateCreatureTransformationConcept } from './concept-evaluation.ts'
+import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { createValidConcept, TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
+import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
+import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
 const evaluationContext = { identity: TEST_CREATURE_IDENTITY }
 
@@ -83,5 +86,33 @@ describe('evaluateCreatureTransformationConcept', () => {
         expect(evaluateCreatureTransformationConcept(concept, evaluationContext)).toMatchObject({ acceptable: true, identityRisk: 'LOW' })
         const colorEvolution = concept.colorEvolution!
         expect(evaluateCreatureTransformationConcept({ ...concept, colorEvolution: { ...colorEvolution, affectedBodyAreas: [] } }, evaluationContext).problems.map((problem) => problem.code)).toContain('COLOR_EVOLUTION_TOO_WEAK')
+    })
+
+    it('uses the same target colour constraints as validation', () => {
+        const target = EVOLUTION_TARGET_BY_ID.TORSO_AND_BACK
+        const concept: CreatureTransformationConcept = {
+            ...createValidConcept(), schemaVersion: 2, visualTrait: 'IMPACT_ADAPTATION', evolutionTargetId: target.id, evolutionFunction: 'DEFENSE',
+            primaryMutation: { ...createValidConcept().primaryMutation, bodyAreas: ['BACK'], supportingBodyAreas: ['SKIN_SURFACE'] },
+            colorEvolution: {
+                mode: 'SHIFT', dominantColor: 'deep moss green', secondaryColors: ['forest jade'], accentColors: ['warm amber'],
+                surfaceEffects: ['impact-responsive amber veining'], affectedBodyAreas: ['BACK', 'SKIN_SURFACE'], intensity: 2,
+                biologicalRationale: 'Le placche del dorso rendono visibili i percorsi di dissipazione degli urti.',
+            },
+        }
+        const validationContext = {
+            requestedVisualTrait: VISUAL_TRAIT_BY_ID.IMPACT_ADAPTATION, requestedEvolutionTarget: target,
+            requestedEvolutionFunction: 'DEFENSE' as const, requestedIntensity: 2 as const, identity: TEST_CREATURE_IDENTITY,
+        }
+
+        expect(validateCreatureTransformationConcept(concept, validationContext).valid).toBe(true)
+        expect(evaluateCreatureTransformationConcept(concept, evaluationContext).problems).toEqual([])
+
+        const weak = { ...concept, colorEvolution: { ...concept.colorEvolution!, affectedBodyAreas: [] } }
+        expect(validateCreatureTransformationConcept(weak, validationContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'COLOR_EVOLUTION_TOO_WEAK' })]) })
+        expect(evaluateCreatureTransformationConcept(weak, evaluationContext).problems).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'COLOR_EVOLUTION_TOO_WEAK' })]))
+
+        const missing = { ...concept, colorEvolution: undefined }
+        expect(validateCreatureTransformationConcept(missing, validationContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'MISSING_REQUIRED_FIELD' })]) })
+        expect(evaluateCreatureTransformationConcept(missing, evaluationContext).problems).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'COLOR_EVOLUTION_INCOHERENT' })]))
     })
 })

@@ -1,5 +1,6 @@
 import type { BodyArea } from './body-areas.ts'
 import type { MutationArchetype } from './mutation-archetypes.ts'
+import { EVOLUTION_FUNCTION_VISUAL_TRAITS, getEvolutionConstraints } from './evolution-constraints.ts'
 import { VISUAL_TRAIT_BY_ID, type VisualTraitId } from './visual-traits.ts'
 
 export const EVOLUTION_TARGET_IDS = Object.freeze([
@@ -47,18 +48,6 @@ export type ResolvedEvolutionDirection = Readonly<{
     visualTraitId: VisualTraitId
     evolutionFunction: EvolutionFunctionId
 }>
-
-const FUNCTION_TRAITS: Readonly<Record<EvolutionFunctionId, readonly VisualTraitId[]>> = {
-    BALANCE: ['LOCOMOTION_ADAPTATION'],
-    PROPULSION: ['LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
-    GRIP: ['LOCOMOTION_ADAPTATION'],
-    DEFENSE: ['IMPACT_ADAPTATION'],
-    PERCEPTION: ['SENSORY_EXPANSION'],
-    THERMOREGULATION: ['ENERGY_REGULATION'],
-    ENERGY_STORAGE: ['ENERGY_REGULATION'],
-    IMPACT_ABSORPTION: ['IMPACT_ADAPTATION'],
-    AQUATIC_ADAPTATION: ['AQUATIC_MORPHOLOGY'],
-}
 
 function defineTarget(definition: EvolutionTargetDefinition): EvolutionTargetDefinition {
     return Object.freeze({
@@ -116,17 +105,25 @@ export function resolveEvolutionDirection(input: {
     evolutionTargetId: EvolutionTargetId
     previousTransformations?: readonly EvolutionTargetHistoryEntry[]
     seed?: string
-}): ResolvedEvolutionDirection {
+}): ResolvedEvolutionDirection | null {
     const target = EVOLUTION_TARGET_BY_ID[input.evolutionTargetId]
-    const directions = EVOLUTION_FUNCTION_IDS.flatMap((evolutionFunction) => FUNCTION_TRAITS[evolutionFunction]
+    const directions = EVOLUTION_FUNCTION_IDS.flatMap((evolutionFunction) => EVOLUTION_FUNCTION_VISUAL_TRAITS[evolutionFunction]
         .filter((visualTraitId) => target.compatibleVisualTraits.includes(visualTraitId))
         .map((visualTraitId) => ({ visualTraitId, evolutionFunction })))
-    const compatible = directions.filter(({ visualTraitId }) => Boolean(VISUAL_TRAIT_BY_ID[visualTraitId]))
+    const compatible = directions.filter(({ visualTraitId, evolutionFunction }) => {
+        const visualTrait = VISUAL_TRAIT_BY_ID[visualTraitId]
+        return Boolean(visualTrait) && getEvolutionConstraints({
+            evolutionTarget: target,
+            visualTrait: visualTrait!,
+            evolutionFunction,
+            intensity: 2,
+        }).isGeneratable
+    })
     const unused = compatible.filter(({ visualTraitId, evolutionFunction }) => !input.previousTransformations?.some((previous) => (
         previous.evolutionTargetId === input.evolutionTargetId
         && previous.visualTraitId === visualTraitId
         && previous.evolutionFunction === evolutionFunction
     )))
     const candidates = unused.length ? unused : compatible
-    return candidates[stableIndex(`${input.evolutionTargetId}:${input.seed ?? ''}`, candidates.length)]!
+    return candidates.length ? candidates[stableIndex(`${input.evolutionTargetId}:${input.seed ?? ''}`, candidates.length)]! : null
 }

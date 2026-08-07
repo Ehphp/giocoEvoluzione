@@ -1,6 +1,7 @@
 import type { CreatureTransformationAssetReadiness } from '../../../shared/creature-transformations/api-contracts.ts'
 import type { TransformationCost, TransformationRequestStatus } from '../../../shared/creature-transformations/request-persistence.ts'
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 export type CreatureTransformationRequestOperation = 'GENERATE_CONCEPT' | 'GENERATE_IMAGE' | 'GENERATE_UNLOCKED_TRANSFORMATION'
 
@@ -20,6 +21,8 @@ export type CreatureTransformationRequestRecord = Readonly<{
     generationQuality: 'low' | 'medium' | 'high' | null
     visualProgressTrackId: string | null
     sourceVisualVersionId: string | null
+    evolutionTargetId: EvolutionTargetId | null
+    evolutionFunction: EvolutionFunctionId | null
     provider: string | null
     model: string | null
     providerRequestId: string | null
@@ -66,6 +69,8 @@ export type ReserveCreatureTransformationRequestInput = TransformationCost & Rea
     conceptSeed?: string
     visualProgressTrackId?: string
     sourceVisualVersionId?: string
+    evolutionTargetId?: EvolutionTargetId
+    evolutionFunction?: EvolutionFunctionId
     requestFingerprint?: string
     dailyRealImageLimit?: number
     globalDailyRealImageLimit?: number
@@ -183,6 +188,8 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         conceptSeed: readString(record, 'concept_seed', true), promptSha256: readString(record, 'prompt_sha256', true),
         generationQuality: readString(record, 'generation_quality', true) as 'low' | 'medium' | 'high' | null,
         visualProgressTrackId: readString(record, 'visual_progress_track_id', true), sourceVisualVersionId: readString(record, 'source_visual_version_id', true),
+        evolutionTargetId: readString(record, 'evolution_target_id', true) as EvolutionTargetId | null,
+        evolutionFunction: readString(record, 'evolution_function', true) as EvolutionFunctionId | null,
         provider: readString(record, 'provider', true), model: readString(record, 'model', true), providerRequestId: readString(record, 'provider_request_id', true),
         visualTraitId: readString(record, 'visual_trait_id', true), intensity: readNumber(record, 'intensity', true),
         promptTemplateVersion: readString(record, 'prompt_template_version', true), conceptSchemaVersion: readNumber(record, 'concept_schema_version', true),
@@ -220,6 +227,7 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_benchmark_case_id: input.benchmarkCaseId ?? null, p_generation_profile_id: input.generationProfileId ?? null,
                 p_concept_seed: input.conceptSeed ?? null,
                 p_visual_progress_track_id: input.visualProgressTrackId ?? null, p_source_visual_version_id: input.sourceVisualVersionId ?? null,
+                p_evolution_target_id: input.evolutionTargetId ?? null, p_evolution_function: input.evolutionFunction ?? null,
                 p_request_fingerprint: input.requestFingerprint ?? null,
                 p_daily_real_image_limit: input.dailyRealImageLimit ?? null,
                 p_global_daily_real_image_limit: input.globalDailyRealImageLimit ?? null,

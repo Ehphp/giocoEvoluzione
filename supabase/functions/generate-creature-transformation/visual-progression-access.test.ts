@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { createValidConcept, TEST_CREATURE_IDENTITY } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import type { StoredVisualVersion, SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 import { orchestrateGenerateUnlockedTransformation, orchestrateGetCreatureVisualProgress, orchestrateGetCurrentCreatureVisual, orchestrateGetGameCreatureVisuals } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
+import { createInMemoryRequestRepository } from './test-request-repository.ts'
 
 const OPEN_PROFILE = 'friend-profile'
 const PILOT_PROFILE = 'pilot-profile'
@@ -92,5 +94,56 @@ describe('visual progression access', () => {
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID,
             progressTrackId: '00000000-0000-4000-8000-000000000004', idempotencyKey: 'friend-attempt',
         }) as never)).resolves.toMatchObject({ success: false, code: 'IMAGE_GENERATION_NOT_ALLOWED' })
+    })
+
+    it('retains the resolved target direction when an unlocked concept is rejected', async () => {
+        const productionPolicy = readCreatureTransformationLabPolicy((name) => ({
+            CREATURE_VISUAL_PROGRESSION_ENABLED: 'true', CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
+            CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED: 'true', CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER: 'OPENAI',
+            CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1', OPENAI_IMAGE_API_KEY: 'test-key',
+            OPENAI_IMAGE_MODEL: 'test-model', OPENAI_IMAGE_ESTIMATED_COST_USD: '0.12', CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD: '1',
+        })[name])
+        const trackId = '00000000-0000-4000-8000-000000000004'
+        let resolvedVisualTraitId: string | null = null
+        const targetTrack = {
+            id: trackId, creatureId: CREATURE_ID, visualTraitId: null, evolutionTargetId: 'TORSO_AND_BACK' as const,
+            status: 'READY' as const, progress: 3, target: 3, readyAt: '2026-08-05T09:00:00.000Z', generatedRequestId: null, completedVersionId: null,
+        }
+        const targetVisualRepository = {
+            async getTrack() { return targetTrack },
+            async resolveTrackTrait({ visualTraitId }: { visualTraitId: string }) {
+                resolvedVisualTraitId = visualTraitId
+                return { ...targetTrack, visualTraitId: visualTraitId as typeof targetTrack.visualTraitId }
+            },
+            async startGeneration() { return { ...targetTrack, visualTraitId: resolvedVisualTraitId, status: 'GENERATING' as const } },
+            async completeGeneration() { return { ...targetTrack, visualTraitId: resolvedVisualTraitId } },
+        } as unknown as SupabaseCreatureVisualProgressionRepository
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const result = await orchestrateGenerateUnlockedTransformation({
+            profileId: 'profile-1', canGenerateImages: true, requestId: 'target-rejected',
+            body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: trackId, idempotencyKey: 'target-rejected-key' },
+            policy: productionPolicy,
+            resolver: {
+                async resolve() {
+                    return {
+                        identity: TEST_CREATURE_IDENTITY, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true,
+                        currentVisualVersionId: '00000000-0000-4000-8000-000000000005', currentVersionNumber: 1, previousTransformations: [],
+                    }
+                },
+            },
+            createGenerator: () => ({ metadata: { generator: 'invalid-target-concept', isMock: false }, async generateConcept() { return createValidConcept() } }),
+            createRealImageProvider: () => { throw new Error('the image provider must not run') },
+            deferBackgroundTask: (task) => { tasks.push(task) },
+            repository: persistence.repository, visualRepository: targetVisualRepository, storage: {} as never,
+            reviewRepository: {} as never,
+        } as never)
+
+        expect(result).toMatchObject({ success: true, accepted: true, requestPersistence: { status: 'RUNNING' } })
+        expect(tasks).toHaveLength(1)
+        await tasks[0]
+        expect(persistence.get('profile-1', 'target-rejected-key')).toMatchObject({
+            status: 'FAILED', errorCode: 'CONCEPT_REJECTED', evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: expect.any(String),
+        })
     })
 })

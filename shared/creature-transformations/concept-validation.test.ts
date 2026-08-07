@@ -95,12 +95,21 @@ describe('validateCreatureTransformationConcept', () => {
         }
         const targetConcept = {
             ...createValidConcept(), schemaVersion: 2, visualTrait: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL', evolutionFunction: 'BALANCE',
-            primaryMutation: { ...createValidConcept().primaryMutation, mutationArchetype: 'BALANCE_TAIL', bodyAreas: ['TAIL'], supportingBodyAreas: ['BACK'] },
+            primaryMutation: { ...createValidConcept().primaryMutation, mutationArchetype: 'BALANCE_TAIL', bodyAreas: ['TAIL'], supportingBodyAreas: ['SKIN_SURFACE'] },
+            colorEvolution: {
+                mode: 'SHIFT', dominantColor: 'deep teal', secondaryColors: ['sea green'], accentColors: ['soft silver'],
+                surfaceEffects: ['subtle scale iridescence'], affectedBodyAreas: ['TAIL', 'SKIN_SURFACE'], intensity: 2,
+                biologicalRationale: 'Le scaglie della coda rendono leggibile il controllo della stabilita durante il movimento.',
+            },
         }
 
         expect(validateCreatureTransformationConcept(targetConcept, targetContext).valid).toBe(true)
+        expect(validateCreatureTransformationConcept({ ...targetConcept, colorEvolution: undefined }, targetContext)).toMatchObject({
+            valid: false,
+            problems: expect.arrayContaining([expect.objectContaining({ code: 'MISSING_REQUIRED_FIELD', path: 'colorEvolution' })]),
+        })
         expect(validateCreatureTransformationConcept({ ...targetConcept, primaryMutation: { ...targetConcept.primaryMutation, bodyAreas: ['TAIL', 'BACK'] } }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'TOO_MANY_BODY_AREAS' })]) })
-        expect(validateCreatureTransformationConcept({ ...targetConcept, primaryMutation: { ...targetConcept.primaryMutation, supportingBodyAreas: ['BACK', 'SKIN_SURFACE'] } }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'TOO_MANY_SUPPORTING_BODY_AREAS' })]) })
+        expect(validateCreatureTransformationConcept({ ...targetConcept, primaryMutation: { ...targetConcept.primaryMutation, supportingBodyAreas: ['BACK', 'SKIN_SURFACE'] } }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'SUPPORTING_BODY_AREA_NOT_ALLOWED' })]) })
         expect(validateCreatureTransformationConcept({ ...targetConcept, visualTrait: 'SENSORY_EXPANSION' }, targetContext)).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'INVALID_VISUAL_TRAIT' })]) })
     })
 

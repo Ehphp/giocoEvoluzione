@@ -6,6 +6,7 @@ import {
     type CreatureConceptGenerator,
     CreatureConceptGenerationError,
 } from './concept-generator.ts'
+import { getEvolutionConstraints } from './evolution-constraints.ts'
 import { VISUAL_TRAIT_BY_ID, type VisualTraitId } from './visual-traits.ts'
 
 type MockConceptVariant = Readonly<{
@@ -135,6 +136,12 @@ const INTENSITY_DESCRIPTION: Readonly<Record<TransformationIntensity, string>> =
     3: 'La mutazione e pronunciata, mantenendo proporzioni e identita riconoscibili.',
 })
 
+const TARGET_INTENSITY_DESCRIPTION: Readonly<Record<TransformationIntensity, string>> = Object.freeze({
+    1: 'La mutazione resta sottile e localizzata nell area anatomica scelta.',
+    2: 'La mutazione e chiara ma resta localizzata nell area anatomica scelta.',
+    3: 'La mutazione e pronunciata ma resta localizzata nell area anatomica scelta.',
+})
+
 const MOCK_COLOR_EVOLUTION_PROFILES: Readonly<Record<VisualTraitId, MockColorEvolutionProfile>> = Object.freeze({
     IMPACT_ADAPTATION: Object.freeze({ dominantColor: 'deep moss green', secondaryColors: ['forest jade'], accentColors: ['warm amber'], surfaceEffects: ['impact-responsive amber veining'], biologicalRationale: 'I pigmenti nelle placche cheratiniche rendono visibili i percorsi di dissipazione degli urti.' }),
     LOCOMOTION_ADAPTATION: Object.freeze({ dominantColor: 'cool teal', secondaryColors: ['spring green'], accentColors: ['burnished gold'], surfaceEffects: ['directional gradients along the moving limbs'], biologicalRationale: 'La distribuzione dei pigmenti segue fibre e tendini per rendere leggibile la tensione necessaria agli scatti.' }),
@@ -165,13 +172,21 @@ function getControlledTrait(input: CreatureConceptGenerationInput) {
 function createColorEvolution(input: CreatureConceptGenerationInput, variant: MockConceptVariant, bodyAreas: readonly BodyArea[] = variant.bodyAreas): ColorEvolution {
     // Three out of four deterministic concepts exercise chromatic evolution; the remaining one proves the conservative path.
     if (stableHash(`color:${input.visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % 4 === 0) return CONSERVATIVE_COLOR_EVOLUTION
+    const constraints = getEvolutionConstraints({
+        evolutionTarget: input.evolutionTarget,
+        visualTrait: input.visualTrait,
+        evolutionFunction: input.evolutionFunction,
+        intensity: input.intensity,
+    })
+    const mode = input.intensity === 3 ? 'SHIFT' : 'EXPAND'
+    if (!constraints.colorEvolution.allowedModes.includes(mode)) return CONSERVATIVE_COLOR_EVOLUTION
     const profile = MOCK_COLOR_EVOLUTION_PROFILES[input.visualTrait.id]
     const affectedBodyAreas = [...new Set([
         ...bodyAreas,
         ...(input.intensity >= 2 ? ['SKIN_SURFACE' as const] : []),
-    ])]
+    ])].filter((area) => constraints.allowedColorBodyAreas.includes(area))
     return {
-        mode: input.intensity === 3 ? 'SHIFT' : 'EXPAND',
+        mode,
         dominantColor: profile.dominantColor,
         secondaryColors: [...profile.secondaryColors],
         accentColors: [...profile.accentColors],
@@ -200,11 +215,24 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
 
         const variant = variants[stableHash(`${visualTrait.id}:${input.intensity}:${input.seed ?? ''}`) % variants.length]
         const target = input.evolutionTarget
+        const constraints = getEvolutionConstraints({
+            evolutionTarget: target,
+            visualTrait,
+            evolutionFunction: input.evolutionFunction,
+            intensity: input.intensity,
+        })
+        if (target && !constraints.isGeneratable) {
+            throw new CreatureConceptGenerationError(
+                'CATALOG_CONFIGURATION_INVALID',
+                'Il target anatomico mock non ha una direzione generabile.',
+            )
+        }
+        const intensityDescription = target ? TARGET_INTENSITY_DESCRIPTION[input.intensity] : INTENSITY_DESCRIPTION[input.intensity]
         const primaryBodyAreas = target
-            ? [target.primaryBodyAreas[stableHash(`${target.id}:${input.seed ?? ''}`) % target.primaryBodyAreas.length]!]
+            ? [constraints.allowedPrimaryBodyAreas[stableHash(`${target.id}:${input.seed ?? ''}`) % constraints.allowedPrimaryBodyAreas.length]!]
             : [...variant.bodyAreas]
         const supportingBodyAreas = target
-            ? variant.bodyAreas.filter((area) => target.supportingBodyAreas.includes(area)).slice(0, 1)
+            ? variant.bodyAreas.filter((area) => constraints.allowedSupportingBodyAreas.includes(area)).slice(0, 1)
             : []
         const secondaryCount = Math.min(input.intensity, variant.secondaryMutations.length, visualTrait.creativeLimits.maxSecondaryMutations, target ? 1 : Infinity)
 
@@ -215,12 +243,12 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
                 ? { evolutionTargetId: target.id, evolutionFunction: input.evolutionFunction }
                 : {}),
             conceptName: variant.conceptName,
-            evolutionaryFunction: `${variant.evolutionaryFunction} ${INTENSITY_DESCRIPTION[input.intensity]}`,
+            evolutionaryFunction: `${variant.evolutionaryFunction} ${intensityDescription}`,
             primaryMutation: {
                 mutationArchetype: variant.mutationArchetype,
                 bodyAreas: primaryBodyAreas,
                 ...(supportingBodyAreas.length ? { supportingBodyAreas } : {}),
-                morphology: `${variant.morphology} ${INTENSITY_DESCRIPTION[input.intensity]}`,
+                morphology: `${variant.morphology} ${intensityDescription}`,
                 material: variant.material,
             },
             secondaryMutations: [...variant.secondaryMutations.slice(0, secondaryCount)],

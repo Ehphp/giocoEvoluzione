@@ -1,6 +1,8 @@
 import { resolveColorEvolution, type ColorEvolution, type CreatureTransformationConcept } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import { getEvolutionConstraints, type EvolutionConstraints } from './evolution-constraints.ts'
+import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
 import type { BackgroundGenerationMode } from './image-generation.ts'
 import type { CreatureRenderSpecification } from './render-specifications.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
@@ -48,7 +50,7 @@ function preserveStructuralCommitment(value: string, colorEvolution: ColorEvolut
     return value.replace(/\b(corpo|body)\s+(?:verde|lime|turchese|teal|blu|blue|viola|indaco|indigo)\b/gi, '$1')
 }
 
-function colorEvolutionInstruction(colorEvolution: ColorEvolution): string {
+function colorEvolutionInstruction(colorEvolution: ColorEvolution, constraints: EvolutionConstraints): string {
     if (colorEvolution.mode === 'PRESERVE') {
         return 'Color evolution: preserve the established palette; do not introduce a new dominant colour.'
     }
@@ -61,7 +63,7 @@ function colorEvolutionInstruction(colorEvolution: ColorEvolution): string {
         : 'Expand the established palette with these intentionally evolved colours'
     return [
         `${change}: dominant ${colorEvolution.dominantColor}; secondary colours ${secondaryColors}; accents ${accentColors}.`,
-        `Apply it visibly across the ${formatPromptList(bodyAreas)} with ${effects}.`,
+        `Apply it visibly across the ${formatPromptList(bodyAreas)} with ${effects}.${constraints.isTargeted ? ` Allowed chromatic body areas: ${formatPromptList(constraints.allowedColorBodyAreas.map((area) => BODY_AREA_PROMPT_LABELS[area]))}.` : ''}`,
         `Chromatic intensity ${colorEvolution.intensity}: the change must be readable in the full image, harmonise with the material, and express this biological function: ${withTerminalPunctuation(colorEvolution.biologicalRationale)}`,
     ].join(' ')
 }
@@ -76,6 +78,12 @@ function backgroundInstruction(backgroundGenerationMode: BackgroundGenerationMod
 export function composeCreatureTransformationPromptTemplateV1(input: PromptTemplateV1Input): CreaturePromptSections {
     const { concept, identity, renderSpecification, visualTrait, backgroundGenerationMode } = input
     const colorEvolution = resolveColorEvolution(concept)
+    const constraints = getEvolutionConstraints({
+        evolutionTarget: concept.evolutionTargetId ? EVOLUTION_TARGET_BY_ID[concept.evolutionTargetId] : undefined,
+        visualTrait,
+        evolutionFunction: concept.evolutionFunction,
+        intensity: concept.intensity,
+    })
     const bodyAreas = concept.primaryMutation.bodyAreas.map((area) => BODY_AREA_PROMPT_LABELS[area])
     const supportingBodyAreas = concept.primaryMutation.supportingBodyAreas?.map((area) => BODY_AREA_PROMPT_LABELS[area]) ?? []
     const primaryMutation = MUTATION_ARCHETYPE_PROMPT_LABELS[concept.primaryMutation.mutationArchetype]
@@ -106,7 +114,7 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
                 ? listSentence('Secondary mutations', concept.secondaryMutations)
                 : 'Secondary mutations: none.',
             sentence('Transformation intensity', INTENSITY_PROMPT_LABELS[concept.intensity]),
-            colorEvolutionInstruction(colorEvolution),
+            colorEvolutionInstruction(colorEvolution, constraints),
         ].filter(Boolean).join(' '),
         preservation: [
             listSentence('Preserve these concept commitments', preservedFeatures),

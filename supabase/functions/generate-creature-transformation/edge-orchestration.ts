@@ -620,6 +620,9 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         const direction = track.evolutionTargetId
             ? resolveEvolutionDirection({ evolutionTargetId: track.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
             : null
+        if (track.evolutionTargetId && !direction) {
+            return failure(input.requestId, 'VISUAL_TRACK_STATE_CONFLICT', 'Il target anatomico non ha una direzione generabile.')
+        }
         const resolvedTrack = direction
             ? await input.visualRepository.resolveTrackTrait({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: track.id, visualTraitId: direction.visualTraitId })
             : track
@@ -632,6 +635,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
             requestFingerprint: fingerprint, ...realImageReservationLimits(input.policy),
             visualProgressTrackId: resolvedTrack.id, sourceVisualVersionId: source.currentVisualVersionId,
+            evolutionTargetId: resolvedTrack.evolutionTargetId ?? undefined, evolutionFunction: direction?.evolutionFunction,
         })
         if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
         if (reservation.record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION') return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La idempotency key appartiene a un operazione diversa.')

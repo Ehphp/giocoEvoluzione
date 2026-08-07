@@ -5,7 +5,7 @@ import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
 import { TRANSFORMATION_INTENSITIES } from './concepts.ts'
 import { VISUAL_TRAITS } from './visual-traits.ts'
-import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
+import { EVOLUTION_TARGET_BY_ID, EVOLUTION_TARGETS, resolveEvolutionDirection } from './evolution-targets.ts'
 
 const generator = new MockCreatureConceptGenerator()
 
@@ -92,6 +92,29 @@ describe('MockCreatureConceptGenerator', () => {
         expect(concept.schemaVersion).toBe(2)
         expect(concept.primaryMutation.bodyAreas).toEqual(['TAIL'])
         expect(concept.evolutionTargetId).toBe('TAIL')
+    })
+
+    it('generates valid local target concepts for every resolved direction and intensity', async () => {
+        for (const target of EVOLUTION_TARGETS) {
+            const direction = resolveEvolutionDirection({ evolutionTargetId: target.id, seed: `mock:${target.id}` })
+            if (!direction) throw new Error(`missing direction for ${target.id}`)
+            const visualTrait = VISUAL_TRAITS.find((trait) => trait.id === direction.visualTraitId)!
+            for (const intensity of TRANSFORMATION_INTENSITIES) {
+                const concept = await generator.generateConcept({
+                    identity: TEST_CREATURE_IDENTITY, visualTrait, intensity, seed: `mock:${target.id}:${intensity}`,
+                    evolutionTarget: target, evolutionTargetId: target.id, evolutionFunction: direction.evolutionFunction,
+                })
+                const validation = validateCreatureTransformationConcept(concept, {
+                    requestedVisualTrait: visualTrait, requestedEvolutionTarget: target, requestedEvolutionFunction: direction.evolutionFunction,
+                    requestedIntensity: intensity, identity: TEST_CREATURE_IDENTITY,
+                })
+
+                expect(validation, `${target.id}/${direction.evolutionFunction}/${intensity}: ${validation.valid ? '' : validation.problems.map((problem) => problem.code).join(', ')}`).toMatchObject({ valid: true })
+                expect(concept.primaryMutation.bodyAreas).toHaveLength(1)
+                expect(target.primaryBodyAreas).toContain(concept.primaryMutation.bodyAreas[0])
+                expect(concept.colorEvolution).toBeDefined()
+            }
+        }
     })
 
     it('proposes intentional colour evolutions frequently while retaining a deterministic conservative path', async () => {
