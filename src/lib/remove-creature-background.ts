@@ -6,6 +6,19 @@ export class CreatureBackgroundRemovalError extends Error {
 }
 
 const BACKGROUND_REMOVAL_MODEL = 'isnet_fp16' as const
+const BACKGROUND_REMOVAL_TIMEOUT_MS = 120_000
+
+function withTimeout<T>(operation: Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+            reject(new CreatureBackgroundRemovalError('Il modello di rimozione sfondo non ha risposto entro due minuti.'))
+        }, BACKGROUND_REMOVAL_TIMEOUT_MS)
+        operation.then(
+            (result) => { window.clearTimeout(timeoutId); resolve(result) },
+            (error) => { window.clearTimeout(timeoutId); reject(error) },
+        )
+    })
+}
 
 export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
     if (rawImage.type && rawImage.type !== 'image/png') {
@@ -13,11 +26,11 @@ export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
     }
     try {
         const { removeBackground } = await import('@imgly/background-removal')
-        const result = await removeBackground(rawImage, {
+        const result = await withTimeout(removeBackground(rawImage, {
             device: 'cpu',
             model: BACKGROUND_REMOVAL_MODEL,
             output: { format: 'image/png' },
-        })
+        }))
         if (result.type !== 'image/png' || !result.size) {
             throw new CreatureBackgroundRemovalError('Il tool non ha prodotto un PNG trasparente utilizzabile.')
         }
