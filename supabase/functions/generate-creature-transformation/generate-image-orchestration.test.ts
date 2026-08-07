@@ -121,6 +121,35 @@ describe('GENERATE_IMAGE edge orchestration', () => {
         expect(JSON.stringify(result)).not.toContain('profile-1')
     })
 
+    it('accepts a schema-v2 anatomical concept when generating its image', async () => {
+        const targetConcept = {
+            ...canonicalConcept(),
+            schemaVersion: 2 as const,
+            visualTrait: 'SENSORY_EXPANSION' as const,
+            evolutionTargetId: 'HEAD_AND_SENSES' as const,
+            evolutionFunction: 'PERCEPTION' as const,
+            primaryMutation: {
+                mutationArchetype: 'SENSORY_FRILLS' as const,
+                bodyAreas: ['HEAD_SURFACE'] as const,
+                supportingBodyAreas: [] as string[],
+                morphology: 'Sottili frange sensoriali lungo la superficie del capo.',
+                material: 'Cheratina flessibile e iridescente.',
+            },
+            colorEvolution: {
+                mode: 'EXPAND' as const,
+                dominantColor: 'verde smeraldo',
+                secondaryColors: ['turchese'],
+                accentColors: ['oro tenue'],
+                surfaceEffects: ['riflessi iridescenti'],
+                affectedBodyAreas: ['NECK'] as const,
+                intensity: 2 as const,
+                biologicalRationale: 'Le frange sul collo migliorano la lettura delle vibrazioni ambientali.',
+            },
+        }
+
+        await expect(orchestrateGenerateImage(orchestrationInput({ body: request({ concept: targetConcept }) }))).resolves.toMatchObject({ success: true })
+    })
+
     it('enforces authentication, ownership, policy, concept validation and refuses every REAL request', async () => {
         await expect(orchestrateGenerateImage(orchestrationInput({ profileId: null }))).resolves.toMatchObject({ code: 'UNAUTHENTICATED' })
         await expect(orchestrateGenerateImage(orchestrationInput({ resolver: createResolver('profile-2') }))).resolves.toMatchObject({ code: 'CREATURE_NOT_OWNED' })

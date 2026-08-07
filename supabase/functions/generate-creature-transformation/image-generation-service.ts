@@ -8,6 +8,7 @@ import { composeCreatureTransformationPrompt, CREATURE_PROMPT_TEMPLATE_VERSION }
 import type { CreaturePromptTemplateVersion } from '../../../shared/creature-transformations/prompt-composer.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
+import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { SupabaseCreatureTransformationStorageAdapter } from './supabase-creature-transformation-storage.ts'
 import { sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 
@@ -106,8 +107,15 @@ export async function generateImageForAuthenticatedProfile(
     if (!requestedVisualTrait || (requestedIntensity !== 1 && requestedIntensity !== 2 && requestedIntensity !== 3)) {
         return conceptRejected(input.requestId)
     }
+    const requestedEvolutionTarget = input.request.concept.evolutionTargetId
+        ? EVOLUTION_TARGET_BY_ID[input.request.concept.evolutionTargetId]
+        : undefined
     const validation = validateCreatureTransformationConcept(input.request.concept, {
         requestedVisualTrait,
+        ...(requestedEvolutionTarget ? {
+            requestedEvolutionTarget,
+            requestedEvolutionFunction: input.request.concept.evolutionFunction,
+        } : {}),
         requestedIntensity,
         identity: resolvedCreature.identity,
         previousTransformations: resolvedCreature.previousTransformations,
