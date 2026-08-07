@@ -11,9 +11,9 @@ const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
-const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64'])
+const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64', 'displayAssetWebpBase64'])
 const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
-const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64'])
+const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64', 'displayAssetWebpBase64'])
 const SELECT_TRACK_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'evolutionTargetId'])
 const GET_VISUAL_PROGRESS_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
 const GET_CURRENT_VISUAL_REQUEST_FIELDS = new Set(['operation', 'creatureId'])
@@ -207,7 +207,8 @@ export function parseSubmitBackgroundRemovalCandidateRequest(value: unknown): Pa
     if (!body || !hasOnlyFields(body, BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS) || body.operation !== 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE' || !transformationRequestId || typeof body.candidatePngBase64 !== 'string' || !body.candidatePngBase64.length || body.candidatePngBase64.length > 14_000_000) {
         return { valid: false, code: 'INVALID_REQUEST', message: 'Il candidato PNG non rispetta il contratto.' }
     }
-    return { valid: true, request: { operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: body.candidatePngBase64 } }
+    if (body.displayAssetWebpBase64 !== undefined && (typeof body.displayAssetWebpBase64 !== 'string' || !body.displayAssetWebpBase64.length || body.displayAssetWebpBase64.length > 4_000_000)) return { valid: false, code: 'INVALID_REQUEST', message: 'Il display asset non rispetta il contratto.' }
+    return { valid: true, request: { operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: body.candidatePngBase64, ...(typeof body.displayAssetWebpBase64 === 'string' ? { displayAssetWebpBase64: body.displayAssetWebpBase64 } : {}) } }
 }
 
 export function parseListVisualBackgroundCleanupRequest(value: unknown): ParsedVisualBackgroundCleanupRequest<ListVisualBackgroundCleanupRequest> {
@@ -219,8 +220,8 @@ export function parseListVisualBackgroundCleanupRequest(value: unknown): ParsedV
 export function parseSubmitVisualBackgroundCleanupRequest(value: unknown): ParsedVisualBackgroundCleanupRequest<SubmitVisualBackgroundCleanupRequest> {
     const body = asRecord(value)
     const visualVersionId = body ? readUuid(body, 'visualVersionId') : null
-    if (!body || !hasOnlyFields(body, VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS) || body.operation !== 'SUBMIT_VISUAL_BACKGROUND_CLEANUP' || !visualVersionId || typeof body.candidatePngBase64 !== 'string' || !body.candidatePngBase64.length || body.candidatePngBase64.length > 14_000_000) return { valid: false, code: 'INVALID_REQUEST', message: 'Il PNG batch non rispetta il contratto.' }
-    return { valid: true, request: { operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId, candidatePngBase64: body.candidatePngBase64 } }
+    if (!body || !hasOnlyFields(body, VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS) || body.operation !== 'SUBMIT_VISUAL_BACKGROUND_CLEANUP' || !visualVersionId || typeof body.candidatePngBase64 !== 'string' || !body.candidatePngBase64.length || body.candidatePngBase64.length > 14_000_000 || (body.displayAssetWebpBase64 !== undefined && (typeof body.displayAssetWebpBase64 !== 'string' || !body.displayAssetWebpBase64.length || body.displayAssetWebpBase64.length > 4_000_000))) return { valid: false, code: 'INVALID_REQUEST', message: 'Il PNG batch non rispetta il contratto.' }
+    return { valid: true, request: { operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId, candidatePngBase64: body.candidatePngBase64, ...(typeof body.displayAssetWebpBase64 === 'string' ? { displayAssetWebpBase64: body.displayAssetWebpBase64 } : {}) } }
 }
 
 export function parseSelectCreatureVisualProgressTrackRequest(value: unknown): ParsedVisualProgressRequest<SelectCreatureVisualProgressTrackRequest> {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { listVisualBackgroundCleanup, submitVisualBackgroundCleanup } from '../../lib/creature-transformations-api'
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
+import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
 import './VisualBackgroundCleanupScreen.css'
 
@@ -51,7 +52,9 @@ export function VisualBackgroundCleanupScreen({ onBack, onVisualChanged }: Props
                 const transparent = await removeCreatureBackground(await response.blob())
                 setCurrentStep('Validazione e attivazione del PNG trasparente...')
                 const pngBytes = new Uint8Array(await transparent.arrayBuffer())
-                await submitVisualBackgroundCleanup({ operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId: entry.visualVersionId, candidatePngBase64: pngBytesToBase64(pngBytes) })
+                const displayAsset = await createCreatureDisplayAsset(transparent)
+                const displayBytes = new Uint8Array(await displayAsset.blob.arrayBuffer())
+                await submitVisualBackgroundCleanup({ operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId: entry.visualVersionId, candidatePngBase64: pngBytesToBase64(pngBytes), displayAssetWebpBase64: pngBytesToBase64(displayBytes) })
                 localResults.push({ visualVersionId: entry.visualVersionId, state: 'DONE', message: 'Versione trasparente attivata.' })
             } catch (nextError) {
                 localResults.push({ visualVersionId: entry.visualVersionId, state: 'FAILED', message: nextError instanceof Error ? nextError.message : 'Elaborazione non riuscita.' })

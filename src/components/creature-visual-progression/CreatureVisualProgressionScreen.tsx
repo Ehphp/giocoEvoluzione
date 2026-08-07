@@ -5,6 +5,7 @@ import { EVOLUTION_TARGETS, type EvolutionTargetId } from '../../../shared/creat
 import type { PlayerCreatureRecord } from '../../lib/profile-api'
 import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, selectCreatureVisualProgressTrack, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
+import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
 import './CreatureVisualProgressionScreen.css'
 
@@ -82,9 +83,11 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             setPostProcessingMessage('Caricamento del modello di scontorno ad alta qualita: il primo avvio puo richiedere piu tempo...')
             const transparentPng = await removeCreatureBackground(await response.blob())
             const bytes = new Uint8Array(await transparentPng.arrayBuffer())
+            const displayAsset = await createCreatureDisplayAsset(transparentPng)
+            const displayBytes = new Uint8Array(await displayAsset.blob.arrayBuffer())
             const base64 = pngBytesToBase64(bytes)
             setPostProcessingMessage('Validazione del PNG trasparente...')
-            await submitBackgroundRemovalCandidate({ operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: base64 })
+            await submitBackgroundRemovalCandidate({ operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', transformationRequestId, candidatePngBase64: base64, displayAssetWebpBase64: pngBytesToBase64(displayBytes) })
             postProcessingAttempts.current = 0
             setPostProcessingMessage(null)
             await refresh()

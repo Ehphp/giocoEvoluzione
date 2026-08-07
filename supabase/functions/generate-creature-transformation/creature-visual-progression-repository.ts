@@ -84,6 +84,8 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
         promptTemplateVersion: nullableString(row.prompt_template_version), promptSha256: nullableString(row.prompt_sha256), assetPath: string(row.asset_path)!,
         assetSha256: string(row.asset_sha256)!, mimeType: row.mime_type === 'image/png' ? 'image/png' : 'image/png', width: number(row.width), height: number(row.height),
         hasAlpha: row.has_alpha === true, status: status as StoredVisualVersion['status'], adoptedAt: nullableString(row.adopted_at),
+        displayAssetPath: nullableString(row.display_asset_path), displayAssetSha256: nullableString(row.display_asset_sha256),
+        displayMimeType: row.display_mime_type === 'image/webp' ? 'image/webp' : null, displayWidth: row.display_width === null || row.display_width === undefined ? null : number(row.display_width), displayHeight: row.display_height === null || row.display_height === undefined ? null : number(row.display_height),
     }
 }
 
@@ -126,10 +128,12 @@ export class SupabaseCreatureVisualProgressionRepository {
         return (Array.isArray(data) ? data : []).map(mapVisualVersion)
     }
 
-    async promoteCleanedVisual(input: { visualVersionId: string; assetPath: string; assetSha256: string; width: number; height: number }): Promise<StoredVisualVersion> {
+    async promoteCleanedVisual(input: { visualVersionId: string; assetPath: string; assetSha256: string; width: number; height: number; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<StoredVisualVersion> {
         return mapVisualVersion(await this.rpc('promote_cleaned_creature_visual', {
             p_visual_version_id: input.visualVersionId, p_asset_path: input.assetPath,
             p_asset_sha256: input.assetSha256, p_width: input.width, p_height: input.height,
+            p_display_asset_path: input.displayAsset?.path ?? null, p_display_asset_sha256: input.displayAsset?.sha256 ?? null,
+            p_display_mime_type: input.displayAsset ? 'image/webp' : null, p_display_width: input.displayAsset?.width ?? null, p_display_height: input.displayAsset?.height ?? null,
         }))
     }
 

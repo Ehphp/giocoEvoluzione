@@ -45,6 +45,11 @@ export type CreatureVisualVersion = Readonly<{
     width: number
     height: number
     hasAlpha: boolean
+    displayAssetPath?: string | null
+    displayAssetSha256?: string | null
+    displayMimeType?: 'image/webp' | null
+    displayWidth?: number | null
+    displayHeight?: number | null
     status: CreatureVisualVersionStatus
     adoptedAt: string | null
 }>
@@ -57,7 +62,7 @@ export type CurrentCreatureVisualResponse = Readonly<{
     expiresAt: string
     width: number
     height: number
-    mimeType: 'image/png'
+    mimeType: 'image/png' | 'image/webp'
     sha256: string
     isBaseVersion: boolean
 }>

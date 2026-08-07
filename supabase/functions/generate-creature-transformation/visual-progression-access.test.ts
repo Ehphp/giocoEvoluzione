@@ -78,6 +78,23 @@ describe('visual progression access', () => {
             .resolves.toMatchObject({ success: true, visual: { signedUrl: 'https://signed.example/verdant-hatchling-v1.png' } })
     })
 
+    it('prefers a persisted WebP display asset and falls back to the legacy PNG master', async () => {
+        const displayVersion = {
+            ...version(OPEN_PROFILE, CREATURE_ID, 'IMPACT_ADAPTATION'),
+            displayAssetPath: `display/${'a'.repeat(64)}.webp`, displayAssetSha256: 'b'.repeat(64),
+            displayMimeType: 'image/webp' as const, displayWidth: 512, displayHeight: 768,
+        }
+        const displayRepository = {
+            ...visualRepository(),
+            async getCurrentVersion() { return displayVersion },
+        } as unknown as SupabaseCreatureVisualProgressionRepository
+
+        await expect(orchestrateGetCurrentCreatureVisual({ ...input({ operation: 'GET_CURRENT_VISUAL', creatureId: CREATURE_ID }), visualRepository: displayRepository } as never))
+            .resolves.toMatchObject({ success: true, visual: { signedUrl: `https://signed.example/display/${'a'.repeat(64)}.webp`, mimeType: 'image/webp', width: 512, height: 768 } })
+        await expect(orchestrateGetCurrentCreatureVisual(input({ operation: 'GET_CURRENT_VISUAL', creatureId: CREATURE_ID }) as never))
+            .resolves.toMatchObject({ success: true, visual: { signedUrl: 'https://signed.example/verdant-hatchling-v1.png', mimeType: 'image/png' } })
+    })
+
     it('returns the latest failed generation for an otherwise ready track', async () => {
         const failure = { requestId: 'failed-request', code: 'REAL_IMAGE_PROVIDER_FAILED', message: 'Il provider immagini non ha completato la richiesta.' }
         await expect(orchestrateGetCreatureVisualProgress({ ...input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }), visualRepository: visualRepository(failure) } as never))

@@ -84,6 +84,7 @@ export type SubmitBackgroundRemovalCandidateRequest = {
     operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE'
     transformationRequestId: string
     candidatePngBase64: string
+    displayAssetWebpBase64?: string
 }
 
 export type ListVisualBackgroundCleanupRequest = {
@@ -94,6 +95,7 @@ export type SubmitVisualBackgroundCleanupRequest = {
     operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP'
     visualVersionId: string
     candidatePngBase64: string
+    displayAssetWebpBase64?: string
 }
 
 

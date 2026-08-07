@@ -107,7 +107,7 @@ export interface CreatureTransformationRequestRepository {
     markRunning(input: { requestId: string; profileId: string }): Promise<CreatureTransformationRequestRecord>
     markSucceeded(input: { requestId: string; profileId: string; data: RequestTransitionData }): Promise<CreatureTransformationRequestRecord>
     markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord>
-    finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[] }): Promise<CreatureTransformationRequestRecord>
+    finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[]; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<CreatureTransformationRequestRecord>
     getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null>
     getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null>
 }
@@ -259,7 +259,7 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
         return this.transition(input, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage })
     }
 
-    async finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[] }): Promise<CreatureTransformationRequestRecord> {
+    async finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[]; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<CreatureTransformationRequestRecord> {
         let response: { data: unknown; error: DatabaseError }
         try {
             response = await this.client.rpc('finalize_creature_background_removal_candidate', {
@@ -267,6 +267,8 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_candidate_sha256: input.candidateSha256, p_candidate_mime_type: input.candidateMimeType,
                 p_candidate_width: input.candidateWidth, p_candidate_height: input.candidateHeight,
                 p_validation_warnings: input.validationWarnings,
+                p_display_asset_path: input.displayAsset?.path ?? null, p_display_asset_sha256: input.displayAsset?.sha256 ?? null,
+                p_display_mime_type: input.displayAsset ? 'image/webp' : null, p_display_width: input.displayAsset?.width ?? null, p_display_height: input.displayAsset?.height ?? null,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile finalizzare il PNG elaborato.', { cause: error })

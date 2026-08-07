@@ -59,9 +59,11 @@ function isSafeResultObjectPath(path: string): boolean {
         || /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
         || /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
         || /^cleanup\/[a-f0-9]{64}\.png$/.test(path)
+        || /^display\/[a-f0-9]{64}\.webp$/.test(path)
 }
 
 export class SupabaseCreatureTransformationStorageAdapter {
+    private static readonly signedUrlCache = new Map<string, StoredCreatureTransformationImage>()
     private readonly client: CreatureTransformationStorageClient
     private readonly sourceBucket: string
     private readonly experimentBucket: string
@@ -115,6 +117,11 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return `cleanup/${digest}.png`
     }
 
+    async createDisplayObjectPath(key: string): Promise<string> {
+        const digest = await sha256Hex(new TextEncoder().encode(key))
+        return `display/${digest}.webp`
+    }
+
     async saveResult(input: {
         profileId: string
         idempotencyKey: string
@@ -136,11 +143,19 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return this.savePng(await this.createCleanupObjectPath(input.visualVersionId), input.image)
     }
 
+    async saveDisplayAsset(input: { key: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
+        return this.saveImage(await this.createDisplayObjectPath(input.key), input.image, 'image/webp')
+    }
+
     private async savePng(objectPath: string, image: Uint8Array): Promise<StoredCreatureTransformationImage> {
+        return this.saveImage(objectPath, image, 'image/png')
+    }
+
+    private async saveImage(objectPath: string, image: Uint8Array, contentType: 'image/png' | 'image/webp'): Promise<StoredCreatureTransformationImage> {
         let upload: { error: StorageError }
         try {
             upload = await this.client.from(this.experimentBucket).upload(objectPath, image, {
-                contentType: 'image/png',
+                contentType,
                 upsert: true,
             })
         } catch (error) {
@@ -176,6 +191,9 @@ export class SupabaseCreatureTransformationStorageAdapter {
     async createVisualVersionSignedUrl(input: { assetPath: string; isBaseVersion: boolean }): Promise<StoredCreatureTransformationImage> {
         const isCleanupPath = /^cleanup\/[a-f0-9]{64}\.png$/.test(input.assetPath)
         const bucket = !input.isBaseVersion || isCleanupPath ? this.experimentBucket : this.sourceBucket
+        const cacheKey = `${bucket}:${input.assetPath}`
+        const cached = SupabaseCreatureTransformationStorageAdapter.signedUrlCache.get(cacheKey)
+        if (cached && Date.parse(cached.expiresAt) - this.now() > 30_000) return cached
         if (input.isBaseVersion && !isCleanupPath && !/^[A-Za-z0-9._/-]{1,512}$/.test(input.assetPath)) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La sorgente visuale non e valida.')
         }
@@ -191,6 +209,8 @@ export class SupabaseCreatureTransformationStorageAdapter {
         if (signed.error || !signed.data?.signedUrl) {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo della visuale.', { cause: signed.error ?? undefined })
         }
-        return { signedUrl: signed.data.signedUrl, expiresAt: new Date(this.now() + this.signedUrlTtlSeconds * 1000).toISOString() }
+        const result = { signedUrl: signed.data.signedUrl, expiresAt: new Date(this.now() + this.signedUrlTtlSeconds * 1000).toISOString() }
+        SupabaseCreatureTransformationStorageAdapter.signedUrlCache.set(cacheKey, result)
+        return result
     }
 }

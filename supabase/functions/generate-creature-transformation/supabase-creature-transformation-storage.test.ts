@@ -58,4 +58,15 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
         await expect(adapter.createVisualVersionSignedUrl({ assetPath: 'experiments/raw/profile-1/not-a-hash.png', isBaseVersion: false }))
             .rejects.toMatchObject({ code: 'SIGNED_URL_FAILED' } satisfies Partial<CreatureTransformationStorageError>)
     })
+
+    it('reuses a valid signed URL for the same immutable visual asset', async () => {
+        const mock = createStorageClient()
+        const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client, { signedUrlTtlSeconds: 120, now: () => 0 })
+        const path = `cleanup/${'c'.repeat(64)}.png`
+
+        await adapter.createVisualVersionSignedUrl({ assetPath: path, isBaseVersion: false })
+        await adapter.createVisualVersionSignedUrl({ assetPath: path, isBaseVersion: false })
+
+        expect(mock.createSignedUrl).toHaveBeenCalledTimes(1)
+    })
 })

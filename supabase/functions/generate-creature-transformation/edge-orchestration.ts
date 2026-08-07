@@ -22,7 +22,7 @@ import { CreatureConceptGenerationError } from '../../../shared/creature-transfo
 import type { CreatureIdentityResolver, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
 import { getEnabledCreatureImageGenerationProfile, type CreatureImageGenerationProfile } from '../../../shared/creature-transformations/image-generation-profiles.ts'
-import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
+import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { MockCreatureConceptGenerator } from '../../../shared/creature-transformations/mock-concept-generator.ts'
 import { classifyExperimentReview, summarizeCreatureTransformationBenchmark, type CreatureTransformationBenchmarkMetricRecord, type CreatureTransformationExperimentReview } from '../../../shared/creature-transformations/experiment-reviews.ts'
@@ -439,11 +439,13 @@ function productionRealImageFailure(policy: CreatureTransformationLabPolicy, pro
 }
 
 async function toCurrentVisualResponse(input: GenerateImageEdgeOrchestrationInput, version: StoredVisualVersion) {
-    const signed = await input.storage.createVisualVersionSignedUrl({ assetPath: version.assetPath, isBaseVersion: version.visualTraitId === null })
+    const displayAvailable = Boolean(version.displayAssetPath && version.displayAssetSha256 && version.displayMimeType === 'image/webp' && version.displayWidth && version.displayHeight)
+    const assetPath = displayAvailable ? version.displayAssetPath! : version.assetPath
+    const signed = await input.storage.createVisualVersionSignedUrl({ assetPath, isBaseVersion: !displayAvailable && version.visualTraitId === null })
     return {
         creatureId: version.creatureId, versionId: version.id, versionNumber: version.versionNumber,
-        signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, width: version.width, height: version.height,
-        mimeType: version.mimeType, sha256: version.assetSha256, isBaseVersion: version.visualTraitId === null,
+        signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, width: displayAvailable ? version.displayWidth! : version.width, height: displayAvailable ? version.displayHeight! : version.height,
+        mimeType: displayAvailable ? 'image/webp' : version.mimeType, sha256: displayAvailable ? version.displayAssetSha256! : version.assetSha256, isBaseVersion: version.visualTraitId === null,
     } as const
 }
 
@@ -681,12 +683,20 @@ function decodeBackgroundRemovalCandidate(base64: string): Uint8Array | null {
     }
 }
 
+function isWebp(bytes: Uint8Array): boolean {
+    return bytes.length >= 12
+        && String.fromCharCode(...bytes.subarray(0, 4)) === 'RIFF'
+        && String.fromCharCode(...bytes.subarray(8, 12)) === 'WEBP'
+}
+
 export async function orchestrateSubmitBackgroundRemovalCandidate(input: GenerateImageEdgeOrchestrationInput): Promise<SubmitBackgroundRemovalCandidateResponse | CreatureTransformationErrorResponse> {
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseSubmitBackgroundRemovalCandidateRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     const bytes = decodeBackgroundRemovalCandidate(parsed.request.candidatePngBase64)
     if (!bytes) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il PNG elaborato non puo essere decodificato.')
+    const displayBytes = parsed.request.displayAssetWebpBase64 ? decodeBackgroundRemovalCandidate(parsed.request.displayAssetWebpBase64) : null
+    if (parsed.request.displayAssetWebpBase64 && (!displayBytes || !isWebp(displayBytes))) return failure(input.requestId, 'BACKGROUND_REMOVAL_CANDIDATE_INVALID', 'Il display asset WebP non e valido.')
     let record: CreatureTransformationRequestRecord | null
     try {
         record = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.transformationRequestId })
@@ -706,10 +716,15 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
     try {
         const candidatePath = await input.storage.createCandidateObjectPath(input.profileId, record.id)
         await input.storage.saveBackgroundRemovalCandidate({ profileId: input.profileId, transformationRequestId: record.id, image: bytes })
+        const displayAsset = displayBytes
+            ? { path: await input.storage.createDisplayObjectPath(record.id), sha256: await sha256Hex(displayBytes), width: 512, height: 768 }
+            : undefined
+        if (displayBytes) await input.storage.saveDisplayAsset({ key: record.id, image: displayBytes })
         const finalized = await input.repository.finalizeBackgroundRemovalCandidate({
             requestId: record.id, profileId: input.profileId, candidatePath, candidateSha256: validation.metadata.sha256,
             candidateMimeType: validation.metadata.mimeType, candidateWidth: validation.metadata.width,
             candidateHeight: validation.metadata.height, validationWarnings: validation.warnings,
+            ...(displayAsset ? { displayAsset } : {}),
         })
         return {
             success: true, requestId: input.requestId, requestPersistence: toPersistence(finalized, 'CREATED'),
@@ -749,6 +764,8 @@ export async function orchestrateSubmitVisualBackgroundCleanup(input: GenerateIm
     if (access) return failure(input.requestId, access.code, access.message)
     const bytes = decodeBackgroundRemovalCandidate(parsed.request.candidatePngBase64)
     if (!bytes) return failure(input.requestId, 'BACKGROUND_CLEANUP_CANDIDATE_INVALID', 'Il PNG ripulito non puo essere decodificato.')
+    const displayBytes = parsed.request.displayAssetWebpBase64 ? decodeBackgroundRemovalCandidate(parsed.request.displayAssetWebpBase64) : null
+    if (parsed.request.displayAssetWebpBase64 && (!displayBytes || !isWebp(displayBytes))) return failure(input.requestId, 'BACKGROUND_CLEANUP_CANDIDATE_INVALID', 'Il display asset WebP non e valido.')
     const validation = await (input.validator ?? new ImageValidator()).validate({
         bytes, mimeType: 'image/png', renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
         requireAlphaCoverage: true, requireTransparentEdges: true,
@@ -757,9 +774,14 @@ export async function orchestrateSubmitVisualBackgroundCleanup(input: GenerateIm
     try {
         const assetPath = await input.storage.createCleanupObjectPath(parsed.request.visualVersionId)
         await input.storage.saveCleanedVisual({ visualVersionId: parsed.request.visualVersionId, image: bytes })
+        const displayAsset = displayBytes
+            ? { path: await input.storage.createDisplayObjectPath(parsed.request.visualVersionId), sha256: await sha256Hex(displayBytes), width: 512, height: 768 }
+            : undefined
+        if (displayBytes) await input.storage.saveDisplayAsset({ key: parsed.request.visualVersionId, image: displayBytes })
         const version = await input.visualRepository.promoteCleanedVisual({
             visualVersionId: parsed.request.visualVersionId, assetPath, assetSha256: validation.metadata.sha256,
             width: validation.metadata.width, height: validation.metadata.height,
+            ...(displayAsset ? { displayAsset } : {}),
         })
         return { success: true, requestId: input.requestId, visualVersionId: version.id, creatureId: version.creatureId, versionNumber: version.versionNumber }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message, details.problems) }

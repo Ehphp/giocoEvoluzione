@@ -85,6 +85,19 @@ npm run audit:metagame
 npm run audit:evolution
 ```
 
+## Backfill display asset creature
+
+Le visual version usano un PNG master immutabile e un WebP di visualizzazione separato. Dopo il deploy della migrazione `202608070001_creature_display_assets.sql`, esegui il backfill in un ambiente protetto con le sole credenziali server:
+
+```bash
+$env:SUPABASE_URL = 'https://your-project.supabase.co'
+$env:SUPABASE_SERVICE_ROLE_KEY = '...'
+npm run backfill:creature-display-assets -- --dry-run
+npm run backfill:creature-display-assets
+```
+
+Il comando è idempotente: salta le versioni solo quando i metadati `display_*` sono completi e il WebP deterministico è presente nello Storage; altrimenti ripara lo stato senza modificare il master e continua dopo errori per singola versione. Usa `--force` solo per rigenerare esplicitamente ogni display asset sullo stesso path deterministico.
+
 ## Bot e audit
 
 - Le regole restano in `shared/game-rules`; `simulateMatch` richiama direttamente `resolveRound` e `resolveMatchOutcome`.

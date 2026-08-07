@@ -22,8 +22,11 @@ import type {
     ListVisualBackgroundCleanupResponse,
     SubmitVisualBackgroundCleanupResponse,
     TransformationRequestStatusResponse,
+    CurrentCreatureVisualApiResponse,
+    GameCreatureVisualsResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
+import { reuseCreatureVisualUrl } from './creature-visual-url-cache'
 
 type FunctionInvokeError = Error & { context?: unknown }
 
@@ -194,11 +197,13 @@ export async function getCreatureVisualProgress(request: GetCreatureVisualProgre
 }
 
 export async function getCurrentCreatureVisual(request: GetCurrentCreatureVisualRequest, invoker?: CreatureTransformationFunctionInvoker) {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, visual: unknown }>>(request, invoker)
+    const response = await invokeCreatureTransformation<CurrentCreatureVisualApiResponse>(request, invoker)
+    return { ...response, visual: reuseCreatureVisualUrl(response.visual) }
 }
 
 export async function getGameCreatureVisuals(request: GetGameCreatureVisualsRequest, invoker?: CreatureTransformationFunctionInvoker) {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, player: unknown, opponent: unknown }>>(request, invoker)
+    const response = await invokeCreatureTransformation<GameCreatureVisualsResponse>(request, invoker)
+    return { ...response, player: reuseCreatureVisualUrl(response.player), opponent: response.opponent ? reuseCreatureVisualUrl(response.opponent) : null }
 }
 
 export async function generateUnlockedCreatureTransformation(request: GenerateUnlockedTransformationRequest, invoker?: CreatureTransformationFunctionInvoker) {
