@@ -93,7 +93,7 @@ Le visual version usano un PNG master immutabile e un WebP di visualizzazione se
 supabase db push
 ```
 
-La migration richiesta è `202608070001_creature_display_assets.sql`; non avviare il backfill finché il deploy non è completato.
+La migration richiesta è `202608070003_creature_display_assets.sql`; non avviare il backfill finché il deploy non è completato.
 
 ```bash
 $env:SUPABASE_URL = 'https://<project-ref>.supabase.co' # Project Settings > API > Project URL, non l URL Dashboard

@@ -64,7 +64,7 @@ function usesSourceBucket(version: StoredVisualVersion) {
 function migrationRequiredError(error: { code?: string; message?: string }): Error | null {
     const message = error.message ?? ''
     if (error.code === '42703' || /creature_visual_versions\.display_(asset_path|asset_sha256|mime_type|width|height) does not exist/i.test(message)) {
-        return new Error('La migrazione 202608070001_creature_display_assets.sql non e stata applicata al database. Esegui supabase db push sul progetto collegato, quindi rilancia il backfill.')
+        return new Error('La migrazione 202608070003_creature_display_assets.sql non e stata applicata al database. Esegui supabase db push sul progetto collegato, quindi rilancia il backfill.')
     }
     return null
 }
