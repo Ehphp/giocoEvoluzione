@@ -61,6 +61,8 @@ export function ProfileScreen({
     const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
     const selectedVersionId = selectedVisualVersionId ?? currentVisualVersionId ?? null
     const selectedIndex = Math.max(0, visualHistory?.findIndex((entry) => entry.id === selectedVersionId) ?? 0)
+    const selectedVisual = visualHistory?.[selectedIndex]
+    const activeVisualUrl = selectedVisual?.signedUrl ?? visualUrl
 
     async function selectVisualVersion(versionId: string) {
         if (!onSelectVisualVersion || versionId === currentVisualVersionId) return
@@ -80,19 +82,28 @@ export function ProfileScreen({
                 <button type="button" onClick={onLogout}>Logout</button>
             </header>
 
-            <section className="profile-screen__creature">
-                {visualUrl ? <img className="profile-screen__creature-image" src={visualUrl} alt="Visuale ufficiale della creatura" /> : null}
-                <div><span>Creatura attuale</span><h2>{creature.name ?? 'Creatura iniziale'}</h2><p>{creature.base_creature_key}</p></div>
-                <div><strong>Livello {creature.level}</strong><small>Esperienza: {experience.current} / {experience.required}</small></div>
+            <section className="profile-screen__creature" aria-label="Creatura attiva">
+                <div className="profile-screen__creature-intro">
+                    <span>Creatura attuale</span>
+                    <h2>{creature.name ?? 'Creatura iniziale'}</h2>
+                    <p>{creature.base_creature_key}</p>
+                </div>
+                <figure className="profile-screen__creature-stage">
+                    {activeVisualUrl ? <img className="profile-screen__creature-image" src={activeVisualUrl} alt={`Versione attiva di ${creature.name ?? 'Creatura iniziale'}`} /> : null}
+                    <figcaption>{selectedVisual ? `v${selectedVisual.versionNumber} · ${selectedVisual.conceptName ?? 'Forma base'}` : `v${visualVersionNumber ?? 1} · ${visualTrait ?? 'Forma base'}`}</figcaption>
+                </figure>
+                <div className="profile-screen__creature-level"><strong>Livello {creature.level}</strong><small>Esperienza: {experience.current} / {experience.required}</small></div>
             </section>
 
             <section className="profile-screen__visual" aria-label="Progressione visuale">
                 <div><span>Versione visuale</span><strong>{visualVersionNumber ?? 1}</strong><small>{visualTrait ?? 'Forma base'}</small></div>
                 {visualProgress ? <div><span>Percorso visivo</span><strong>{visualProgress.status === 'READY' ? 'Trasformazione sbloccata' : `${visualProgress.progress} / ${visualProgress.target} vittorie`}</strong></div> : null}
-                {onOpenEvolution ? <button type="button" onClick={onOpenEvolution}>Apri evoluzione</button> : null}
-                {onOpenBackgroundCleanup ? <button type="button" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</button> : null}
+                <div className="profile-screen__visual-actions">
+                    {onOpenEvolution ? <button type="button" className="profile-screen__evolution-button" onClick={onOpenEvolution}>Evolvi creatura</button> : null}
+                    {onOpenBackgroundCleanup ? <button type="button" className="profile-screen__cleanup-button" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</button> : null}
+                </div>
             </section>
-            {visualHistory?.length ? <section className="profile-screen__visual-history"><h2>Versione attiva</h2><div className="profile-screen__visual-selector"><figure>{visualHistory[selectedIndex] ? <img src={visualHistory[selectedIndex].signedUrl} alt={`Versione ${visualHistory[selectedIndex].versionNumber} della creatura`} /> : null}<figcaption>v{visualHistory[selectedIndex]?.versionNumber ?? 1} · {visualHistory[selectedIndex]?.conceptName ?? 'Forma base'}</figcaption></figure><input type="range" min="0" max={Math.max(0, visualHistory.length - 1)} value={selectedIndex} disabled={isSelectingVisual || !onSelectVisualVersion} onChange={(event) => { const next = visualHistory[Number(event.target.value)]; if (next) void selectVisualVersion(next.id) }} aria-label="Scegli la versione visuale della creatura" /><div>{visualHistory.map((entry) => <button key={entry.id} type="button" className={entry.id === currentVisualVersionId ? 'is-active' : ''} disabled={isSelectingVisual || !onSelectVisualVersion} onClick={() => void selectVisualVersion(entry.id)}>v{entry.versionNumber}</button>)}</div>{visualSelectionError ? <p className="profile-screen__error" role="alert">{visualSelectionError}</p> : null}</div></section> : null}
+            {visualHistory?.length ? <section className="profile-screen__visual-history"><div className="profile-screen__visual-history-heading"><h2>Forme sbloccate</h2><span>Seleziona la versione attiva</span></div><div className="profile-screen__visual-selector"><input type="range" min="0" max={Math.max(0, visualHistory.length - 1)} value={selectedIndex} disabled={isSelectingVisual || !onSelectVisualVersion} onChange={(event) => { const next = visualHistory[Number(event.target.value)]; if (next) void selectVisualVersion(next.id) }} aria-label="Scegli la versione visuale della creatura" /><div>{visualHistory.map((entry) => <button key={entry.id} type="button" className={entry.id === currentVisualVersionId ? 'is-active' : ''} disabled={isSelectingVisual || !onSelectVisualVersion} onClick={() => void selectVisualVersion(entry.id)}>v{entry.versionNumber}</button>)}</div>{visualSelectionError ? <p className="profile-screen__error" role="alert">{visualSelectionError}</p> : null}</div></section> : null}
 
             <section className="profile-screen__stats" aria-label="Statistiche">
                 <article><span>Partite</span><strong>{stats.played}</strong></article>
