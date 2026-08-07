@@ -20,6 +20,23 @@ function parseOptions(argumentsList: readonly string[]) {
     return { dryRun: argumentsList.includes('--dry-run'), force: argumentsList.includes('--force') }
 }
 
+function requireSupabaseApiUrl(value: string | undefined, variableName: string): string {
+    if (!value) {
+        throw new Error(`${variableName} non e impostata. Usa l URL API del progetto, ad esempio https://<project-ref>.supabase.co oppure http://127.0.0.1:54321.`)
+    }
+    let url: URL
+    try {
+        url = new URL(value)
+    } catch {
+        throw new Error(`${variableName} non e un URL Supabase API valido.`)
+    }
+    const isDashboard = url.hostname === 'supabase.com' || url.hostname === 'app.supabase.com' || url.pathname !== '/' && url.pathname !== ''
+    if (!['http:', 'https:'].includes(url.protocol) || isDashboard) {
+        throw new Error(`${variableName} deve essere l URL API radice del progetto (https://<project-ref>.supabase.co), non un URL Dashboard/Studio.`)
+    }
+    return url.origin
+}
+
 function mapStoredVisualVersion(row: Record<string, unknown>): StoredVisualVersion {
     const id = typeof row.id === 'string' ? row.id : null
     const assetPath = typeof row.asset_path === 'string' ? row.asset_path : null
@@ -44,6 +61,14 @@ function usesSourceBucket(version: StoredVisualVersion) {
     return version.visualTraitId === null && !version.assetPath.startsWith('cleanup/')
 }
 
+function migrationRequiredError(error: { code?: string; message?: string }): Error | null {
+    const message = error.message ?? ''
+    if (error.code === '42703' || /creature_visual_versions\.display_(asset_path|asset_sha256|mime_type|width|height) does not exist/i.test(message)) {
+        return new Error('La migrazione 202608070001_creature_display_assets.sql non e stata applicata al database. Esegui supabase db push sul progetto collegato, quindi rilancia il backfill.')
+    }
+    return null
+}
+
 async function listVisualVersions(supabase: SupabaseClient<any, 'public', 'public', any, any>): Promise<StoredVisualVersion[]> {
     const versions: StoredVisualVersion[] = []
     for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -52,7 +77,7 @@ async function listVisualVersions(supabase: SupabaseClient<any, 'public', 'publi
             .select('id, visual_trait_id, asset_path, display_asset_path, display_asset_sha256, display_mime_type, display_width, display_height')
             .order('created_at', { ascending: true })
             .range(offset, offset + PAGE_SIZE - 1)
-        if (error) throw new Error(`Impossibile leggere le visual version: ${error.message}`)
+        if (error) throw migrationRequiredError(error) ?? new Error(`Impossibile leggere le visual version: ${error.message}`)
         const page = (data ?? []).map((row) => mapStoredVisualVersion(row as Record<string, unknown>))
         versions.push(...page)
         if (page.length < PAGE_SIZE) return versions
@@ -70,11 +95,12 @@ async function listDisplayAssetPaths(supabase: SupabaseClient<any, 'public', 'pu
 }
 
 const options = parseOptions(process.argv.slice(2))
-const supabaseUrl = process.env.SUPABASE_URL
+const supabaseUrlVariable = process.env.SUPABASE_URL ? 'SUPABASE_URL' : 'VITE_SUPABASE_URL'
+const supabaseUrl = requireSupabaseApiUrl(process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL, supabaseUrlVariable)
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devono essere impostati esclusivamente nell ambiente locale o CI protetto.')
+if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY deve essere impostata esclusivamente nell ambiente locale o CI protetto.')
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey)

@@ -87,10 +87,16 @@ npm run audit:evolution
 
 ## Backfill display asset creature
 
-Le visual version usano un PNG master immutabile e un WebP di visualizzazione separato. Dopo il deploy della migrazione `202608070001_creature_display_assets.sql`, esegui il backfill in un ambiente protetto con le sole credenziali server:
+Le visual version usano un PNG master immutabile e un WebP di visualizzazione separato. Applica prima la migrazione al progetto Supabase collegato, poi esegui il backfill in un ambiente protetto con le sole credenziali server:
+
+```powershell
+supabase db push
+```
+
+La migration richiesta è `202608070001_creature_display_assets.sql`; non avviare il backfill finché il deploy non è completato.
 
 ```bash
-$env:SUPABASE_URL = 'https://your-project.supabase.co'
+$env:SUPABASE_URL = 'https://<project-ref>.supabase.co' # Project Settings > API > Project URL, non l URL Dashboard
 $env:SUPABASE_SERVICE_ROLE_KEY = '...'
 npm run backfill:creature-display-assets -- --dry-run
 npm run backfill:creature-display-assets
