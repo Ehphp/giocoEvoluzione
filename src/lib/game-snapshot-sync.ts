@@ -58,6 +58,12 @@ export class GameSnapshotSync {
 
         if (typeof stateRevision === 'number' && Number.isFinite(stateRevision)) {
             this.requiredRevision = Math.max(this.requiredRevision, stateRevision)
+            // Realtime is an invalidation stream. A repeated/non-incremented
+            // revision is unusual but must not hide a committed join or state
+            // transition when a deployment has stale database trigger logic.
+            if (source === 'realtime' && stateRevision <= this.appliedRevision) {
+                this.forceReconcile = true
+            }
         } else {
             // Reconnect/bootstrap has no trusted revision and must still close its gap.
             this.forceReconcile = true

@@ -611,7 +611,13 @@ export async function subscribeToGame(
         .channel(`game:${gameId}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, (payload) => {
             const row = payload.new as Record<string, unknown>
-            onChange(typeof row.state_revision === 'number' ? row.state_revision : Number(row.state_revision ?? 0))
+            const revision = typeof row.state_revision === 'number'
+                ? row.state_revision
+                : Number(row.state_revision)
+            // A legacy/misapplied migration can publish an UPDATE with no usable
+            // revision (or still at its initial zero). Treat it as an invalidation
+            // requiring reconciliation rather than silently ignoring the join.
+            onChange(Number.isFinite(revision) && revision > 0 ? revision : null)
         })
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') onSubscribed?.()

@@ -78,4 +78,31 @@ describe('GameSnapshotSync', () => {
         await flush()
         expect(sync.getMetrics().realtimeInvalidations).toBe(0)
     })
+
+    it('reconciles a realtime update whose revision is unavailable or legacy-zero', async () => {
+        const request = deferred<GameSnapshot>()
+        const sync = new GameSnapshotSync({ fetchSnapshot: () => request.promise, onSnapshot: () => undefined })
+        sync.seed(snapshot(0))
+
+        sync.invalidate(null)
+        await flush()
+        expect(sync.getMetrics().snapshotRequests).toBe(1)
+
+        request.resolve(snapshot(0))
+        await flush()
+        expect(sync.getMetrics().realtimeInvalidations).toBe(1)
+    })
+
+    it('reconciles a realtime update even when a stale server repeats the applied revision', async () => {
+        const request = deferred<GameSnapshot>()
+        const sync = new GameSnapshotSync({ fetchSnapshot: () => request.promise, onSnapshot: () => undefined })
+        sync.seed(snapshot(1))
+
+        sync.invalidate(1)
+        await flush()
+        expect(sync.getMetrics().snapshotRequests).toBe(1)
+
+        request.resolve(snapshot(1))
+        await flush()
+    })
 })
