@@ -8,8 +8,8 @@ import {
 import { shouldMirrorCreature, type CreatureFacing } from './creatureOrientation'
 
 type BattleStageProps = {
-    playerCreature: CreatureVisual
-    opponentCreature: CreatureVisual
+    playerCreature: CreatureVisual | null
+    opponentCreature: CreatureVisual | null
 }
 
 type BattleSide = 'player' | 'opponent'
@@ -55,8 +55,8 @@ export function BattleStage({ playerCreature, opponentCreature }: BattleStagePro
     return (
         <section className="battle-stage" aria-label="Scena di battaglia">
             <div className="battle-stage__atmosphere" aria-hidden="true" />
-            <CreatureLayer visual={playerCreature} side="player" />
-            <CreatureLayer visual={opponentCreature} side="opponent" />
+            {playerCreature ? <CreatureLayer visual={playerCreature} side="player" /> : null}
+            {opponentCreature ? <CreatureLayer visual={opponentCreature} side="opponent" /> : null}
             <img className="battle-stage__versus" src="/assets/game-ui/battle-versus.png" alt="" aria-hidden="true" />
             <div className="battle-stage__foreground" aria-hidden="true" />
         </section>

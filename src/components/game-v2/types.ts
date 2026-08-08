@@ -17,7 +17,7 @@ export interface DuelPlayerV2 {
     score: number
     roundValueTotal: number | null
     avatarUrl?: string
-    creatureVisual?: CreatureVisual
+    creatureVisual?: CreatureVisual | null
     status: DuelPlayerStatusV2
 }
 

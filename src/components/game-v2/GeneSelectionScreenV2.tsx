@@ -98,8 +98,8 @@ export function GeneSelectionScreenV2({ viewModel, onSelectGene, onUseGene, onEv
                                 nextRoundEvent={viewModel.nextRoundEvent}
                             />
                             <BattleStage
-                                playerCreature={viewModel.player.creatureVisual ?? DEFAULT_BATTLE_PLAYER_CREATURE}
-                                opponentCreature={viewModel.opponent.creatureVisual ?? DEFAULT_BATTLE_OPPONENT_CREATURE}
+                                playerCreature={viewModel.player.creatureVisual === undefined ? DEFAULT_BATTLE_PLAYER_CREATURE : viewModel.player.creatureVisual}
+                                opponentCreature={viewModel.opponent.creatureVisual === undefined ? DEFAULT_BATTLE_OPPONENT_CREATURE : viewModel.opponent.creatureVisual}
                             />
                         </main>
 

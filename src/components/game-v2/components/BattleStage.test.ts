@@ -63,6 +63,17 @@ describe('BattleStage', () => {
 
         expect(container.querySelector('.battle-stage__creature--opponent img')?.classList.contains('is-mirrored')).toBe(false)
     })
+
+    it('does not render a bot fallback while a human visual is still loading', () => {
+        act(() => {
+            root.render(createElement(BattleStage, {
+                playerCreature: { src: '/player.png', alt: 'Giocatore' },
+                opponentCreature: null,
+            }))
+        })
+
+        expect(container.querySelector('.battle-stage__creature--opponent')).toBeNull()
+    })
 })
 
 describe('shouldMirrorCreature', () => {
