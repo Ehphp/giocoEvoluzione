@@ -311,3 +311,5 @@ grant execute on function public.commit_game_round_resolution(uuid, integer, tex
 
 revoke all on function public.submit_game_round_action(uuid, integer, text, text), public.acknowledge_game_reveal(uuid), public.advance_game_round(uuid), public.touch_game_participant(uuid, text) from public, anon;
 grant execute on function public.submit_game_round_action(uuid, integer, text, text), public.acknowledge_game_reveal(uuid), public.advance_game_round(uuid), public.touch_game_participant(uuid, text) to authenticated, service_role;
+
+notify pgrst, 'reload schema';
