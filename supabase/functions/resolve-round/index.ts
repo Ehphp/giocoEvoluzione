@@ -76,54 +76,6 @@ async function ensureEdgeBotRoundAction(
     return storedAction
 }
 
-async function applyStoredResolution(
-    supabaseAdmin: ReturnType<typeof createClient>,
-    gameId: string,
-    player1Id: string,
-    player2Id: string,
-    resolutionData: Record<string, unknown>,
-    visualParticipants: Array<{ id: string; profileId: string | null; creatureId: string | null }>,
-) {
-    const player1TraitsAfter = normalizeAdaptationCollection(resolutionData.player1TraitsAfter as AdaptationCollection)
-    const player2TraitsAfter = normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection)
-    const player1ScoreAfter = Number(resolutionData.player1ScoreAfter ?? 0)
-    const player2ScoreAfter = Number(resolutionData.player2ScoreAfter ?? 0)
-    const statusAfter = String(resolutionData.statusAfter ?? 'REVEALING')
-    const winnerIdAfter = (resolutionData.winnerIdAfter as string | null) ?? null
-    const finishedAt = (resolutionData.finishedAt as string | null) ?? null
-
-    await Promise.all([
-        supabaseAdmin.from('players').update({ traits: player1TraitsAfter, connected: true }).eq('id', player1Id),
-        supabaseAdmin.from('players').update({ traits: player2TraitsAfter, connected: true }).eq('id', player2Id),
-        supabaseAdmin
-            .from('games')
-            .update({
-                player_1_score: player1ScoreAfter,
-                player_2_score: player2ScoreAfter,
-                status: statusAfter,
-                winner_id: winnerIdAfter,
-                finished_at: finishedAt,
-            })
-            .eq('id', gameId),
-    ])
-
-    if (Deno.env.get('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true' && statusAfter === 'FINISHED' && finishedAt) {
-        const events = createMatchCompletionEvents({
-            gameId,
-            winnerPlayerId: winnerIdAfter,
-            completedAt: finishedAt,
-            participants: visualParticipants,
-        })
-        for (const event of events) {
-            try {
-                await recordCreatureVisualProgressFromMatchCompletion(supabaseAdmin, event)
-            } catch (error) {
-                console.error('Creature visual progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
-            }
-        }
-    }
-}
-
 Deno.serve(async (request) => {
     if (request.method === 'OPTIONS') {
         return new Response('ok', {
@@ -203,6 +155,11 @@ Deno.serve(async (request) => {
             creatureId: typeof player.creature_id === 'string' ? player.creature_id : null,
         }))
 
+        const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
+        if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
+            return json({ status: 'stale_round' })
+        }
+
         const { data: existingResultData } = await supabaseAdmin
             .from('round_results')
             .select('*')
@@ -211,15 +168,6 @@ Deno.serve(async (request) => {
             .maybeSingle()
 
         if (existingResultData) {
-            await applyStoredResolution(
-                supabaseAdmin,
-                gameId,
-                String(player1.id),
-                String(player2.id),
-                (existingResultData.resolution_data as Record<string, unknown>) ?? {},
-                visualParticipants,
-            )
-
             return json({ status: 'already_resolved', result: existingResultData })
         }
 
@@ -233,15 +181,10 @@ Deno.serve(async (request) => {
             return json({ error: actionsError.message }, 400)
         }
 
-        const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
         const roundEventId = String(gameData.round_event_sequence?.[roundNumber - 1] ?? '')
 
         if (!roundEventId) {
             return json({ error: `Missing round event for round ${roundNumber}.` }, 400)
-        }
-
-        if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
-            return json({ error: 'This round is no longer available.' }, 400)
         }
 
         const roundEvent = getRoundEventById(roundEventId)
@@ -307,55 +250,45 @@ Deno.serve(async (request) => {
             priorRoundValues: ((await supabaseAdmin.from('round_results').select('player_1_value, player_2_value').eq('game_id', gameId).lt('round_number', roundNumber)).data ?? []).map((result) => ({ player1Value: Number(result.player_1_value), player2Value: Number(result.player_2_value) })),
         })
 
-        const { data: insertedResult, error: insertError } = await supabaseAdmin
-            .from('round_results')
-            .insert({
-                game_id: gameId,
-                round_number: roundNumber,
-                player_1_value: resolution.player_1_value,
-                player_2_value: resolution.player_2_value,
-                winner_id: resolution.winner_id,
-                resolution_data: resolution.resolution_data,
+        const resolutionData = resolution.resolution_data as Record<string, unknown>
+        const { data: committed, error: commitError } = await supabaseAdmin.rpc('commit_game_round_resolution', {
+            p_game_id: gameId,
+            p_round_number: roundNumber,
+            p_player_1_id: String(player1.id),
+            p_player_2_id: String(player2.id),
+            p_player_1_traits: normalizeAdaptationCollection(resolutionData.player1TraitsAfter as AdaptationCollection),
+            p_player_2_traits: normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection),
+            p_player_1_score: Number(resolutionData.player1ScoreAfter ?? 0),
+            p_player_2_score: Number(resolutionData.player2ScoreAfter ?? 0),
+            p_status: String(resolutionData.statusAfter ?? 'REVEALING'),
+            p_winner_id: (resolutionData.winnerIdAfter as string | null) ?? null,
+            p_finished_at: (resolutionData.finishedAt as string | null) ?? null,
+            p_player_1_value: resolution.player_1_value,
+            p_player_2_value: resolution.player_2_value,
+            p_result_winner_id: resolution.winner_id,
+            p_resolution_data: resolutionData,
+        })
+        if (commitError) return json({ error: commitError.message }, 400)
+
+        const commit = committed && typeof committed === 'object' ? committed as Record<string, unknown> : {}
+        const outcome = String(commit.outcome ?? 'UNKNOWN')
+        if (outcome === 'APPLIED' && Deno.env.get('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true' && String(resolutionData.statusAfter) === 'FINISHED' && resolutionData.finishedAt) {
+            const events = createMatchCompletionEvents({
+                gameId,
+                winnerPlayerId: (resolutionData.winnerIdAfter as string | null) ?? null,
+                completedAt: String(resolutionData.finishedAt),
+                participants: visualParticipants,
             })
-            .select('*')
-            .single()
-
-        if (insertError) {
-            if (insertError.code === '23505') {
-                const { data: duplicateResult } = await supabaseAdmin
-                    .from('round_results')
-                    .select('*')
-                    .eq('game_id', gameId)
-                    .eq('round_number', roundNumber)
-                    .maybeSingle()
-
-                if (duplicateResult) {
-                    await applyStoredResolution(
-                        supabaseAdmin,
-                        gameId,
-                        String(player1.id),
-                        String(player2.id),
-                        (duplicateResult.resolution_data as Record<string, unknown>) ?? {},
-                        visualParticipants,
-                    )
-
-                    return json({ status: 'already_resolved', result: duplicateResult })
+            for (const event of events) {
+                try {
+                    await recordCreatureVisualProgressFromMatchCompletion(supabaseAdmin, event)
+                } catch (error) {
+                    console.error('Creature visual progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
                 }
             }
-
-            return json({ error: insertError.message }, 400)
         }
 
-        await applyStoredResolution(
-            supabaseAdmin,
-            gameId,
-            String(player1.id),
-            String(player2.id),
-            resolution.resolution_data,
-            visualParticipants,
-        )
-
-        return json({ status: 'resolved', result: insertedResult })
+        return json({ status: outcome.toLowerCase(), result: commit.result ?? null, stateRevision: commit.stateRevision ?? null })
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error.'
         const isInvalidAction = /exhausted|no transition|maximum level|invalid adaptation state|unknown adaptation/i.test(message)

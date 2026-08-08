@@ -20,6 +20,7 @@ import { getRoundExplanation } from './game/round-result-explainer'
 import { getRoundEventLabel } from './game/ui-context'
 import { type RoundValueBreakdown, type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
+import { GameSnapshotSync } from './lib/game-snapshot-sync'
 import { getCurrentCreatureVisual, getGameCreatureVisuals, getCreatureVisualProgress, rollbackCreatureVisualVersion } from './lib/creature-transformations-api'
 import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
 import {
@@ -110,7 +111,8 @@ function App() {
   const [officialVisual, setOfficialVisual] = useState<OfficialVisual | null>(null)
   const [visualProgress, setVisualProgress] = useState<VisualProgressSummary | null>(null)
   const [gameVisuals, setGameVisuals] = useState<{ gameId: string; player: OfficialVisual; opponent: OfficialVisual | null } | null>(null)
-  const snapshotRefreshIdRef = useRef(0)
+  const snapshotSyncRef = useRef<GameSnapshotSync | null>(null)
+  const recoverRestoredRoundRef = useRef(false)
 
   useEffect(() => {
     if (!hasSupabaseConfig || authStatus !== 'ready' || !profileId) {
@@ -148,6 +150,7 @@ function App() {
           return
         }
 
+        recoverRestoredRoundRef.current = true
         setSnapshot(restored)
         setStatusMessage('Sessione ripristinata.')
       } catch (error) {
@@ -166,7 +169,8 @@ function App() {
 
     return () => {
       active = false
-      snapshotRefreshIdRef.current += 1
+      snapshotSyncRef.current?.dispose()
+      snapshotSyncRef.current = null
     }
   }, [authStatus, profileId])
 
@@ -327,6 +331,7 @@ function App() {
     const handleOnline = () => {
       setIsOnline(true)
       setStatusMessage('Connessione ripristinata.')
+      snapshotSyncRef.current?.reconcile()
     }
 
     const handleOffline = () => {
@@ -351,11 +356,28 @@ function App() {
       return
     }
 
+    const sync = new GameSnapshotSync({
+      fetchSnapshot: () => fetchGameSnapshot(gameId, playerId),
+      onSnapshot: (nextSnapshot) => {
+        setSnapshot((current) => current?.game.id === gameId && current.me?.id === playerId ? nextSnapshot : current)
+      },
+      onError: () => setErrorMessage('Impossibile aggiornare lo stato della partita.'),
+      onMetrics: (metrics) => {
+        if (import.meta.env.DEV) console.debug('[game-snapshot-sync]', metrics)
+      },
+    })
+    sync.seed(snapshot)
+    snapshotSyncRef.current?.dispose()
+    snapshotSyncRef.current = sync
+
     let active = true
     let unsubscribe: (() => void) | undefined
 
-    void subscribeToGame(gameId, () => {
-      void refreshSnapshot(gameId, playerId)
+    void subscribeToGame(gameId, (revision) => {
+      sync.invalidate(revision)
+    }, () => {
+      // Realtime is only an invalidation stream. This closes bootstrap/reconnect gaps.
+      sync.reconcile()
     }).then((nextUnsubscribe) => {
       if (active) {
         unsubscribe = nextUnsubscribe
@@ -371,39 +393,29 @@ function App() {
     return () => {
       active = false
       unsubscribe?.()
+      sync.dispose()
+      if (snapshotSyncRef.current === sync) snapshotSyncRef.current = null
     }
   }, [snapshot?.game.id, snapshot?.me?.id])
 
   useEffect(() => {
     const gameId = snapshot?.game.id
     const playerId = snapshot?.me?.id
-    const currentStatus = snapshot?.game.status
-    const actionsSubmitted = snapshot?.actionsSubmitted ?? 0
-    const currentRoundResultId = snapshot?.currentRoundResult?.id
-    const currentRound = snapshot?.game.current_round ?? 0
-    const isVsBot = snapshot?.game.game_mode === 'VS_BOT'
-    const hasHumanAction = Boolean(snapshot?.myCurrentAction)
-
-    if (
-      !gameId
-      || !playerId
-      || currentStatus !== 'CHOOSING'
-      || currentRoundResultId
-      || currentRound <= 0
-      || (!(actionsSubmitted >= 2) && !(isVsBot && hasHumanAction))
-    ) {
+    if (!recoverRestoredRoundRef.current || !gameId || !playerId) {
       return
     }
+    recoverRestoredRoundRef.current = false
 
-    void (async () => {
-      try {
-        await maybeResolveRound(gameId, currentRound)
-        await refreshSnapshot(gameId, playerId)
-      } catch {
-        return
-      }
-    })()
-  }, [snapshot?.actionsSubmitted, snapshot?.game.status, snapshot?.game.game_mode, snapshot?.myCurrentAction, snapshot?.currentRoundResult?.id, snapshot?.game.id, snapshot?.game.current_round, snapshot?.me?.id])
+    const resolveNeeded = snapshot?.game.status === 'CHOOSING'
+      && !snapshot.currentRoundResult
+      && snapshot.game.current_round > 0
+      && (snapshot.actionsSubmitted >= 2 || (snapshot.game.game_mode === 'VS_BOT' && Boolean(snapshot.myCurrentAction)))
+    if (resolveNeeded) {
+      void maybeResolveRound(gameId, snapshot.game.current_round)
+        .catch(() => undefined)
+        .finally(() => snapshotSyncRef.current?.reconcile())
+    }
+  }, [snapshot])
 
   useEffect(() => {
     const gameId = snapshot?.game.id
@@ -419,8 +431,8 @@ function App() {
     const timeoutId = window.setTimeout(() => {
       void (async () => {
         try {
-          await acknowledgeReveal(gameId)
-          await refreshSnapshot(gameId, playerId)
+          const mutation = await acknowledgeReveal(gameId)
+          snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')
         } catch {
           return
         }
@@ -471,37 +483,6 @@ function App() {
       ? buildAuthenticatedHomeViewModel({ ...input, profile: auth.profile, creature: auth.creature, officialVisualUrl: officialVisual?.signedUrl })
       : buildGuestHomeViewModel(input)
   }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, roomCode, statusMessage])
-
-  async function refreshSnapshot(gameId: string, playerId: string) {
-    const refreshId = ++snapshotRefreshIdRef.current
-    const nextSnapshot = await fetchGameSnapshot(gameId, playerId)
-
-    if (refreshId === snapshotRefreshIdRef.current) {
-      setSnapshot((current) => current?.game.id === gameId && current.me?.id === playerId ? nextSnapshot : current)
-    }
-
-    return nextSnapshot
-  }
-
-  async function settleVsBotRound(gameId: string, playerId: string, roundNumber: number) {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        await maybeResolveRound(gameId, roundNumber)
-      } catch {
-        // Keep retrying locally; the edge function is idempotent.
-      }
-
-      const nextSnapshot = await refreshSnapshot(gameId, playerId)
-
-      if (nextSnapshot.currentRoundResult) {
-        return nextSnapshot
-      }
-
-      await new Promise((resolve) => window.setTimeout(resolve, 200))
-    }
-
-    return refreshSnapshot(gameId, playerId)
-  }
 
   async function startNewGame(mode: 'PVP' | 'VS_BOT', difficulty = botDifficulty) {
     if (!auth.profile || !auth.creature) {
@@ -614,18 +595,20 @@ function App() {
     setStatusMessage(null)
 
     try {
-      await submitRoundAction({
+      const mutation = await submitRoundAction({
         gameId: snapshot.game.id,
         roundNumber: snapshot.game.current_round,
         trait,
         actionType,
       })
 
-      const submittedSnapshot = await refreshSnapshot(snapshot.game.id, snapshot.me.id)
-
-      if (submittedSnapshot.game.game_mode === 'VS_BOT') {
-        await settleVsBotRound(submittedSnapshot.game.id, submittedSnapshot.me?.id ?? snapshot.me.id, submittedSnapshot.game.current_round)
-        return true
+      snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')
+      if (mutation.resolveRequired) {
+        try {
+          await maybeResolveRound(snapshot.game.id, snapshot.game.current_round)
+        } finally {
+          snapshotSyncRef.current?.reconcile()
+        }
       }
 
       setStatusMessage('Scelta confermata. In attesa dell’avversario.')
@@ -647,8 +630,8 @@ function App() {
     setErrorMessage(null)
 
     try {
-      await advanceToNextRound(snapshot.game.id)
-      await refreshSnapshot(snapshot.game.id, snapshot.me.id)
+      const mutation = await advanceToNextRound(snapshot.game.id)
+      snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Impossibile passare al round successivo.')
     } finally {
@@ -657,7 +640,8 @@ function App() {
   }
 
   function handleLeaveSession() {
-    snapshotRefreshIdRef.current += 1
+    snapshotSyncRef.current?.dispose()
+    snapshotSyncRef.current = null
     clearStoredSession()
     setSnapshot(null)
     setRoomCode('')

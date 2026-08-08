@@ -304,6 +304,7 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         rematch_count: 0,
         created_at: '2026-07-30T10:00:00.000Z',
         updated_at: '2026-07-30T10:00:00.000Z',
+        state_revision: 0,
     }
     const roundResults: RoundResultRecord[] = scenario.priorRoundValues.map((value, index) => ({
         id: `result-${index + 1}`,
@@ -327,6 +328,7 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         myCurrentAction: null,
         currentRoundResult: null,
         roundResults,
+        stateRevision: 0,
     }
 }
 

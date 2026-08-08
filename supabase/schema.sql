@@ -15,6 +15,7 @@ create table public.games (
   player_1_id text, player_2_id text, player_1_score integer not null default 0, player_2_score integer not null default 0,
   bot_difficulty text not null default 'NORMAL' check (bot_difficulty in ('EASY', 'NORMAL', 'HARD')),
   winner_id text, started_at timestamptz, finished_at timestamptz, rematch_count integer not null default 0,
+  state_revision bigint not null default 0,
   created_at timestamptz not null default timezone('utc', now()), updated_at timestamptz not null default timezone('utc', now())
 );
 create table public.profiles (
@@ -52,6 +53,26 @@ create table public.round_results (
   winner_id text, resolution_data jsonb not null default '{}'::jsonb, created_at timestamptz not null default timezone('utc', now()), unique (game_id, round_number)
 );
 create trigger games_set_updated_at before update on public.games for each row execute function public.set_updated_at();
+-- Keep legacy/bootstrap writes observable by the revision-only Realtime channel.
+-- The versioned migration installs the canonical snapshot and mutation RPCs.
+create or replace function public.bump_game_state_revision_on_legacy_update()
+returns trigger language plpgsql as $$
+begin
+  if new.state_revision = old.state_revision
+    and (new.game_mode, new.bot_difficulty, new.status, new.current_round, new.world_id,
+      new.round_event_sequence, new.player_1_id, new.player_2_id, new.player_1_score,
+      new.player_2_score, new.winner_id, new.started_at, new.finished_at, new.rematch_count)
+      is distinct from
+      (old.game_mode, old.bot_difficulty, old.status, old.current_round, old.world_id,
+      old.round_event_sequence, old.player_1_id, old.player_2_id, old.player_1_score,
+      old.player_2_score, old.winner_id, old.started_at, old.finished_at, old.rematch_count) then
+    new.state_revision := old.state_revision + 1;
+  end if;
+  return new;
+end;
+$$;
+create trigger games_bump_state_revision_on_legacy_update before update on public.games
+for each row execute function public.bump_game_state_revision_on_legacy_update();
 create trigger profiles_set_updated_at before update on public.profiles for each row execute function public.set_updated_at();
 create trigger player_creatures_set_updated_at before update on public.player_creatures for each row execute function public.set_updated_at();
 

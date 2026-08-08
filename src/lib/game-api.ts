@@ -31,6 +31,7 @@ export type GameRecord = {
     rematch_count: number
     created_at: string
     updated_at: string
+    state_revision: number
 }
 
 export type PlayerRecord = {
@@ -80,6 +81,29 @@ export type GameSnapshot = {
     myCurrentAction: RoundActionRecord | null
     currentRoundResult: RoundResultRecord | null
     roundResults: RoundResultRecord[]
+    stateRevision: number
+}
+
+export type GameMutationResult = {
+    stateRevision: number
+    changed: boolean
+    resolveRequired?: boolean
+}
+
+const gameSyncInstrumentation = {
+    getGameSnapshotCalls: 0,
+    resolveRoundCalls: 0,
+}
+const isGameSyncInstrumentationEnabled = import.meta.env.DEV || import.meta.env.MODE === 'test'
+
+/** DEV/test diagnostic counters; production behavior does not depend on them. */
+export function getGameSyncInstrumentation() {
+    return { ...gameSyncInstrumentation }
+}
+
+export function resetGameSyncInstrumentation() {
+    gameSyncInstrumentation.getGameSnapshotCalls = 0
+    gameSyncInstrumentation.resolveRoundCalls = 0
 }
 
 export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
@@ -133,6 +157,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
         rematch_count: Number(data.rematch_count ?? 0),
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
+        state_revision: Number(data.state_revision ?? 0),
     }
 }
 
@@ -228,81 +253,42 @@ async function ensurePlayerConnected(gameId: string, playerId: string) {
 
 export async function fetchGameSnapshot(gameId: string, playerId: string): Promise<GameSnapshot> {
     const supabase = requireSupabase()
+    if (isGameSyncInstrumentationEnabled) gameSyncInstrumentation.getGameSnapshotCalls += 1
 
-    const { data: gameData, error: gameError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('id', gameId)
-        .maybeSingle()
+    const { data, error } = await supabase.rpc('get_game_snapshot', { p_game_id: gameId })
+    if (error) throw new Error(error.message)
+    if (!data || typeof data !== 'object') throw new Error('Partita non trovata.')
 
-    if (gameError) {
-        throw new Error(gameError.message)
-    }
-
-    if (!gameData) {
-        throw new Error('Partita non trovata.')
-    }
-
-    const game = mapGameRecord(gameData)
-
-    const { data: playersData, error: playersError } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('slot')
-
-    if (playersError) {
-        throw new Error(playersError.message)
-    }
-
-    const players = (playersData ?? []).map((entry) => mapPlayerRecord(entry))
-    const me = players.find((player) => player.id === playerId) ?? null
-    const opponent = players.find((player) => player.id !== playerId) ?? null
-
-    const { data: actionStateData, error: actionStateError } = await supabase.rpc('get_game_round_action_state', {
-        p_game_id: gameId,
-        p_round_number: game.current_round,
-    })
-
-    if (actionStateError) {
-        throw new Error(actionStateError.message)
-    }
-
-    const actionState = actionStateData && typeof actionStateData === 'object'
-        ? actionStateData as { submitted_count?: unknown; my_action?: Record<string, unknown> | null }
-        : {}
-
-    const { data: roundResultsData, error: roundResultsError } = await supabase
-        .from('round_results')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('round_number')
-
-    if (roundResultsError) {
-        throw new Error(roundResultsError.message)
-    }
-
-    const roundResults = (roundResultsData ?? []).map((entry) => mapRoundResultRecord(entry))
-    const currentRoundResult = roundResults.find((result) => result.round_number === game.current_round) ?? null
-
-    if (game.status === 'CHOOSING' && Number(actionState.submitted_count ?? 0) >= 2 && !currentRoundResult) {
-        // Self-heal stuck rounds by retrying idempotent resolution.
-        void maybeResolveRound(gameId, game.current_round).catch(() => undefined)
-    }
+    const payload = data as Record<string, unknown>
+    const gameData = payload.game
+    if (!gameData || typeof gameData !== 'object') throw new Error('Partita non trovata.')
+    const game = mapGameRecord(gameData as Record<string, unknown>)
+    const players = Array.isArray(payload.players)
+        ? payload.players.filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === 'object')).map(mapPlayerRecord)
+        : []
+    const meData = payload.me
+    const opponentData = payload.opponent
+    const myActionData = payload.myCurrentAction
+    const currentResultData = payload.currentRoundResult
+    const roundResults = Array.isArray(payload.roundResults)
+        ? payload.roundResults.filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === 'object')).map(mapRoundResultRecord)
+        : []
 
     const world = getWorldById(game.world_id)
     return {
         game,
         players,
-        me,
-        opponent,
+        // playerId remains a local session guard; authorization comes exclusively from auth.uid() in SQL.
+        me: meData && typeof meData === 'object' ? mapPlayerRecord(meData as Record<string, unknown>) : players.find((player) => player.id === playerId) ?? null,
+        opponent: opponentData && typeof opponentData === 'object' ? mapPlayerRecord(opponentData as Record<string, unknown>) : null,
         world,
         currentRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round),
         nextRoundEvent: getRoundEventForRound(game.round_event_sequence, game.current_round + 1),
-        actionsSubmitted: Number(actionState.submitted_count ?? 0),
-        myCurrentAction: actionState.my_action ? mapRoundActionRecord(actionState.my_action) : null,
-        currentRoundResult,
+        actionsSubmitted: Number(payload.actionsSubmitted ?? 0),
+        myCurrentAction: myActionData && typeof myActionData === 'object' ? mapRoundActionRecord(myActionData as Record<string, unknown>) : null,
+        currentRoundResult: currentResultData && typeof currentResultData === 'object' ? mapRoundResultRecord(currentResultData as Record<string, unknown>) : null,
         roundResults,
+        stateRevision: Number(payload.stateRevision ?? game.state_revision ?? 0),
     }
 }
 
@@ -510,10 +496,10 @@ export async function submitRoundAction(input: {
     roundNumber: number
     trait: TraitType
     actionType: 'USE' | 'EVOLVE'
-}) {
+}): Promise<GameMutationResult> {
     const supabase = requireSupabase()
 
-    const { error } = await supabase.rpc('submit_game_round_action', {
+    const { data, error } = await supabase.rpc('submit_game_round_action', {
         p_game_id: input.gameId,
         p_round_number: input.roundNumber,
         p_trait: input.trait,
@@ -524,16 +510,12 @@ export async function submitRoundAction(input: {
         throw new Error(error.message)
     }
 
-    try {
-        await maybeResolveRound(input.gameId, input.roundNumber)
-    } catch (error) {
-        // The action row is already persisted; keep UX consistent and rely on subscription/snapshot retries.
-        console.warn('Round resolution retry scheduled after submit failure.', error)
-    }
+    return mapMutationResult(data)
 }
 
 export async function maybeResolveRound(gameId: string, roundNumber: number) {
     const supabase = requireSupabase()
+    if (isGameSyncInstrumentationEnabled) gameSyncInstrumentation.resolveRoundCalls += 1
 
     const { error } = await supabase.functions.invoke('resolve-round', {
         body: {
@@ -547,11 +529,12 @@ export async function maybeResolveRound(gameId: string, roundNumber: number) {
     }
 }
 
-export async function advanceToNextRound(gameId: string) {
+export async function advanceToNextRound(gameId: string): Promise<GameMutationResult> {
     const supabase = requireSupabase()
 
-    const { error } = await supabase.rpc('advance_game_round', { p_game_id: gameId })
+    const { data, error } = await supabase.rpc('advance_game_round', { p_game_id: gameId })
     if (error) throw new Error(error.message)
+    return mapMutationResult(data)
 
     /* Legacy direct-table state transition.
 
@@ -597,38 +580,42 @@ export async function advanceToNextRound(gameId: string) {
     */
 }
 
-export async function acknowledgeReveal(gameId: string) {
+export async function acknowledgeReveal(gameId: string): Promise<GameMutationResult> {
     const supabase = requireSupabase()
 
-    const { error } = await supabase.rpc('acknowledge_game_reveal', { p_game_id: gameId })
+    const { data, error } = await supabase.rpc('acknowledge_game_reveal', { p_game_id: gameId })
 
     if (error) {
         throw new Error(error.message)
     }
+    return mapMutationResult(data)
 }
 
-export async function subscribeToGame(gameId: string, onChange: () => void) {
+function mapMutationResult(data: unknown): GameMutationResult {
+    const value = data && typeof data === 'object' ? data as Record<string, unknown> : {}
+    return {
+        stateRevision: Number(value.stateRevision ?? 0),
+        changed: Boolean(value.changed),
+        resolveRequired: Boolean(value.resolveRequired),
+    }
+}
+
+export async function subscribeToGame(
+    gameId: string,
+    onChange: (stateRevision: number | null) => void,
+    onSubscribed?: () => void,
+) {
     const supabase = requireSupabase()
 
     const channel = supabase
         .channel(`game:${gameId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, onChange)
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'players', filter: `game_id=eq.${gameId}` },
-            onChange,
-        )
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'round_actions', filter: `game_id=eq.${gameId}` },
-            onChange,
-        )
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'round_results', filter: `game_id=eq.${gameId}` },
-            onChange,
-        )
-        .subscribe()
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, (payload) => {
+            const row = payload.new as Record<string, unknown>
+            onChange(typeof row.state_revision === 'number' ? row.state_revision : Number(row.state_revision ?? 0))
+        })
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') onSubscribed?.()
+        })
 
     return () => {
         void supabase.removeChannel(channel)

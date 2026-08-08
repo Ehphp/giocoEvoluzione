@@ -39,7 +39,7 @@ function makeSnapshot(roundResults: RoundResultRecord[]): GameSnapshot {
             id: 'game', room_code: 'ABCDE', game_mode: 'VS_BOT', bot_difficulty: 'NORMAL', status: 'FINISHED', current_round: 2,
             world_id: 'world', round_event_sequence: ['missing-event-1', 'missing-event-2'], player_1_id: player.id, player_2_id: opponent.id,
             player_1_score: 2, player_2_score: 0, winner_id: player.id, started_at: '2026-01-01T10:00:00.000Z',
-            finished_at: '2026-01-01T10:02:00.000Z', rematch_count: 0, created_at: '2026-01-01T10:00:00.000Z', updated_at: '2026-01-01T10:02:00.000Z',
+            finished_at: '2026-01-01T10:02:00.000Z', rematch_count: 0, created_at: '2026-01-01T10:00:00.000Z', updated_at: '2026-01-01T10:02:00.000Z', state_revision: 0,
         },
         players: [player, opponent],
         me: player,
@@ -51,6 +51,7 @@ function makeSnapshot(roundResults: RoundResultRecord[]): GameSnapshot {
         myCurrentAction: null,
         currentRoundResult: null,
         roundResults,
+        stateRevision: 0,
     }
 }
 
