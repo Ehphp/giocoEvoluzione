@@ -1,0 +1,1264 @@
+/** Battle surface: duel header, environment briefing, arena and the round decision dock. */
+
+.battle-screen {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--ev-s-2);
+    min-height: 0;
+    /* Short viewports scroll rather than hiding the gene row or the actions. */
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+}
+
+.battle-screen::-webkit-scrollbar {
+    display: none;
+}
+
+.duel-header,
+.battle-screen__meta,
+.environment-card,
+.battle-screen__decision {
+    flex: 0 0 auto;
+}
+
+.battle-screen.is-locked {
+    filter: saturate(.7) brightness(.8);
+}
+
+.battle-screen__state {
+    display: grid;
+    flex: 1;
+    place-items: center;
+}
+
+.battle-screen__state-copy {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Duel header                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/* The exit control sits beside the duel cards, with real space between them. */
+.battle-screen__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-4);
+}
+
+.battle-screen__exit {
+    align-self: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Leave confirmation                                                          */
+/* -------------------------------------------------------------------------- */
+
+.battle-leave-confirm {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-3);
+    text-align: center;
+}
+
+.battle-leave-confirm__mark {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-size: 26px;
+    background: var(--ev-grad-danger);
+    border: 2px solid rgba(255, 255, 255, .8);
+    box-shadow: var(--ev-shadow-md);
+}
+
+.battle-leave-confirm p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.battle-leave-confirm__actions {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    margin-top: var(--ev-s-1);
+}
+
+.duel-header {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 26px;
+}
+
+.duel-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 5px 6px 5px 5px;
+    border-radius: var(--ev-r-lg);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip);
+}
+
+.duel-card--player {
+    background: var(--ev-grad-player);
+}
+
+.duel-card--opponent {
+    flex-direction: row-reverse;
+    background: var(--ev-grad-opponent);
+}
+
+.duel-card__portrait {
+    position: relative;
+    flex: 0 0 auto;
+    display: block;
+}
+
+.duel-card__state {
+    position: absolute;
+    right: 0;
+    bottom: 1px;
+    width: 11px;
+    height: 11px;
+    border-radius: var(--ev-r-pill);
+    background: #ffd75e;
+    border: 2px solid rgba(10, 28, 22, .55);
+}
+
+.duel-card__state--ready {
+    background: #8bf05e;
+}
+
+.duel-card__state--disconnected {
+    background: #ff8079;
+}
+
+.duel-card__copy {
+    display: grid;
+    gap: 1px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.duel-card--opponent .duel-card__copy {
+    justify-items: end;
+}
+
+.duel-card__name {
+    max-width: 100%;
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    letter-spacing: .01em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, .35);
+}
+
+.duel-card__score {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    max-width: 100%;
+    color: var(--ev-gold);
+    font-size: 12px;
+}
+
+.duel-card__score b {
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+    line-height: 1;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, .35);
+}
+
+.duel-card__tiebreak {
+    min-width: 0;
+    color: rgba(255, 255, 255, .8);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.duel-header__versus {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    transform: translate(-50%, -50%);
+    border-radius: var(--ev-r-pill);
+    color: #5a3606;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+    font-weight: 800;
+    font-style: italic;
+    background: var(--ev-grad-gold);
+    border: 2.5px solid #fff5cf;
+    box-shadow: var(--ev-shadow-md), var(--ev-shadow-glow-gold);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Meta row                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.battle-screen__meta {
+    display: grid;
+    place-items: center;
+    min-height: 26px;
+    margin-top: -2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Environment card                                                            */
+/* -------------------------------------------------------------------------- */
+
+.environment-card {
+    display: grid;
+    /* Wide briefing plus a narrow preview column, as in the round-ahead layout. */
+    grid-template-columns: minmax(0, 1fr) clamp(66px, 24%, 94px);
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px;
+}
+
+.environment-card__main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+}
+
+.environment-thumb {
+    display: block;
+    width: 64px;
+    aspect-ratio: 16 / 9;
+    align-self: center;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-sunk);
+    border: 2px solid rgba(255, 255, 255, .8);
+    box-shadow: var(--ev-shadow-sm);
+}
+
+.environment-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.environment-thumb--next {
+    width: 52px;
+    border-width: 1.5px;
+    border-radius: var(--ev-r-sm);
+}
+
+/* Opened briefing: the same 16:9 artwork as a full-width banner, framed exactly. */
+.environment-thumb--wide {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--ev-r-lg);
+}
+
+.environment-card__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.environment-card__title {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+    font-weight: 800;
+}
+
+.environment-card__description {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+.environment-card__info {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    align-self: center;
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-ink-faint);
+    font-size: 20px;
+}
+
+.environment-card__chips {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 0;
+    margin-top: 2px;
+}
+
+.environment-card__chips .ev-chip {
+    min-width: 0;
+}
+
+/* Trailing preview column: divider, label, thumbnail and the next biome name. */
+.environment-card__next {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 2px 0 2px 8px;
+    border-left: 2px solid rgba(160, 138, 92, .22);
+    color: var(--ev-ink);
+    text-align: center;
+}
+
+.environment-card__next .ev-eyebrow {
+    font-size: var(--ev-fs-2xs);
+    letter-spacing: .08em;
+}
+
+.environment-card__next-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    max-width: 100%;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.environment-card__next svg {
+    font-size: 11px;
+    color: var(--ev-ink-faint);
+}
+
+.environment-card__next:disabled {
+    opacity: .55;
+}
+
+.environment-detail {
+    display: grid;
+    gap: var(--ev-s-3);
+    justify-items: stretch;
+}
+
+.environment-detail .environment-thumb--wide {
+    justify-self: stretch;
+}
+
+.environment-detail__description {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.environment-detail__list {
+    display: grid;
+    gap: 6px;
+}
+
+.environment-detail__list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+    padding: 7px 11px;
+    border-radius: var(--ev-r-md);
+    background: rgba(160, 138, 92, .12);
+}
+
+.environment-detail__trait {
+    font-family: var(--ev-font-display);
+    font-weight: 800;
+}
+
+.environment-detail__empty {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Arena                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.arena {
+    position: relative;
+    /*
+     * The arena is the only elastic block: it absorbs whatever the header, briefing and
+     * decision controls do not need, so safe-area insets never push the actions off screen.
+     */
+    flex: 1 1 124px;
+    min-height: 48px;
+    /* Sized container so the sprites can bow out when the arena is squeezed. */
+    container-type: size;
+    /* The decision panel deliberately overlaps the arena so the creatures stand behind it. */
+    margin: 0 -6px -26px;
+}
+
+.arena__creature {
+    position: absolute;
+    bottom: 0;
+    width: 52%;
+    height: 100%;
+    translate: var(--arena-creature-offset-x, 0) 0;
+}
+
+.arena__creature--player {
+    left: 0;
+}
+
+.arena__creature--opponent {
+    right: 0;
+}
+
+/**
+ * The sprite fills its lane and is sized with `scale` rather than a percentage height:
+ * a percentage height would resolve against an auto-sized track and collapse to intrinsic size.
+ */
+.arena__sprite {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    transform-origin: bottom center;
+    scale: var(--arena-creature-scale, 1);
+    translate: 0 calc(var(--arena-creature-offset-y, 0) * .1);
+    filter: drop-shadow(0 12px 14px rgba(4, 16, 10, .45));
+}
+
+.arena__sprite.is-mirrored {
+    scale: calc(var(--arena-creature-scale, 1) * -1) var(--arena-creature-scale, 1);
+}
+
+.arena__shadow {
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    width: 62%;
+    height: 12px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(4, 16, 10, .5), transparent 70%);
+}
+
+/* Below this the sprites would read as specks; the biome alone is a cleaner fallback. */
+@container (max-height: 74px) {
+    .arena__creature,
+    .arena__versus {
+        display: none;
+    }
+}
+
+.arena__versus {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    z-index: 2;
+    width: 74px;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .45));
+    pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Decision dock                                                               */
+/* -------------------------------------------------------------------------- */
+
+.battle-screen__decision {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 6px;
+    flex: 0 0 auto;
+    margin: 0 -8px;
+    padding: 8px 8px 2px;
+    border-radius: var(--ev-r-xl) var(--ev-r-xl) 0 0;
+    /* Keeps light labels legible over whatever biome art sits behind them. */
+    background: linear-gradient(180deg, rgba(6, 20, 15, 0) 0%, rgba(6, 20, 15, .58) 30%, rgba(6, 20, 15, .74) 100%);
+}
+
+.gene-carousel {
+    display: grid;
+    gap: 4px;
+}
+
+.gene-carousel__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-2);
+}
+
+.gene-carousel__arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+}
+
+.gene-carousel__track {
+    display: flex;
+    gap: 5px;
+    padding: 7px 2px 3px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.gene-carousel__track::-webkit-scrollbar {
+    display: none;
+}
+
+.gene-card {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 2px;
+    flex: 1 1 0;
+    min-width: 56px;
+    padding: 6px 3px 4px;
+    scale: .96;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    scroll-snap-align: center;
+    background: linear-gradient(180deg, #fffdf6 0%, var(--gene-color-soft, #f1e7cd) 100%);
+    border: 2px solid rgba(255, 255, 255, .85);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+    transition: transform var(--ev-dur-base) var(--ev-ease), scale var(--ev-dur-base) var(--ev-ease), box-shadow var(--ev-dur-base) var(--ev-ease);
+}
+
+.gene-card.is-selected {
+    scale: 1.06;
+    transform: translateY(-3px);
+    border-color: #fff;
+    box-shadow: var(--ev-shadow-md), 0 0 0 2.5px var(--gene-color, var(--ev-player)), 0 0 18px color-mix(in srgb, var(--gene-color, #8be04e) 55%, transparent);
+}
+
+.gene-card.is-exhausted {
+    filter: saturate(.45);
+}
+
+.gene-card:disabled {
+    opacity: .78;
+}
+
+.gene-card__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ev-r-pill);
+    font-size: 21px;
+    background: rgba(255, 255, 255, .7);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
+}
+
+.gene-card__value {
+    position: absolute;
+    right: -7px;
+    bottom: -4px;
+    min-width: 18px;
+    padding: 0 4px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    line-height: 15px;
+    background: var(--gene-color-strong, var(--ev-ink));
+    border: 1.5px solid #fff;
+}
+
+.gene-card__name {
+    max-width: 100%;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: .01em;
+    text-transform: uppercase;
+}
+
+.gene-card__level {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+.gene-card__affinity {
+    width: 100%;
+    padding: 1px 2px;
+    border-radius: var(--ev-r-sm);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.gene-card__affinity--ideal {
+    color: #2b6b26;
+    background: var(--ev-good-soft);
+}
+
+.gene-card__affinity--suitable {
+    color: #1d5493;
+    background: var(--ev-info-soft);
+}
+
+.gene-card__affinity--unfavorable {
+    color: #97281f;
+    background: var(--ev-bad-soft);
+}
+
+.gene-card__exhausted {
+    position: absolute;
+    top: 5px;
+    right: 4px;
+    padding: 0 4px;
+    border-radius: var(--ev-r-sm);
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: rgba(46, 62, 44, .7);
+}
+
+/**
+ * Natural-advantage strip.
+ *
+ * It replaces the bare dots row: the selected gene's own colour, its glyph, and the two facts
+ * that decide the round spelled out rather than encoded in arrows alone.
+ */
+.gene-matchup {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 5px 9px;
+    border-radius: var(--ev-r-lg);
+    color: var(--ev-ink);
+    text-align: left;
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+}
+
+.gene-matchup__glyph {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ev-r-pill);
+    font-size: 21px;
+    background: var(--gene-color-soft, var(--ev-cream-deep));
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
+}
+
+.gene-matchup__facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.gene-matchup__fact {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 0 5px;
+    min-width: 0;
+}
+
+.gene-matchup__fact svg {
+    grid-row: 1 / 3;
+    font-size: 15px;
+}
+
+.gene-matchup__fact small {
+    color: var(--ev-ink-faint);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.gene-matchup__fact b {
+    max-width: 100%;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    line-height: 1.4;
+}
+
+.gene-matchup__fact--strong svg {
+    color: var(--ev-good);
+}
+
+.gene-matchup__fact--weak svg {
+    color: var(--ev-bad);
+}
+
+.gene-matchup__divider {
+    width: 2px;
+    height: 24px;
+    border-radius: var(--ev-r-pill);
+    background: rgba(160, 138, 92, .22);
+}
+
+.gene-matchup__info {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    color: var(--ev-ink-faint);
+    font-size: 17px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Gene detail sheet                                                           */
+/* -------------------------------------------------------------------------- */
+
+.gene-detail {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.gene-detail__summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-lg);
+    background: var(--gene-color-soft, var(--ev-cream-deep));
+}
+
+.gene-detail__glyph {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--ev-r-pill);
+    font-size: 28px;
+    background: #fff;
+    box-shadow: var(--ev-shadow-sm);
+}
+
+.gene-detail__score {
+    display: block;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xl);
+    font-weight: 800;
+    color: var(--gene-color-strong, var(--ev-ink));
+}
+
+.gene-detail__breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.gene-detail__breakdown li {
+    display: grid;
+    gap: 1px;
+    padding: 8px;
+    border-radius: var(--ev-r-md);
+    text-align: center;
+    background: rgba(160, 138, 92, .12);
+}
+
+.gene-detail__breakdown span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.gene-detail__breakdown strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+}
+
+.gene-detail__note {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.gene-detail__matchup {
+    display: grid;
+    gap: 6px;
+}
+
+.gene-detail__fact {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-2);
+    padding: 8px 11px;
+    border-radius: var(--ev-r-md);
+    font-size: var(--ev-fs-sm);
+    background: rgba(160, 138, 92, .12);
+}
+
+.gene-detail__fact span {
+    color: var(--ev-ink-muted);
+}
+
+.gene-detail__fact strong {
+    justify-self: end;
+    font-family: var(--ev-font-display);
+}
+
+.gene-detail__fact--strong svg {
+    color: var(--ev-good);
+}
+
+.gene-detail__fact--weak svg {
+    color: var(--ev-bad);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Actions + waiting                                                           */
+/* -------------------------------------------------------------------------- */
+
+.decision-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.waiting-panel {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    min-height: 88px;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-xl);
+    color: var(--ev-on-dark);
+    background: var(--ev-glass-strong);
+    border: 1.5px solid var(--ev-stroke-light-soft);
+    backdrop-filter: blur(12px);
+}
+
+.waiting-panel__copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.waiting-panel__copy strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+}
+
+.waiting-panel__copy p {
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-xs);
+}
+
+.waiting-panel__count {
+    padding: 4px 11px;
+    border-radius: var(--ev-r-pill);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+    font-weight: 800;
+    background: rgba(255, 255, 255, .14);
+}
+
+.waiting-panel__spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--ev-r-pill);
+    border: 3px solid rgba(255, 255, 255, .22);
+    border-top-color: var(--ev-player);
+    animation: ev-spin 900ms linear infinite;
+}
+
+@keyframes ev-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Compact heights                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Mobile browser chrome leaves far less than the nominal device height (a 390x844 iPhone
+ * reports ~664 to the page). These tiers keep the round decision on screen without scrolling
+ * down to ~620px, and degrade the decorative arena — never the controls — below that.
+ */
+
+@media (max-height: 760px) {
+    .battle-screen {
+        gap: 6px;
+    }
+
+    .arena {
+        flex-basis: 104px;
+    }
+}
+
+@media (max-height: 680px) {
+    .duel-card {
+        padding: 4px;
+    }
+
+    .environment-card {
+        gap: 8px;
+        padding: 7px;
+    }
+
+    .environment-card > .environment-thumb {
+        width: 52px;
+    }
+
+    .environment-card__description {
+        display: none;
+    }
+
+    .arena {
+        flex-basis: 80px;
+    }
+
+    .gene-matchup {
+        min-height: 40px;
+    }
+
+    /*
+     * Below this height the arrows would have to shrink under a comfortable touch target.
+     * They are redundant — every card is directly tappable — so they are dropped instead.
+     */
+    .gene-carousel__arrow {
+        display: none;
+    }
+
+    .gene-carousel__head {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+    }
+
+    .ev-action-btn {
+        min-height: 56px;
+    }
+}
+
+@media (max-height: 620px) {
+    /* The affinity chips stay one tap away in the environment sheet. */
+    .environment-card__chips {
+        display: none;
+    }
+
+    .arena {
+        flex-basis: 58px;
+    }
+
+    .gene-card__icon {
+        width: 26px;
+        height: 26px;
+        font-size: 17px;
+    }
+
+    .gene-card__level {
+        display: none;
+    }
+
+    .ev-action-btn {
+        min-height: 52px;
+    }
+
+    .ev-action-btn__glyph {
+        width: 30px;
+        height: 30px;
+        font-size: 17px;
+    }
+}
+
+/* Landscape phones: the briefing collapses so the decision stays one scroll away. */
+@media (max-height: 480px) {
+    .arena {
+        display: none;
+    }
+}
+
+@media (max-width: 379px) {
+    /* The briefing gives up a little type size so the biome name never needs an ellipsis. */
+    .environment-card {
+        grid-template-columns: minmax(0, 1fr) clamp(60px, 22%, 94px);
+        gap: 6px;
+    }
+
+    .environment-card__title {
+        font-size: var(--ev-fs-md);
+    }
+
+    .environment-thumb {
+        width: 56px;
+    }
+
+    /* All five adaptations still fit side by side on a 320px screen. */
+    .gene-card {
+        min-width: 52px;
+        padding-inline: 2px;
+    }
+
+    .gene-card__name {
+        font-size: 9px;
+        letter-spacing: -.01em;
+    }
+
+    .gene-carousel__track {
+        gap: 4px;
+    }
+
+    .duel-card__name {
+        font-size: var(--ev-fs-xs);
+    }
+
+    .duel-card {
+        gap: 5px;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Round result overlay                                                        */
+/* -------------------------------------------------------------------------- */
+
+.round-result {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.round-result__hero {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    padding: var(--ev-s-4) var(--ev-s-3);
+    border-radius: var(--ev-r-lg);
+    text-align: center;
+    background: var(--ev-cream-deep);
+    outline: none;
+}
+
+.round-result--win .round-result__hero {
+    background: var(--ev-good-soft);
+}
+
+.round-result--loss .round-result__hero {
+    background: var(--ev-bad-soft);
+}
+
+.round-result--evolve .round-result__hero {
+    background: var(--ev-gene-senses-soft);
+}
+
+.round-result__hero h2 {
+    font-size: var(--ev-fs-2xl);
+}
+
+.round-result__values {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-4);
+    margin-top: 2px;
+    transition: opacity var(--ev-dur-base) var(--ev-ease);
+}
+
+.round-result__values p {
+    display: grid;
+    gap: 0;
+    justify-items: center;
+}
+
+.round-result__values span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+.round-result__values strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-3xl);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.round-result__dash {
+    color: var(--ev-ink-faint);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xl);
+}
+
+.round-result__subtitle {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.round-result__skip {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+.round-result__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+    transition: opacity var(--ev-dur-base) var(--ev-ease);
+}
+
+.round-result__cards.is-hidden,
+.round-result__values.is-hidden,
+.round-result__explanation.is-hidden {
+    opacity: 0;
+}
+
+.round-breakdown {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding: 9px;
+    border-radius: var(--ev-r-lg);
+    background: var(--gene-color-soft, rgba(160, 138, 92, .12));
+    border: 2px solid rgba(255, 255, 255, .7);
+}
+
+.round-breakdown--me {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gene-color, var(--ev-player)) 55%, transparent);
+}
+
+.round-breakdown__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+}
+
+.round-breakdown__header > div {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+}
+
+.round-breakdown__header strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.round-breakdown__header .ev-chip {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
+
+.round-breakdown__glyph {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ev-r-pill);
+    font-size: 19px;
+    background: rgba(255, 255, 255, .75);
+}
+
+.round-breakdown__details summary {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.round-breakdown__details.is-hidden {
+    opacity: 0;
+}
+
+.round-breakdown__math {
+    display: grid;
+    gap: 1px;
+    margin-top: 4px;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+}
+
+.round-breakdown__math b {
+    color: var(--ev-ink);
+}
+
+.round-breakdown__legacy {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+}
+
+.round-breakdown__footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1.5px solid rgba(160, 138, 92, .2);
+}
+
+.round-breakdown__footer strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+    transition: color var(--ev-dur-base) var(--ev-ease);
+}
+
+.round-breakdown__footer strong.is-highlighted {
+    color: var(--gene-color-strong, var(--ev-player-strong));
+}
+
+.round-breakdown__footer span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.round-result__explanation {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    transition: opacity var(--ev-dur-base) var(--ev-ease);
+}
+
+.round-result__reason {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-xs);
+    text-align: center;
+}

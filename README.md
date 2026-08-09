@@ -1,5 +1,9 @@
 # Gioco Evoluzione MVP
 
+> **Working on the interface?** Read [`AGENTS.md`](AGENTS.md) first — it holds the rules the UI
+> refactor established (design tokens, primitives, icons, assets, mobile layout, the overflow
+> audit). The reasoning behind them is in [`docs/ui-design-system.md`](docs/ui-design-system.md).
+
 Prototype browser multiplayer 1v1 per testare rapidamente il dilemma `USE` vs `EVOLVE` in un best-of-seven con evento evolutivo sincronizzato.
 
 ## Cosa include

@@ -7,6 +7,11 @@ import { CreatureTransformationApiError, adoptCreatureTransformation, createVisu
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
+import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
+import { ASSETS } from '../../ui/assets'
+import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
+import { ChevronIcon, DnaIcon, SparkIcon } from '../../ui/icons'
+
 import './CreatureVisualProgressionScreen.css'
 
 type Track = { id: string; status: 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'; visualTraitId: VisualTraitId | null; evolutionTargetId: EvolutionTargetId | null; progress: number; target: number; generatedRequestId: string | null }
@@ -40,6 +45,8 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [postProcessingMessage, setPostProcessingMessage] = useState<string | null>(null)
+    /** Which of the two forms the hero shows; the proposal is what the player is deciding on. */
+    const [heroSide, setHeroSide] = useState<'current' | 'result'>('result')
     const postProcessingRequest = useRef<string | null>(null)
     const postProcessingAttempts = useRef(0)
 
@@ -133,20 +140,222 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     }
     async function adopt() { if (!progress?.track || !preview) return; setBusy(true); setError(null); try { await adoptCreatureTransformation({ operation: 'ADOPT_CREATURE_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, transformationRequestId: preview.requestId, expectedCurrentVisualVersionId: preview.sourceVersionId }); await onVisualChanged(); await refresh() } catch (nextError) { setError(nextError instanceof Error ? nextError.message : 'L adozione non e riuscita.') } finally { setBusy(false) } }
 
-    return <section className="visual-progression-screen" aria-labelledby="visual-progression-title">
-        <header><button type="button" onClick={onBack}>← Home</button><div><span className="eyebrow">Progressione visuale</span><h1 id="visual-progression-title">Evoluzione della creatura</h1></div></header>
-        {error ? <p className="visual-progression-screen__error" role="alert">{error}</p> : null}
-        {!progress ? <p>Caricamento percorso…</p> : null}
-        {progress && !progress.track ? <section className="visual-progression-screen__traits"><h2>Scegli la regione da evolvere</h2><p>Il progresso si ottiene solo con le vittorie.</p><div>{EVOLUTION_TARGETS.map((target) => <button key={target.id} type="button" disabled={busy} onClick={() => void selectTarget(target.id)}><strong>{target.label}</strong><span>{target.description}</span></button>)}</div></section> : null}
-        {progress?.track?.status === 'ACTIVE' ? <section className="visual-progression-screen__card"><h2>{currentTarget}</h2><p>Regione in sviluppo. Vittorie ottenute: <strong>{progress.track.progress} / {progress.track.target}</strong></p><progress value={progress.track.progress} max={progress.track.target} /></section> : null}
-        {progress?.track?.status === 'READY' ? <section className="visual-progression-screen__card"><h2>Trasformazione sbloccata</h2><p>{currentTarget} è pronta: puoi generare l’evoluzione della forma attuale.</p>{lastFailure ? <aside className="visual-progression-screen__previous-failure" role="status"><strong>Ultimo tentativo non riuscito.</strong><span>{lastFailure.message}</span><small>Codice: {lastFailure.code}</small></aside> : null}<button type="button" disabled={busy} onClick={() => void generate()}>{busy ? 'Avvio…' : 'Inizia evoluzione'}</button><small>Il PNG viene validato dal server dopo la rimozione dello sfondo nel browser.</small></section> : null}
-        {progress?.track?.status === 'READY' && experimentOnly ? <aside className="visual-progression-screen__experiment" role="status"><strong>Immagine non adottabile.</strong><span>Il PNG non ha superato la validazione di trasparenza nativa.</span>{experimentOnly.warnings.length ? <small>Diagnostica: {experimentOnly.warnings.join(', ')}</small> : null}</aside> : null}
-        {progress?.track?.status === 'GENERATING' ? <section className="visual-progression-screen__card"><h2>Generazione in corso</h2><p>Stiamo preparando il concept e l immagine della tua evoluzione.</p><progress /></section> : null}
-        {progress?.track?.status === 'POST_PROCESSING' ? <section className="visual-progression-screen__card"><h2>Rimozione sfondo</h2><p>{postProcessingMessage ?? 'L elaborazione viene eseguita localmente nel browser.'}</p><progress />{!busy && progress.track.generatedRequestId ? <button type="button" onClick={() => void runBackgroundRemoval(progress.track!.generatedRequestId!)}>Riprova rimozione sfondo</button> : null}</section> : null}
-        {progress?.track?.status === 'GENERATED' && preview ? <section className="visual-progression-screen__preview"><h2>La tua creatura può evolversi</h2><div className="visual-progression-screen__images"><figure>{preview.sourceUrl ? <img src={preview.sourceUrl} alt="Creatura attuale" /> : null}<figcaption>Versione {progress.currentVersion.versionNumber}</figcaption></figure><figure>{preview.resultUrl ? <img src={preview.resultUrl} alt="Nuova evoluzione proposta" /> : null}<figcaption>Versione {progress.currentVersion.versionNumber + 1}</figcaption></figure></div><h3>{preview.conceptName}</h3><p>{preview.evolutionaryFunction}</p>{preview.warnings.length ? <p>Verifica: {preview.warnings.map(validationLabel).join(' ')}</p> : null}<div><button type="button" disabled={busy} onClick={() => void adopt()}>Adotta evoluzione</button><button type="button" disabled={busy} onClick={onBack}>Mantieni creatura attuale</button></div></section> : null}
-        {progress?.track?.status === 'GENERATED' && !preview ? <section className="visual-progression-screen__card"><h2>Anteprima in verifica</h2><button type="button" disabled={busy} onClick={() => void refresh()}>Ricarica proposta</button></section> : null}
-        {progress?.track?.status === 'COMPLETED' ? <section className="visual-progression-screen__card"><h2>Nuova versione attiva</h2><p>La tua creatura usa ora la versione {progress.currentVersion.versionNumber}.</p><button type="button" disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Inizia un nuovo percorso</button></section> : null}
-        {progress?.track && !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED'].includes(progress.track.status) ? <section className="visual-progression-screen__card"><h2>Percorso visivo da riavviare</h2><button type="button" disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Scegli un nuovo tratto</button></section> : null}
-        {progress?.history.length ? <section className="visual-progression-screen__history"><h2>Storico evoluzioni</h2><ol>{progress.history.map((entry) => <li key={entry.versionNumber}>v{entry.versionNumber} · {entry.evolutionTargetId ? targetLabel(entry.evolutionTargetId) : entry.visualTraitId ? traitLabel(entry.visualTraitId) : 'Evoluzione precedente'} · {entry.conceptName}</li>)}</ol></section> : null}
-    </section>
+    const track = progress?.track ?? null
+    const status = track?.status ?? null
+
+    return (
+        <AppShell
+            sceneryUrl={ASSETS.scenery.forest}
+            sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback}
+            scroll
+        >
+            <section className="evolution-screen" aria-labelledby="visual-progression-title">
+                <header className="evolution-topbar">
+                    <IconButton label="Torna indietro" onClick={onBack}>
+                        <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
+                    </IconButton>
+                    <div className="evolution-topbar__title">
+                        <span className="ev-eyebrow ev-eyebrow--light">Progressione visuale</span>
+                        <h1 id="visual-progression-title">Evoluzione della creatura</h1>
+                    </div>
+                    <span className="evolution-topbar__spacer" aria-hidden="true" />
+                </header>
+
+                {error ? <Notice tone="error">{error}</Notice> : null}
+
+                {!progress ? (
+                    <Panel className="evolution-card evolution-card--centered" role="status" aria-live="polite">
+                        <span className="evolution-spinner" aria-hidden="true" />
+                        <p className="evolution-card__copy">Caricamento del percorso evolutivo...</p>
+                    </Panel>
+                ) : null}
+
+                {progress && !track ? (
+                    <>
+                        <Panel className="evolution-card">
+                            <span className="ev-eyebrow">Nuovo percorso</span>
+                            <h2>Scegli la regione da evolvere</h2>
+                            <p className="evolution-card__copy">Il progresso si ottiene solo con le vittorie in partita.</p>
+                        </Panel>
+                        <div className="evolution-targets">
+                            {EVOLUTION_TARGETS.map((target) => (
+                                <button
+                                    key={target.id}
+                                    type="button"
+                                    className="evolution-target"
+                                    disabled={busy}
+                                    onClick={() => void selectTarget(target.id)}
+                                >
+                                    <span className="evolution-target__glyph" aria-hidden="true"><DnaIcon /></span>
+                                    <span className="evolution-target__copy">
+                                        <strong>{target.label}</strong>
+                                        <small>{target.description}</small>
+                                    </span>
+                                    <ChevronIcon aria-hidden="true" />
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                ) : null}
+
+                {status === 'ACTIVE' && track ? (
+                    <Panel className="evolution-card">
+                        <span className="ev-eyebrow">Regione in sviluppo</span>
+                        <h2>{currentTarget}</h2>
+                        <div className="evolution-track">
+                            <ProgressBar
+                                current={track.progress}
+                                total={track.target}
+                                tone="gold"
+                                label={`${track.progress} vittorie su ${track.target}`}
+                            />
+                            <small>{track.progress} / {track.target} vittorie</small>
+                        </div>
+                    </Panel>
+                ) : null}
+
+                {status === 'READY' && track ? (
+                    <Panel className="evolution-card">
+                        <Chip tone="good" icon={<SparkIcon />}>Trasformazione sbloccata</Chip>
+                        <h2>{currentTarget} e pronta</h2>
+                        <p className="evolution-card__copy">Puoi generare l evoluzione della forma attuale.</p>
+                        {lastFailure ? (
+                            <Notice tone="warning">
+                                Ultimo tentativo non riuscito: {lastFailure.message} (codice {lastFailure.code})
+                            </Notice>
+                        ) : null}
+                        <Button tone="evolve" block disabled={busy} onClick={() => void generate()}>
+                            <DnaIcon aria-hidden="true" />
+                            {busy ? 'Avvio...' : 'Inizia evoluzione'}
+                        </Button>
+                        <small className="evolution-card__note">Il PNG viene validato dal server dopo la rimozione dello sfondo nel browser.</small>
+                    </Panel>
+                ) : null}
+
+                {status === 'READY' && experimentOnly ? (
+                    <Notice tone="warning">
+                        Immagine non adottabile: il PNG non ha superato la validazione di trasparenza nativa.
+                        {experimentOnly.warnings.length ? ` Diagnostica: ${experimentOnly.warnings.join(', ')}` : ''}
+                    </Notice>
+                ) : null}
+
+                {status === 'GENERATING' ? (
+                    <Panel className="evolution-card evolution-card--centered" aria-live="polite">
+                        <span className="evolution-spinner" aria-hidden="true" />
+                        <h2>Generazione in corso</h2>
+                        <p className="evolution-card__copy">Stiamo preparando il concept e l immagine della tua evoluzione.</p>
+                    </Panel>
+                ) : null}
+
+                {status === 'POST_PROCESSING' && track ? (
+                    <Panel className="evolution-card evolution-card--centered" aria-live="polite">
+                        <span className="evolution-spinner" aria-hidden="true" />
+                        <h2>Rimozione sfondo</h2>
+                        <p className="evolution-card__copy">{postProcessingMessage ?? 'L elaborazione viene eseguita localmente nel browser.'}</p>
+                        {!busy && track.generatedRequestId ? (
+                            <Button tone="cream" block onClick={() => void runBackgroundRemoval(track.generatedRequestId!)}>
+                                Riprova rimozione sfondo
+                            </Button>
+                        ) : null}
+                    </Panel>
+                ) : null}
+
+                {status === 'GENERATED' && preview && progress ? (
+                    <>
+                        <SectionLabel>La tua creatura puo evolversi</SectionLabel>
+                        <Panel className="evolution-preview">
+                            {/* Tapping either thumbnail swaps which form the hero shows. */}
+                            <figure className="evolution-hero" data-side={heroSide}>
+                                {(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl) ? (
+                                    <img
+                                        src={(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl) ?? undefined}
+                                        alt={heroSide === 'result' ? 'Nuova evoluzione proposta' : 'Creatura attuale'}
+                                    />
+                                ) : null}
+                                <figcaption className="evolution-hero__badge">
+                                    v{heroSide === 'result' ? progress.currentVersion.versionNumber + 1 : progress.currentVersion.versionNumber}
+                                </figcaption>
+                            </figure>
+
+                            <div className="evolution-compare" role="group" aria-label="Scegli la forma da vedere in grande">
+                                <button
+                                    type="button"
+                                    className="evolution-compare__side"
+                                    aria-pressed={heroSide === 'current'}
+                                    onClick={() => setHeroSide('current')}
+                                >
+                                    <span>{preview.sourceUrl ? <img src={preview.sourceUrl} alt="" /> : null}</span>
+                                    <small>Attuale · v{progress.currentVersion.versionNumber}</small>
+                                </button>
+                                <span className="evolution-compare__arrow" aria-hidden="true"><ChevronIcon /></span>
+                                <button
+                                    type="button"
+                                    className="evolution-compare__side evolution-compare__side--result"
+                                    aria-pressed={heroSide === 'result'}
+                                    onClick={() => setHeroSide('result')}
+                                >
+                                    <span>{preview.resultUrl ? <img src={preview.resultUrl} alt="" /> : null}</span>
+                                    <small>Proposta · v{progress.currentVersion.versionNumber + 1}</small>
+                                </button>
+                            </div>
+
+                            <div className="evolution-preview__copy">
+                                <h2>{preview.conceptName}</h2>
+                                <p className="evolution-card__copy">{preview.evolutionaryFunction}</p>
+                                {preview.warnings.length ? (
+                                    <Notice tone="warning">Verifica: {preview.warnings.map(validationLabel).join(' ')}</Notice>
+                                ) : null}
+                            </div>
+                            <div className="evolution-preview__actions">
+                                <Button tone="evolve" block disabled={busy} onClick={() => void adopt()}>Adotta evoluzione</Button>
+                                <Button tone="cream" block disabled={busy} onClick={onBack}>Mantieni creatura attuale</Button>
+                            </div>
+                        </Panel>
+                    </>
+                ) : null}
+
+                {status === 'GENERATED' && !preview ? (
+                    <Panel className="evolution-card">
+                        <h2>Anteprima in verifica</h2>
+                        <Button tone="cream" block disabled={busy} onClick={() => void refresh()}>Ricarica proposta</Button>
+                    </Panel>
+                ) : null}
+
+                {status === 'COMPLETED' && progress ? (
+                    <Panel className="evolution-card">
+                        <Chip tone="good" icon={<SparkIcon />}>Nuova versione attiva</Chip>
+                        <h2>Evoluzione adottata</h2>
+                        <p className="evolution-card__copy">La tua creatura usa ora la versione {progress.currentVersion.versionNumber}.</p>
+                        <Button tone="use" block disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Inizia un nuovo percorso</Button>
+                    </Panel>
+                ) : null}
+
+                {progress && track && !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED'].includes(track.status) ? (
+                    <Panel className="evolution-card">
+                        <h2>Percorso visivo da riavviare</h2>
+                        <Button tone="cream" block disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Scegli un nuovo tratto</Button>
+                    </Panel>
+                ) : null}
+
+                {progress?.history.length ? (
+                    <>
+                        <SectionLabel>Storico evoluzioni</SectionLabel>
+                        <ol className="evolution-history">
+                            {progress.history.map((entry) => (
+                                <li key={entry.versionNumber}>
+                                    <Panel className="evolution-history__row" flat>
+                                        <span className="evolution-history__version">v{entry.versionNumber}</span>
+                                        <span className="evolution-history__copy">
+                                            <strong>{entry.evolutionTargetId ? targetLabel(entry.evolutionTargetId) : entry.visualTraitId ? traitLabel(entry.visualTraitId) : 'Evoluzione precedente'}</strong>
+                                            <small>{entry.conceptName}</small>
+                                        </span>
+                                    </Panel>
+                                </li>
+                            ))}
+                        </ol>
+                    </>
+                ) : null}
+            </section>
+        </AppShell>
+    )
 }

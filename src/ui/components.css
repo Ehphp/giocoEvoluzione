@@ -1,0 +1,777 @@
+/** Reusable Evori UI primitives. Screens compose these; they never restyle them from outside. */
+
+/* -------------------------------------------------------------------------- */
+/* Shell                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.ev-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: var(--ev-slate-deep);
+    isolation: isolate;
+}
+
+.ev-shell__scenery {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 42%;
+    /* Lifts the supplied night-forest art toward the brighter arena look. */
+    filter: brightness(1.24) saturate(1.18) contrast(.96);
+}
+
+.ev-shell__wash {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(120% 62% at 50% -6%, rgba(198, 240, 255, .34), transparent 62%),
+        radial-gradient(90% 46% at 50% 104%, rgba(6, 22, 16, .82), transparent 68%),
+        linear-gradient(180deg, rgba(10, 30, 24, .34) 0%, rgba(8, 24, 19, .12) 38%, rgba(6, 20, 15, .72) 100%);
+}
+
+.ev-shell__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: var(--ev-s-3);
+    width: min(100%, var(--ev-app-max-width));
+    min-height: 0;
+    margin: 0 auto;
+    padding:
+        calc(var(--ev-safe-top) + var(--ev-s-3))
+        var(--ev-s-3)
+        var(--ev-s-3);
+}
+
+.ev-shell__content--scroll {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ev-shell--docked .ev-shell__content {
+    padding-bottom: calc(var(--ev-dock-height) + var(--ev-safe-bottom) + var(--ev-s-4));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panel                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.ev-panel {
+    position: relative;
+    border-radius: var(--ev-r-xl);
+    padding: var(--ev-s-4);
+    box-shadow: var(--ev-shadow-md);
+}
+
+.ev-panel--cream {
+    border: 2px solid var(--ev-stroke-light);
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+}
+
+.ev-panel--cream::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--ev-lip-cream);
+    pointer-events: none;
+}
+
+.ev-panel--glass {
+    border: 1.5px solid var(--ev-stroke-light-soft);
+    color: var(--ev-on-dark);
+    background: var(--ev-glass);
+    backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.ev-panel--flat {
+    box-shadow: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Buttons                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.ev-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ev-s-2);
+    min-height: 46px;
+    padding: var(--ev-s-2) var(--ev-s-4);
+    border-radius: var(--ev-r-lg);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+    font-weight: 800;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, .28);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip);
+    transition: transform var(--ev-dur-fast) var(--ev-ease), filter var(--ev-dur-fast) var(--ev-ease);
+}
+
+.ev-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--ev-stroke-light-soft);
+    pointer-events: none;
+}
+
+.ev-btn:active:not(:disabled) {
+    transform: translateY(2px);
+    filter: brightness(.95);
+}
+
+.ev-btn:disabled {
+    filter: grayscale(.55) brightness(.78);
+    opacity: .72;
+}
+
+.ev-btn--use {
+    background: var(--ev-grad-use);
+}
+
+.ev-btn--evolve {
+    background: var(--ev-grad-evolve);
+}
+
+.ev-btn--gold {
+    color: #4a2c05;
+    background: var(--ev-grad-gold);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
+}
+
+.ev-btn--info {
+    background: var(--ev-grad-nav);
+}
+
+.ev-btn--cream {
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+    text-shadow: none;
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+}
+
+.ev-btn--ghost {
+    color: var(--ev-on-dark);
+    background: var(--ev-glass);
+    backdrop-filter: blur(10px);
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.ev-btn--ghost::before {
+    border-color: var(--ev-stroke-light-soft);
+}
+
+.ev-btn--danger {
+    background: var(--ev-grad-danger);
+}
+
+.ev-btn--block {
+    width: 100%;
+}
+
+.ev-btn--sm {
+    min-height: 40px;
+    padding: var(--ev-s-1) var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    font-size: var(--ev-fs-sm);
+}
+
+/** Two-line action button: title over a supporting line, with a leading glyph. */
+.ev-action-btn {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    min-height: 62px;
+    padding: 9px;
+    text-align: left;
+}
+
+.ev-action-btn__glyph {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--ev-r-pill);
+    font-size: 19px;
+    background: rgba(255, 255, 255, .24);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+
+.ev-action-btn__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ev-action-btn__title {
+    font-size: clamp(1rem, 4.6vw, 1.32rem);
+    line-height: 1;
+    letter-spacing: .01em;
+}
+
+.ev-action-btn__hint {
+    display: block;
+    font-family: var(--ev-font-ui);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+    line-height: 1.25;
+    opacity: .94;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+
+.ev-action-btn__value {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 0 6px;
+    border-radius: var(--ev-r-pill);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    background: rgba(0, 0, 0, .3);
+}
+
+/** Circular icon button. Sized to stay a comfortable touch target on mobile. */
+.ev-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-on-dark);
+    font-size: 18px;
+    background: var(--ev-glass-strong);
+    border: 1.5px solid var(--ev-stroke-light-soft);
+    box-shadow: var(--ev-shadow-sm);
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.ev-icon-btn:active:not(:disabled) {
+    transform: scale(.94);
+}
+
+.ev-icon-btn--cream {
+    color: var(--ev-ink-muted);
+    background: var(--ev-cream);
+    border-color: rgba(160, 138, 92, .32);
+}
+
+/** The exit/logout treatment, identical on every screen. */
+.ev-icon-btn--danger {
+    color: #ffd9d4;
+    background: color-mix(in srgb, var(--ev-danger-dark) 64%, rgba(8, 24, 19, .78));
+    border-color: color-mix(in srgb, var(--ev-danger-light) 52%, transparent);
+    backdrop-filter: blur(10px);
+}
+
+.ev-icon-btn--danger:active:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.ev-icon-btn--lg {
+    width: 44px;
+    height: 44px;
+    font-size: 21px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chips, pills, badges                                                        */
+/* -------------------------------------------------------------------------- */
+
+.ev-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    padding: 3px 10px;
+    border-radius: var(--ev-r-pill);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    white-space: nowrap;
+    background: var(--ev-cream-deep);
+    color: var(--ev-ink);
+    border: 1.5px solid rgba(255, 255, 255, .7);
+}
+
+.ev-chip__icon {
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+}
+
+.ev-chip--good {
+    color: #2b6b26;
+    background: var(--ev-good-soft);
+    border-color: rgba(78, 185, 73, .5);
+}
+
+.ev-chip--info {
+    color: #1d5493;
+    background: var(--ev-info-soft);
+    border-color: rgba(63, 146, 227, .5);
+}
+
+.ev-chip--warn {
+    color: #8a5c05;
+    background: var(--ev-warn-soft);
+    border-color: rgba(232, 160, 32, .5);
+}
+
+.ev-chip--bad {
+    color: #97281f;
+    background: var(--ev-bad-soft);
+    border-color: rgba(229, 84, 74, .5);
+}
+
+.ev-chip--gene {
+    color: var(--gene-color-strong, var(--ev-ink));
+    background: var(--gene-color-soft, var(--ev-cream-deep));
+    border-color: color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
+}
+
+/** Dark translucent status pill used over artwork. */
+.ev-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-on-dark);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: var(--ev-glass-strong);
+    border: 1.5px solid var(--ev-stroke-light-soft);
+    box-shadow: var(--ev-shadow-sm);
+    backdrop-filter: blur(10px);
+}
+
+.ev-pill strong {
+    font-size: var(--ev-fs-lg);
+    color: #fff;
+}
+
+.ev-badge {
+    display: grid;
+    place-items: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    background: linear-gradient(160deg, #ff7a6a, #d8342a);
+    border: 1.5px solid rgba(255, 255, 255, .85);
+    box-shadow: var(--ev-shadow-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section label                                                               */
+/* -------------------------------------------------------------------------- */
+
+.ev-section-label {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-3);
+    color: var(--ev-on-dark);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .6);
+}
+
+.ev-section-label::before,
+.ev-section-label::after {
+    content: '';
+    height: 2px;
+    border-radius: var(--ev-r-pill);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5));
+}
+
+.ev-section-label::after {
+    background: linear-gradient(90deg, rgba(255, 255, 255, .5), transparent);
+}
+
+.ev-section-label--ink {
+    color: var(--ev-ink-muted);
+    text-shadow: none;
+}
+
+.ev-section-label--ink::before {
+    background: linear-gradient(90deg, transparent, var(--ev-stroke-ink-strong));
+}
+
+.ev-section-label--ink::after {
+    background: linear-gradient(90deg, var(--ev-stroke-ink-strong), transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Avatar                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.ev-avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--ev-avatar-size, 46px);
+    height: var(--ev-avatar-size, 46px);
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+    font-weight: 800;
+    background: rgba(9, 26, 20, .55);
+    border: 2.5px solid var(--ev-stroke-light);
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, .4);
+}
+
+.ev-avatar img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Progress                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.ev-progress {
+    position: relative;
+    height: 10px;
+    overflow: hidden;
+    border-radius: var(--ev-r-pill);
+    background: rgba(6, 20, 15, .38);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .38);
+}
+
+.ev-progress__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--ev-grad-use);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+    transition: width var(--ev-dur-slow) var(--ev-ease);
+}
+
+.ev-progress--gold .ev-progress__fill {
+    background: var(--ev-grad-gold);
+}
+
+/** Row of small round markers, e.g. rounds played or slots filled. */
+.ev-pips {
+    display: flex;
+    gap: 4px;
+}
+
+.ev-pips__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--ev-r-pill);
+    background: rgba(255, 255, 255, .26);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .3);
+}
+
+.ev-pips__dot.is-on {
+    background: var(--ev-pip-color, #fff);
+    box-shadow: 0 0 6px var(--ev-pip-color, #fff);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dock                                                                        */
+/* -------------------------------------------------------------------------- */
+
+.ev-dock {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    padding: 0 var(--ev-s-3) calc(var(--ev-safe-bottom) + var(--ev-s-2));
+    pointer-events: none;
+}
+
+.ev-dock__bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 2px;
+    width: min(100%, var(--ev-app-max-width));
+    height: var(--ev-dock-height);
+    padding: 6px;
+    border-radius: var(--ev-r-xl);
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-lg), var(--ev-lip-cream);
+    pointer-events: auto;
+}
+
+.ev-dock__item {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 2px;
+    height: 100%;
+    padding: 2px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+    letter-spacing: .01em;
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.ev-dock__item span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ev-dock__icon {
+    display: grid;
+    place-items: center;
+    font-size: 21px;
+}
+
+.ev-dock__item.is-active {
+    color: #fff;
+    background: var(--ev-grad-nav);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.ev-dock__item:disabled {
+    color: var(--ev-ink-faint);
+    opacity: .72;
+}
+
+.ev-dock__item:active:not(:disabled):not(.is-active) {
+    transform: translateY(2px);
+}
+
+.ev-dock__badge {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+}
+
+.ev-dock__lock {
+    position: absolute;
+    top: 4px;
+    right: 10px;
+    font-size: 10px;
+    color: var(--ev-ink-faint);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Overlay + sheet                                                             */
+/* -------------------------------------------------------------------------- */
+
+.ev-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    align-items: end;
+    justify-items: center;
+    padding: var(--ev-s-3);
+    padding-bottom: calc(var(--ev-safe-bottom) + var(--ev-s-3));
+    background: rgba(4, 14, 10, .68);
+    backdrop-filter: blur(6px);
+    animation: ev-fade var(--ev-dur-base) var(--ev-ease);
+}
+
+.ev-overlay--center {
+    align-items: center;
+}
+
+.ev-sheet {
+    display: grid;
+    gap: var(--ev-s-3);
+    width: min(100%, var(--ev-app-max-width));
+    max-height: min(86dvh, 760px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: ev-rise var(--ev-dur-base) var(--ev-ease);
+}
+
+.ev-sheet__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.ev-sheet__title {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.ev-eyebrow {
+    color: var(--ev-ink-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+.ev-eyebrow--light {
+    color: var(--ev-on-dark-muted);
+}
+
+@keyframes ev-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes ev-rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Notices + fields                                                            */
+/* -------------------------------------------------------------------------- */
+
+.ev-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-2);
+    padding: 9px 13px;
+    border-radius: var(--ev-r-md);
+    font-size: var(--ev-fs-sm);
+    font-weight: 700;
+    border: 1.5px solid transparent;
+}
+
+.ev-notice--success {
+    color: #2b6b26;
+    background: var(--ev-good-soft);
+    border-color: rgba(78, 185, 73, .55);
+}
+
+.ev-notice--warning {
+    color: #8a5c05;
+    background: var(--ev-warn-soft);
+    border-color: rgba(232, 160, 32, .55);
+}
+
+.ev-notice--error {
+    color: #97281f;
+    background: var(--ev-bad-soft);
+    border-color: rgba(229, 84, 74, .55);
+}
+
+.ev-field {
+    display: grid;
+    gap: 5px;
+}
+
+.ev-field > span {
+    color: var(--ev-ink-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+.ev-field input,
+.ev-field select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    font-weight: 700;
+    background: #fff;
+    border: 2px solid rgba(160, 138, 92, .3);
+    box-shadow: inset 0 2px 4px rgba(120, 100, 60, .14);
+}
+
+.ev-field input::placeholder {
+    color: var(--ev-ink-faint);
+}
+
+.ev-field input:focus-visible,
+.ev-field select:focus-visible {
+    outline: none;
+    border-color: var(--ev-player-strong);
+    box-shadow: 0 0 0 3px rgba(139, 224, 78, .35);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utilities                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.ev-stack {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.ev-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-2);
+}
+
+.ev-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.ev-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Baloo 2 has tall ascenders: a tighter line box would clip them when overflow is hidden. */
+    line-height: 1.4;
+}
+
+.ev-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}

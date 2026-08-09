@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd45e" /><stop offset=".52" stop-color="#ffa53d" /><stop offset="1" stop-color="#e8703a" />
+    </linearGradient>
+    <linearGradient id="dune" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c47e" /><stop offset="1" stop-color="#c9884a" />
+    </linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5">
+      <stop offset=".36" stop-color="#fff8d0" /><stop offset="1" stop-color="#fff8d0" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#sky)" />
+  <circle cx="160" cy="70" r="66" fill="url(#sun)" />
+  <circle cx="160" cy="70" r="26" fill="#fff4bb" />
+  <g stroke="#fff2c4" stroke-width="3" stroke-linecap="round" opacity=".45">
+    <path d="M22 60h34" /><path d="M36 74h40" /><path d="M244 58h38" /><path d="M256 74h42" />
+    <path d="M52 92h30" /><path d="M240 94h34" />
+  </g>
+  <path d="M0 180v-52c30-2 50-18 80-18s48 16 80 16 50-18 80-18 50 14 80 12v60Z" fill="url(#dune)" />
+  <path d="M0 180v-26c34-8 56 4 88 4s52-14 84-14 52 12 84 10 64-6 64-6v32Z" fill="#b8783c" />
+  <g fill="#a3672f" opacity=".55">
+    <ellipse cx="70" cy="168" rx="30" ry="4" /><ellipse cx="196" cy="174" rx="34" ry="4" />
+  </g>
+</svg>

@@ -1,0 +1,214 @@
+/**
+ * Evori design tokens — the single place the look is defined.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TO RE-SKIN THE APP, EDIT ONLY THE "BRAND PALETTE" BLOCK BELOW.           │
+ * │ Every gradient, chip, button, badge and glyph derives from it.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Each colour family is three stops — `-light`, base, `-dark` — because the "candy" look is
+ * built from three-stop gradients. Change the three hexes and buttons, cards, chips and icons
+ * all follow. Artwork lives in `src/ui/assets.ts`, not here.
+ */
+
+:root {
+    /* ====================================================================== */
+    /* BRAND PALETTE — edit these                                             */
+    /* ====================================================================== */
+
+    /* Player / "you" identity, and the USA action. */
+    --ev-player-light: #9ce86f;
+    --ev-player: #4fb84f;
+    --ev-player-dark: #2f8a3c;
+
+    /* Opponent identity, the EVOLVI action and everything evolution-related. */
+    --ev-opponent-light: #c9a0ff;
+    --ev-opponent: #8b4bd6;
+    --ev-opponent-dark: #62289f;
+
+    /* Reserved for the VS badge and the single primary call to action. */
+    --ev-gold-light: #ffe27a;
+    --ev-gold: #ffb43f;
+    --ev-gold-dark: #e2822a;
+
+    /* Navigation and neutral-informative actions. */
+    --ev-nav-light: #79c6ff;
+    --ev-nav: #3f8ce8;
+    --ev-nav-dark: #2a63c0;
+
+    /* Danger / destructive. */
+    --ev-danger-light: #ff8a7d;
+    --ev-danger: #d94236;
+    --ev-danger-dark: #a92a20;
+
+    /* Paper: the cream module surface. */
+    --ev-cream-light: #fffbf0;
+    --ev-cream: #fdf7e8;
+    --ev-cream-deep: #f3e6c9;
+    --ev-cream-sunk: #e8d9b6;
+
+    /* Ink: text on cream. */
+    --ev-ink: #2c3a2a;
+    --ev-ink-muted: #6c7a68;
+    --ev-ink-faint: #9aa695;
+
+    /* Text on artwork and glass. */
+    --ev-on-dark: #f4f7ee;
+    --ev-on-dark-muted: #b6c6b4;
+
+    /* Dark ground behind the painted scenery. */
+    --ev-slate: #17302a;
+    --ev-slate-deep: #0d1f1b;
+
+    /* Semantic feedback. */
+    --ev-good: #4eb949;
+    --ev-good-soft: #dff3d6;
+    --ev-info: #3f92e3;
+    --ev-info-soft: #dbeafb;
+    --ev-warn: #e8a020;
+    --ev-warn-soft: #fdeecd;
+    --ev-bad: #e5544a;
+    --ev-bad-soft: #fbdedb;
+
+    /* One hue per adaptation: base, strong (text/badges), soft (fills). */
+    --ev-gene-ferocity: #ff6b4a;
+    --ev-gene-ferocity-strong: #d8331f;
+    --ev-gene-ferocity-soft: #ffe2d9;
+    --ev-gene-armor: #5aa9f0;
+    --ev-gene-armor-strong: #2360b8;
+    --ev-gene-armor-soft: #dcebfb;
+    --ev-gene-agility: #8be04e;
+    --ev-gene-agility-strong: #45992a;
+    --ev-gene-agility-soft: #e5f7d5;
+    --ev-gene-senses: #b07cf5;
+    --ev-gene-senses-strong: #7233bd;
+    --ev-gene-senses-soft: #ece0fd;
+    --ev-gene-camouflage: #3fd0c9;
+    --ev-gene-camouflage-strong: #10897f;
+    --ev-gene-camouflage-soft: #d6f6f3;
+
+    /* Typefaces. Both are self-hosted; see src/index.css. */
+    --ev-font-display: 'Baloo 2 Variable', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+    --ev-font-ui: 'Nunito Variable', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+    /* How round the world is: raise for softer, lower for sharper. */
+    --ev-r-sm: 10px;
+    --ev-r-md: 14px;
+    --ev-r-lg: 20px;
+    --ev-r-xl: 26px;
+    --ev-r-pill: 999px;
+
+    /* ====================================================================== */
+    /* DERIVED — built from the palette above, rarely edited directly         */
+    /* ====================================================================== */
+
+    /* Aliases kept for readability at call sites. */
+    --ev-player-strong: var(--ev-player);
+    --ev-player-deep: var(--ev-player-dark);
+    --ev-opponent-strong: var(--ev-opponent);
+    --ev-opponent-deep: var(--ev-opponent-dark);
+    --ev-gold-strong: var(--ev-gold-dark);
+    --ev-nav-active: var(--ev-nav);
+    --ev-nav-active-strong: var(--ev-nav-dark);
+
+    /* Glass over artwork. */
+    --ev-glass: rgba(10, 28, 22, .58);
+    --ev-glass-strong: rgba(8, 24, 19, .78);
+
+    /* Three-stop "candy" gradients. */
+    --ev-grad-player: linear-gradient(150deg, var(--ev-player-light) 0%, var(--ev-player) 52%, var(--ev-player-dark) 100%);
+    --ev-grad-opponent: linear-gradient(150deg, var(--ev-opponent-light) 0%, var(--ev-opponent) 52%, var(--ev-opponent-dark) 100%);
+    --ev-grad-use: linear-gradient(150deg, #a5ef6d 0%, #55bd47 48%, #2f8a34 100%);
+    --ev-grad-evolve: linear-gradient(150deg, #cba3ff 0%, #9350dd 48%, #6a29a6 100%);
+    --ev-grad-gold: linear-gradient(150deg, var(--ev-gold-light) 0%, var(--ev-gold) 55%, var(--ev-gold-dark) 100%);
+    --ev-grad-nav: linear-gradient(150deg, var(--ev-nav-light) 0%, var(--ev-nav) 52%, var(--ev-nav-dark) 100%);
+    --ev-grad-danger: linear-gradient(150deg, var(--ev-danger-light) 0%, var(--ev-danger) 60%, var(--ev-danger-dark) 100%);
+    --ev-grad-cream: linear-gradient(180deg, var(--ev-cream-light) 0%, var(--ev-cream-deep) 100%);
+    --ev-grad-slate: linear-gradient(180deg, rgba(30, 58, 48, .92) 0%, rgba(12, 30, 24, .96) 100%);
+
+    /* Strokes. */
+    --ev-stroke-light: rgba(255, 255, 255, .78);
+    --ev-stroke-light-soft: rgba(255, 255, 255, .42);
+    --ev-stroke-ink: rgba(46, 62, 44, .16);
+    --ev-stroke-ink-strong: rgba(46, 62, 44, .3);
+
+    /* Elevation. */
+    --ev-shadow-sm: 0 2px 6px rgba(9, 26, 18, .22);
+    --ev-shadow-md: 0 8px 20px rgba(9, 26, 18, .3);
+    --ev-shadow-lg: 0 16px 38px rgba(6, 20, 14, .42);
+    --ev-shadow-glow-player: 0 0 0 3px color-mix(in srgb, var(--ev-gene-agility) 50%, transparent), 0 10px 26px rgba(69, 153, 42, .45);
+    --ev-shadow-glow-gold: 0 0 22px color-mix(in srgb, var(--ev-gold) 55%, transparent);
+    /* Chunky "toy" lip under pressable surfaces. */
+    --ev-lip: inset 0 -4px 0 rgba(0, 0, 0, .22), inset 0 2px 0 rgba(255, 255, 255, .38);
+    --ev-lip-cream: inset 0 -3px 0 rgba(160, 138, 92, .28), inset 0 2px 0 rgba(255, 255, 255, .9);
+
+    /* Type scale. */
+    --ev-fs-2xs: .625rem;
+    --ev-fs-xs: .6875rem;
+    --ev-fs-sm: .78125rem;
+    --ev-fs-md: .875rem;
+    --ev-fs-lg: 1rem;
+    --ev-fs-xl: 1.1875rem;
+    --ev-fs-2xl: 1.5rem;
+    --ev-fs-3xl: 2rem;
+    --ev-track-label: .14em;
+
+    /* Spacing. */
+    --ev-s-1: 4px;
+    --ev-s-2: 8px;
+    --ev-s-3: 12px;
+    --ev-s-4: 16px;
+    --ev-s-5: 22px;
+    --ev-s-6: 30px;
+
+    /* Layout. */
+    --ev-app-max-width: 460px;
+    --ev-safe-top: env(safe-area-inset-top, 0px);
+    --ev-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --ev-dock-height: 68px;
+
+    /* Motion. */
+    --ev-ease: cubic-bezier(.22, .9, .28, 1);
+    --ev-dur-fast: 120ms;
+    --ev-dur-base: 220ms;
+    --ev-dur-slow: 420ms;
+}
+
+/** Per-gene theming: set `data-gene` on any element to expose its hue as local tokens. */
+[data-gene='FEROCITY'] {
+    --gene-color: var(--ev-gene-ferocity);
+    --gene-color-strong: var(--ev-gene-ferocity-strong);
+    --gene-color-soft: var(--ev-gene-ferocity-soft);
+}
+
+[data-gene='ARMOR'] {
+    --gene-color: var(--ev-gene-armor);
+    --gene-color-strong: var(--ev-gene-armor-strong);
+    --gene-color-soft: var(--ev-gene-armor-soft);
+}
+
+[data-gene='AGILITY'] {
+    --gene-color: var(--ev-gene-agility);
+    --gene-color-strong: var(--ev-gene-agility-strong);
+    --gene-color-soft: var(--ev-gene-agility-soft);
+}
+
+[data-gene='SENSES'] {
+    --gene-color: var(--ev-gene-senses);
+    --gene-color-strong: var(--ev-gene-senses-strong);
+    --gene-color-soft: var(--ev-gene-senses-soft);
+}
+
+[data-gene='CAMOUFLAGE'] {
+    --gene-color: var(--ev-gene-camouflage);
+    --gene-color-strong: var(--ev-gene-camouflage-strong);
+    --gene-color-soft: var(--ev-gene-camouflage-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --ev-dur-fast: 1ms;
+        --ev-dur-base: 1ms;
+        --ev-dur-slow: 1ms;
+    }
+}

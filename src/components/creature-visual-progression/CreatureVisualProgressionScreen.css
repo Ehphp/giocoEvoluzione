@@ -1,6 +1,375 @@
-.visual-progression-screen { width: min(100%, 820px); margin: 0 auto; display: grid; gap: 16px; padding: clamp(18px, 4vw, 30px); border: 1px solid var(--game-border); border-radius: 26px; color: var(--game-text); background: linear-gradient(180deg, rgba(24, 52, 43, .96), rgba(14, 32, 26, .98)); }
-.visual-progression-screen header { display: flex; align-items: center; gap: 14px; }.visual-progression-screen header h1,.visual-progression-screen h2,.visual-progression-screen h3,.visual-progression-screen p { margin: 0; }.visual-progression-screen header button,.visual-progression-screen__card button,.visual-progression-screen__preview button { min-height: 40px; padding: 9px 13px; border: 1px solid var(--game-border); border-radius: 12px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; cursor: pointer; }.visual-progression-screen__card button,.visual-progression-screen__preview button:first-child { background: rgba(88, 163, 90, .48); }.visual-progression-screen__error { padding: 10px; border: 1px solid #ba5547; border-radius: 12px; color: #ffd1ca; background: rgba(126, 42, 29, .3); }
-.visual-progression-screen__traits,.visual-progression-screen__card,.visual-progression-screen__preview,.visual-progression-screen__history { display: grid; gap: 12px; padding: 16px; border: 1px solid rgba(184,232,94,.26); border-radius: 18px; background: rgba(184,232,94,.06); }.visual-progression-screen__traits > div { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 9px; }.visual-progression-screen__traits button { display: grid; gap: 5px; min-height: 104px; padding: 12px; border: 1px solid rgba(255,255,255,.17); border-radius: 14px; text-align: left; color: var(--game-text); background: rgba(255,255,255,.05); cursor: pointer; }.visual-progression-screen__traits button span,.visual-progression-screen small,.visual-progression-screen__history li { color: var(--game-text-muted); }.visual-progression-screen progress { width: min(100%, 420px); height: 14px; }.visual-progression-screen__images { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }.visual-progression-screen__images figure { margin: 0; display: grid; gap: 6px; }.visual-progression-screen__images img { width: 100%; aspect-ratio: 2 / 3; object-fit: contain; border-radius: 13px; background: rgba(0,0,0,.22); }.visual-progression-screen__preview > div:last-of-type { display: flex; flex-wrap: wrap; gap: 8px; }.visual-progression-screen__history ol { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
-@media (max-width: 560px) { .visual-progression-screen__images { grid-template-columns: 1fr; } }
-.visual-progression-screen__experiment { display: grid; gap: 5px; padding: 11px; border: 1px solid #b79839; border-radius: 12px; color: #ffe69a; background: rgba(113,85,14,.25); }.visual-progression-screen__experiment span { color: var(--game-text); }.visual-progression-screen__experiment small { color: #e6d48e; }
-.visual-progression-screen__previous-failure { display: grid; gap: 4px; padding: 10px; border-left: 3px solid #b79839; color: var(--game-text-muted); background: rgba(113,85,14,.16); }.visual-progression-screen__previous-failure strong { color: #ffe69a; }.visual-progression-screen__previous-failure span { color: var(--game-text); }.visual-progression-screen__previous-failure small { color: #e6d48e; }
+/** Creature evolution path: target choice, generation states, proposal and history. */
+
+.evolution-screen {
+    display: grid;
+    gap: var(--ev-s-2);
+    align-content: start;
+}
+
+.evolution-screen > .ev-section-label {
+    margin-top: var(--ev-s-2);
+}
+
+.evolution-topbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    margin-bottom: var(--ev-s-1);
+}
+
+.evolution-topbar__title {
+    display: grid;
+    gap: 1px;
+    justify-items: center;
+    min-width: 0;
+    text-align: center;
+}
+
+.evolution-topbar h1 {
+    max-width: 100%;
+    color: #fff;
+    font-size: var(--ev-fs-xl);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+}
+
+.evolution-topbar__spacer {
+    width: 40px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cards                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.evolution-card {
+    display: grid;
+    gap: var(--ev-s-2);
+}
+
+.evolution-card--centered {
+    justify-items: center;
+    text-align: center;
+}
+
+.evolution-card .ev-chip {
+    justify-self: start;
+}
+
+.evolution-card--centered .ev-chip {
+    justify-self: center;
+}
+
+.evolution-card__copy {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.evolution-card__note {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+.evolution-track {
+    display: grid;
+    gap: 4px;
+}
+
+.evolution-track small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.evolution-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ev-r-pill);
+    border: 3px solid rgba(46, 62, 44, .16);
+    border-top-color: var(--ev-opponent-strong);
+    animation: ev-spin 900ms linear infinite;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Target picker                                                               */
+/* -------------------------------------------------------------------------- */
+
+.evolution-targets {
+    display: grid;
+    gap: 6px;
+}
+
+.evolution-target {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    min-height: 64px;
+    padding: 10px 12px;
+    border-radius: var(--ev-r-lg);
+    color: var(--ev-ink);
+    text-align: left;
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.evolution-target:active:not(:disabled) {
+    transform: translateY(2px);
+}
+
+.evolution-target:disabled {
+    opacity: .68;
+}
+
+.evolution-target__glyph {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-size: 22px;
+    background: var(--ev-grad-evolve);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+
+.evolution-target__copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.evolution-target__copy strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+}
+
+.evolution-target__copy small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    line-height: 1.25;
+}
+
+.evolution-target > svg:last-child {
+    font-size: 14px;
+    color: var(--ev-ink-faint);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Proposal                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.evolution-preview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ev-s-3);
+}
+
+/**
+ * Hero: the proposed form, as large as the card allows.
+ *
+ * The sprite is never zoomed and the frame never clips — the player has to see the whole
+ * creature to judge it. Size therefore comes from the frame: it bleeds to the card edges and
+ * grows with the viewport. Any remaining empty margin is transparent padding baked into the
+ * generated PNG and belongs to the asset pipeline, not to a CSS crop.
+ */
+.evolution-hero {
+    position: relative;
+    display: block;
+    width: auto;
+    /* A grid item defaults to `min-width: auto`, which would size to the sprite's intrinsic
+       width and blow the layout out; the frame must be allowed to shrink instead. */
+    min-width: 0;
+    margin: calc(var(--ev-s-4) * -1) calc(var(--ev-s-4) * -1) 0;
+    aspect-ratio: 1;
+    max-height: min(62dvh, 420px);
+    border-radius: var(--ev-r-xl) var(--ev-r-xl) var(--ev-r-lg) var(--ev-r-lg);
+    background:
+        radial-gradient(circle at 50% 66%, color-mix(in srgb, var(--evolution-hero-tint, var(--ev-opponent)) 26%, transparent), transparent 64%),
+        linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(160, 138, 92, .12));
+    border: 2px solid rgba(255, 255, 255, .8);
+    box-shadow: inset 0 2px 8px rgba(120, 100, 60, .18);
+}
+
+/* Anchored to the frame so `contain` fits the whole sprite inside a box of known size:
+   a percentage height would resolve against an auto track and fall back to intrinsic size. */
+.evolution-hero img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 16px rgba(4, 16, 10, .26));
+}
+
+.evolution-hero[data-side='current'] {
+    --evolution-hero-tint: var(--ev-player);
+}
+
+.evolution-hero[data-side='current'] .evolution-hero__badge {
+    background: var(--ev-grad-player);
+}
+
+.evolution-hero__badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 3px 11px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    background: var(--ev-grad-evolve);
+    border: 2px solid rgba(255, 255, 255, .8);
+    box-shadow: var(--ev-shadow-sm);
+}
+
+/* Compact before/after reference under the hero. */
+.evolution-compare {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-2);
+    padding: 9px;
+    border-radius: var(--ev-r-lg);
+    background: rgba(160, 138, 92, .12);
+}
+
+/* Each side is a control: pressing it promotes that form to the hero. */
+.evolution-compare__side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    min-width: 0;
+    padding: 0;
+    color: inherit;
+    text-align: center;
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.evolution-compare__side:active {
+    transform: translateY(2px);
+}
+
+.evolution-compare__side > span {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: 1;
+    border-radius: var(--ev-r-md);
+    background: rgba(255, 255, 255, .5);
+    border: 1.5px solid rgba(255, 255, 255, .8);
+    transition: box-shadow var(--ev-dur-base) var(--ev-ease);
+}
+
+.evolution-compare__side[aria-pressed='true'] > span {
+    box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--ev-player) 65%, transparent);
+}
+
+.evolution-compare__side--result[aria-pressed='true'] > span {
+    box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--ev-opponent) 65%, transparent);
+}
+
+.evolution-compare__side[aria-pressed='true'] small {
+    color: var(--ev-ink);
+}
+
+.evolution-compare__side img {
+    position: absolute;
+    inset: 4px;
+    display: block;
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    object-fit: contain;
+}
+
+.evolution-compare__side small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.evolution-compare__arrow {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-size: 12px;
+    background: var(--ev-grad-evolve);
+}
+
+.evolution-preview__copy {
+    display: grid;
+    gap: 5px;
+}
+
+.evolution-preview__copy h2 {
+    color: var(--ev-opponent-strong);
+}
+
+.evolution-preview__actions {
+    display: grid;
+    gap: 6px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* History                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.evolution-history {
+    display: grid;
+    gap: 5px;
+}
+
+.evolution-history__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-3);
+    padding: 9px 11px;
+    border-radius: var(--ev-r-lg);
+}
+
+.evolution-history__version {
+    display: grid;
+    place-items: center;
+    min-width: 38px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    background: var(--ev-grad-evolve);
+}
+
+.evolution-history__copy {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+}
+
+.evolution-history__copy strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.evolution-history__copy small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+@media (max-width: 379px) {
+    .evolution-compare {
+        padding: 7px;
+    }
+}

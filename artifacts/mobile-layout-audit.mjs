@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const battleOnly = process.argv.includes('--battle-only')
-const APP_URL = battleOnly ? 'http://127.0.0.1:4173/?layout-audit=1' : 'http://127.0.0.1:4173'
+const APP_URL = battleOnly ? 'http://127.0.0.1:4173/?ui-preview=battle' : 'http://127.0.0.1:4173'
 const DEBUG_PORT = 9333
 const OUTPUT_DIR = resolve('artifacts/mobile-layout-current')
 const homeOnly = process.argv.includes('--home-only')

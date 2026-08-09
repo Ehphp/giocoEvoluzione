@@ -1,4 +1,5 @@
 import type { TraitType } from '../../game/types'
+import { ASSETS, type GeneAssetKey } from '../../ui/assets'
 
 export type CreatureVisual = {
     src: string
@@ -13,39 +14,26 @@ export type CreatureVisual = {
     offsetY?: number
 }
 
-type GeneAssetKey =
-    | 'resilience'
-    | 'mobility'
-    | 'senses'
-    | 'metabolism'
-    | 'aquatic'
-
 export const GAME_SELECTION_ASSETS = {
-    battleBackgroundDefault: '/assets/battle/backgrounds/enchanted-forest.png',
-    playerCreature: '/assets/battle/creatures/verdant-hatchling.png',
-    opponentCreature: '/assets/battle/creatures/amethyst-hatchling.png',
-    backgroundFallback: '/assets/game-ui/placeholders/background.svg',
-    playerAvatar: '/assets/game-ui/placeholders/player-avatar.svg',
-    opponentAvatar: '/assets/game-ui/placeholders/opponent-avatar.svg',
-    environment: '/assets/game-ui/placeholders/environment.svg',
-    gene: '/assets/game-ui/placeholders/gene.svg',
-    genes: {
-        resilience: '/assets/game-ui/genes/gene-resilience.svg',
-        mobility: '/assets/game-ui/genes/gene-mobility.svg',
-        senses: '/assets/game-ui/genes/gene-senses.svg',
-        metabolism: '/assets/game-ui/genes/gene-metabolism.svg',
-        aquatic: '/assets/game-ui/genes/gene-aquatic.svg',
-    } as const,
+    battleBackgroundDefault: ASSETS.scenery.forest,
+    playerCreature: ASSETS.creatures.player,
+    opponentCreature: ASSETS.creatures.opponent,
+    backgroundFallback: ASSETS.scenery.fallback,
+    playerAvatar: ASSETS.placeholders.playerAvatar,
+    opponentAvatar: ASSETS.placeholders.opponentAvatar,
+    environment: ASSETS.placeholders.environment,
+    gene: ASSETS.placeholders.gene,
+    genes: ASSETS.genes,
 } as const
 
 export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.playerCreature,
     alt: 'Creatura del giocatore verde',
     nativeFacing: 'right',
-    scale: .82,
-    offsetX: -10,
+    scale: .95,
+    offsetX: 0,
     // The supplied PNG has transparent space under the feet.
-    offsetY: 25,
+    offsetY: 18,
 }
 
 export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
@@ -53,10 +41,10 @@ export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     alt: 'Creatura avversaria viola',
     // The supplied bot sprite already looks toward the left.
     nativeFacing: 'left',
-    scale: .72,
-    offsetX: 6,
+    scale: .86,
+    offsetX: 0,
     // The supplied PNG has transparent space under the feet.
-    offsetY: 25,
+    offsetY: 18,
 }
 
 const EVENT_BATTLE_BACKGROUNDS: Record<string, string> = {
@@ -83,6 +71,6 @@ export function getGeneAssetByTrait(traitType: TraitType): string {
     return getGeneAssetOrFallback(TRAIT_ASSET_KEYS[traitType])
 }
 
-export function getEventAssetByArtKey(_artKey: string): string {
-    return GAME_SELECTION_ASSETS.environment
+export function getEventAssetByArtKey(artKey: string): string {
+    return ASSETS.environments[artKey] ?? GAME_SELECTION_ASSETS.environment
 }

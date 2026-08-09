@@ -1,0 +1,369 @@
+/** End-of-match recap: outcome hero, reward, last round and full round history. */
+
+.result-screen {
+    display: grid;
+    gap: var(--ev-s-2);
+    align-content: start;
+}
+
+.result-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hero                                                                        */
+/* -------------------------------------------------------------------------- */
+
+.result-hero {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-2);
+    text-align: center;
+}
+
+.result-hero h1 {
+    font-size: var(--ev-fs-3xl);
+    letter-spacing: .01em;
+}
+
+.result-screen--win .result-hero h1 {
+    color: var(--ev-player-strong);
+}
+
+.result-screen--loss .result-hero h1 {
+    color: var(--ev-bad);
+}
+
+.result-hero__scoreline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--ev-s-2);
+    width: 100%;
+}
+
+.result-hero__side {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.result-hero__side strong {
+    max-width: 100%;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+}
+
+.result-hero__tiebreak {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.result-hero__score {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 10px;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-3xl);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.result-hero__score span {
+    color: var(--ev-ink-faint);
+}
+
+.result-hero__metrics {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+}
+
+.result-hero__metrics li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+    padding: 5px 10px;
+    border-radius: var(--ev-r-sm);
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    text-align: left;
+    background: rgba(160, 138, 92, .12);
+}
+
+.result-hero__metrics strong {
+    color: var(--ev-ink);
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Reward                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.result-reward {
+    display: grid;
+    gap: 7px;
+}
+
+.result-reward--pending {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    text-align: center;
+}
+
+.result-reward__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.result-reward__head strong {
+    color: var(--ev-player-strong);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xl);
+}
+
+.result-reward__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.result-reward small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Last round                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.result-last-round {
+    display: grid;
+    gap: var(--ev-s-2);
+}
+
+.result-last-round__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.result-last-round__explanation {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.result-side {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding: 9px;
+    border-radius: var(--ev-r-lg);
+    background: var(--gene-color-soft, rgba(160, 138, 92, .12));
+    border: 2px solid rgba(255, 255, 255, .7);
+}
+
+.result-side__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+}
+
+.result-side__header > div {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+}
+
+.result-side__header strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.result-side__glyph {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ev-r-pill);
+    font-size: 19px;
+    background: rgba(255, 255, 255, .75);
+}
+
+.result-side .ev-chip {
+    justify-self: start;
+}
+
+.result-side__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    text-align: left;
+}
+
+.result-side__toggle svg {
+    font-size: 12px;
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.result-side__footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1.5px solid rgba(160, 138, 92, .2);
+}
+
+.result-side__footer strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.result-side__footer span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.result-calc {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+}
+
+.result-calc div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+}
+
+.result-calc dt,
+.result-calc dd {
+    margin: 0;
+}
+
+.result-calc dd {
+    color: var(--ev-ink);
+    font-weight: 800;
+}
+
+.result-calc__empty {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+}
+
+/* -------------------------------------------------------------------------- */
+/* History                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.result-history {
+    display: grid;
+    gap: 5px;
+}
+
+.result-history-row {
+    padding: 0;
+    overflow: hidden;
+}
+
+.result-history-row__summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--ev-s-2);
+    width: 100%;
+    padding: 9px 11px;
+    text-align: left;
+}
+
+.result-history-row__number {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--ev-r-pill);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    background: rgba(160, 138, 92, .16);
+}
+
+.result-history-row--win .result-history-row__number {
+    color: #2b6b26;
+    background: var(--ev-good-soft);
+}
+
+.result-history-row--loss .result-history-row__number {
+    color: #97281f;
+    background: var(--ev-bad-soft);
+}
+
+.result-history-row__moves {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+}
+
+.result-history-row__moves b {
+    color: var(--ev-ink-faint);
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.result-history-row__moves strong {
+    color: var(--ev-ink);
+    font-family: var(--ev-font-display);
+}
+
+.result-history-row__moves em {
+    color: var(--ev-ink-faint);
+    font-style: normal;
+}
+
+.result-history-row__summary > svg {
+    font-size: 12px;
+    color: var(--ev-ink-faint);
+    transition: transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.result-history-row__detail {
+    display: grid;
+    gap: 5px;
+    padding: 0 11px 11px;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Actions                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.result-actions {
+    display: grid;
+    gap: 6px;
+    margin-top: var(--ev-s-1);
+}

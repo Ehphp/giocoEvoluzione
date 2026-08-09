@@ -1,25 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import './App.css'
 import { useAuth } from './auth/AuthProvider'
-import { AuthScreen } from './components/auth/AuthScreen'
-import { HomeScreen } from './components/home/HomeScreen'
-import { buildAuthenticatedHomeViewModel, buildGuestHomeViewModel } from './components/home/buildHomeViewModel'
+import { AuthScreen } from './screens/auth/AuthScreen'
+import { HomeScreen } from './screens/home/HomeScreen'
+import { buildAuthenticatedHomeViewModel, buildGuestHomeViewModel } from './screens/home/buildHomeViewModel'
 import { buildMatchResultViewModel } from './components/game-results/buildMatchResultViewModel'
-import { MatchResultScreen } from './components/game-results/MatchResultScreen'
-import { GeneSelectionScreenV2 } from './components/game-v2/GeneSelectionScreenV2'
+import { MatchResultScreen } from './screens/results/MatchResultScreen'
+import { BattleScreen } from './screens/battle/BattleScreen'
+import { RoundResultOverlay, type RoundResolutionData } from './screens/battle/parts/RoundResultOverlay'
+import { BootScreen, MissingConfigScreen, MissingResultScreen, WaitingRoomScreen } from './screens/system/SystemScreens'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { useGameCreatureVisualResource } from './components/game-v2/controller/useGameCreatureVisualResource'
-import { ProfileScreen } from './components/profile/ProfileScreen'
+import { ProfileScreen } from './screens/profile/ProfileScreen'
 import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
 import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
 import { CreatureVisualProgressionScreen } from './components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { VisualBackgroundCleanupScreen } from './components/visual-background-cleanup/VisualBackgroundCleanupScreen'
-import { TOTAL_ROUNDS, TRAIT_LABELS } from './game/config'
-import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../shared/game-rules/catalog.ts'
-import { getRoundExplanation } from './game/round-result-explainer'
-import { getRoundEventLabel } from './game/ui-context'
-import { type RoundValueBreakdown, type TraitType } from './game/types'
+import { type TraitType } from './game/types'
 import { hasSupabaseConfig } from './lib/supabase'
 import { GameSnapshotSync } from './lib/game-snapshot-sync'
 import { getCurrentCreatureVisual, getCreatureVisualProgress, rollbackCreatureVisualVersion } from './lib/creature-transformations-api'
@@ -41,6 +38,15 @@ import {
 } from './lib/game-api'
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
+import { TOTAL_ROUNDS } from './game/config'
+
+function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
+  if (!player) {
+    return 0
+  }
+
+  return player.slot === 1 ? snapshot.game.player_1_score : snapshot.game.player_2_score
+}
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 type CurrentScreen = 'home' | 'profile' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
@@ -60,33 +66,6 @@ function getInitialScreen(): CurrentScreen {
 
 type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null }
 type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
-
-type ResolutionData = {
-  ruleVersion?: string
-  catalogSignature?: string
-  awardedPoints?: number
-  player1PointsAwarded?: number
-  player2PointsAwarded?: number
-  player1Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
-  player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
-  player1Breakdown?: RoundValueBreakdown
-  player2Breakdown?: RoundValueBreakdown
-  matchEndReason?: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null
-  player1RoundValueTotal?: number
-  player2RoundValueTotal?: number
-}
-
-function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
-  if (!player) {
-    return 0
-  }
-
-  return player.slot === 1 ? snapshot.game.player_1_score : snapshot.game.player_2_score
-}
-
-function getTraitLabel(trait: TraitType): string {
-  return TRAIT_LABELS[trait]
-}
 
 function App() {
   const auth = useAuth()
@@ -440,10 +419,8 @@ function App() {
   const isGameScreen = snapshot?.game.status === 'CHOOSING'
     || snapshot?.game.status === 'REVEALING'
     || snapshot?.game.status === 'ROUND_RESULT'
-  const isResultScreen = snapshot?.game.status === 'FINISHED'
-  const isGamePresentation = isGameScreen || isResultScreen
   const resolutionData = useMemo(
-    () => (snapshot?.currentRoundResult?.resolution_data as ResolutionData | undefined) ?? undefined,
+    () => (snapshot?.currentRoundResult?.resolution_data as RoundResolutionData | undefined) ?? undefined,
     [snapshot?.currentRoundResult?.resolution_data],
   )
   const resultViewModel = useMemo(
@@ -709,159 +686,147 @@ function App() {
     }
   }
 
-  return (
-    <main className={`shell ${isGamePresentation ? 'shell--game' : ''} ${snapshot ? 'shell--session' : ''} ${!snapshot ? 'shell--home' : ''}`}>
-      {isLoading || auth.status === 'loading' || auth.status === 'initializing' ? (
-        <section className="panel centered-panel home-state-panel" role="status" aria-live="polite" aria-busy="true">
-          <span className="eyebrow">Connessione alla partita</span>
-          <h1>Gioco Evoluzione</h1>
-          <p className="lead">Preparazione sessione multiplayer in corso...</p>
-        </section>
-      ) : !hasSupabaseConfig ? (
-        <section className="panel intro-panel home-state-panel">
-          <span className="eyebrow">Multiplayer 1v1</span>
-          <h1>Gioco Evoluzione</h1>
-          <p className="lead">
-            L’app è pronta, ma per il multiplayer serve configurare Supabase prima di poter creare o entrare in una stanza.
-          </p>
-          <div className="message warning" role="alert" aria-live="assertive">
-            Imposta <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong>, poi applica lo schema SQL e deploya la funzione <strong>resolve-round</strong>.
-          </div>
-        </section>
-      ) : !snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature) ? (
-        <AuthScreen
-          initialError={auth.error}
-          onSignIn={auth.signIn}
-          onSignUp={auth.signUp}
-        />
-      ) : (
-        <section className={`panel app-panel ${isGamePresentation ? 'app-panel--game' : ''} ${snapshot ? 'app-panel--session' : ''} ${!snapshot ? 'app-panel--home' : ''}`}>
-          {!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature ? (
-            <CreatureTransformationLab
-              creature={auth.creature}
-              onBack={handleLeaveCreatureTransformationLab}
-            />
-          ) : !snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && auth.creature ? (
-            <CreatureVisualProgressionScreen
-              creature={auth.creature}
-              onBack={handleLeaveCreatureEvolution}
-              onVisualChanged={handleVisualChanged}
-            />
-          ) : !snapshot && currentScreen === 'visual-background-cleanup' && isVisualBackgroundCleanupEnabled ? (
-            <VisualBackgroundCleanupScreen
-              onBack={handleLeaveVisualBackgroundCleanup}
-              onVisualChanged={handleVisualChanged}
-            />
-          ) : !snapshot && currentScreen === 'profile' && auth.profile && auth.creature ? (
-            <ProfileScreen
-              profile={auth.profile}
-              creature={auth.creature}
-              history={history}
-              isLoadingHistory={isLoadingHistory}
-              errorMessage={historyError}
-              onBack={() => setCurrentScreen('home')}
-              onLogout={() => void handleLogout()}
-              visualUrl={officialVisual?.signedUrl}
-              visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
-              visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
-              visualProgress={visualProgress?.track}
-              visualHistory={visualProgress?.history}
-              currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
-              onSelectVisualVersion={isCreatureVisualProgressionEnabled && visualProgress ? handleSelectVisualVersion : undefined}
-              onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
-              onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
-            />
-          ) : !snapshot ? (
-            <HomeScreen
-              viewModel={homeViewModel}
-              actions={{
-                onNicknameChange: setNickname,
-                onRoomCodeChange: (value) => setRoomCode(value.toUpperCase()),
-                onBotDifficultyChange: setBotDifficulty,
-                onCreateGame: () => void handleCreateGame(),
-                onCreateBotGame: () => void handleCreateBotGame(),
-                onJoinGame: () => void handleJoinGame(),
-                onLeaveSession: handleLeaveSession,
-                onOpenProfile: () => setCurrentScreen('profile'),
-                onLogout: () => void handleLogout(),
-              }}
-            />
-          ) : snapshot.game.status === 'WAITING' ? (
-            <>
-              <header className="topbar">
-                <div>
-                  <span className="eyebrow">Multiplayer 1v1</span>
-                  <h1>Gioco Evoluzione</h1>
-                </div>
-                <button type="button" className="ghost-button" onClick={handleLeaveSession} aria-label="Esci dalla partita">
-                  Esci
-                </button>
-              </header>
+  if (isLoading || auth.status === 'loading' || auth.status === 'initializing') {
+    return <BootScreen />
+  }
 
-              {!isOnline ? <div className="message warning" role="alert">Connessione offline. La sincronizzazione riprende appena torna la rete.</div> : null}
-              {errorMessage ? <div className="message error" role="alert">{errorMessage}</div> : null}
-              {statusMessage ? <div className="message success" role="status">{statusMessage}</div> : null}
+  if (!hasSupabaseConfig) {
+    return <MissingConfigScreen />
+  }
 
-              <section className="stack-lg">
-                <div className="room-code-card">
-                  <span className="eyebrow">Codice stanza</span>
-                  <p className="room-code">{snapshot.game.room_code}</p>
-                  <p>Condividilo con il secondo giocatore. La partita parte appena entra nella stanza.</p>
-                  <div className="button-row">
-                    <button type="button" className="secondary-button" onClick={handleCopyRoomCode}>
-                      Copia codice
-                    </button>
-                  </div>
-                </div>
+  if (!snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature)) {
+    return (
+      <AuthScreen
+        initialError={auth.error}
+        onSignIn={auth.signIn}
+        onSignUp={auth.signUp}
+      />
+    )
+  }
 
-                <div className="status-card">
-                  <strong>{snapshot.me?.nickname}</strong> è pronto.
-                  <p>In attesa dell’avversario...</p>
-                </div>
-              </section>
-            </>
-          ) : isGameScreen ? (
-            <ConnectedGeneSelectionScreenV2
-              snapshot={snapshot}
-              myScore={myScore}
-              opponentScore={opponentScore}
-              onSubmitAction={handleSubmitAction}
-              onLeaveSession={handleLeaveSession}
-              resolutionData={resolutionData}
-              onContinue={() => void handleAdvanceRound()}
-              isBusy={isBusy}
-              errorMessage={errorMessage}
-              playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .82, offsetX: -10, offsetY: 25 } : undefined}
-              opponentVisual={gameVisualResource.opponent.visual
-                ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .72, offsetX: 6, offsetY: 25 }
-                : gameVisualResource.opponent.status === 'loading' ? null : undefined}
-            />
-          ) : resultViewModel ? (
-            <MatchResultScreen
-              viewModel={resultViewModel}
-              onLeaveSession={handleLeaveSession}
-              onNewGame={() => void handleNewMatch()}
-              isBusy={isBusy}
-              errorMessage={errorMessage}
-              reward={matchReward}
-              creature={auth.creature}
-            />
-          ) : (
-            <section className="state-message" role="alert">Risultato finale non disponibile.</section>
-          )}
-        </section>
-      )}
-    </main>
-  )
+  if (!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature) {
+    return <CreatureTransformationLab creature={auth.creature} onBack={handleLeaveCreatureTransformationLab} />
+  }
+
+  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && auth.creature) {
+    return (
+      <CreatureVisualProgressionScreen
+        creature={auth.creature}
+        onBack={handleLeaveCreatureEvolution}
+        onVisualChanged={handleVisualChanged}
+      />
+    )
+  }
+
+  if (!snapshot && currentScreen === 'visual-background-cleanup' && isVisualBackgroundCleanupEnabled) {
+    return (
+      <VisualBackgroundCleanupScreen
+        onBack={handleLeaveVisualBackgroundCleanup}
+        onVisualChanged={handleVisualChanged}
+      />
+    )
+  }
+
+  if (!snapshot && currentScreen === 'profile' && auth.profile && auth.creature) {
+    return (
+      <ProfileScreen
+        profile={auth.profile}
+        creature={auth.creature}
+        history={history}
+        isLoadingHistory={isLoadingHistory}
+        errorMessage={historyError}
+        onBack={() => setCurrentScreen('home')}
+        onLogout={() => void handleLogout()}
+        visualUrl={officialVisual?.signedUrl}
+        visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
+        visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
+        visualProgress={visualProgress?.track}
+        visualHistory={visualProgress?.history}
+        currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
+        onSelectVisualVersion={isCreatureVisualProgressionEnabled && visualProgress ? handleSelectVisualVersion : undefined}
+        onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
+        onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
+      />
+    )
+  }
+
+  if (!snapshot) {
+    return (
+      <HomeScreen
+        viewModel={homeViewModel}
+        actions={{
+          onNicknameChange: setNickname,
+          onRoomCodeChange: (value) => setRoomCode(value.toUpperCase()),
+          onBotDifficultyChange: setBotDifficulty,
+          onCreateGame: () => void handleCreateGame(),
+          onCreateBotGame: () => void handleCreateBotGame(),
+          onJoinGame: () => void handleJoinGame(),
+          onLeaveSession: handleLeaveSession,
+          onOpenProfile: () => setCurrentScreen('profile'),
+          onLogout: () => void handleLogout(),
+        }}
+      />
+    )
+  }
+
+  if (snapshot.game.status === 'WAITING') {
+    return (
+      <WaitingRoomScreen
+        roomCode={snapshot.game.room_code}
+        nickname={snapshot.me?.nickname ?? 'Il tuo profilo'}
+        isOnline={isOnline}
+        errorMessage={errorMessage}
+        statusMessage={statusMessage}
+        onCopyRoomCode={() => void handleCopyRoomCode()}
+        onLeaveSession={handleLeaveSession}
+      />
+    )
+  }
+
+  if (isGameScreen) {
+    return (
+      <ConnectedBattleScreen
+        snapshot={snapshot}
+        myScore={myScore}
+        opponentScore={opponentScore}
+        onSubmitAction={handleSubmitAction}
+        onLeaveSession={handleLeaveSession}
+        resolutionData={resolutionData}
+        onContinue={() => void handleAdvanceRound()}
+        isBusy={isBusy}
+        errorMessage={errorMessage}
+        playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 } : undefined}
+        opponentVisual={gameVisualResource.opponent.visual
+          ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .86, offsetX: 0, offsetY: 18 }
+          : gameVisualResource.opponent.status === 'loading' ? null : undefined}
+      />
+    )
+  }
+
+  if (resultViewModel) {
+    return (
+      <MatchResultScreen
+        viewModel={resultViewModel}
+        onLeaveSession={handleLeaveSession}
+        onNewGame={() => void handleNewMatch()}
+        isBusy={isBusy}
+        errorMessage={errorMessage}
+        reward={matchReward}
+        creature={auth.creature}
+      />
+    )
+  }
+
+  return <MissingResultScreen onLeaveSession={handleLeaveSession} />
 }
 
-type ConnectedGeneSelectionScreenV2Props = {
+type ConnectedBattleScreenProps = {
   snapshot: GameSnapshot
   myScore: number
   opponentScore: number
   onSubmitAction: (actionType: 'USE' | 'EVOLVE', trait: TraitType) => Promise<boolean>
   onLeaveSession: () => void
-  resolutionData: ResolutionData | undefined
+  resolutionData: RoundResolutionData | undefined
   onContinue: () => void
   isBusy: boolean
   errorMessage: string | null
@@ -869,7 +834,8 @@ type ConnectedGeneSelectionScreenV2Props = {
   opponentVisual?: CreatureVisual | null
 }
 
-function ConnectedGeneSelectionScreenV2({
+/** Binds the battle presentation to the round controller and the reveal overlay. */
+function ConnectedBattleScreen({
   snapshot,
   myScore,
   opponentScore,
@@ -881,7 +847,7 @@ function ConnectedGeneSelectionScreenV2({
   errorMessage,
   playerVisual,
   opponentVisual,
-}: ConnectedGeneSelectionScreenV2Props) {
+}: ConnectedBattleScreenProps) {
   const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
@@ -894,7 +860,7 @@ function ConnectedGeneSelectionScreenV2({
 
   return (
     <>
-      <GeneSelectionScreenV2
+      <BattleScreen
         viewModel={{
           ...viewModel,
           player: { ...viewModel.player, creatureVisual: playerVisual ?? viewModel.player.creatureVisual },
@@ -907,7 +873,7 @@ function ConnectedGeneSelectionScreenV2({
         isInteractionLocked={isResolutionOpen}
       />
       {isResolutionOpen ? (
-        <RoundResultModal
+        <RoundResultOverlay
           snapshot={snapshot}
           resolutionData={resolutionData}
           onContinue={onContinue}
@@ -916,248 +882,6 @@ function ConnectedGeneSelectionScreenV2({
         />
       ) : null}
     </>
-  )
-}
-
-type RoundResultModalProps = {
-  snapshot: GameSnapshot
-  resolutionData: ResolutionData | undefined
-  onContinue: () => void
-  isBusy: boolean
-  errorMessage: string | null
-}
-
-function RoundResultModal({ snapshot, resolutionData, onContinue, isBusy, errorMessage }: RoundResultModalProps) {
-  const result = snapshot.currentRoundResult
-  const roundEvent = snapshot.currentRoundEvent
-  const roundEventLabel = getRoundEventLabel(roundEvent)
-  const [animationPhase, setAnimationPhase] = useState(snapshot.game.status === 'REVEALING' ? 0 : 3)
-  const contentRef = useRef<HTMLElement>(null)
-  const iAmPlayer1 = snapshot.me?.slot === 1
-  const winnerNickname = snapshot.players.find((player) => player.id === result?.winner_id)?.nickname ?? null
-  const player1Action = resolutionData?.player1Action
-  const player2Action = resolutionData?.player2Action
-  const player1Breakdown = resolutionData?.player1Breakdown
-  const player2Breakdown = resolutionData?.player2Breakdown
-  const hasCurrentRuleVersion = resolutionData?.ruleVersion === RULE_VERSION
-    && resolutionData.catalogSignature === PRODUCTION_CATALOG_AUDIT.catalogSignature
-  const myResolvedAction = player1Action?.playerId === snapshot.me?.id ? player1Action : player2Action
-  const opponentResolvedAction = player1Action?.playerId === snapshot.opponent?.id ? player1Action : player2Action
-  const myBreakdown = iAmPlayer1 ? player1Breakdown : player2Breakdown
-  const opponentBreakdown = iAmPlayer1 ? player2Breakdown : player1Breakdown
-  const myRoundValue = iAmPlayer1 ? result?.player_1_value ?? 0 : result?.player_2_value ?? 0
-  const opponentRoundValue = iAmPlayer1 ? result?.player_2_value ?? 0 : result?.player_1_value ?? 0
-  const myRoundPoints = iAmPlayer1
-    ? resolutionData?.player1PointsAwarded ?? (result?.winner_id === snapshot.me?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-    : resolutionData?.player2PointsAwarded ?? (result?.winner_id === snapshot.me?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-  const opponentRoundPoints = iAmPlayer1
-    ? resolutionData?.player2PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-    : resolutionData?.player1PointsAwarded ?? (result?.winner_id === snapshot.opponent?.id ? resolutionData?.awardedPoints ?? 0 : 0)
-  const iWon = result?.winner_id ? result.winner_id === snapshot.me?.id : null
-  const bothEvolved = myResolvedAction?.actionType === 'EVOLVE' && opponentResolvedAction?.actionType === 'EVOLVE'
-  const iEvolved = myResolvedAction?.actionType === 'EVOLVE'
-  const outcomeTitle = bothEvolved || iEvolved
-    ? 'Evoluzione completata'
-    : iWon === null
-      ? 'Pareggio'
-      : iWon
-        ? 'Round vinto'
-        : 'Round perso'
-  const explanation = getRoundExplanation({
-    roundEventTitle: roundEvent?.title ?? null,
-    meWon: iWon,
-    meActionType: myResolvedAction?.actionType ?? null,
-    opponentActionType: opponentResolvedAction?.actionType ?? null,
-    myBreakdown,
-    opponentBreakdown,
-  })
-  const continueLabel = snapshot.game.status === 'REVEALING'
-    ? 'Continua'
-    : snapshot.game.current_round < TOTAL_ROUNDS
-      ? 'Prossimo round'
-      : 'Risultato finale'
-
-  useEffect(() => {
-    if (snapshot.game.status !== 'REVEALING') {
-      setAnimationPhase(3)
-
-      return
-    }
-
-    setAnimationPhase(0)
-
-    const step1 = window.setTimeout(() => setAnimationPhase(1), 220)
-    const step2 = window.setTimeout(() => setAnimationPhase(2), 540)
-    const step3 = window.setTimeout(() => setAnimationPhase(3), 860)
-
-    return () => {
-      window.clearTimeout(step1)
-      window.clearTimeout(step2)
-      window.clearTimeout(step3)
-    }
-  }, [snapshot.game.status, snapshot.currentRoundResult?.id])
-
-  useEffect(() => {
-    contentRef.current?.focus()
-  }, [snapshot.currentRoundResult?.id])
-
-  function skipRevealAnimation() {
-    setAnimationPhase(3)
-  }
-
-  return (
-    <div
-      className="round-result-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Risultato del round"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault()
-        }
-      }}
-    >
-      <section ref={contentRef} className="round-result-screen" aria-live="polite" onPointerDown={skipRevealAnimation} tabIndex={-1}>
-        <div className={`round-result-hero ${snapshot.game.status === 'REVEALING' ? 'is-revealing' : ''}`}>
-          <span className="eyebrow">Esito round {snapshot.game.current_round} · {roundEventLabel}</span>
-          <h2>{outcomeTitle}</h2>
-          <div
-            className={`round-result-hero__values ${animationPhase < 1 ? 'is-hidden' : ''}`}
-            aria-label={`Valore tuo ${myRoundValue}, avversario ${opponentRoundValue}`}
-          >
-            <p>
-              <span>Tu</span>
-              <strong>{myRoundValue}</strong>
-            </p>
-            <p>
-              <span>Avversario</span>
-              <strong>{opponentRoundValue}</strong>
-            </p>
-          </div>
-          <p className="round-result-hero__subtitle">{winnerNickname ? `${winnerNickname} vince il round.` : 'Nessun vincitore nel round.'}</p>
-          {animationPhase < 3 ? <small className="round-result-hero__skip">Tocca per saltare l’animazione</small> : null}
-        </div>
-
-        {errorMessage ? <p className="message error" role="alert">{errorMessage}</p> : null}
-
-        <div className={`round-result-cards ${animationPhase < 2 ? 'is-hidden' : ''}`}>
-          {!hasCurrentRuleVersion ? (
-            <p className="round-breakdown-card__legacy" role="status">
-              Risultato calcolato con regole non riconosciute. Distribuisci la Edge Function aggiornata e avvia una nuova partita.
-            </p>
-          ) : null}
-          <RoundBreakdownCard
-            title={snapshot.me?.nickname ?? 'Tu'}
-            action={myResolvedAction}
-            breakdown={myBreakdown}
-            total={myRoundValue}
-            awardedPoints={myRoundPoints}
-            roundEventLabel={roundEventLabel}
-            showContributions={animationPhase >= 2}
-            showTotal={animationPhase >= 3}
-            isMe
-          />
-          <RoundBreakdownCard
-            title={snapshot.opponent?.nickname ?? 'Avversario'}
-            action={opponentResolvedAction}
-            breakdown={opponentBreakdown}
-            total={opponentRoundValue}
-            awardedPoints={opponentRoundPoints}
-            roundEventLabel={roundEventLabel}
-            showContributions={animationPhase >= 2}
-            showTotal={animationPhase >= 3}
-          />
-        </div>
-
-        <p className={`round-result-explanation ${animationPhase < 3 ? 'is-hidden' : ''}`}>{explanation}</p>
-
-        <div className="button-row round-result-screen__actions">
-          <button
-            type="button"
-            className="primary-button"
-            onClick={onContinue}
-            aria-describedby={snapshot.game.status === 'REVEALING' ? 'round-continue-reason' : undefined}
-            disabled={isBusy || snapshot.game.status === 'REVEALING'}
-          >
-            {continueLabel}
-          </button>
-          {snapshot.game.status === 'REVEALING' ? (
-            <span id="round-continue-reason" className="button-row__reason" role="status">
-              Disponibile al termine della rivelazione.
-            </span>
-          ) : null}
-        </div>
-      </section>
-    </div>
-  )
-}
-
-type RoundBreakdownCardProps = {
-  title: string
-  action: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string } | undefined
-  breakdown: RoundValueBreakdown | undefined
-  total: number
-  awardedPoints: number
-  roundEventLabel: string
-  showContributions: boolean
-  showTotal: boolean
-  isMe?: boolean
-}
-
-function RoundBreakdownCard({
-  title,
-  action,
-  breakdown,
-  total,
-  awardedPoints,
-  roundEventLabel,
-  showContributions,
-  showTotal,
-  isMe = false,
-}: RoundBreakdownCardProps) {
-  const actionLabel = action
-    ? action.actionType === 'USE' ? 'USA' : 'EVOLVI'
-    : 'N/D'
-  const traitLabel = action ? getTraitLabel(action.trait) : 'N/D'
-
-  return (
-    <article className={`round-breakdown-card ${isMe ? 'round-breakdown-card--me' : ''}`}>
-      <header>
-        <span className="eyebrow">{title}</span>
-        <strong>{traitLabel}</strong>
-        <small>Azione: {actionLabel}</small>
-      </header>
-
-      {breakdown ? (
-        <details className={`round-breakdown-card__details ${showContributions ? '' : 'is-hidden'}`}>
-          <summary>Dettaglio calcolo</summary>
-          <div className="round-breakdown-card__math">
-            {action?.actionType === 'EVOLVE' ? (
-              <p>EVOLVE: valore fisso {breakdown.total}; evoluzione e recupero ignorano affinita e matchup.</p>
-            ) : (
-              <>
-                <p>Uso base: +{breakdown.baseContribution ?? 0}</p>
-                <p>Affinita ambientale {roundEventLabel}: +{breakdown.eventModifier}</p>
-                <p>Livello: +{breakdown.levelContribution}</p>
-                <p>Vantaggio naturale: +{breakdown.matchupBonus ?? 0}</p>
-              </>
-            )}
-            {breakdown.originalLevel > breakdown.effectiveLevel ? (
-              <p>Livello posseduto: {breakdown.originalLevel} · Livello effettivo: {breakdown.effectiveLevel}</p>
-            ) : (
-              <p>Livello effettivo: {breakdown.effectiveLevel}</p>
-            )}
-          </div>
-        </details>
-      ) : (
-        <p className="round-breakdown-card__legacy">Dettaglio calcolo non disponibile per questo risultato storico.</p>
-      )}
-
-      <footer>
-        <strong className={showTotal ? 'is-highlighted' : ''}>{total} valore</strong>
-        <span>+{awardedPoints} punti</span>
-      </footer>
-    </article>
   )
 }
 

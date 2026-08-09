@@ -1,0 +1,309 @@
+/** Profile: identity hero, record stats, visual progression and match history. */
+
+.profile-screen {
+    display: grid;
+    gap: var(--ev-s-2);
+    align-content: start;
+}
+
+.profile-screen > .ev-section-label {
+    margin-top: var(--ev-s-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Top bar                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.profile-topbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    margin-bottom: var(--ev-s-1);
+}
+
+.profile-topbar__title {
+    display: grid;
+    gap: 1px;
+    justify-items: center;
+    min-width: 0;
+    text-align: center;
+}
+
+.profile-topbar h1 {
+    max-width: 100%;
+    color: #fff;
+    font-size: var(--ev-fs-xl);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hero                                                                        */
+/* -------------------------------------------------------------------------- */
+
+.profile-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-3);
+}
+
+.profile-hero__stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 116px;
+    height: 116px;
+    flex: 0 0 auto;
+    border-radius: var(--ev-r-lg);
+    background: radial-gradient(circle at 50% 62%, rgba(139, 224, 78, .3), rgba(160, 138, 92, .1) 62%);
+    border: 2px solid rgba(255, 255, 255, .75);
+    box-shadow: inset 0 2px 6px rgba(120, 100, 60, .18);
+}
+
+.profile-hero__halo {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    width: 76%;
+    height: 12px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(60, 90, 40, .28), transparent 70%);
+}
+
+.profile-hero__stage img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    scale: 1.14;
+    transform-origin: bottom center;
+    filter: drop-shadow(0 8px 10px rgba(4, 16, 10, .3));
+}
+
+.profile-hero__copy {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.profile-hero__copy h2 {
+    font-size: var(--ev-fs-2xl);
+}
+
+.profile-hero__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.profile-hero__xp {
+    display: grid;
+    gap: 3px;
+}
+
+.profile-hero__xp small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Stats                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+}
+
+.profile-stat {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    padding: 9px 3px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    text-align: center;
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+}
+
+.profile-stat strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xl);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.profile-stat span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
+.profile-stat--good strong {
+    color: #2b6b26;
+}
+
+.profile-stat--info strong {
+    color: #1d5493;
+}
+
+.profile-stat--bad strong {
+    color: #97281f;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Visual progression                                                          */
+/* -------------------------------------------------------------------------- */
+
+.profile-evolution {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.profile-evolution__track {
+    display: grid;
+    gap: 6px;
+}
+
+.profile-evolution__track-copy {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.profile-evolution__track-copy strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.profile-evolution__versions {
+    display: grid;
+    gap: 5px;
+}
+
+.profile-evolution__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.profile-version {
+    min-width: 44px;
+    min-height: 40px;
+    padding: 4px 10px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    background: rgba(160, 138, 92, .14);
+    border: 2px solid rgba(160, 138, 92, .22);
+}
+
+.profile-version.is-active {
+    color: #fff;
+    background: var(--ev-grad-evolve);
+    border-color: var(--ev-stroke-light-soft);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip);
+}
+
+.profile-version:disabled {
+    opacity: .68;
+}
+
+.profile-evolution__actions {
+    display: grid;
+    gap: 6px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* History                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.profile-history {
+    display: grid;
+    gap: 6px;
+}
+
+.profile-match {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+    padding: 9px 11px;
+    border-radius: var(--ev-r-lg);
+}
+
+.profile-match__outcome {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--ev-r-pill);
+    font-size: 19px;
+    background: rgba(160, 138, 92, .16);
+}
+
+.profile-match--win .profile-match__outcome {
+    color: #2b6b26;
+    background: var(--ev-good-soft);
+}
+
+.profile-match--draw .profile-match__outcome {
+    color: #1d5493;
+    background: var(--ev-info-soft);
+}
+
+.profile-match--loss .profile-match__outcome {
+    color: #97281f;
+    background: var(--ev-bad-soft);
+}
+
+.profile-match__copy {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+}
+
+.profile-match__copy strong {
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-md);
+}
+
+.profile-match__copy span {
+    color: var(--ev-ink);
+    font-size: var(--ev-fs-xs);
+}
+
+.profile-match__copy small {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+.profile-empty {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    text-align: center;
+}
+
+@media (max-width: 359px) {
+    .profile-hero {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        text-align: center;
+    }
+
+    .profile-hero__chips {
+        justify-content: center;
+    }
+}

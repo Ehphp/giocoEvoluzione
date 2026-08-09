@@ -1,0 +1,135 @@
+/** Document-level reset and shared element defaults for the Evori UI. */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/**
+ * The document itself never scrolls.
+ *
+ * `html`/`body` resolve their height against the large viewport, so on mobile they stay taller
+ * than the visible area while the browser chrome is shown — that gap is what lets a drag scroll
+ * the page and rubber-band back. Locking both root scrollers removes it; every scrollable
+ * surface inside the app owns its own overflow.
+ */
+html {
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    min-width: 320px;
+    overflow: hidden;
+    overscroll-behavior: none;
+    color: var(--ev-on-dark);
+    background: var(--ev-slate-deep);
+    font-family: var(--ev-font-ui);
+    font-size: var(--ev-fs-md);
+    font-weight: 600;
+    line-height: 1.35;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+    font-family: var(--ev-font-display);
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+h1 {
+    font-size: var(--ev-fs-2xl);
+}
+
+h2 {
+    font-size: var(--ev-fs-xl);
+}
+
+h3 {
+    font-size: var(--ev-fs-lg);
+}
+
+p {
+    margin: 0;
+}
+
+ol,
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+figure {
+    margin: 0;
+}
+
+a {
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+}
+
+/**
+ * Icons are sized by their container's `font-size`, never by a width/height prop, so a single
+ * rule keeps Lucide and the hand-drawn gene glyphs interchangeable.
+ */
+svg {
+    flex: none;
+    width: 1em;
+    height: 1em;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+:focus-visible {
+    outline: 3px solid var(--ev-gold);
+    outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: var(--ev-r-pill);
+    background: rgba(255, 255, 255, .22);
+}

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 const config = readFileSync(resolve(process.cwd(), 'supabase/config.toml'), 'utf8')
 const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/202608050001_security_hardening.sql'), 'utf8')
 const authProvider = readFileSync(resolve(process.cwd(), 'src/auth/AuthProvider.tsx'), 'utf8')
-const authScreen = readFileSync(resolve(process.cwd(), 'src/components/auth/AuthScreen.tsx'), 'utf8')
+const authScreen = readFileSync(resolve(process.cwd(), 'src/screens/auth/AuthScreen.tsx'), 'utf8')
 
 describe('security hardening regression controls', () => {
     it('disables public signup and requires JWT verification for every deployed Edge Function', () => {

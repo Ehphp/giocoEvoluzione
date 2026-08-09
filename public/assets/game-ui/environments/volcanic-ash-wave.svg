@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2c46" /><stop offset=".5" stop-color="#9c4a3d" /><stop offset="1" stop-color="#e59152" />
+    </linearGradient>
+    <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#543b48" /><stop offset="1" stop-color="#241a26" />
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".55" r=".5">
+      <stop offset="0" stop-color="#ffc973" stop-opacity=".85" /><stop offset="1" stop-color="#ffc973" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#sky)" />
+  <circle cx="160" cy="112" r="86" fill="url(#glow)" />
+  <g fill="#f0e0d2" opacity=".45">
+    <ellipse cx="52" cy="40" rx="34" ry="16" /><ellipse cx="104" cy="28" rx="28" ry="13" />
+    <ellipse cx="228" cy="30" rx="32" ry="14" /><ellipse cx="282" cy="44" rx="26" ry="12" />
+  </g>
+  <path d="M0 180v-30c26-6 44-20 58-38 10-13 18-19 26-19s16 6 26 19c9 12 18 21 30 27 10-16 18-24 26-24s16 8 26 24c14-8 26-20 38-34 8-9 15-13 22-13s14 4 22 13c12 14 22 24 36 30v45Z" fill="url(#cone)" />
+  <path d="M96 106c5-9 9-14 14-14s9 5 14 14c-8-4-11-5-14-5s-6 1-14 5Z" fill="#ff8f3c" />
+  <path d="M110 92c-3 12-4 24-3 36" stroke="#ffb765" stroke-width="3" stroke-linecap="round" opacity=".7" />
+  <g fill="#f4ece2" opacity=".85">
+    <circle cx="30" cy="120" r="2.4" /><circle cx="72" cy="146" r="1.8" /><circle cx="138" cy="132" r="2.1" />
+    <circle cx="196" cy="152" r="2.4" /><circle cx="248" cy="124" r="1.7" /><circle cx="292" cy="146" r="2.2" />
+    <circle cx="168" cy="168" r="1.6" /><circle cx="106" cy="164" r="1.9" />
+  </g>
+</svg>
