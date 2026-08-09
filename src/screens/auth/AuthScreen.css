@@ -1,0 +1,51 @@
+/** Sign-in / sign-up gate. */
+
+.auth-screen {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--ev-s-4);
+    flex: 1;
+    min-height: 0;
+    padding: var(--ev-s-3) 0;
+}
+
+.auth-screen__logo {
+    width: min(74%, 260px);
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
+}
+
+.auth-card {
+    display: grid;
+    gap: var(--ev-s-4);
+    width: 100%;
+}
+
+.auth-card__intro {
+    display: grid;
+    gap: 3px;
+}
+
+.auth-card__intro p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.auth-card__form {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.auth-card__toggle {
+    justify-self: center;
+    min-height: 40px;
+    padding: 4px 14px;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+.auth-card__toggle:disabled {
+    opacity: .6;
+}

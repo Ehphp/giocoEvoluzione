@@ -4,6 +4,7 @@ import { listVisualBackgroundCleanup, submitVisualBackgroundCleanup } from '../.
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
+import '../technical-screens.css'
 import './VisualBackgroundCleanupScreen.css'
 
 type CleanupEntry = { visualVersionId: string; creatureId: string; profileId: string; versionNumber: number; signedUrl: string; expiresAt: string }

@@ -1,0 +1,88 @@
+/**
+ * Shared base for the flag-gated technical screens (transformation lab, background cleanup).
+ * These are internal tools, not product surfaces: they keep a plain, dense look and only borrow
+ * the palette tokens from the design system.
+ */
+
+/**
+ * The document root is locked so the page cannot rubber-band, so any screen outside `AppShell`
+ * has to own its scrolling. These two do.
+ */
+.creature-transformation-lab,
+.visual-background-cleanup {
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.eyebrow {
+    color: var(--ev-ink-faint);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+.field {
+    display: grid;
+    gap: 5px;
+}
+
+.field > span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 12px;
+    border-radius: var(--ev-r-md);
+    border: 2px solid rgba(160, 138, 92, .3);
+}
+
+/**
+ * Action button used by the transformation lab. It lived in the removed `App.css`; the tools
+ * keep it here rather than pulling in the product design system.
+ */
+.primary-button {
+    min-height: 40px;
+    padding: 10px 16px;
+    border-radius: var(--ev-r-md);
+    border: 2px solid transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    background: var(--ev-player-dark);
+    transition: filter 150ms ease;
+}
+
+.primary-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.primary-button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* Legacy aliases: the technical screens still reference the pre-refactor game palette. */
+:root {
+    --game-bg: var(--ev-slate-deep);
+    --game-surface: var(--ev-slate);
+    --game-surface-elevated: #234438;
+    --game-text: var(--ev-on-dark);
+    --game-text-muted: var(--ev-on-dark-muted);
+    --game-use: var(--ev-player);
+    --game-evolve: #62d5cf;
+    --game-warning: var(--ev-warn);
+    --game-danger: var(--ev-bad);
+    --game-border: rgba(255, 255, 255, .12);
+    --game-shadow: rgba(0, 0, 0, .18);
+}

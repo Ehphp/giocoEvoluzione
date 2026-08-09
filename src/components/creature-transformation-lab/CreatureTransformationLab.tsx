@@ -34,6 +34,7 @@ import { CreatureTransformationBenchmark } from './CreatureTransformationBenchma
 import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
 
+import '../technical-screens.css'
 import './CreatureTransformationLab.css'
 
 type ConceptMode = 'MOCK' | 'AI'

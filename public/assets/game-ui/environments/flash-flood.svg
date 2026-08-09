@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#33506a" /><stop offset=".55" stop-color="#6d92a6" /><stop offset="1" stop-color="#9dc2c8" />
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#57bfcb" /><stop offset="1" stop-color="#1a6480" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#sky)" />
+  <g fill="#4d6675" opacity=".85">
+    <ellipse cx="58" cy="26" rx="46" ry="16" /><ellipse cx="152" cy="18" rx="54" ry="17" />
+    <ellipse cx="252" cy="26" rx="48" ry="16" /><ellipse cx="308" cy="34" rx="30" ry="12" />
+  </g>
+  <g stroke="#d6edf3" stroke-width="2.6" stroke-linecap="round" opacity=".7">
+    <path d="M26 48l-8 22" /><path d="M62 42l-8 24" /><path d="M98 52l-8 22" /><path d="M134 44l-8 24" />
+    <path d="M170 50l-8 22" /><path d="M206 42l-8 24" /><path d="M242 52l-8 22" /><path d="M278 44l-8 24" />
+  </g>
+  <path d="M0 180V92c26 10 46 12 68 6s42-14 68-8c22 5 40 12 62 10s44-10 66-12c22-2 40 2 56 8v84Z" fill="url(#water)" />
+  <g stroke="#e3f7fb" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".72">
+    <path d="M16 122c14-8 28-8 42 0s28 8 42 0" />
+    <path d="M120 140c14-8 28-8 42 0s28 8 42 0" />
+    <path d="M212 118c14-8 28-8 42 0s28 8 42 0" />
+    <path d="M52 158c14-7 26-7 40 0" />
+    <path d="M180 164c14-7 26-7 40 0" />
+  </g>
+</svg>

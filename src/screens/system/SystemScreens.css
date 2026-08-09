@@ -1,0 +1,87 @@
+/** Boot, configuration, lobby and fallback surfaces. */
+
+.system-screen {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--ev-s-4);
+    flex: 1;
+    min-height: 0;
+}
+
+.system-screen__logo {
+    width: min(66%, 230px);
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
+}
+
+.system-card {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-3);
+    width: 100%;
+    text-align: center;
+}
+
+.system-card__copy {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.system-card__spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ev-r-pill);
+    border: 3px solid rgba(46, 62, 44, .16);
+    border-top-color: var(--ev-player-strong);
+    animation: ev-spin 900ms linear infinite;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Waiting room                                                                */
+/* -------------------------------------------------------------------------- */
+
+.waiting-room {
+    display: grid;
+    align-content: center;
+    gap: var(--ev-s-3);
+    flex: 1;
+    min-height: 0;
+}
+
+.waiting-room__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.waiting-room__card {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-2);
+    text-align: center;
+}
+
+.waiting-room__code {
+    padding: 6px 22px;
+    border-radius: var(--ev-r-lg);
+    color: var(--ev-ink);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-3xl);
+    font-weight: 800;
+    letter-spacing: .26em;
+    text-indent: .26em;
+    background: rgba(160, 138, 92, .14);
+    border: 2px dashed rgba(160, 138, 92, .34);
+}
+
+.waiting-room__status {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-3);
+}
+
+.waiting-room__status h2 {
+    font-size: var(--ev-fs-lg);
+}

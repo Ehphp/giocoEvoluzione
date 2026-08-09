@@ -202,7 +202,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 exhausted: state.exhausted,
                 strongAgainst: TRAIT_LABELS[NATURAL_ADVANTAGE[traitType]],
                 weakAgainst: TRAIT_LABELS[weakAgainst],
-                disabledReason: usable ? undefined : 'Esaurito · usa EVOLVE per recuperare',
+                disabledReason: usable ? undefined : 'Esaurito: rigeneralo con EVOLVI',
                 prediction: prediction
                     ? {
                         useScore: prediction.total,
