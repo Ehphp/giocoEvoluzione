@@ -50,6 +50,8 @@ export type CreatureTransformationLabPolicy = Readonly<{
     globalConcurrentRealImageLimit: number
     realImageCooldownSeconds: number
     realImage: RealImagePolicy
+    /** Separate server-side allowlist; a VITE flag is deliberately not sufficient. */
+    lineageExperimentAllowedProfileIds: ReadonlySet<string>
     benchmark: BenchmarkPolicy
     visualProgression: Readonly<{
         enabled: boolean
@@ -156,5 +158,5 @@ export function readCreatureTransformationLabPolicy(readEnvironment: (name: stri
     const globalConcurrentRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100)
     const realImageCooldownSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400)
 
-    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
+    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), lineageExperimentAllowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')), benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
 }

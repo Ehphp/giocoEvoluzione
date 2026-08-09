@@ -5,6 +5,9 @@ import type {
     GenerateConceptRequest,
     GenerateImageApiResponse,
     GenerateImageRequest,
+    GenerateCurrentPipelineExperimentRequest,
+    GenerateLineageFirstExperimentRequest,
+    SubmitLineageComparisonReviewRequest,
     GenerateUnlockedTransformationRequest,
     SelectCreatureVisualProgressTrackRequest,
     GetCreatureVisualProgressRequest,
@@ -46,7 +49,7 @@ export class CreatureTransformationApiError extends Error {
     }
 }
 
-type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
 
 export type CreatureTransformationFunctionInvoker = {
     invoke: (name: string, options: { body: CreatureTransformationFunctionRequest; headers?: Record<string, string> }) => Promise<{ data: unknown; error: unknown }>
@@ -165,6 +168,21 @@ export async function generateCreatureTransformationImage(
     invoker?: CreatureTransformationFunctionInvoker,
 ): Promise<Extract<GenerateImageApiResponse, { success: true }>> {
     return invokeCreatureTransformation<Extract<GenerateImageApiResponse, { success: true }>>(request, invoker)
+}
+
+export async function generateLineageFirstExperiment(
+    request: GenerateLineageFirstExperimentRequest,
+    invoker?: CreatureTransformationFunctionInvoker,
+): Promise<GenerateImageApiResponse> {
+    return invokeCreatureTransformation<GenerateImageApiResponse & Extract<CreatureTransformationApiResponse, { success: true }>>(request, invoker)
+}
+
+export async function generateCurrentPipelineExperiment(request: GenerateCurrentPipelineExperimentRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<GenerateImageApiResponse> {
+    return invokeCreatureTransformation<GenerateImageApiResponse & Extract<CreatureTransformationApiResponse, { success: true }>>(request, invoker)
+}
+
+export async function submitLineageComparisonReview(request: SubmitLineageComparisonReviewRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<Extract<CreatureTransformationApiResponse, { success: true, requestId: string }>> {
+    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, requestId: string }>>(request, invoker)
 }
 
 export async function getCreatureTransformationRequestStatus(

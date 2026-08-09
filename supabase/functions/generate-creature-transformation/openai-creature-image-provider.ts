@@ -8,6 +8,7 @@ import {
 import type { OpenAiImageQuality } from './lab-policy.ts'
 
 type FetchImplementation = (input: string, init: RequestInit) => Promise<Response>
+const GATEWAY_RETRY_DELAY_MS = 750
 
 export type OpenAiCreatureImageProviderOptions = Readonly<{
     apiKey: string
@@ -85,28 +86,34 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
         form.set('background', input.backgroundGenerationMode === 'NATIVE_TRANSPARENCY' ? 'transparent' : 'opaque')
         form.set('image[]', new Blob([input.source.bytes], { type: 'image/png' }), 'canonical-creature.png')
 
-        const controller = new AbortController()
-        let timedOut = false
-        const timeout = setTimeout(() => {
-            timedOut = true
-            controller.abort()
-        }, this.timeoutMs)
         const startedAt = this.now()
-        let response: Response
-        try {
-            response = await this.fetchImplementation('https://api.openai.com/v1/images/edits', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${this.apiKey}` },
-                body: form,
-                signal: controller.signal,
-            })
-        } catch (error) {
-            if (timedOut) throw new CreatureImageProviderError('OPENAI_IMAGE_TIMEOUT', 'Il provider immagini ha superato il tempo massimo consentito.', { cause: error })
-            throw new CreatureImageProviderError('OPENAI_IMAGE_PROVIDER_ERROR', 'Il provider immagini non e raggiungibile.', { cause: error })
-        } finally {
-            clearTimeout(timeout)
+        let response: Response | null = null
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            const controller = new AbortController()
+            let timedOut = false
+            const timeout = setTimeout(() => {
+                timedOut = true
+                controller.abort()
+            }, this.timeoutMs)
+            try {
+                response = await this.fetchImplementation('https://api.openai.com/v1/images/edits', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${this.apiKey}` },
+                    body: form,
+                    signal: controller.signal,
+                })
+            } catch (error) {
+                if (timedOut) throw new CreatureImageProviderError('OPENAI_IMAGE_TIMEOUT', 'Il provider immagini ha superato il tempo massimo consentito.', { cause: error })
+                throw new CreatureImageProviderError('OPENAI_IMAGE_PROVIDER_ERROR', 'Il provider immagini non e raggiungibile.', { cause: error, transportErrorName: error instanceof Error && /^[A-Za-z0-9_.-]{1,80}$/.test(error.name) ? error.name : null })
+            } finally {
+                clearTimeout(timeout)
+            }
+            // A 520 contains no completed image response; retry it once without retrying user or validation errors.
+            if (response.status !== 520 || attempt === 1) break
+            await new Promise<void>((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAY_MS))
         }
 
+        if (!response) throw new CreatureImageProviderError('OPENAI_IMAGE_PROVIDER_ERROR', 'Il provider immagini non ha restituito una risposta.')
         if (!response.ok) {
             let payload: unknown = null
             try {
@@ -118,6 +125,7 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
             throw new CreatureImageProviderError(code, 'Il provider immagini ha rifiutato la richiesta.', {
                 providerErrorCode: readSafeProviderErrorCode(payload),
                 providerErrorParam: readSafeProviderErrorParam(payload),
+                providerStatus: response.status,
             })
         }
         let payload: unknown

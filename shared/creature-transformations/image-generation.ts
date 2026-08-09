@@ -48,12 +48,16 @@ export class CreatureImageProviderError extends Error {
     readonly code: CreatureImageProviderErrorCode
     readonly providerErrorCode: string | null
     readonly providerErrorParam: string | null
+    readonly providerStatus: number | null
+    readonly transportErrorName: string | null
 
-    constructor(code: CreatureImageProviderErrorCode, message: string, options?: { cause?: unknown, providerErrorCode?: string | null, providerErrorParam?: string | null }) {
+    constructor(code: CreatureImageProviderErrorCode, message: string, options?: { cause?: unknown, providerErrorCode?: string | null, providerErrorParam?: string | null, providerStatus?: number | null, transportErrorName?: string | null }) {
         super(message, options)
         this.name = 'CreatureImageProviderError'
         this.code = code
         this.providerErrorCode = options?.providerErrorCode ?? null
         this.providerErrorParam = options?.providerErrorParam ?? null
+        this.providerStatus = options?.providerStatus ?? null
+        this.transportErrorName = options?.transportErrorName ?? null
     }
 }

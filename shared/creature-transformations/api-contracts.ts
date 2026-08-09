@@ -116,6 +116,7 @@ export type SubmitExperimentReviewResponse = {
     review: CreatureTransformationExperimentReview
     classification: ExperimentReviewClassification
 }
+export type SubmitLineageComparisonReviewResponse = { success: true, requestId: string }
 
 export type BenchmarkResultEntry = Readonly<{
     transformationRequestId: string
@@ -203,6 +204,11 @@ export type TransformationRequestStatusResponse = {
         estimatedCostUsd?: number
         actualCostUsd?: number
     }
+    /** Available only for experimental A/B requests owned by the authenticated profile. */
+    prompt?: {
+        text: string
+        sha256: string
+    }
     result?: {
         signedUrl: string
         expiresAt: string
@@ -237,4 +243,4 @@ export type TransformationRequestStatusResponse = {
 
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

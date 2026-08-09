@@ -15,6 +15,7 @@ import { sha256Hex } from '../../../shared/creature-transformations/image-valida
 export type GeneratedImageResponse = Omit<GenerateImageResponse, 'requestPersistence'> & {
     sourceSha256: string
     promptSha256: string
+    prompt: string
     conceptSnapshot: GenerateImageRequest['concept']
 }
 
@@ -56,6 +57,8 @@ export type GenerateImageServiceInput = Readonly<{
     validator?: ImageValidator
     promptTemplateVersion?: CreaturePromptTemplateVersion
     storageDestination?: 'FINAL_ASSET' | 'RAW_EXPERIMENT'
+    /** Server-validated experimental source; never supplied as an arbitrary client path. */
+    sourcePath?: string
 }>
 
 function conceptRejected(requestId: string, problems?: GenerateImageErrorResponse['problems']): GenerateImageErrorResponse {
@@ -142,7 +145,9 @@ export async function generateImageForAuthenticatedProfile(
 
     const promptSha256 = await sha256Hex(new TextEncoder().encode(prompt))
     const conceptSnapshot = safeConceptSnapshot(validation.concept)
-    const source = await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath, resolvedCreature.sourceIsBaseVersion)
+    const source = input.sourcePath
+        ? await input.storage.readExperimentalSource(input.sourcePath)
+        : await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath, resolvedCreature.sourceIsBaseVersion)
     const validatedSource = await validator.validate({
         bytes: source.bytes,
         mimeType: source.mimeType,
@@ -171,8 +176,10 @@ export async function generateImageForAuthenticatedProfile(
     } catch (error) {
         if (error instanceof CreatureImageProviderError) {
             const diagnostics = [
+                error.providerStatus ? `HTTP ${error.providerStatus}` : null,
                 error.providerErrorCode ? `codice provider: ${error.providerErrorCode}` : null,
                 error.providerErrorParam ? `parametro: ${error.providerErrorParam}` : null,
+                error.transportErrorName ? `trasporto: ${error.transportErrorName}` : null,
             ].filter((value): value is string => value !== null)
             const providerDiagnostic = diagnostics.length ? ` (${diagnostics.join('; ')})` : ''
             throw new ImageGenerationServiceError(error.code, `Il provider immagini non e disponibile.${providerDiagnostic}`, undefined, { cause: error })
@@ -241,6 +248,7 @@ export async function generateImageForAuthenticatedProfile(
         },
         sourceSha256: validatedSource.metadata.sha256,
         promptSha256,
+        prompt,
         conceptSnapshot,
     }
 }

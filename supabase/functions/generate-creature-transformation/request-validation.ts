@@ -1,14 +1,17 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitLineageComparisonReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
-import { EVOLUTION_TARGET_BY_ID, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { EVOLUTION_FUNCTION_IDS, EVOLUTION_TARGET_BY_ID, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
-const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
+const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'evolutionTargetId', 'evolutionFunction', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
 const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId'])
+const CURRENT_PIPELINE_EXPERIMENT_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'experimentalSourceRequestId', 'idempotencyKey'])
+const LINEAGE_EXPERIMENT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'lineage', 'instruction', 'experimentalSourceRequestId', 'idempotencyKey'])
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
+const LINEAGE_REVIEW_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'lineageRequestId', 'currentRequestId', 'scores', 'preferredResult'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64', 'displayAssetWebpBase64'])
@@ -31,6 +34,9 @@ export type ParsedGenerateConceptRequest =
 
 export type ParsedGenerateImageRequest =
     | { valid: true; request: GenerateImageRequest }
+    | Extract<ParsedCreatureTransformationRequest, { valid: false }>
+export type ParsedGenerateLineageFirstExperimentRequest =
+    | { valid: true; request: GenerateLineageFirstExperimentRequest }
     | Extract<ParsedCreatureTransformationRequest, { valid: false }>
 
 export type ParsedGetTransformationRequestStatusRequest =
@@ -102,6 +108,9 @@ export function parseGenerateConceptRequest(value: unknown): ParsedGenerateConce
 
     const benchmarkCaseId = readOptionalIdentifier(body, 'benchmarkCaseId')
     if (benchmarkCaseId === null) return { valid: false, code: 'INVALID_REQUEST', message: 'benchmarkCaseId non e valido.' }
+    const evolutionTargetId = body.evolutionTargetId === undefined ? undefined : typeof body.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
+    const evolutionFunction = body.evolutionFunction === undefined ? undefined : typeof body.evolutionFunction === 'string' && EVOLUTION_FUNCTION_IDS.includes(body.evolutionFunction as EvolutionFunctionId) ? body.evolutionFunction as EvolutionFunctionId : null
+    if (evolutionTargetId === null || evolutionFunction === null || Boolean(evolutionTargetId) !== Boolean(evolutionFunction)) return { valid: false, code: 'INVALID_REQUEST', message: 'target anatomico e funzione evolutiva devono essere entrambi validi.' }
     return {
         valid: true,
         request: {
@@ -111,6 +120,7 @@ export function parseGenerateConceptRequest(value: unknown): ParsedGenerateConce
             intensity: body.intensity,
             conceptMode: body.conceptMode,
             idempotencyKey: required.idempotencyKey,
+            ...(evolutionTargetId && evolutionFunction ? { evolutionTargetId, evolutionFunction } : {}),
             ...(benchmarkCaseId ? { benchmarkCaseId } : {}),
         },
     }
@@ -165,6 +175,29 @@ export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRe
     }
 }
 
+export function parseGenerateLineageFirstExperimentRequest(value: unknown): ParsedGenerateLineageFirstExperimentRequest {
+    const body = asRecord(value)
+    if (!body || !hasOnlyFields(body, LINEAGE_EXPERIMENT_REQUEST_FIELDS) || body.operation !== 'GENERATE_LINEAGE_FIRST_EXPERIMENT') return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta lineage-first non rispetta il contratto pubblico.' }
+    const required = readRequiredStrings(body)
+    const evolutionTargetId = typeof body.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
+    const lineage = asRecord(body.lineage)
+    const identityTraits = lineage?.identityTraits
+    const acquiredTraits = lineage?.acquiredTraits
+    if (!required || !evolutionTargetId || !Array.isArray(identityTraits) || !identityTraits.every((entry) => typeof entry === 'string' && entry.trim().length <= 500) || !Array.isArray(acquiredTraits) || acquiredTraits.length > 24 || !acquiredTraits.every((entry) => {
+        const trait = asRecord(entry)
+        return trait && typeof trait.description === 'string' && trait.description.trim().length > 0 && trait.description.trim().length <= 500 && (trait.target === undefined || (typeof trait.target === 'string' && Boolean(EVOLUTION_TARGET_BY_ID[trait.target as EvolutionTargetId])))
+    }) || (body.instruction !== undefined && (typeof body.instruction !== 'string' || body.instruction.trim().length > 2000)) || (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId'))) return { valid: false, code: 'INVALID_REQUEST', message: 'I dati lineage-first non sono validi.' }
+    return { valid: true, request: { operation: 'GENERATE_LINEAGE_FIRST_EXPERIMENT', creatureId: required.creatureId, evolutionTargetId, lineage: { identityTraits, acquiredTraits: acquiredTraits as GenerateLineageFirstExperimentRequest['lineage']['acquiredTraits'] }, ...(typeof body.instruction === 'string' && body.instruction.trim() ? { instruction: body.instruction.trim() } : {}), ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId.trim() } : {}), idempotencyKey: required.idempotencyKey } }
+}
+
+export function parseGenerateCurrentPipelineExperimentRequest(value: unknown): { valid: true, request: GenerateCurrentPipelineExperimentRequest } | Extract<ParsedCreatureTransformationRequest, { valid: false }> {
+    const body = asRecord(value)
+    const required = body ? readRequiredStrings(body) : null
+    const evolutionTargetId = typeof body?.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
+    if (!body || !hasOnlyFields(body, CURRENT_PIPELINE_EXPERIMENT_FIELDS) || body.operation !== 'GENERATE_CURRENT_PIPELINE_EXPERIMENT' || !required || !evolutionTargetId || (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId'))) return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta Current pipeline non rispetta il contratto pubblico.' }
+    return { valid: true, request: { operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: required.creatureId, evolutionTargetId, ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId.trim() } : {}), idempotencyKey: required.idempotencyKey } }
+}
+
 export function parseSubmitExperimentReviewRequest(value: unknown): ParsedSubmitExperimentReviewRequest {
     const body = asRecord(value)
     if (!body || !hasOnlyFields(body, REVIEW_REQUEST_FIELDS) || body.operation !== 'SUBMIT_EXPERIMENT_REVIEW' || typeof body.transformationRequestId !== 'string') {
@@ -182,6 +215,17 @@ export function parseSubmitExperimentReviewRequest(value: unknown): ParsedSubmit
             issueFlags: body.issueFlags as SubmitExperimentReviewRequest['issueFlags'], ...(typeof body.notes === 'string' && body.notes.trim() ? { notes: body.notes.trim() } : {}),
         },
     }
+}
+
+export function parseSubmitLineageComparisonReviewRequest(value: unknown): { valid: true, request: SubmitLineageComparisonReviewRequest } | Extract<ParsedCreatureTransformationRequest, { valid: false }> {
+    const body = asRecord(value)
+    const scores = asRecord(body?.scores)
+    const validScores = ['creativeSurprise', 'targetTransformationStrength', 'creatureContinuity', 'lineagePreservation', 'nonTargetStability'].every((key) => scores?.[key] === 1 || scores?.[key] === 2 || scores?.[key] === 3 || scores?.[key] === 4 || scores?.[key] === 5)
+    const creatureId = typeof body?.creatureId === 'string' && body.creatureId.trim().length ? body.creatureId.trim() : null
+    const lineageRequestId = body ? readUuid(body, 'lineageRequestId') : null
+    const currentRequestId = body?.currentRequestId === undefined ? undefined : body ? readUuid(body, 'currentRequestId') : null
+    if (!body || !hasOnlyFields(body, LINEAGE_REVIEW_REQUEST_FIELDS) || body.operation !== 'SUBMIT_LINEAGE_COMPARISON_REVIEW' || !creatureId || !lineageRequestId || currentRequestId === null || !validScores || !['CURRENT', 'LINEAGE_FIRST', 'NONE'].includes(String(body.preferredResult))) return { valid: false, code: 'INVALID_REQUEST', message: 'La review A/B lineage-first non rispetta il contratto.' }
+    return { valid: true, request: { operation: 'SUBMIT_LINEAGE_COMPARISON_REVIEW', creatureId, lineageRequestId, ...(currentRequestId ? { currentRequestId } : {}), scores: scores as SubmitLineageComparisonReviewRequest['scores'], preferredResult: body.preferredResult as SubmitLineageComparisonReviewRequest['preferredResult'] } }
 }
 
 export function parseGetBenchmarkResultsRequest(value: unknown): ParsedGetBenchmarkResultsRequest {
@@ -272,8 +316,11 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (!body) return { valid: false, code: 'INVALID_REQUEST', message: 'Il body deve essere un oggetto JSON.' }
     if (body.operation === 'GENERATE_CONCEPT') return parseGenerateConceptRequest(body)
     if (body.operation === 'GENERATE_IMAGE') return parseGenerateImageRequest(body)
+    if (body.operation === 'GENERATE_LINEAGE_FIRST_EXPERIMENT') return parseGenerateLineageFirstExperimentRequest(body)
+    if (body.operation === 'GENERATE_CURRENT_PIPELINE_EXPERIMENT') return parseGenerateCurrentPipelineExperimentRequest(body)
     if (body.operation === 'GET_REQUEST_STATUS') return parseGetTransformationRequestStatusRequest(body)
     if (body.operation === 'SUBMIT_EXPERIMENT_REVIEW') return parseSubmitExperimentReviewRequest(body)
+    if (body.operation === 'SUBMIT_LINEAGE_COMPARISON_REVIEW') return parseSubmitLineageComparisonReviewRequest(body)
     if (body.operation === 'GET_BENCHMARK_RESULTS') return parseGetBenchmarkResultsRequest(body)
     if (body.operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return parseGenerateUnlockedTransformationRequest(body)
     if (body.operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return parseSubmitBackgroundRemovalCandidateRequest(body)

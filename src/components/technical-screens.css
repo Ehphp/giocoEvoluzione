@@ -46,6 +46,32 @@
     border: 2px solid rgba(160, 138, 92, .3);
 }
 
+/**
+ * Action button used by the transformation lab. It lived in the removed `App.css`; the tools
+ * keep it here rather than pulling in the product design system.
+ */
+.primary-button {
+    min-height: 40px;
+    padding: 10px 16px;
+    border-radius: var(--ev-r-md);
+    border: 2px solid transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    background: var(--ev-player-dark);
+    transition: filter 150ms ease;
+}
+
+.primary-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.primary-button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
 /* Legacy aliases: the technical screens still reference the pre-refactor game palette. */
 :root {
     --game-bg: var(--ev-slate-deep);

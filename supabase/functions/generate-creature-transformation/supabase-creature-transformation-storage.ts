@@ -94,6 +94,14 @@ export class SupabaseCreatureTransformationStorageAdapter {
         }
     }
 
+    /** Reads only a validated, private experimental result path selected server-side. */
+    async readExperimentalSource(resultPath: string): Promise<CanonicalCreatureSourceImage> {
+        if (!/^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)) {
+            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente sperimentale non e valida.')
+        }
+        return this.readCanonicalSource(resultPath, false)
+    }
+
     async createResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {
         const profileSegment = profilePathSegment(profileId)
         const idempotencyDigest = await sha256Hex(new TextEncoder().encode(idempotencyKey))
