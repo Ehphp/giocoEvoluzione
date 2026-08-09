@@ -88,7 +88,7 @@ Ogni errore controllato marca `FAILED`.
 
 `REAL` e disabilitato per default. Viene valutato solo dopo il flag server-side, allowlist esplicita del profilo, provider `OPENAI`, API key, modello e costo stimato valido. Il flag browser `VITE_CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED=false` serve solo a nascondere il controllo; il backend resta l'autorita e non esporre mai API key con prefisso `VITE_`.
 
-La richiesta `GENERATE_IMAGE` reale viene riservata con il costo `OPENAI_IMAGE_ESTIMATED_COST_USD`, passa a `RUNNING`, registra una task con `EdgeRuntime.waitUntil` e risponde `202`. La task usa una sola chiamata `POST /v1/images/edits`, multipart con un solo `image[]` PNG canonico, prompt composto server-side, `n=1`, `1024x1536`, qualita configurata e output PNG base64. Non effettua retry automatici: timeout, 429, 5xx, rete, moderazione e risposta non valida finiscono in `FAILED`.
+La richiesta `GENERATE_IMAGE` reale viene riservata con il costo `OPENAI_IMAGE_ESTIMATED_COST_USD`, passa a `RUNNING`, registra una task con `EdgeRuntime.waitUntil` e risponde `202`. La task usa `POST /v1/images/edits`, multipart con un solo `image[]` PNG canonico, prompt composto server-side, `n=1`, `1024x1536`, qualita configurata e output PNG base64. Prima di segnare `FAILED`, ritenta al massimo cinque volte soltanto gli errori transitori (`429` e `5xx`, incluso `520`), con backoff e rispetto di `Retry-After`. Timeout, rete, moderazione, errori di input e risposte non valide restano terminali e non vengono ritentati automaticamente.
 
 `GET_REQUEST_STATUS` accetta soltanto un `transformationRequestId`, verifica il proprietario server-side e restituisce stato, metadati e una nuova signed URL per il risultato `SUCCEEDED`. Non restituisce mai `result_path`.
 

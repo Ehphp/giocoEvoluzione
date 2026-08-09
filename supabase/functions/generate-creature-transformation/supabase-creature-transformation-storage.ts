@@ -96,10 +96,21 @@ export class SupabaseCreatureTransformationStorageAdapter {
 
     /** Reads only a validated, private experimental result path selected server-side. */
     async readExperimentalSource(resultPath: string): Promise<CanonicalCreatureSourceImage> {
-        if (!/^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)) {
+        const isCurrentRawExperiment = /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
+        const isLegacyExperiment = /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
+        if (!isCurrentRawExperiment && !isLegacyExperiment) {
             throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente sperimentale non e valida.')
         }
         return this.readCanonicalSource(resultPath, false)
+    }
+
+    /** Reads a server-selected production visual from its owning bucket. */
+    async readVisualVersionSource(assetPath: string, isBaseVersion: boolean): Promise<CanonicalCreatureSourceImage> {
+        const isCleanupPath = /^cleanup\/[a-f0-9]{64}\.png$/.test(assetPath)
+        const isValidBasePath = /^[A-Za-z0-9._/-]{1,512}$/.test(assetPath)
+        if (isBaseVersion && isValidBasePath) return this.readCanonicalSource(assetPath, !isCleanupPath)
+        if (!isBaseVersion && isSafeResultObjectPath(assetPath)) return this.readCanonicalSource(assetPath, false)
+        throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente visuale selezionata non e valida.')
     }
 
     async createResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {

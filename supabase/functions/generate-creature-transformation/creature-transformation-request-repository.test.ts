@@ -42,7 +42,7 @@ describe('SupabaseCreatureTransformationRequestRepository', () => {
         expect(result).toMatchObject({ outcome: 'CREATED', record: { id: 'request-1', status: 'RESERVED', estimatedCostUsd: 0, evolutionTargetId: null, evolutionFunction: null } })
         expect(mock.rpc).toHaveBeenCalledWith('reserve_creature_transformation_request', expect.objectContaining({
             p_profile_id: 'profile-1', p_idempotency_key: 'key-1', p_evolution_target_id: 'TORSO_AND_BACK', p_evolution_function: 'DEFENSE',
-            p_daily_request_limit: 10, p_daily_budget_usd: 0,
+            p_daily_request_limit: 10, p_daily_budget_usd: 0, p_stale_request_seconds: null,
         }))
         expect(JSON.stringify(mock.rpc.mock.calls)).not.toContain('prompt')
         expect(JSON.stringify(mock.rpc.mock.calls)).not.toContain('signedUrl')

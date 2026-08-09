@@ -59,6 +59,8 @@ export type GenerateImageServiceInput = Readonly<{
     storageDestination?: 'FINAL_ASSET' | 'RAW_EXPERIMENT'
     /** Server-validated experimental source; never supplied as an arbitrary client path. */
     sourcePath?: string
+    /** Server-selected productive visual, which can live in either source bucket. */
+    sourceVisual?: Readonly<{ assetPath: string, isBaseVersion: boolean }>
 }>
 
 function conceptRejected(requestId: string, problems?: GenerateImageErrorResponse['problems']): GenerateImageErrorResponse {
@@ -145,16 +147,21 @@ export async function generateImageForAuthenticatedProfile(
 
     const promptSha256 = await sha256Hex(new TextEncoder().encode(prompt))
     const conceptSnapshot = safeConceptSnapshot(validation.concept)
+    const hasSelectedSource = Boolean(input.sourcePath || input.sourceVisual)
     const source = input.sourcePath
         ? await input.storage.readExperimentalSource(input.sourcePath)
-        : await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath, resolvedCreature.sourceIsBaseVersion)
+        : input.sourceVisual
+            ? await input.storage.readVisualVersionSource(input.sourceVisual.assetPath, input.sourceVisual.isBaseVersion)
+            : await input.storage.readCanonicalSource(resolvedCreature.sourceImagePath, resolvedCreature.sourceIsBaseVersion)
     const validatedSource = await validator.validate({
         bytes: source.bytes,
         mimeType: source.mimeType,
         renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        // Raw A/B results are server-owned PNGs but intentionally retain their opaque generation background.
+        ...(hasSelectedSource ? { requireAlpha: false } : {}),
     })
     if (!validatedSource.valid) {
-        throw new ImageGenerationServiceError('SOURCE_IMAGE_INVALID', 'La sorgente canonica non ha superato i controlli tecnici.', validatedSource.problems)
+        throw new ImageGenerationServiceError('SOURCE_IMAGE_INVALID', input.sourcePath ? 'La sorgente sperimentale non ha superato i controlli tecnici.' : input.sourceVisual ? 'La sorgente visuale selezionata non ha superato i controlli tecnici.' : 'La sorgente canonica non ha superato i controlli tecnici.', validatedSource.problems)
     }
 
     let generated

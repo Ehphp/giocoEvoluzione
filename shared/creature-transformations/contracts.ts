@@ -63,6 +63,8 @@ export type GenerateCurrentPipelineExperimentRequest = {
     evolutionTargetId: EvolutionTargetId
     /** A completed experimental source selected for the next shared A/B round. */
     experimentalSourceRequestId?: string
+    /** A server-owned productive visual version selected from the creature catalog. */
+    sourceVisualVersionId?: string
     idempotencyKey: string
 }
 
@@ -75,12 +77,20 @@ export type GenerateLineageFirstExperimentRequest = {
     instruction?: string
     /** A completed experimental request owned by this profile; never a production visual version. */
     experimentalSourceRequestId?: string
+    /** A server-owned productive visual version selected from the creature catalog. */
+    sourceVisualVersionId?: string
     idempotencyKey: string
 }
 
 export type GetTransformationRequestStatusRequest = {
     operation: 'GET_REQUEST_STATUS'
     transformationRequestId: string
+    /** Available only to the server-authorized lineage review library. */
+    reviewOwnerProfileId?: string
+}
+
+export type GetCreatureTransformationLabUsageRequest = {
+    operation: 'GET_LAB_USAGE'
 }
 
 export type SubmitExperimentReviewRequest = {
@@ -99,6 +109,10 @@ export type SubmitLineageComparisonReviewRequest = {
     currentRequestId?: string
     scores: { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 }
     preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
+}
+
+export type GetLineageComparisonReviewsRequest = {
+    operation: 'GET_LINEAGE_COMPARISON_REVIEWS'
 }
 
 export type GetBenchmarkResultsRequest = {
@@ -177,4 +191,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetLineageComparisonReviewsRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest

@@ -16,13 +16,19 @@ export async function generateLineageFirstImage(input: {
     storage: SupabaseCreatureTransformationStorageAdapter
     provider: CreatureImageProvider
     sourcePath?: string
+    sourceVisual?: Readonly<{ assetPath: string, isBaseVersion: boolean }>
     validator?: ImageValidator
 }): Promise<LineageFirstImageResult> {
     const validator = input.validator ?? new ImageValidator()
     const resolved = await input.resolver.resolve({ profileId: input.profileId, creatureId: input.request.creatureId })
     const prompt = composeLineageFirstPrompt({ identity: resolved.identity, lineage: input.request.lineage, evolutionTargetId: input.request.evolutionTargetId, ...(input.request.instruction ? { instruction: input.request.instruction } : {}) })
-    const source = input.sourcePath ? await input.storage.readExperimentalSource(input.sourcePath) : await input.storage.readCanonicalSource(resolved.sourceImagePath, resolved.sourceIsBaseVersion)
-    const validatedSource = await validator.validate({ bytes: source.bytes, mimeType: source.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION })
+    const hasSelectedSource = Boolean(input.sourcePath || input.sourceVisual)
+    const source = input.sourcePath
+        ? await input.storage.readExperimentalSource(input.sourcePath)
+        : input.sourceVisual
+            ? await input.storage.readVisualVersionSource(input.sourceVisual.assetPath, input.sourceVisual.isBaseVersion)
+            : await input.storage.readCanonicalSource(resolved.sourceImagePath, resolved.sourceIsBaseVersion)
+    const validatedSource = await validator.validate({ bytes: source.bytes, mimeType: source.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION, ...(hasSelectedSource ? { requireAlpha: false } : {}) })
     if (!validatedSource.valid) throw new Error('SOURCE_IMAGE_INVALID')
     const generated = await input.provider.transformCreature({ requestId: input.requestId, idempotencyKey: input.request.idempotencyKey, prompt, source: { bytes: source.bytes, mimeType: source.mimeType, width: validatedSource.metadata.width, height: validatedSource.metadata.height, sha256: validatedSource.metadata.sha256 }, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION, backgroundGenerationMode: 'SOLID_FOR_POST_PROCESSING' })
     const output = await validator.validate({ bytes: generated.image, mimeType: generated.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION, sourceSha256: validatedSource.metadata.sha256, profile: 'FINAL_CREATURE_ASSET', requireAlpha: false })
