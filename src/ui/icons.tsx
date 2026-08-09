@@ -10,6 +10,7 @@ import {
     Lock,
     LogOut,
     ShieldCheck,
+    Signpost,
     Sparkles,
     Store,
     Swords,
@@ -19,6 +20,7 @@ import {
     Zap,
 } from 'lucide-react'
 
+import type { EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
 import type { TraitType } from '../game/types'
 
 /**
@@ -116,6 +118,108 @@ export function GeneIcon({ trait, ...props }: IconProps & { trait: TraitType }) 
 }
 
 /* -------------------------------------------------------------------------- */
+/* Evolution targets — anatomical regions, one glyph each                      */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Anatomical glyphs are single-colour silhouettes: they sit on solid gradient chips where a
+ * two-tone treatment would collapse, so depth comes from opacity, never from a second hue.
+ */
+
+/** Coda: a tapering tail with dorsal spikes. */
+function TailIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M2.4 21.4c5.6.6 10-.6 13.2-3.6 3.2-3 4.8-7.4 4.8-13.2l-3.6 3.2-1-3.4-2.6 4.6-1.6-2.6-2 5.2-2-1.6-.6 4.6-2.6-1.2Z" fill="currentColor" />
+            <path d="M6.6 18.6c3-.4 5.4-1.6 7.2-3.6 1.8-2 2.9-4.7 3.2-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" opacity=".4" fill="none" />
+        </Svg>
+    )
+}
+
+/** Arti anteriori: a clawed forepaw. */
+function ForelimbsIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M4.6 12.6c0-3.4 3.3-5.8 7.4-5.8s7.4 2.4 7.4 5.8c0 4-3 7.2-7.4 7.2s-7.4-3.2-7.4-7.2Z" fill="currentColor" />
+            <g fill="currentColor">
+                <ellipse cx="6" cy="5.4" rx="2.1" ry="2.7" />
+                <ellipse cx="12" cy="3.6" rx="2.2" ry="2.9" />
+                <ellipse cx="18" cy="5.4" rx="2.1" ry="2.7" />
+            </g>
+            <g stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity=".38" fill="none">
+                <path d="M8.6 14.2c1.2 1.4 5.6 1.4 6.8 0" />
+            </g>
+        </Svg>
+    )
+}
+
+/** Arti posteriori. */
+function HindLimbsIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M6 2.4c4 0 7 1.7 9 5 2 3.3 2.1 6.6.3 9.8l2.6 2.4c.9.8 1 2.1.2 3-.8.9-2.1.9-3 .1l-3.9-3.5c-1-.9-1.3-2.1-.9-3.4.6-2.1.3-3.9-1-5.4-1.3-1.5-3-2.3-5.2-2.3Z" fill="currentColor" />
+            <path d="M3.6 20.4c1.9.6 3.7.3 5.4-.9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" opacity=".5" />
+        </Svg>
+    )
+}
+
+/** Testa e sensi. */
+function HeadAndSensesIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M11.8 2.6c4.8 0 8.2 2.6 9.2 6.8.7 3-.3 5.6-2.8 7.7l.7 3.5c.2.8-.4 1.6-1.3 1.6H6.6c-2.3 0-3.8-1.4-4.2-3.8-.3-1.7-.5-3.2-.5-4.5 0-6.3 3.3-11.3 9.9-11.3Z" fill="currentColor" />
+            <circle cx="9.2" cy="10.8" r="3.3" fill="currentColor" opacity=".35" />
+            <circle cx="9.2" cy="10.8" r="1.5" fill="currentColor" opacity=".2" />
+            <path d="M5 18.4h5.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity=".4" />
+        </Svg>
+    )
+}
+
+/** Corpo e dorso. */
+function TorsoAndBackIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M3 15.6c0-4.8 3.6-8.2 9-8.2s9 3.4 9 8.2c0 3.6-2.5 5.9-6.3 5.9H9.3C5.5 21.5 3 19.2 3 15.6Z" fill="currentColor" />
+            <path d="M5.6 8.8 8 2.6l2.8 4.6L13.6 1.8l2.6 6 2.4-3.6.8 5.6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" fill="none" />
+            <path d="M7.4 16.8h9.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity=".4" />
+        </Svg>
+    )
+}
+
+/** Pelle: overlapping scales, read through the gaps between them. */
+function SkinIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <g fill="currentColor">
+                <path d="M2.6 8.4c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" />
+                <path d="M11.2 8.4c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" />
+                <path d="M6.9 15c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" />
+                <path d="M15.5 15c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" opacity=".55" />
+                <path d="M-1.7 15c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" opacity=".55" />
+                <path d="M2.6 21.6c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" />
+                <path d="M11.2 21.6c0-2.4 1.7-4 3.9-4s3.9 1.6 3.9 4Z" />
+            </g>
+        </Svg>
+    )
+}
+
+const EVOLUTION_TARGET_ICONS: Record<EvolutionTargetId, (props: IconProps) => React.JSX.Element> = {
+    TAIL: TailIcon,
+    FORELIMBS: ForelimbsIcon,
+    HIND_LIMBS: HindLimbsIcon,
+    HEAD_AND_SENSES: HeadAndSensesIcon,
+    TORSO_AND_BACK: TorsoAndBackIcon,
+    SKIN: SkinIcon,
+}
+
+/** Anatomical region glyph. Paints from `--gene-color*` when a `[data-gene]` ancestor sets them. */
+export function EvolutionTargetIcon({ target, ...props }: IconProps & { target: EvolutionTargetId }) {
+    const Component = EVOLUTION_TARGET_ICONS[target]
+
+    return <Component {...props} />
+}
+
+/* -------------------------------------------------------------------------- */
 /* Interface — Lucide, re-exported under product names                         */
 /* -------------------------------------------------------------------------- */
 
@@ -134,6 +238,7 @@ export const CloseIcon = X
 export const ExitIcon = LogOut
 export const LockIcon = Lock
 export const SparkIcon = Sparkles
+export const CrossroadsIcon = Signpost
 export const ShieldCheckIcon = ShieldCheck
 export const ArrowUpIcon = ArrowUp
 export const ArrowDownIcon = ArrowDown

@@ -4,7 +4,8 @@ import { getRoundEventById, normalizeAdaptationCollection } from '../../../share
 import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
-import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion } from './visual-progression-adapter.ts'
+import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion, recordEvolutionTargetWinFromMatchCompletion } from './visual-progression-adapter.ts'
+import { readEvolutionTargetWinsRequired } from '../../../shared/creature-transformations/evolution-draft.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
@@ -279,11 +280,17 @@ Deno.serve(async (request) => {
                 completedAt: String(resolutionData.finishedAt),
                 participants: visualParticipants,
             })
+            const evolutionTargetWinsRequired = readEvolutionTargetWinsRequired(Deno.env.get('EVOLUTION_TARGET_WINS_REQUIRED'))
             for (const event of events) {
                 try {
                     await recordCreatureVisualProgressFromMatchCompletion(supabaseAdmin, event)
                 } catch (error) {
                     console.error('Creature visual progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
+                }
+                try {
+                    await recordEvolutionTargetWinFromMatchCompletion(supabaseAdmin, event, evolutionTargetWinsRequired)
+                } catch (error) {
+                    console.error('Evolution target progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
                 }
             }
         }

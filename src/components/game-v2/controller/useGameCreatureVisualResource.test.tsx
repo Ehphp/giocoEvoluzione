@@ -33,7 +33,7 @@ function player(id: string, creatureId: string): PlayerRecord {
         profile_id: `${id}-profile`,
         creature_id: creatureId,
         creature_snapshot: null,
-        created_at: '2026-08-08T10:00:00.000Z',
+        evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-08-08T10:00:00.000Z',
     }
 }
 

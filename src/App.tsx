@@ -8,6 +8,7 @@ import { buildMatchResultViewModel } from './components/game-results/buildMatchR
 import { MatchResultScreen } from './screens/results/MatchResultScreen'
 import { BattleScreen } from './screens/battle/BattleScreen'
 import { RoundResultOverlay, type RoundResolutionData } from './screens/battle/parts/RoundResultOverlay'
+import { EvolutionDraftOverlay } from './screens/battle/parts/EvolutionDraftOverlay'
 import { BootScreen, MissingConfigScreen, MissingResultScreen, WaitingRoomScreen } from './screens/system/SystemScreens'
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { useGameCreatureVisualResource } from './components/game-v2/controller/useGameCreatureVisualResource'
@@ -17,6 +18,7 @@ import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transfor
 import { CreatureVisualProgressionScreen } from './components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { VisualBackgroundCleanupScreen } from './components/visual-background-cleanup/VisualBackgroundCleanupScreen'
 import { type TraitType } from './game/types'
+import type { EvolutionTargetId } from '../shared/creature-transformations/evolution-targets.ts'
 import { hasSupabaseConfig } from './lib/supabase'
 import { GameSnapshotSync } from './lib/game-snapshot-sync'
 import { getCurrentCreatureVisual, getCreatureVisualProgress, rollbackCreatureVisualVersion } from './lib/creature-transformations-api'
@@ -24,6 +26,7 @@ import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, typ
 import {
   acknowledgeReveal,
   advanceToNextRound,
+  chooseEvolutionDraftTarget,
   createGame,
   createVsBotGame,
   fetchGameSnapshot,
@@ -581,6 +584,15 @@ function App() {
     }
   }
 
+  async function handleChooseEvolutionTarget(evolutionTargetId: EvolutionTargetId) {
+    if (!snapshot) {
+      return
+    }
+
+    await chooseEvolutionDraftTarget(snapshot.game.id, evolutionTargetId)
+    await snapshotSyncRef.current?.reconcile()
+  }
+
   async function handleAdvanceRound() {
     if (!snapshot?.me) {
       return
@@ -790,6 +802,7 @@ function App() {
         myScore={myScore}
         opponentScore={opponentScore}
         onSubmitAction={handleSubmitAction}
+        onChooseEvolutionTarget={handleChooseEvolutionTarget}
         onLeaveSession={handleLeaveSession}
         resolutionData={resolutionData}
         onContinue={() => void handleAdvanceRound()}
@@ -825,6 +838,7 @@ type ConnectedBattleScreenProps = {
   myScore: number
   opponentScore: number
   onSubmitAction: (actionType: 'USE' | 'EVOLVE', trait: TraitType) => Promise<boolean>
+  onChooseEvolutionTarget: (evolutionTargetId: EvolutionTargetId) => Promise<void>
   onLeaveSession: () => void
   resolutionData: RoundResolutionData | undefined
   onContinue: () => void
@@ -840,6 +854,7 @@ function ConnectedBattleScreen({
   myScore,
   opponentScore,
   onSubmitAction,
+  onChooseEvolutionTarget,
   onLeaveSession,
   resolutionData,
   onContinue,
@@ -857,6 +872,9 @@ function ConnectedBattleScreen({
     },
   })
   const isResolutionOpen = snapshot.game.status === 'REVEALING' || snapshot.game.status === 'ROUND_RESULT'
+  // The draft blocks the first round: the server must know which counter a win credits.
+  const draftOptions = snapshot.me?.evolution_draft_options ?? []
+  const isDraftOpen = Boolean(snapshot.me) && !snapshot.me?.chosen_evolution_target_id && draftOptions.length > 0
 
   return (
     <>
@@ -870,9 +888,12 @@ function ConnectedBattleScreen({
         onUseGene={onUseGene}
         onEvolveGene={onEvolveGene}
         onLeaveSession={onLeaveSession}
-        isInteractionLocked={isResolutionOpen}
+        isInteractionLocked={isResolutionOpen || isDraftOpen}
       />
-      {isResolutionOpen ? (
+      {isDraftOpen ? (
+        <EvolutionDraftOverlay options={draftOptions} creatureId={snapshot.me?.creature_id} onChoose={onChooseEvolutionTarget} />
+      ) : null}
+      {!isDraftOpen && isResolutionOpen ? (
         <RoundResultOverlay
           snapshot={snapshot}
           resolutionData={resolutionData}

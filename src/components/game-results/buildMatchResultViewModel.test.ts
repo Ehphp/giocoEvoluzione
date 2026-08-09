@@ -26,12 +26,12 @@ function makeSnapshot(roundResults: RoundResultRecord[]): GameSnapshot {
     const player = {
         id: 'player-1', game_id: 'game', nickname: 'Naturalista', slot: 1 as const, player_type: 'HUMAN' as const,
         traits: {} as GameSnapshot['me'] extends { traits: infer Traits } ? Traits : never,
-        connected: true, created_at: '2026-01-01T10:00:00.000Z',
+        connected: true, evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-01-01T10:00:00.000Z',
     }
     const opponent = {
         id: 'player-2', game_id: 'game', nickname: 'Bot', slot: 2 as const, player_type: 'BOT' as const,
         traits: {} as GameSnapshot['opponent'] extends { traits: infer Traits } ? Traits : never,
-        connected: true, created_at: '2026-01-01T10:00:00.000Z',
+        connected: true, evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-01-01T10:00:00.000Z',
     }
 
     return {

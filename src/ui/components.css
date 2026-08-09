@@ -627,6 +627,12 @@
     animation: ev-rise var(--ev-dur-base) var(--ev-ease);
 }
 
+/* The sheet is focused programmatically to scope the dialog; it is not itself a control. */
+.ev-sheet:focus,
+.ev-sheet:focus-visible {
+    outline: none;
+}
+
 .ev-sheet__header {
     display: flex;
     align-items: flex-start;

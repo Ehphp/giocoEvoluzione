@@ -37,3 +37,25 @@ export async function recordCreatureVisualProgressFromMatchCompletion(
     })
     if (error) throw new Error(error.message ?? 'Visual progression persistence failed.')
 }
+
+/**
+ * Credits the win to the anatomical target the player drafted at the start of the match.
+ *
+ * The chosen target is read server-side from the player row: the client never says which
+ * counter to credit. Losses and draws are still recorded, so the match is only ever counted once.
+ */
+export async function recordEvolutionTargetWinFromMatchCompletion(
+    supabaseAdmin: { rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message?: string } | null }> },
+    event: MatchCompletionEvent,
+    winsRequired: number,
+): Promise<void> {
+    const { error } = await supabaseAdmin.rpc('record_evolution_target_win_from_match_completion', {
+        p_game_id: event.gameId,
+        p_profile_id: event.profileId,
+        p_creature_id: event.creatureId,
+        p_outcome: event.outcome,
+        p_target: winsRequired,
+        p_completed_at: event.completedAt,
+    })
+    if (error) throw new Error(error.message ?? 'Evolution target progression persistence failed.')
+}

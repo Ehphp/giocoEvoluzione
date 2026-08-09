@@ -273,6 +273,8 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         player_type: 'HUMAN',
         traits: scenario.player1Traits,
         connected: true,
+        evolution_draft_options: [],
+        chosen_evolution_target_id: null,
         created_at: '2026-07-30T10:00:00.000Z',
     }
     const opponent: PlayerRecord = {
@@ -283,6 +285,8 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         player_type: 'HUMAN',
         traits: scenario.player2Traits,
         connected: true,
+        evolution_draft_options: [],
+        chosen_evolution_target_id: null,
         created_at: '2026-07-30T10:00:00.000Z',
     }
     const game: GameRecord = {

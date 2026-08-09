@@ -11,6 +11,8 @@ import type {
 } from '../game/types'
 import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
 import { requireSupabase } from './supabase'
+import { isEvolutionTargetId, normalizeEvolutionDraftOptions } from '../../shared/creature-transformations/evolution-draft.ts'
+import type { EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
 
 export type GameRecord = {
     id: string
@@ -45,6 +47,10 @@ export type PlayerRecord = {
     profile_id?: string | null
     creature_id?: string | null
     creature_snapshot?: Record<string, unknown> | null
+    /** The two anatomical targets this player was offered at the start of the match. */
+    evolution_draft_options: EvolutionTargetId[]
+    /** The target that will be credited if this player wins; null until they choose. */
+    chosen_evolution_target_id: EvolutionTargetId | null
     created_at: string
 }
 
@@ -174,6 +180,10 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         creature_id: typeof data.creature_id === 'string' ? data.creature_id : null,
         creature_snapshot: data.creature_snapshot && typeof data.creature_snapshot === 'object'
             ? data.creature_snapshot as Record<string, unknown>
+            : null,
+        evolution_draft_options: normalizeEvolutionDraftOptions(data.evolution_draft_options),
+        chosen_evolution_target_id: isEvolutionTargetId(data.chosen_evolution_target_id)
+            ? data.chosen_evolution_target_id
             : null,
         created_at: String(data.created_at),
     }
@@ -626,4 +636,31 @@ export async function subscribeToGame(
     return () => {
         void supabase.removeChannel(channel)
     }
+}
+
+/**
+ * Records the anatomical target this player drafted at the start of the match.
+ *
+ * The server checks the target is one of the two it offered and refuses a second, different
+ * choice; replaying the same choice is a no-op, so a retry is safe.
+ */
+export async function chooseEvolutionDraftTarget(gameId: string, evolutionTargetId: EvolutionTargetId): Promise<void> {
+    const supabase = requireSupabase()
+    const { error } = await supabase.rpc('choose_evolution_draft_target', {
+        p_game_id: gameId,
+        p_evolution_target_id: evolutionTargetId,
+    })
+
+    if (error) {
+        throw new Error(translateEvolutionDraftError(error.message))
+    }
+}
+
+function translateEvolutionDraftError(message: string): string {
+    if (message.includes('EVOLUTION_TARGET_NOT_OFFERED')) return 'Quel tratto non e fra i due proposti per questa partita.'
+    if (message.includes('EVOLUTION_DRAFT_ALREADY_CHOSEN')) return 'Hai gia scelto il tratto per questa partita.'
+    if (message.includes('EVOLUTION_DRAFT_CLOSED')) return 'La partita e conclusa: non puoi piu scegliere il tratto.'
+    if (message.includes('GAME_PARTICIPANT_REQUIRED')) return 'Non risulti fra i partecipanti di questa partita.'
+
+    return message
 }

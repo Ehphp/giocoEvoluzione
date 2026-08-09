@@ -4,6 +4,7 @@ import { HomeScreen } from '../screens/home/HomeScreen'
 import { BattleScreen } from '../screens/battle/BattleScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
+import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
 import type { UiPreviewRoute } from './uiPreviewRoute'
 import {
     PREVIEW_CREATURE,
@@ -74,6 +75,23 @@ function ProfilePreview() {
     )
 }
 
+function DraftPreview() {
+    const [chosen, setChosen] = useState<string | null>(null)
+
+    return (
+        <>
+            <BattlePreview />
+            {chosen ? null : (
+                <EvolutionDraftOverlay
+                    options={['TAIL', 'HEAD_AND_SENSES']}
+                    creatureId={PREVIEW_CREATURE.id}
+                    onChoose={async (targetId) => { setChosen(targetId) }}
+                />
+            )}
+        </>
+    )
+}
+
 function EvolutionPreview() {
     return (
         <CreatureVisualProgressionScreen
@@ -96,6 +114,10 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
 
     if (route === 'evolution') {
         return <EvolutionPreview />
+    }
+
+    if (route === 'draft') {
+        return <DraftPreview />
     }
 
     return <HomePreview />

@@ -3,14 +3,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { VISUAL_TRAITS, type VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { EVOLUTION_TARGETS, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { PlayerCreatureRecord } from '../../lib/profile-api'
-import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, selectCreatureVisualProgressTrack, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
+import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
 import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
 import { ASSETS } from '../../ui/assets'
+import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
+import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'
 import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
-import { ChevronIcon, DnaIcon, SparkIcon } from '../../ui/icons'
+import { ChevronIcon, DnaIcon, EvolutionTargetIcon, SparkIcon } from '../../ui/icons'
 
 import './CreatureVisualProgressionScreen.css'
 
@@ -47,6 +49,8 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [postProcessingMessage, setPostProcessingMessage] = useState<string | null>(null)
     /** Which of the two forms the hero shows; the proposal is what the player is deciding on. */
     const [heroSide, setHeroSide] = useState<'current' | 'result'>('result')
+    /** Wins banked per anatomical target, accumulated by the battle-start draft. */
+    const [targetProgress, setTargetProgress] = useState<EvolutionTargetProgressRecord[] | null>(null)
     const postProcessingRequest = useRef<string | null>(null)
     const postProcessingAttempts = useRef(0)
 
@@ -66,7 +70,22 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         setPreview({ requestId, sourceUrl: source.visual.signedUrl, resultUrl: status.result.signedUrl, sourceVersionId: status.productPreview.sourceVisualVersionId, conceptName: status.productPreview.conceptName, evolutionaryFunction: status.productPreview.evolutionaryFunction, warnings: status.productPreview.warnings })
     }, [creature.id])
 
+    const refreshTargetProgress = useCallback(async () => {
+        setTargetProgress(await fetchEvolutionTargetProgress(creature.id))
+    }, [creature.id])
+
     useEffect(() => { void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Percorso visuale non disponibile.')) }, [refresh])
+    useEffect(() => { void refreshTargetProgress().catch(() => setTargetProgress([])) }, [refreshTargetProgress])
+
+    async function spendReadyTarget(evolutionTargetId: EvolutionTargetId) {
+        setBusy(true); setError(null)
+        try {
+            await openEvolutionTrackFromReadyTarget(creature.id, evolutionTargetId)
+            await Promise.all([refresh(), refreshTargetProgress()])
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile aprire la trasformazione.')
+        } finally { setBusy(false) }
+    }
     useEffect(() => {
         if (progress?.track?.status !== 'GENERATING' || !progress.track.generatedRequestId) return
         const interval = window.setInterval(() => void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Impossibile aggiornare la generazione.')), 2_000)
@@ -113,7 +132,6 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     }, [progress?.track?.generatedRequestId, progress?.track?.status, runBackgroundRemoval])
 
     const currentTarget = useMemo(() => progress?.track?.evolutionTargetId ? targetLabel(progress.track.evolutionTargetId) : progress?.track?.visualTraitId ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
-    async function selectTarget(evolutionTargetId: EvolutionTargetId) { setBusy(true); setError(null); try { setProgress(await selectCreatureVisualProgressTrack({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: creature.id, evolutionTargetId }) as unknown as ProgressResponse) } catch (nextError) { if (nextError instanceof CreatureTransformationApiError && nextError.code === 'VISUAL_TRACK_ALREADY_ACTIVE') { try { await refresh() } catch { } setError('Esiste gia un percorso visuale aperto. Il suo stato e stato ricaricato.') } else setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile avviare il percorso.') } finally { setBusy(false) } }
     async function generate() {
         if (!progress?.track) return
         setBusy(true); setError(null); setExperimentOnly(null)
@@ -173,28 +191,49 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                 {progress && !track ? (
                     <>
                         <Panel className="evolution-card">
-                            <span className="ev-eyebrow">Nuovo percorso</span>
-                            <h2>Scegli la regione da evolvere</h2>
-                            <p className="evolution-card__copy">Il progresso si ottiene solo con le vittorie in partita.</p>
+                            <span className="ev-eyebrow">Vittorie accumulate</span>
+                            <h2>Percorsi evolutivi</h2>
+                            <p className="evolution-card__copy">
+                                A inizio partita scegli fra due tratti: vincendo, quel tratto avanza. Quando un
+                                percorso e completo puoi trasformarlo.
+                            </p>
                         </Panel>
-                        <div className="evolution-targets">
-                            {EVOLUTION_TARGETS.map((target) => (
-                                <button
-                                    key={target.id}
-                                    type="button"
-                                    className="evolution-target"
-                                    disabled={busy}
-                                    onClick={() => void selectTarget(target.id)}
-                                >
-                                    <span className="evolution-target__glyph" aria-hidden="true"><DnaIcon /></span>
-                                    <span className="evolution-target__copy">
-                                        <strong>{target.label}</strong>
-                                        <small>{target.description}</small>
-                                    </span>
-                                    <ChevronIcon aria-hidden="true" />
-                                </button>
-                            ))}
-                        </div>
+
+                        {targetProgress === null ? (
+                            <Panel className="evolution-card evolution-card--centered" role="status" aria-live="polite">
+                                <span className="evolution-spinner" aria-hidden="true" />
+                                <p className="evolution-card__copy">Caricamento dei contatori...</p>
+                            </Panel>
+                        ) : (
+                            <ul className="evolution-counters">
+                                {targetProgress.map((entry) => {
+                                    const ready = isEvolutionTargetReady(entry)
+
+                                    return (
+                                        <li key={entry.evolutionTargetId}>
+                                            <Panel className={`evolution-counter ${ready ? 'is-ready' : ''}`}>
+                                                <span className="evolution-counter__glyph" aria-hidden="true"><EvolutionTargetIcon target={entry.evolutionTargetId} /></span>
+                                                <div className="evolution-counter__copy">
+                                                    <strong>{targetLabel(entry.evolutionTargetId)}</strong>
+                                                    <ProgressBar
+                                                        current={Math.min(entry.wins, entry.target)}
+                                                        total={entry.target}
+                                                        tone={ready ? 'gold' : 'green'}
+                                                        label={`${entry.wins} vittorie su ${entry.target} per ${targetLabel(entry.evolutionTargetId)}`}
+                                                    />
+                                                    <small>{entry.wins} / {entry.target} vittorie</small>
+                                                </div>
+                                                {ready ? (
+                                                    <Button tone="evolve" size="sm" disabled={busy} onClick={() => void spendReadyTarget(entry.evolutionTargetId)}>
+                                                        Evolvi
+                                                    </Button>
+                                                ) : null}
+                                            </Panel>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        )}
                     </>
                 ) : null}
 
