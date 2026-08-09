@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
     TRANSFORMATION_INTENSITIES,
@@ -19,11 +19,14 @@ import {
     createImageIdempotencyKey,
     CreatureTransformationApiError,
     getCreatureTransformationRequestStatus,
+    getLineageComparisonReviews,
+    getCreatureTransformationLabUsage,
     generateCreatureTransformationConcept,
     generateCreatureTransformationImage,
     generateCurrentPipelineExperiment,
     generateLineageFirstExperiment,
     getCurrentCreatureVisual,
+    getCreatureVisualProgress,
     submitLineageComparisonReview,
 } from '../../lib/creature-transformations-api'
 import { canGenerateMockImage } from './lab-image-state'
@@ -34,13 +37,40 @@ import { isRealImageExperimentVisible } from './lab-real-image-flag'
 import './CreatureTransformationLab.css'
 
 type ConceptMode = 'MOCK' | 'AI'
+type ComparisonLaunchMode = 'PARALLEL' | 'SEQUENTIAL'
 type LineageReviewKey = 'creativeSurprise' | 'targetTransformationStrength' | 'creatureContinuity' | 'lineagePreservation' | 'nonTargetStability'
+type SavedLineageReview = { profileId: string; creatureId: string; lineageRequestId: string; currentRequestId: string | null; scores: Record<LineageReviewKey, 1 | 2 | 3 | 4 | 5>; preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'; createdAt: string; updatedAt: string }
+type LineageComparisonDraft = Readonly<{
+    lineageRequest: TransformationRequestPersistence | null
+    realRequestPersistence: TransformationRequestPersistence | null
+    lineage: ExperimentalLineage
+    lineageTargetId: EvolutionTargetId
+    scores: Record<LineageReviewKey, number>
+    preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
+}>
 const LINEAGE_REVIEW_KEYS: readonly LineageReviewKey[] = ['creativeSurprise', 'targetTransformationStrength', 'creatureContinuity', 'lineagePreservation', 'nonTargetStability']
 const REAL_IMAGE_FRONTEND_ENABLED = isRealImageExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED)
 const BENCHMARK_FRONTEND_ENABLED = isCreatureTransformationBenchmarkVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED)
 const REAL_POLL_INTERVAL_MS = 2500
 const REAL_POLL_TIMEOUT_MS = 60000
+const COMPARISON_SEQUENCE_TIMEOUT_MS = 10 * 60 * 1000
 const FALLBACK_SOURCE_PREVIEW = '/assets/battle/creatures/verdant-hatchling.png'
+
+function lineageDraftStorageKey(creatureId: string): string {
+    return `creature-transformation-lineage-draft:${creatureId}`
+}
+
+function readLineageComparisonDraft(creatureId: string): LineageComparisonDraft | null {
+    try {
+        const value = window.localStorage.getItem(lineageDraftStorageKey(creatureId))
+        if (!value) return null
+        const draft = JSON.parse(value) as Partial<LineageComparisonDraft>
+        if (!draft || !draft.lineage || !Array.isArray(draft.lineage.identityTraits) || !Array.isArray(draft.lineage.acquiredTraits) || !draft.lineageTargetId || !draft.scores || !['CURRENT', 'LINEAGE_FIRST', 'NONE'].includes(String(draft.preferredResult))) return null
+        return draft as LineageComparisonDraft
+    } catch {
+        return null
+    }
+}
 
 type CreatureTransformationLabProps = {
     creature: PlayerCreatureRecord
@@ -101,18 +131,37 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     const [lineageSourceRequestId, setLineageSourceRequestId] = useState<string | null>(null)
     const [canonicalSourcePreview, setCanonicalSourcePreview] = useState<{ signedUrl: string; isBaseVersion: boolean } | null>(null)
     const [lineageSourcePreview, setLineageSourcePreview] = useState<{ requestId: string; signedUrl: string } | null>(null)
+    const [lineageSourceChain, setLineageSourceChain] = useState<Array<{ requestId: string; signedUrl: string }>>([])
+    const [productionSourceCatalog, setProductionSourceCatalog] = useState<Array<{ id: string; versionNumber: number; conceptName: string | null; signedUrl: string }>>([])
+    const [selectedProductionSource, setSelectedProductionSource] = useState<{ versionId: string; signedUrl: string; label: string } | null>(null)
+    const [isProductionCatalogOpen, setIsProductionCatalogOpen] = useState(false)
+    const [labUsage, setLabUsage] = useState<{ requestCount: number; requestLimit: number; realImageCount: number; realImageLimit: number; globalRealImageCount: number; globalRealImageLimit: number; spentUsd: number; budgetUsd: number } | null>(null)
     const [lineageReview, setLineageReview] = useState<Record<LineageReviewKey, number>>({ creativeSurprise: 3, targetTransformationStrength: 3, creatureContinuity: 3, lineagePreservation: 3, nonTargetStability: 3 })
     const [preferredResult, setPreferredResult] = useState<'CURRENT' | 'LINEAGE_FIRST' | 'NONE'>('NONE')
     const [lineageReviewSaved, setLineageReviewSaved] = useState(false)
+    const [savedLineageReviews, setSavedLineageReviews] = useState<SavedLineageReview[]>([])
+    const [savedLineageReviewsError, setSavedLineageReviewsError] = useState<string | null>(null)
+    const [selectedSavedLineageReviewId, setSelectedSavedLineageReviewId] = useState('')
+    const [isLoadingSavedLineageReview, setIsLoadingSavedLineageReview] = useState(false)
+    const [comparisonLaunchMode, setComparisonLaunchMode] = useState<ComparisonLaunchMode>('PARALLEL')
+    const [isLaunchingComparison, setIsLaunchingComparison] = useState(false)
+    const [comparisonLaunchMessage, setComparisonLaunchMessage] = useState<string | null>(null)
+    const [isLineageDraftReady, setIsLineageDraftReady] = useState(false)
     const realRequestIsRunning = Boolean(realRequestPersistence && !isTerminalRequestStatus(realStatus?.requestPersistence.status ?? realRequestPersistence.status) && !realPollingTimedOut)
     const lineageRequestIsRunning = Boolean(lineageRequest && !isTerminalRequestStatus(lineageStatus?.requestPersistence.status ?? lineageRequest.status))
-    const isBusy = isGeneratingConcept || isGeneratingImage || realRequestIsRunning || lineageRequestIsRunning
+    const isBusy = isGeneratingConcept || isGeneratingImage || isLaunchingComparison || realRequestIsRunning || lineageRequestIsRunning
     const imageGenerationAvailable = canGenerateMockImage(conceptResult, isGeneratingConcept, isGeneratingImage) && !realRequestIsRunning
     const comparisonSource = lineageSourceRequestId && lineageSourcePreview?.requestId === lineageSourceRequestId
         ? { signedUrl: lineageSourcePreview.signedUrl, label: 'Risultato sperimentale condiviso A/B' }
+        : selectedProductionSource
+            ? { signedUrl: selectedProductionSource.signedUrl, label: selectedProductionSource.label }
         : canonicalSourcePreview
             ? { signedUrl: canonicalSourcePreview.signedUrl, label: canonicalSourcePreview.isBaseVersion ? 'Visuale base canonica del profilo' : 'Ultima evoluzione attiva del profilo' }
             : { signedUrl: FALLBACK_SOURCE_PREVIEW, label: 'Anteprima della visuale canonica del profilo' }
+    const evolutionChain = [
+        { id: selectedProductionSource?.versionId ?? 'productive-current', signedUrl: selectedProductionSource?.signedUrl ?? canonicalSourcePreview?.signedUrl ?? FALLBACK_SOURCE_PREVIEW, label: selectedProductionSource?.label ?? (canonicalSourcePreview?.isBaseVersion ? 'Forma produttiva base' : 'Forma produttiva attiva'), active: !lineageSourceRequestId },
+        ...lineageSourceChain.map((step, index) => ({ id: step.requestId, signedUrl: step.signedUrl, label: `Esperimento B · stadio ${index + 1}`, active: step.requestId === lineageSourceRequestId })),
+    ]
 
     function invalidateConceptAndImage() {
         setConceptResult(null)
@@ -126,6 +175,27 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         setRealStatus(null)
         setRealPollingTimedOut(false)
     }
+
+    async function refreshLabUsage() {
+        try {
+            const response = await getCreatureTransformationLabUsage()
+            setLabUsage(response.usage)
+        } catch {
+            // Usage visibility is informational and must not block the lab.
+        }
+    }
+
+    const refreshSavedLineageReviews = useCallback(async () => {
+        try {
+            const response = await getLineageComparisonReviews({ operation: 'GET_LINEAGE_COMPARISON_REVIEWS' })
+            setSavedLineageReviews([...response.reviews] as SavedLineageReview[])
+            setSavedLineageReviewsError(null)
+        } catch (nextError) {
+            setSavedLineageReviews([])
+            setSavedLineageReviewsError(nextError instanceof Error ? nextError.message : 'Impossibile caricare l archivio delle review.')
+            throw nextError
+        }
+    }, [])
 
     useEffect(() => {
         let cancelled = false
@@ -141,13 +211,51 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     }, [creature.id])
 
     useEffect(() => {
+        let cancelled = false
+        void (async () => {
+            try {
+                const response = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id })
+                if (!cancelled) setProductionSourceCatalog(response.history.map((version) => ({ id: version.id, versionNumber: version.versionNumber, conceptName: version.conceptName, signedUrl: version.signedUrl })))
+            } catch {
+                // The lab continues with the active visual when the catalog is unavailable.
+            }
+        })()
+        return () => { cancelled = true }
+    }, [creature.id])
+
+    useEffect(() => { void refreshLabUsage() }, [])
+    useEffect(() => { void refreshSavedLineageReviews().catch(() => { /* The visible archive state already contains the error. */ }) }, [refreshSavedLineageReviews])
+
+    useEffect(() => {
+        const draft = readLineageComparisonDraft(creature.id)
+        if (draft) {
+            setLineageRequest(draft.lineageRequest)
+            setRealRequestPersistence(draft.realRequestPersistence)
+            setLineageStatus(null)
+            setRealStatus(null)
+            setRealPollingTimedOut(false)
+            setLineage(draft.lineage)
+            setLineageTargetId(draft.lineageTargetId)
+            setLineageReview(draft.scores)
+            setPreferredResult(draft.preferredResult)
+        }
+        setIsLineageDraftReady(true)
+    }, [creature.id])
+
+    useEffect(() => {
+        if (!isLineageDraftReady) return
+        const draft: LineageComparisonDraft = { lineageRequest, realRequestPersistence, lineage, lineageTargetId, scores: lineageReview, preferredResult }
+        try { window.localStorage.setItem(lineageDraftStorageKey(creature.id), JSON.stringify(draft)) } catch { /* Draft recovery is best-effort. */ }
+    }, [creature.id, isLineageDraftReady, lineage, lineageRequest, lineageReview, lineageTargetId, preferredResult, realRequestPersistence])
+
+    useEffect(() => {
         if (!realRequestPersistence || isTerminalRequestStatus(realStatus?.requestPersistence.status) || realPollingTimedOut) return undefined
         let cancelled = false
         const poll = async () => {
             if (document.visibilityState !== 'visible') return
             try {
                 const next = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: realRequestPersistence.transformationRequestId })
-                if (!cancelled) setRealStatus(next)
+                if (!cancelled) { setRealStatus(next); if (isTerminalRequestStatus(next.requestPersistence.status)) void refreshLabUsage() }
             } catch (nextError) {
                 if (!cancelled) setError(nextError instanceof Error ? nextError : new Error('Impossibile aggiornare lo stato della richiesta reale.'))
             }
@@ -171,7 +279,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         const poll = async () => {
             try {
                 const next = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: lineageRequest.transformationRequestId })
-                if (!cancelled) setLineageStatus(next)
+                if (!cancelled) { setLineageStatus(next); if (isTerminalRequestStatus(next.requestPersistence.status)) void refreshLabUsage() }
             } catch (nextError) { if (!cancelled) setLineageError(nextError instanceof Error ? nextError : new Error('Impossibile aggiornare il test lineage-first.')) }
         }
         const interval = window.setInterval(() => void poll(), REAL_POLL_INTERVAL_MS)
@@ -179,28 +287,114 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         return () => { cancelled = true; window.clearInterval(interval) }
     }, [lineageRequest, lineageStatus?.requestPersistence.status])
 
-    async function handleGenerateLineageFirst() {
-        if (!realCostConfirmed || isBusy) return
+    useEffect(() => {
+        if (!isLineageDraftReady || !lineageRequest || !lineageStatus?.result) return undefined
+        let cancelled = false
+        const timer = window.setTimeout(() => {
+            void submitLineageComparisonReview({
+                operation: 'SUBMIT_LINEAGE_COMPARISON_REVIEW', creatureId: creature.id,
+                lineageRequestId: lineageRequest.transformationRequestId,
+                ...(realRequestPersistence ? { currentRequestId: realRequestPersistence.transformationRequestId } : {}),
+                scores: lineageReview as { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 },
+                preferredResult,
+            }).then(() => {
+                if (cancelled) return
+                setLineageReviewSaved(true)
+                setSelectedSavedLineageReviewId(lineageRequest.transformationRequestId)
+                void refreshSavedLineageReviews()
+            }).catch((nextError) => {
+                if (!cancelled) setLineageError(nextError instanceof Error ? nextError : new Error('Impossibile salvare automaticamente la review A/B.'))
+            })
+        }, 700)
+        return () => { cancelled = true; window.clearTimeout(timer) }
+    }, [creature.id, isLineageDraftReady, lineageRequest, lineageReview, lineageStatus?.result, preferredResult, realRequestPersistence, refreshSavedLineageReviews])
+
+    async function launchLineageFirst(): Promise<TransformationRequestPersistence | null> {
         setLineageError(null)
         try {
-            const response = await generateLineageFirstExperiment({ operation: 'GENERATE_LINEAGE_FIRST_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, lineage, ...(lineageInstruction.trim() ? { instruction: lineageInstruction.trim() } : {}), ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : {}), idempotencyKey: createImageIdempotencyKey() })
+            const response = await generateLineageFirstExperiment({ operation: 'GENERATE_LINEAGE_FIRST_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, lineage, ...(lineageInstruction.trim() ? { instruction: lineageInstruction.trim() } : {}), ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : selectedProductionSource ? { sourceVisualVersionId: selectedProductionSource.versionId } : {}), idempotencyKey: createImageIdempotencyKey() })
             if (!response.success || !('requestPersistence' in response) || !response.requestPersistence) throw new Error('Risposta lineage-first non valida.')
             setLineageRequest(response.requestPersistence)
             setLineageStatus(null)
-        } catch (nextError) { setLineageError(nextError instanceof Error ? nextError : new Error('Generazione lineage-first non riuscita.')) }
+            void refreshLabUsage()
+            return response.requestPersistence
+        } catch (nextError) {
+            setLineageError(nextError instanceof Error ? nextError : new Error('Generazione lineage-first non riuscita.'))
+            return null
+        }
     }
 
-    async function handleGenerateCurrentPipeline() {
-        if (!realCostConfirmed || isBusy) return
+    async function launchCurrentPipeline(): Promise<TransformationRequestPersistence | null> {
         setIsGeneratingImage(true)
         setError(null)
         setRealPollingTimedOut(false)
         try {
-            const response = await generateCurrentPipelineExperiment({ operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : {}), idempotencyKey: createImageIdempotencyKey() })
+            const response = await generateCurrentPipelineExperiment({ operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : selectedProductionSource ? { sourceVisualVersionId: selectedProductionSource.versionId } : {}), idempotencyKey: createImageIdempotencyKey() })
             if (!response.success || !('requestPersistence' in response) || !response.requestPersistence) throw new Error('Risposta Current pipeline non valida.')
             setRealRequestPersistence(response.requestPersistence)
             setRealStatus(null)
-        } catch (nextError) { setError(nextError instanceof Error ? nextError : new Error('Generazione Current pipeline non riuscita.')) } finally { setIsGeneratingImage(false) }
+            void refreshLabUsage()
+            return response.requestPersistence
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError : new Error('Generazione Current pipeline non riuscita.'))
+            return null
+        } finally { setIsGeneratingImage(false) }
+    }
+
+    async function handleGenerateLineageFirst() {
+        if (!realCostConfirmed || isBusy) return
+        await launchLineageFirst()
+    }
+
+    async function handleGenerateCurrentPipeline() {
+        if (!realCostConfirmed || isBusy) return
+        await launchCurrentPipeline()
+    }
+
+    async function waitForCurrentPipeline(request: TransformationRequestPersistence): Promise<TransformationRequestStatusResponse | null> {
+        const deadline = Date.now() + COMPARISON_SEQUENCE_TIMEOUT_MS
+        while (Date.now() < deadline) {
+            try {
+                const status = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: request.transformationRequestId })
+                setRealStatus(status)
+                if (isTerminalRequestStatus(status.requestPersistence.status)) return status
+            } catch (nextError) {
+                setError(nextError instanceof Error ? nextError : new Error('Impossibile attendere il risultato A.'))
+                return null
+            }
+            await new Promise<void>((resolve) => window.setTimeout(resolve, REAL_POLL_INTERVAL_MS))
+        }
+        setError(new Error('A non ha concluso entro dieci minuti: B non e stata avviata.'))
+        return null
+    }
+
+    async function handleGenerateComparison() {
+        if (!realCostConfirmed || isBusy) return
+        setIsLaunchingComparison(true)
+        setComparisonLaunchMessage(null)
+        setLineageReviewSaved(false)
+        if (comparisonLaunchMode === 'PARALLEL') {
+            setComparisonLaunchMessage('Avvio contemporaneo di A e B…')
+            const [current, lineageFirst] = await Promise.all([launchCurrentPipeline(), launchLineageFirst()])
+            setComparisonLaunchMessage(current && lineageFirst ? 'A e B sono state avviate con la stessa sorgente e lo stesso target.' : 'Una delle due pipeline non e stata avviata: controlla gli errori nei rispettivi pannelli.')
+        } else {
+            setComparisonLaunchMessage('Avvio A. B partirà soltanto dopo il completamento positivo di A…')
+            const current = await launchCurrentPipeline()
+            if (!current) setComparisonLaunchMessage('A non è stata avviata: B non partirà.')
+            else {
+                const completed = await waitForCurrentPipeline(current)
+                if (completed?.requestPersistence.status === 'SUCCEEDED') {
+                    const lineageFirst = await launchLineageFirst()
+                    setComparisonLaunchMessage(lineageFirst ? 'A completata: B è stata avviata sulla stessa sorgente condivisa.' : 'A completata, ma B non è stata avviata: controlla l’errore.')
+                } else if (completed) {
+                    setLineageError(new Error('A è terminata con errore: B non è stata avviata.'))
+                    setComparisonLaunchMessage('A non è riuscita: B non è stata avviata.')
+                } else {
+                    setComparisonLaunchMessage('Attesa di A interrotta: B non è stata avviata.')
+                }
+            }
+        }
+        setIsLaunchingComparison(false)
     }
 
     async function handleSaveLineageReview() {
@@ -209,8 +403,35 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         try {
             await submitLineageComparisonReview({ operation: 'SUBMIT_LINEAGE_COMPARISON_REVIEW', creatureId: creature.id, lineageRequestId: lineageRequest.transformationRequestId, ...(realRequestPersistence ? { currentRequestId: realRequestPersistence.transformationRequestId } : {}), scores: lineageReview as { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 }, preferredResult })
             setLineageReviewSaved(true)
+            setSelectedSavedLineageReviewId(lineageRequest.transformationRequestId)
+            await refreshSavedLineageReviews()
         } catch (nextError) { setLineageError(nextError instanceof Error ? nextError : new Error('Impossibile salvare la review A/B.')) }
     }
+
+    async function handleLoadSavedLineageReview() {
+        const saved = savedLineageReviews.find((review) => review.lineageRequestId === selectedSavedLineageReviewId)
+        if (!saved) return
+        setIsLoadingSavedLineageReview(true); setLineageError(null)
+        try {
+            const [nextLineageStatus, nextCurrentStatus] = await Promise.all([
+                getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: saved.lineageRequestId, reviewOwnerProfileId: saved.profileId }),
+                saved.currentRequestId ? getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: saved.currentRequestId, reviewOwnerProfileId: saved.profileId }) : Promise.resolve(null),
+            ])
+            if (!nextLineageStatus.result) throw new Error('Il risultato B della review salvata non e piu disponibile.')
+            setLineageRequest({ transformationRequestId: saved.lineageRequestId, idempotencyStatus: 'EXISTING', status: nextLineageStatus.requestPersistence.status })
+            setLineageStatus(nextLineageStatus)
+            setRealRequestPersistence(nextCurrentStatus ? { transformationRequestId: saved.currentRequestId!, idempotencyStatus: 'EXISTING', status: nextCurrentStatus.requestPersistence.status } : null)
+            setRealStatus(nextCurrentStatus)
+            setRealPollingTimedOut(false)
+            setLineageReview(saved.scores)
+            setPreferredResult(saved.preferredResult)
+            setLineageReviewSaved(true)
+        } catch (nextError) {
+            setLineageError(nextError instanceof Error ? nextError : new Error('Impossibile aprire la review salvata.'))
+        } finally { setIsLoadingSavedLineageReview(false) }
+    }
+
+    const lineageReviewPanel = lineageStatus?.result ? <fieldset className="creature-transformation-lab__review creature-transformation-lab__comparison-review"><legend>Review A/B (1-5)</legend>{LINEAGE_REVIEW_KEYS.map((key) => <label key={key}>{key}<select value={lineageReview[key]} onChange={(event) => { setLineageReviewSaved(false); setLineageReview((current) => ({ ...current, [key]: Number(event.target.value) })) }}>{[1, 2, 3, 4, 5].map((score) => <option key={score} value={score}>{score}</option>)}</select></label>)}<label>Preferred result<select value={preferredResult} onChange={(event) => { setLineageReviewSaved(false); setPreferredResult(event.target.value as typeof preferredResult) }}><option value="CURRENT">CURRENT</option><option value="LINEAGE_FIRST">LINEAGE_FIRST</option><option value="NONE">NONE</option></select></label><button type="button" onClick={() => void handleSaveLineageReview()}>Salva review A/B</button>{lineageReviewSaved ? <p>Review A/B salvata.</p> : null}</fieldset> : null
 
     async function handleGenerateConcept(retry = false) {
         setIsGeneratingConcept(true)
@@ -302,21 +523,40 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 </div>
             </header>
 
-            <section className="creature-transformation-lab__identity" aria-label="Creatura autenticata">
-                <img src="/assets/battle/creatures/verdant-hatchling.png" alt="Anteprima del drago sorgente" />
-                <div>
-                    <span>Creatura autenticata</span>
-                    <strong>{creature.name ?? 'Creatura iniziale'}</strong>
-                    <small>Anteprima browser della stessa creatura base usata dal source canonico server-side.</small>
-                    {conceptResult ? <p>{conceptResult.identity.description}</p> : null}
-                </div>
+            <section className="creature-transformation-lab__evolution-chain" aria-label="Catena delle sorgenti evolutive A B">
+                <header><span className="eyebrow">CATENA EVOLUTIVA</span><h2>Stadi della sorgente condivisa</h2><p>A e B partono sempre dallo stadio evidenziato.</p></header>
+                <ol>
+                    {evolutionChain.map((stage, index) => <li key={stage.id} className={stage.active ? 'is-active' : ''}>
+                        {index === 0 ? <button type="button" className="creature-transformation-lab__chain-stage-button" onClick={() => setIsProductionCatalogOpen(true)} disabled={isBusy}><figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}<small>Scegli dal catalogo</small></figcaption></figure></button> : <figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}</figcaption></figure>}
+                        {index < evolutionChain.length - 1 ? <span className="creature-transformation-lab__chain-arrow" aria-hidden="true">→</span> : null}
+                    </li>)}
+                </ol>
             </section>
+
+            {isProductionCatalogOpen ? <section className="creature-transformation-lab__production-catalog" aria-label="Catalogo forme produttive">
+                <header><div><span className="eyebrow">CATALOGO FORME PRODUTTIVE</span><h2>Scegli la base del prossimo confronto</h2><p>La scelta sarà inviata e verificata dal server per entrambe le pipeline.</p></div><button type="button" onClick={() => setIsProductionCatalogOpen(false)}>Chiudi</button></header>
+                <div>{productionSourceCatalog.length ? productionSourceCatalog.map((version) => <button key={version.id} type="button" className={selectedProductionSource?.versionId === version.id ? 'is-selected' : ''} onClick={() => { setSelectedProductionSource({ versionId: version.id, signedUrl: version.signedUrl, label: version.conceptName ? `v${version.versionNumber} · ${version.conceptName}` : `Forma produttiva v${version.versionNumber}` }); setLineageSourceRequestId(null); setLineageSourcePreview(null); setLineageSourceChain([]); setIsProductionCatalogOpen(false) }} disabled={isBusy}><img src={version.signedUrl} alt={version.conceptName ?? `Forma produttiva ${version.versionNumber}`} /><span>v{version.versionNumber}</span><small>{version.conceptName ?? 'Forma base'}</small></button>) : <p>Nessuna evoluzione produttiva disponibile: usa la visuale attiva corrente.</p>}</div>
+                <button type="button" className="creature-transformation-lab__catalog-reset" onClick={() => { setSelectedProductionSource(null); setLineageSourceRequestId(null); setLineageSourcePreview(null); setLineageSourceChain([]); setIsProductionCatalogOpen(false) }} disabled={isBusy}>Usa l’ultima visuale attiva del profilo</button>
+            </section> : null}
+
+            {labUsage ? <section className="creature-transformation-lab__usage" aria-label="Utilizzo giornaliero del laboratorio">
+                <header><span className="eyebrow">LIMITI GIORNALIERI</span><h2>Utilizzo del laboratorio</h2></header>
+                <dl><div><dt>Richieste laboratorio</dt><dd>{labUsage.requestCount} / {labUsage.requestLimit}</dd><small>{Math.max(0, labUsage.requestLimit - labUsage.requestCount)} disponibili</small></div><div><dt>Immagini REAL</dt><dd>{labUsage.realImageCount} / {labUsage.realImageLimit}</dd><small>{Math.max(0, labUsage.realImageLimit - labUsage.realImageCount)} disponibili</small></div><div><dt>REAL globali</dt><dd>{labUsage.globalRealImageCount} / {labUsage.globalRealImageLimit}</dd><small>{Math.max(0, labUsage.globalRealImageLimit - labUsage.globalRealImageCount)} disponibili</small></div><div><dt>Budget stimato</dt><dd>${labUsage.spentUsd.toFixed(2)} / ${labUsage.budgetUsd.toFixed(2)}</dd><small>${Math.max(0, labUsage.budgetUsd - labUsage.spentUsd).toFixed(2)} residui</small></div></dl>
+                <p>Il conteggio include anche le richieste fallite: è lo stesso criterio usato dal limite server-side.</p>
+            </section> : null}
 
             <section className="creature-transformation-lab__shared-input" aria-label="Input condiviso A/B">
                 <header><span className="eyebrow">INPUT CONDIVISO</span><h2>Esperimento A/B</h2><p>Entrambe le pipeline partono dalla stessa visuale produttiva e dallo stesso target anatomico.</p></header>
-                <label>Source<select value={lineageSourceRequestId ? 'EXPERIMENTAL_SHARED_SOURCE' : 'CURRENT_PROFILE_VISUAL'} disabled><option value="CURRENT_PROFILE_VISUAL">Ultima evoluzione attiva del profilo</option>{lineageSourceRequestId ? <option value="EXPERIMENTAL_SHARED_SOURCE">Risultato sperimentale condiviso A/B</option> : null}</select></label>
+                <section className="creature-transformation-lab__saved-lineage-reviews" aria-label="Review lineage-first salvate"><div><span className="eyebrow">REVIEW SALVATE</span><h3>Riapri un confronto A/B</h3><p>{savedLineageReviewsError ? `Archivio non disponibile: ${savedLineageReviewsError}` : savedLineageReviews.length ? 'Archivio condiviso: puoi caricare ogni review disponibile nel laboratorio.' : 'Non ci sono ancora review salvate nel laboratorio.'}</p></div>{savedLineageReviews.length ? <><label>Review<select value={selectedSavedLineageReviewId} onChange={(event) => setSelectedSavedLineageReviewId(event.target.value)}><option value="">Seleziona una review</option>{savedLineageReviews.map((review) => <option key={`${review.profileId}-${review.lineageRequestId}`} value={review.lineageRequestId}>Profilo {review.profileId.slice(0, 8)} · B {review.lineageRequestId.slice(0, 8)} · {new Date(review.updatedAt).toLocaleString('it-IT')}</option>)}</select></label><button type="button" onClick={() => void handleLoadSavedLineageReview()} disabled={!selectedSavedLineageReviewId || isLoadingSavedLineageReview}>{isLoadingSavedLineageReview ? 'Apertura...' : 'Apri review salvata'}</button></> : null}</section>
+                <label>Source<select value={lineageSourceRequestId ? 'EXPERIMENTAL_SHARED_SOURCE' : selectedProductionSource ? 'SELECTED_PRODUCTIVE_SOURCE' : 'CURRENT_PROFILE_VISUAL'} disabled><option value="CURRENT_PROFILE_VISUAL">Ultima evoluzione attiva del profilo</option>{selectedProductionSource ? <option value="SELECTED_PRODUCTIVE_SOURCE">{selectedProductionSource.label}</option> : null}{lineageSourceRequestId ? <option value="EXPERIMENTAL_SHARED_SOURCE">Risultato sperimentale condiviso A/B</option> : null}</select></label>
                 <label>Target anatomico<select value={lineageTargetId} onChange={(event) => setLineageTargetId(event.target.value as EvolutionTargetId)} disabled={isBusy}>{EVOLUTION_TARGETS.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label>
                 <label className="creature-transformation-lab__cost-confirmation"><input type="checkbox" checked={realCostConfirmed} onChange={(event) => setRealCostConfirmed(event.target.checked)} disabled={isBusy} /> Confermo che entrambe le generazioni REAL possono avere un costo.</label>
+                <section className="creature-transformation-lab__comparison-launch" aria-label="Avvio confronto A B">
+                    <div><span className="eyebrow">AZIONE CONFRONTO</span><h3>Genera A/B</h3><p>Entrambe le richieste usano esattamente la sorgente e il target condivisi sopra.</p></div>
+                    <label>Modalità di esecuzione<select value={comparisonLaunchMode} onChange={(event) => setComparisonLaunchMode(event.target.value as ComparisonLaunchMode)} disabled={isBusy}><option value="PARALLEL">Contemporanea — avvia A e B insieme</option><option value="SEQUENTIAL">In sequenza — avvia B solo dopo A</option></select></label>
+                    <button type="button" className="primary-button" onClick={() => void handleGenerateComparison()} disabled={!realCostConfirmed || isBusy}>{isLaunchingComparison ? 'Avvio confronto…' : 'Genera confronto A/B'}</button>
+                    {comparisonLaunchMessage ? <p aria-live="polite">{comparisonLaunchMessage}</p> : null}
+                </section>
             </section>
 
             <section className="creature-transformation-lab__controls creature-transformation-lab__current" aria-label="Configurazione pipeline corrente">
@@ -351,16 +591,18 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 <label>Identity / lineage traits<textarea value={lineage.identityTraits.join('\n')} onChange={(event) => setLineage((current) => ({ ...current, identityTraits: event.target.value.split('\n').filter(Boolean) }))} placeholder="Un tratto per riga" disabled={isBusy} /></label>
                 <fieldset><legend>Acquired traits</legend>{lineage.acquiredTraits.map((trait, index) => <p key={`${trait.target ?? 'any'}-${index}`}>{trait.target ? `${trait.target}: ` : ''}{trait.description} <button type="button" onClick={() => setLineage((current) => ({ ...current, acquiredTraits: current.acquiredTraits.filter((_, itemIndex) => itemIndex !== index) }))}>Rimuovi</button></p>)}<input value={lineageTraitDraft} onChange={(event) => setLineageTraitDraft(event.target.value)} placeholder="Mutazione già acquisita" disabled={isBusy} /><button type="button" onClick={() => { if (lineageTraitDraft.trim()) { setLineage((current) => ({ ...current, acquiredTraits: [...current.acquiredTraits, { target: lineageTargetId, description: lineageTraitDraft.trim() }] })); setLineageTraitDraft('') } }} disabled={isBusy}>Aggiungi tratto</button></fieldset>
                 <label>Experimental instruction (optional)<textarea value={lineageInstruction} maxLength={2000} onChange={(event) => setLineageInstruction(event.target.value)} disabled={isBusy} /></label>
-                {lineageSourceRequestId ? <p>Source sperimentale condivisa A/B: {lineageSourceRequestId} <button type="button" onClick={() => { setLineageSourceRequestId(null); setLineageSourcePreview(null) }} disabled={isBusy}>Ripristina visuale canonica del profilo</button></p> : <p>Source: visuale canonica corrente, identica alla pipeline A.</p>}
+                {lineageSourceRequestId ? <p>Source sperimentale condivisa A/B: {lineageSourceRequestId} <button type="button" onClick={() => { setLineageSourceRequestId(null); setLineageSourcePreview(null); setLineageSourceChain([]); setSelectedProductionSource(null) }} disabled={isBusy}>Ripristina visuale canonica del profilo</button></p> : selectedProductionSource ? <p>Source produttiva selezionata: {selectedProductionSource.label}. <button type="button" onClick={() => setIsProductionCatalogOpen(true)} disabled={isBusy}>Cambia sorgente</button></p> : <p>Source: visuale canonica corrente, identica alla pipeline A.</p>}
                 <label className="creature-transformation-lab__cost-confirmation"><input type="checkbox" checked={realCostConfirmed} onChange={(event) => setRealCostConfirmed(event.target.checked)} disabled={isBusy} /> Confermo che questa generazione REAL può avere un costo.</label>
                 <div className="creature-transformation-lab__lineage-actions"><button type="button" className="primary-button" onClick={() => void handleGenerateLineageFirst()} disabled={!realCostConfirmed || isBusy}>Generate Lineage-first</button><small>Richiede allowlist server-side e protezioni REAL attive.</small></div>
             </section>
 
             {lineageError ? <section className="creature-transformation-lab__error" role="alert"><strong>Lineage-first experimental</strong><p>{lineageError.message}</p></section> : null}
+            {savedLineageReviews.length ? <section className="creature-transformation-lab__saved-lineage-reviews" aria-label="Review lineage-first salvate"><div><span className="eyebrow">REVIEW SALVATE</span><h2>Riapri un confronto A/B</h2><p>Carica punteggi e risultati associati a una review precedentemente salvata.</p></div><label>Review<select value={selectedSavedLineageReviewId} onChange={(event) => setSelectedSavedLineageReviewId(event.target.value)}><option value="">Seleziona una review</option>{savedLineageReviews.map((review) => <option key={review.lineageRequestId} value={review.lineageRequestId}>B {review.lineageRequestId.slice(0, 8)} · {new Date(review.updatedAt).toLocaleString('it-IT')}</option>)}</select></label><button type="button" onClick={() => void handleLoadSavedLineageReview()} disabled={!selectedSavedLineageReviewId || isLoadingSavedLineageReview}>{isLoadingSavedLineageReview ? 'Apertura...' : 'Apri review salvata'}</button></section> : null}
             {realRequestPersistence || lineageRequest ? (
                 <section className="creature-transformation-lab__comparison-workspace" aria-label="Confronto risultati e prompt A B" aria-live="polite">
                     <article className="creature-transformation-lab__comparison-card creature-transformation-lab__comparison-card--source">
                         <header><span className="eyebrow">SOURCE CONDIVISA</span><h2>Immagine di partenza</h2></header>
+                        <div className="creature-transformation-lab__comparison-source-context"><strong>Input identico per A e B</strong><span>Stessa sorgente, stesso target anatomico e stessa sessione di confronto.</span></div>
                         <figure className="creature-transformation-lab__experimental-image"><img src={comparisonSource.signedUrl} alt="Immagine di partenza condivisa dalle pipeline A e B" /><figcaption>{comparisonSource.label}</figcaption></figure>
                         <p>Questa è la stessa sorgente inviata dal server a entrambe le pipeline per questo confronto.</p>
                     </article>
@@ -383,7 +625,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                         {lineageRequest ? <>
                             <p><strong>Request:</strong> {lineageRequest.transformationRequestId} · {lineageStatus?.requestPersistence.status ?? lineageRequest.status}</p>
                             {lineageStatus?.generation ? <dl className="creature-transformation-lab__image-metadata"><div><dt>Model</dt><dd>{lineageStatus.generation.model}</dd></div><div><dt>Latenza</dt><dd>{lineageStatus.generation.latencyMs ?? '…'} ms</dd></div><div><dt>Costo stimato</dt><dd>${lineageStatus.generation.estimatedCostUsd ?? 0}</dd></div></dl> : null}
-                            {lineageStatus?.result ? <><figure className="creature-transformation-lab__experimental-image"><img src={lineageStatus.result.signedUrl} alt="Risultato B lineage-first" /><figcaption>EXPERIMENT_ONLY — non adottabile</figcaption></figure><button type="button" onClick={() => { const selectedResult = lineageStatus?.result; if (!selectedResult) return; setLineageSourceRequestId(lineageRequest.transformationRequestId); setLineageSourcePreview({ requestId: lineageRequest.transformationRequestId, signedUrl: selectedResult.signedUrl }) }}>Use as next shared A/B source</button></> : null}
+                            {lineageStatus?.result ? <><figure className="creature-transformation-lab__experimental-image"><img src={lineageStatus.result.signedUrl} alt="Risultato B lineage-first" /><figcaption>EXPERIMENT_ONLY — non adottabile</figcaption></figure><button type="button" onClick={() => { const selectedResult = lineageStatus?.result; if (!selectedResult) return; const nextSource = { requestId: lineageRequest.transformationRequestId, signedUrl: selectedResult.signedUrl }; setSelectedProductionSource(null); setLineageSourceRequestId(nextSource.requestId); setLineageSourcePreview(nextSource); setLineageSourceChain((current) => { const existingIndex = current.findIndex((step) => step.requestId === nextSource.requestId); return existingIndex >= 0 ? current.slice(0, existingIndex + 1) : [...current, nextSource] }) }}>Use as next shared A/B source</button></> : null}
                             {lineageStatus?.error ? <div className="creature-transformation-lab__error" role="alert"><strong>{lineageStatus.error.code}</strong><p>{lineageStatus.error.message}</p><p>La generazione B è terminata con errore; non è in corso.</p></div> : null}
                             {!lineageStatus?.result && !lineageStatus?.error ? <p>Generazione B in corso…</p> : null}
                             <details className="creature-transformation-lab__prompt" open><summary>Prompt inviato a B</summary>{lineageStatus?.prompt ? <><pre>{lineageStatus.prompt.text}</pre><small>SHA-256: {shortHash(lineageStatus.prompt.sha256)}</small></> : <p>Il prompt sarà disponibile al termine della richiesta B. Le richieste precedenti a questo aggiornamento non lo contengono.</p>}</details>
@@ -391,6 +633,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                             {lineageStatus?.result ? <fieldset className="creature-transformation-lab__review"><legend>Review A/B (1–5)</legend>{LINEAGE_REVIEW_KEYS.map((key) => <label key={key}>{key}<select value={lineageReview[key]} onChange={(event) => { setLineageReviewSaved(false); setLineageReview((current) => ({ ...current, [key]: Number(event.target.value) })) }}>{[1, 2, 3, 4, 5].map((score) => <option key={score} value={score}>{score}</option>)}</select></label>)}<label>Preferred result<select value={preferredResult} onChange={(event) => { setLineageReviewSaved(false); setPreferredResult(event.target.value as typeof preferredResult) }}><option value="CURRENT">CURRENT</option><option value="LINEAGE_FIRST">LINEAGE_FIRST</option><option value="NONE">NONE</option></select></label><button type="button" onClick={() => void handleSaveLineageReview()}>Salva review A/B</button>{lineageReviewSaved ? <p>Review A/B salvata.</p> : null}</fieldset> : null}
                         </> : <p className="creature-transformation-lab__comparison-empty">Avvia “Generate Lineage-first” per popolare questo lato del confronto.</p>}
                     </article>
+                    {lineageReviewPanel}
                 </section>
             ) : null}
             {lineageRequest ? (

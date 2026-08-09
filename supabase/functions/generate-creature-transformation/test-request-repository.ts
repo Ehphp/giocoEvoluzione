@@ -101,6 +101,15 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
         async getById(input) {
             return [...records.values()].find((record) => record.id === input.requestId && record.profileId === input.profileId) ?? null
         },
+        async getDailyUsage(input) {
+            const profileRecords = [...records.values()].filter((record) => record.profileId === input.profileId)
+            return {
+                requestCount: profileRecords.length,
+                realImageCount: profileRecords.filter((record) => record.imageProviderMode === 'REAL').length,
+                globalRealImageCount: [...records.values()].filter((record) => record.imageProviderMode === 'REAL').length,
+                spentUsd: profileRecords.reduce((sum, record) => sum + (record.actualCostUsd ?? record.estimatedCostUsd ?? 0), 0),
+            }
+        },
     }
 
     return {

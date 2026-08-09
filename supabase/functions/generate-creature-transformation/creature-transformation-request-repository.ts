@@ -56,6 +56,13 @@ export type RequestReservationResult =
     | { outcome: 'CREATED' | 'EXISTING'; record: CreatureTransformationRequestRecord }
     | { outcome: Exclude<RequestReservationOutcome, 'CREATED' | 'EXISTING'> }
 
+export type CreatureTransformationDailyUsage = Readonly<{
+    requestCount: number
+    realImageCount: number
+    globalRealImageCount: number
+    spentUsd: number
+}>
+
 export type ReserveCreatureTransformationRequestInput = TransformationCost & Readonly<{
     profileId: string
     creatureId: string
@@ -77,6 +84,7 @@ export type ReserveCreatureTransformationRequestInput = TransformationCost & Rea
     globalDailyRealImageLimit?: number
     globalConcurrentRealImageLimit?: number
     realImageCooldownSeconds?: number
+    staleRequestSeconds?: number
     dailyRequestLimit: number
     dailyBudgetUsd: number
 }>
@@ -112,6 +120,7 @@ export interface CreatureTransformationRequestRepository {
     finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[]; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<CreatureTransformationRequestRecord>
     getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null>
     getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null>
+    getDailyUsage(input: { profileId: string }): Promise<CreatureTransformationDailyUsage>
 }
 
 type DatabaseError = { message?: string } | null
@@ -235,6 +244,7 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_global_daily_real_image_limit: input.globalDailyRealImageLimit ?? null,
                 p_global_concurrent_real_image_limit: input.globalConcurrentRealImageLimit ?? null,
                 p_real_image_cooldown_seconds: input.realImageCooldownSeconds ?? 0,
+                p_stale_request_seconds: input.staleRequestSeconds ?? null,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_RESERVATION_FAILED', 'Non e stato possibile riservare la richiesta.', { cause: error })
@@ -288,6 +298,25 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
 
     async getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null> {
         return this.getOne('id', input.requestId, input.profileId)
+    }
+
+    async getDailyUsage(input: { profileId: string }): Promise<CreatureTransformationDailyUsage> {
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.rpc('get_creature_transformation_daily_usage', { p_profile_id: input.profileId })
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile leggere l utilizzo giornaliero.', { cause: error })
+        }
+        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile leggere l utilizzo giornaliero.', { cause: response.error })
+        const usage = asRecord(Array.isArray(response.data) ? response.data[0] : response.data)
+        const requestCount = usage ? readNumber(usage, 'request_count') : null
+        const realImageCount = usage ? readNumber(usage, 'real_image_count') : null
+        const globalRealImageCount = usage ? readNumber(usage, 'global_real_image_count') : null
+        const spentUsd = usage ? readNumber(usage, 'spent_usd') : null
+        if (requestCount === null || realImageCount === null || globalRealImageCount === null || spentUsd === null || requestCount < 0 || realImageCount < 0 || globalRealImageCount < 0 || spentUsd < 0) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'L utilizzo giornaliero restituito non e valido.')
+        }
+        return { requestCount, realImageCount, globalRealImageCount, spentUsd }
     }
 
     private async getOne(column: 'idempotency_key' | 'id', value: string, profileId: string): Promise<CreatureTransformationRequestRecord | null> {

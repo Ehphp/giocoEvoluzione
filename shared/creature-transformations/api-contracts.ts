@@ -118,6 +118,23 @@ export type SubmitExperimentReviewResponse = {
 }
 export type SubmitLineageComparisonReviewResponse = { success: true, requestId: string }
 
+export type LineageComparisonReview = Readonly<{
+    profileId: string
+    creatureId: string
+    lineageRequestId: string
+    currentRequestId: string | null
+    scores: { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 }
+    preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
+    createdAt: string
+    updatedAt: string
+}>
+
+export type GetLineageComparisonReviewsResponse = {
+    success: true
+    requestId: string
+    reviews: readonly LineageComparisonReview[]
+}
+
 export type BenchmarkResultEntry = Readonly<{
     transformationRequestId: string
     benchmarkCaseId: string
@@ -241,6 +258,21 @@ export type TransformationRequestStatusResponse = {
     }
 }
 
+export type CreatureTransformationLabUsageResponse = Readonly<{
+    success: true
+    requestId: string
+    usage: {
+        requestCount: number
+        requestLimit: number
+        realImageCount: number
+        realImageLimit: number
+        globalRealImageCount: number
+        globalRealImageLimit: number
+        spentUsd: number
+        budgetUsd: number
+    }
+}>
+
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | CreatureTransformationLabUsageResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetLineageComparisonReviewsResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

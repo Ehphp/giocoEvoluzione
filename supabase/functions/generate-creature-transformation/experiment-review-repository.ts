@@ -1,16 +1,17 @@
 import type { CreatureTransformationExperimentReview, ExperimentReviewScores, ExperimentReviewVerdict, CreatureTransformationVisualIssue } from '../../../shared/creature-transformations/experiment-reviews.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { CreatureTransformationAssetReadiness } from '../../../shared/creature-transformations/api-contracts.ts'
+import type { CreatureTransformationAssetReadiness, LineageComparisonReview } from '../../../shared/creature-transformations/api-contracts.ts'
 import type { TransformationRequestStatus } from '../../../shared/creature-transformations/request-persistence.ts'
 
 type DatabaseError = { message?: string } | null
 type SelectQuery = {
-    eq(column: string, value: string): Promise<{ data: unknown; error: DatabaseError }>
+    eq(column: string, value: string): SelectQuery
+    then<TResult1 = { data: unknown; error: DatabaseError }, TResult2 = never>(onfulfilled?: ((value: { data: unknown; error: DatabaseError }) => TResult1 | PromiseLike<TResult1>) | null, onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null): PromiseLike<TResult1 | TResult2>
 }
 
 export interface ExperimentReviewRepositoryClient {
     rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: DatabaseError }>
-    from(table: 'creature_transformation_experiment_reviews' | 'creature_transformation_requests'): {
+    from(table: 'creature_transformation_experiment_reviews' | 'creature_transformation_lineage_comparison_reviews' | 'creature_transformation_requests'): {
         select(columns: string): SelectQuery
     }
 }
@@ -60,6 +61,25 @@ function mapReview(value: unknown): CreatureTransformationExperimentReview {
     const inputError = validateExperimentReviewInput({ scores, verdict, issueFlags, ...(readString(record, 'notes', true) ? { notes: readString(record, 'notes', true)! } : {}) })
     if (inputError) throw new ExperimentReviewRepositoryError('La review persistita non rispetta il contratto controllato.')
     return Object.freeze({ transformationRequestId, reviewerProfileId, scores, verdict, issueFlags: [...issueFlags] as CreatureTransformationVisualIssue[], notes: readString(record, 'notes', true), createdAt, updatedAt })
+}
+
+function mapLineageComparisonReview(value: unknown): LineageComparisonReview {
+    const row = asRecord(value)
+    const profileId = row ? readString(row, 'profile_id') : null
+    const creatureId = row ? readString(row, 'creature_id') : null
+    const lineageRequestId = row ? readString(row, 'lineage_request_id') : null
+    const currentRequestId = row ? readString(row, 'current_request_id', true) : null
+    const preferredResult = row ? readString(row, 'preferred_result') : null
+    const createdAt = row ? readString(row, 'created_at') : null
+    const updatedAt = row ? readString(row, 'updated_at') : null
+    const scores = row ? {
+        creativeSurprise: readScore(row, 'creative_surprise_score'), targetTransformationStrength: readScore(row, 'target_transformation_strength_score'),
+        creatureContinuity: readScore(row, 'creature_continuity_score'), lineagePreservation: readScore(row, 'lineage_preservation_score'), nonTargetStability: readScore(row, 'non_target_stability_score'),
+    } : null
+    if (!profileId || !creatureId || !lineageRequestId || !createdAt || !updatedAt || !scores || Object.values(scores).some((score) => score === null) || !['CURRENT', 'LINEAGE_FIRST', 'NONE'].includes(preferredResult ?? '')) {
+        throw new ExperimentReviewRepositoryError('La review A/B lineage-first persistita non e valida.')
+    }
+    return Object.freeze({ profileId, creatureId, lineageRequestId, currentRequestId, scores: scores as LineageComparisonReview['scores'], preferredResult: preferredResult as LineageComparisonReview['preferredResult'], createdAt, updatedAt })
 }
 
 export type SubmitExperimentReviewRepositoryInput = Readonly<{
@@ -178,5 +198,16 @@ export class SupabaseExperimentReviewRepository {
             p_creative_surprise_score: input.scores.creativeSurprise, p_target_transformation_strength_score: input.scores.targetTransformationStrength, p_creature_continuity_score: input.scores.creatureContinuity, p_lineage_preservation_score: input.scores.lineagePreservation, p_non_target_stability_score: input.scores.nonTargetStability, p_preferred_result: input.preferredResult,
         })
         if (error) throw new ExperimentReviewRepositoryError('Non e stato possibile salvare la review A/B lineage-first.', { cause: error })
+    }
+
+    async listLineageComparisons(): Promise<LineageComparisonReview[]> {
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.from('creature_transformation_lineage_comparison_reviews').select('*')
+        } catch (error) {
+            throw new ExperimentReviewRepositoryError('Non e stato possibile leggere le review A/B lineage-first.', { cause: error })
+        }
+        if (response.error || !Array.isArray(response.data)) throw new ExperimentReviewRepositoryError('Non e stato possibile leggere le review A/B lineage-first.', { cause: response.error ?? undefined })
+        return response.data.map(mapLineageComparisonReview).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     }
 }

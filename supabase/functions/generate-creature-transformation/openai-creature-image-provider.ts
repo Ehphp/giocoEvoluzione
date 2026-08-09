@@ -8,7 +8,23 @@ import {
 import type { OpenAiImageQuality } from './lab-policy.ts'
 
 type FetchImplementation = (input: string, init: RequestInit) => Promise<Response>
-const GATEWAY_RETRY_DELAY_MS = 750
+const MAX_TRANSIENT_ATTEMPTS = 5
+const MAX_RETRY_DELAY_MS = 12_000
+
+function retryDelayMs(attempt: number, response: Response): number {
+    const retryAfterSeconds = Number(response.headers.get('retry-after'))
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
+        return Math.min(MAX_RETRY_DELAY_MS, Math.round(retryAfterSeconds * 1_000))
+    }
+    // Retry only responses which are explicitly transient.  The capped backoff
+    // keeps an unavailable provider from being hammered while still fitting in
+    // the Edge background task's lifetime.
+    return Math.min(MAX_RETRY_DELAY_MS, 1_000 * 2 ** attempt)
+}
+
+function isTransientProviderResponse(response: Response): boolean {
+    return response.status === 429 || response.status >= 500
+}
 
 export type OpenAiCreatureImageProviderOptions = Readonly<{
     apiKey: string
@@ -88,7 +104,7 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
 
         const startedAt = this.now()
         let response: Response | null = null
-        for (let attempt = 0; attempt < 2; attempt += 1) {
+        for (let attempt = 0; attempt < MAX_TRANSIENT_ATTEMPTS; attempt += 1) {
             const controller = new AbortController()
             let timedOut = false
             const timeout = setTimeout(() => {
@@ -108,9 +124,8 @@ export class OpenAiCreatureImageProvider implements CreatureImageProvider {
             } finally {
                 clearTimeout(timeout)
             }
-            // A 520 contains no completed image response; retry it once without retrying user or validation errors.
-            if (response.status !== 520 || attempt === 1) break
-            await new Promise<void>((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAY_MS))
+            if (!isTransientProviderResponse(response) || attempt === MAX_TRANSIENT_ATTEMPTS - 1) break
+            await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs(attempt, response)))
         }
 
         if (!response) throw new CreatureImageProviderError('OPENAI_IMAGE_PROVIDER_ERROR', 'Il provider immagini non ha restituito una risposta.')

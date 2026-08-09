@@ -30,7 +30,7 @@ describe('creature transformation lab policy', () => {
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '12',
             CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '3.25',
             CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS: '240',
-            CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT: '3',
+            CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT: '180',
             CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT: '10',
             CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT: '2',
             CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS: '60',
@@ -56,7 +56,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(12)
         expect(policy.dailyBudgetUsd).toBe(3.25)
         expect(policy.staleRequestSeconds).toBe(240)
-        expect(policy.dailyRealImageLimit).toBe(3)
+        expect(policy.dailyRealImageLimit).toBe(180)
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)

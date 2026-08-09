@@ -121,6 +121,24 @@ describe('GENERATE_IMAGE edge orchestration', () => {
         expect(JSON.stringify(result)).not.toContain('profile-1')
     })
 
+    it('accepts a server-owned opaque A/B result as the source for the next experimental round', async () => {
+        class SourceAwareValidator extends ImageValidator {
+            calls: Parameters<ImageValidator['validate']>[0][] = []
+            override async validate(input: Parameters<ImageValidator['validate']>[0]) {
+                this.calls.push(input)
+                return super.validate(input)
+            }
+        }
+        const validator = new SourceAwareValidator()
+        const result = await orchestrateGenerateImage(orchestrationInput({
+            experimentalSourcePath: `experiments/raw/profile-1/${'a'.repeat(64)}.png`,
+            validator,
+        }))
+
+        expect(result).toMatchObject({ success: true })
+        expect(validator.calls[0]).toMatchObject({ requireAlpha: false })
+    })
+
     it('accepts a schema-v2 anatomical concept when generating its image', async () => {
         const targetConcept = {
             ...canonicalConcept(),

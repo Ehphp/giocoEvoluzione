@@ -46,6 +46,31 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
             .rejects.toMatchObject({ code: 'SIGNED_URL_FAILED' } satisfies Partial<CreatureTransformationStorageError>)
     })
 
+    it('reads a server-selected productive visual from the source or experiment bucket', async () => {
+        const mock = createStorageClient()
+        const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client)
+        const productivePath = `profile-1/${'a'.repeat(64)}.png`
+
+        await adapter.readVisualVersionSource('verdant-hatchling-v1.png', true)
+        await adapter.readVisualVersionSource(productivePath, false)
+
+        expect(mock.client.from).toHaveBeenNthCalledWith(1, CREATURE_TRANSFORMATION_SOURCE_BUCKET)
+        expect(mock.client.from).toHaveBeenNthCalledWith(2, CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET)
+        expect(mock.download).toHaveBeenNthCalledWith(1, 'verdant-hatchling-v1.png')
+        expect(mock.download).toHaveBeenNthCalledWith(2, productivePath)
+    })
+
+    it('keeps lineage sources compatible with legacy server-owned experiment paths', async () => {
+        const mock = createStorageClient()
+        const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client)
+        const legacyPath = `profile-1/${'d'.repeat(64)}.png`
+
+        await expect(adapter.readExperimentalSource(legacyPath)).resolves.toMatchObject({ mimeType: 'image/png' })
+        await expect(adapter.readExperimentalSource('untrusted-source.png')).rejects.toMatchObject({ code: 'SOURCE_IMAGE_NOT_FOUND' } satisfies Partial<CreatureTransformationStorageError>)
+        expect(mock.client.from).toHaveBeenCalledWith(CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET)
+        expect(mock.download).toHaveBeenCalledWith(legacyPath)
+    })
+
     it('signs a constrained legacy raw proposal only for the owner review flow', async () => {
         const mock = createStorageClient()
         const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client, { signedUrlTtlSeconds: 120, now: () => 0 })

@@ -70,26 +70,32 @@ describe('OpenAiCreatureImageProvider', () => {
         expect((fetchImplementation.mock.calls[0][1].body as FormData).get('background')).toBe('transparent')
     })
 
-    it('retries one gateway 520 response before failing the image request', async () => {
+    it('retries transient gateway failures with backoff before succeeding', async () => {
         const fetchImplementation = vi.fn()
-            .mockResolvedValueOnce(new Response('', { status: 520 }))
+            .mockResolvedValueOnce(new Response('', { status: 520, headers: { 'retry-after': '0' } }))
+            .mockResolvedValueOnce(new Response('', { status: 503, headers: { 'retry-after': '0' } }))
             .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
 
         await expect(provider(fetchImplementation).transformCreature(input())).resolves.toMatchObject({ provider: 'openai-image-api' })
-        expect(fetchImplementation).toHaveBeenCalledTimes(2)
+        expect(fetchImplementation).toHaveBeenCalledTimes(3)
     })
 
-    it('maps timeout, rate limit, bad request, moderation, provider error and invalid response without retrying', async () => {
+    it('stops after five transient provider responses', async () => {
+        const fetchImplementation = vi.fn(async () => new Response('', { status: 520, headers: { 'retry-after': '0' } }))
+
+        await expect(provider(fetchImplementation).transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_PROVIDER_ERROR', providerStatus: 520 })
+        expect(fetchImplementation).toHaveBeenCalledTimes(5)
+    })
+
+    it('maps timeout, bad request, moderation and invalid response without retrying', async () => {
         const timeout = provider(async (_url, init) => new Promise((_resolve, reject) => {
             init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
         }), { timeoutMs: 1 })
         await expect(timeout.transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_TIMEOUT' })
 
         for (const [status, payload, code] of [
-            [429, { error: { code: 'rate_limit' } }, 'OPENAI_IMAGE_RATE_LIMITED'],
             [400, { error: { code: 'invalid_request_error', param: 'quality', message: 'not retained' } }, 'OPENAI_IMAGE_BAD_REQUEST'],
             [400, { error: { code: 'moderation_blocked' } }, 'OPENAI_IMAGE_MODERATION_BLOCKED'],
-            [500, { error: { code: 'server_error' } }, 'OPENAI_IMAGE_PROVIDER_ERROR'],
         ] as const) {
             const fetchImplementation = vi.fn(async () => new Response(JSON.stringify(payload), { status }))
             await expect(provider(fetchImplementation).transformCreature(input())).rejects.toMatchObject({
@@ -98,6 +104,14 @@ describe('OpenAiCreatureImageProvider', () => {
             })
             expect(fetchImplementation).toHaveBeenCalledTimes(1)
         }
+
+        const rateLimited = vi.fn(async () => new Response(JSON.stringify({ error: { code: 'rate_limit' } }), { status: 429, headers: { 'retry-after': '0' } }))
+        await expect(provider(rateLimited).transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_RATE_LIMITED' })
+        expect(rateLimited).toHaveBeenCalledTimes(5)
+
+        const providerFailure = vi.fn(async () => new Response(JSON.stringify({ error: { code: 'server_error' } }), { status: 500, headers: { 'retry-after': '0' } }))
+        await expect(provider(providerFailure).transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_PROVIDER_ERROR' })
+        expect(providerFailure).toHaveBeenCalledTimes(5)
 
         await expect(provider(async () => new Response('not json')).transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_RESPONSE_INVALID' })
         await expect(provider(async () => new Response(JSON.stringify({ data: [{ b64_json: 'not-base64!' }] }))).transformCreature(input())).rejects.toMatchObject({ code: 'OPENAI_IMAGE_BASE64_INVALID' })

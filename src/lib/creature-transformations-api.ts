@@ -18,6 +18,8 @@ import type {
     GetBenchmarkResultsRequest,
     GetBenchmarkResultsResponse,
     GetTransformationRequestStatusRequest,
+    GetCreatureTransformationLabUsageRequest,
+    GetLineageComparisonReviewsRequest,
     SubmitExperimentReviewRequest,
     SubmitBackgroundRemovalCandidateRequest,
     ListVisualBackgroundCleanupRequest,
@@ -25,6 +27,8 @@ import type {
     ListVisualBackgroundCleanupResponse,
     SubmitVisualBackgroundCleanupResponse,
     TransformationRequestStatusResponse,
+    CreatureTransformationLabUsageResponse,
+    GetLineageComparisonReviewsResponse,
     CurrentCreatureVisualApiResponse,
     GameCreatureVisualsResponse,
 } from '../../shared/creature-transformations/index.ts'
@@ -49,7 +53,7 @@ export class CreatureTransformationApiError extends Error {
     }
 }
 
-type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetLineageComparisonReviewsRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
 
 export type CreatureTransformationFunctionInvoker = {
     invoke: (name: string, options: { body: CreatureTransformationFunctionRequest; headers?: Record<string, string> }) => Promise<{ data: unknown; error: unknown }>
@@ -190,6 +194,17 @@ export async function getCreatureTransformationRequestStatus(
     invoker?: CreatureTransformationFunctionInvoker,
 ): Promise<TransformationRequestStatusResponse> {
     return invokeCreatureTransformation<TransformationRequestStatusResponse>(request, invoker)
+}
+
+export async function getCreatureTransformationLabUsage(
+    request: GetCreatureTransformationLabUsageRequest = { operation: 'GET_LAB_USAGE' },
+    invoker?: CreatureTransformationFunctionInvoker,
+): Promise<CreatureTransformationLabUsageResponse> {
+    return invokeCreatureTransformation<CreatureTransformationLabUsageResponse>(request, invoker)
+}
+
+export async function getLineageComparisonReviews(request: GetLineageComparisonReviewsRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<GetLineageComparisonReviewsResponse> {
+    return invokeCreatureTransformation<GetLineageComparisonReviewsResponse>(request, invoker)
 }
 
 export async function submitCreatureTransformationExperimentReview(

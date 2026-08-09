@@ -15,6 +15,8 @@ import type {
     AdoptCreatureTransformationResponse,
     SubmitExperimentReviewResponse,
     TransformationRequestStatusResponse,
+    CreatureTransformationLabUsageResponse,
+    GetLineageComparisonReviewsResponse,
 } from '../../../shared/creature-transformations/api-contracts.ts'
 import { CREATURE_TRANSFORMATION_BENCHMARK_PLAN, getCreatureTransformationBenchmarkCase, type CreatureTransformationBenchmarkCase } from '../../../shared/creature-transformations/benchmark-plan.ts'
 import type { CreatureConceptGenerator } from '../../../shared/creature-transformations/concept-generator.ts'
@@ -34,7 +36,7 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import { generateLineageFirstImage } from './lineage-first-image-service.ts'
 import {
     CreatureTransformationRequestRepositoryError,
@@ -80,6 +82,8 @@ export type GenerateImageEdgeOrchestrationInput = Readonly<{
     experimentalImageOutput?: boolean
     /** Internal-only server-validated experimental source for the shared A/B round. */
     experimentalSourcePath?: string
+    /** Internal-only server-selected production visual for the shared A/B round. */
+    comparisonSourceVisual?: Readonly<{ assetPath: string, isBaseVersion: boolean }>
     reviewRepository: SupabaseExperimentReviewRepository
     visualRepository: SupabaseCreatureVisualProgressionRepository
 }> & PersistenceInput
@@ -217,6 +221,7 @@ function realImageReservationLimits(policy: CreatureTransformationLabPolicy) {
         globalDailyRealImageLimit: policy.globalDailyRealImageLimit,
         globalConcurrentRealImageLimit: policy.globalConcurrentRealImageLimit,
         realImageCooldownSeconds: policy.realImageCooldownSeconds,
+        staleRequestSeconds: policy.staleRequestSeconds,
     }
 }
 
@@ -389,6 +394,7 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
             ...(benchmark ? { promptTemplateVersion: benchmark.profile.promptTemplateVersion } : {}),
             ...(input.experimentalImageOutput ? { storageDestination: 'RAW_EXPERIMENT' as const } : {}),
             ...(input.experimentalSourcePath ? { sourcePath: input.experimentalSourcePath } : {}),
+            ...(input.comparisonSourceVisual ? { sourceVisual: input.comparisonSourceVisual } : {}),
         })
         if (!result.success) return markFailed(input.repository, input.requestId, input.profileId!, running, idempotencyStatus, { code: result.code, message: result.message, ...(result.problems ? { problems: result.problems } : {}) })
         const resultPath = input.experimentalImageOutput
@@ -948,9 +954,9 @@ export async function orchestrateGenerateImage(input: GenerateImageEdgeOrchestra
     return completeImageGeneration(input, parsed.request, running, input.createImageProvider(), 'CREATED', benchmark)
 }
 
-async function completeLineageFirstExperiment(input: GenerateImageEdgeOrchestrationInput, request: GenerateLineageFirstExperimentRequest, running: CreatureTransformationRequestRecord, sourcePath?: string): Promise<void> {
+async function completeLineageFirstExperiment(input: GenerateImageEdgeOrchestrationInput, request: GenerateLineageFirstExperimentRequest, running: CreatureTransformationRequestRecord, sourcePath?: string, sourceVisual?: Readonly<{ assetPath: string, isBaseVersion: boolean }>): Promise<void> {
     try {
-        const result = await generateLineageFirstImage({ profileId: input.profileId!, requestId: input.requestId, request, resolver: input.resolver, storage: input.storage, provider: input.createRealImageProvider!(), ...(sourcePath ? { sourcePath } : {}), ...(input.validator ? { validator: input.validator } : {}) })
+        const result = await generateLineageFirstImage({ profileId: input.profileId!, requestId: input.requestId, request, resolver: input.resolver, storage: input.storage, provider: input.createRealImageProvider!(), ...(sourcePath ? { sourcePath } : {}), ...(sourceVisual ? { sourceVisual } : {}), ...(input.validator ? { validator: input.validator } : {}) })
         await input.repository.markSucceeded({ requestId: running.id, profileId: input.profileId!, data: { provider: result.generation.provider, model: result.generation.model, providerRequestId: result.generation.providerRequestId, sourceSha256: result.sourceSha256, resultSha256: result.result.sha256, resultPath: result.resultPath, resultMimeType: result.result.mimeType, resultWidth: result.result.width, resultHeight: result.result.height, generationLatencyMs: result.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: result.validation.warnings, estimatedCostUsd: result.generation.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? undefined, promptTemplateVersion: 'lineage-first-experimental-v1', promptSha256: result.promptSha256, promptText: result.prompt, generationQuality: input.policy.realImage.quality } })
     } catch (error) {
         const details = error instanceof Error && error.message === 'SOURCE_IMAGE_INVALID'
@@ -976,10 +982,15 @@ export async function orchestrateGenerateLineageFirstExperiment(input: GenerateI
     if (!input.createRealImageProvider || !input.deferBackgroundTask) return failure(input.requestId, 'REQUEST_PERSISTENCE_FAILED', 'Il runtime asincrono del provider reale non e disponibile.')
 
     let sourcePath: string | undefined
+    let sourceVisual: Readonly<{ assetPath: string, isBaseVersion: boolean }> | undefined
     if (parsed.request.experimentalSourceRequestId) {
         const source = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.experimentalSourceRequestId })
         if (!source || source.creatureId !== parsed.request.creatureId || source.status !== 'SUCCEEDED' || source.assetReadiness !== 'EXPERIMENT_ONLY' || !source.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La source sperimentale selezionata non e disponibile per questa creatura.')
         sourcePath = source.resultPath
+    } else if (parsed.request.sourceVisualVersionId) {
+        const sourceVersion = await input.visualRepository.getVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId, versionId: parsed.request.sourceVisualVersionId })
+        if (!sourceVersion || sourceVersion.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile per questa creatura.')
+        sourceVisual = { assetPath: sourceVersion.assetPath, isBaseVersion: sourceVersion.visualTraitId === null }
     }
     let reservation: RequestReservationResult
     try {
@@ -996,7 +1007,7 @@ export async function orchestrateGenerateLineageFirstExperiment(input: GenerateI
     }
     let running: CreatureTransformationRequestRecord
     try { running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId }) } catch (error) { return markFailed(input.repository, input.requestId, input.profileId, reservation.record, 'CREATED', mapThrownError(error)) }
-    input.deferBackgroundTask(completeLineageFirstExperiment(input, parsed.request, running, sourcePath))
+    input.deferBackgroundTask(completeLineageFirstExperiment(input, parsed.request, running, sourcePath, sourceVisual))
     return acceptedRealImage(input.requestId, running, 'CREATED')
 }
 
@@ -1012,16 +1023,21 @@ export async function orchestrateGenerateCurrentPipelineExperiment(input: Creatu
     if (realAccess) return failure(input.requestId, realAccess.code, realAccess.message)
     const source = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
     let experimentalSourcePath: string | undefined
+    let comparisonSourceVisual: Readonly<{ assetPath: string, isBaseVersion: boolean }> | undefined
     if (parsed.request.experimentalSourceRequestId) {
         const experimentalSource = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.experimentalSourceRequestId })
         if (!experimentalSource || experimentalSource.creatureId !== parsed.request.creatureId || experimentalSource.status !== 'SUCCEEDED' || experimentalSource.assetReadiness !== 'EXPERIMENT_ONLY' || !experimentalSource.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La source sperimentale selezionata non e disponibile per questa creatura.')
         experimentalSourcePath = experimentalSource.resultPath
+    } else if (parsed.request.sourceVisualVersionId) {
+        const sourceVersion = await input.visualRepository.getVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId, versionId: parsed.request.sourceVisualVersionId })
+        if (!sourceVersion || sourceVersion.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile per questa creatura.')
+        comparisonSourceVisual = { assetPath: sourceVersion.assetPath, isBaseVersion: sourceVersion.visualTraitId === null }
     }
     const direction = resolveEvolutionDirection({ evolutionTargetId: parsed.request.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
     if (!direction) return failure(input.requestId, 'CONCEPT_REJECTED', 'Il target anatomico non ha una direzione current generabile.')
     const conceptResponse = await orchestrateGenerateConcept({ ...input, body: { operation: 'GENERATE_CONCEPT', creatureId: parsed.request.creatureId, visualTraitId: direction.visualTraitId, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction, intensity: 2, conceptMode: 'AI', idempotencyKey: `${parsed.request.idempotencyKey}:concept` } })
     if (!conceptResponse.success) return conceptResponse
-    return orchestrateGenerateImage({ ...input, experimentalImageOutput: true, ...(experimentalSourcePath ? { experimentalSourcePath } : {}), body: { operation: 'GENERATE_IMAGE', creatureId: parsed.request.creatureId, concept: conceptResponse.concept, imageProviderMode: 'REAL', idempotencyKey: `${parsed.request.idempotencyKey}:image` } })
+    return orchestrateGenerateImage({ ...input, experimentalImageOutput: true, ...(experimentalSourcePath ? { experimentalSourcePath } : {}), ...(comparisonSourceVisual ? { comparisonSourceVisual } : {}), body: { operation: 'GENERATE_IMAGE', creatureId: parsed.request.creatureId, concept: conceptResponse.concept, imageProviderMode: 'REAL', idempotencyKey: `${parsed.request.idempotencyKey}:image` } })
 }
 
 export async function orchestrateSubmitLineageComparisonReview(input: GenerateImageEdgeOrchestrationInput): Promise<CreatureTransformationErrorResponse | { success: true, requestId: string }> {
@@ -1039,14 +1055,16 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGetTransformationRequestStatusRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const reviewOwnerProfileId = parsed.request.reviewOwnerProfileId
+    if (reviewOwnerProfileId && !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', 'Il profilo autenticato non e autorizzato alla libreria review lineage-first.')
     let record: CreatureTransformationRequestRecord | null
     try {
-        record = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.transformationRequestId })
+        record = await input.repository.getById({ profileId: reviewOwnerProfileId ?? input.profileId, requestId: parsed.request.transformationRequestId })
     } catch (error) {
         const details = mapThrownError(error)
         return failure(input.requestId, details.code, details.message, details.problems)
     }
-    if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
+    if (!record || (reviewOwnerProfileId && record.assetReadiness !== 'EXPERIMENT_ONLY')) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
 
     const response: TransformationRequestStatusResponse = {
         success: true,
@@ -1086,6 +1104,46 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
     } catch (error) {
         const details = mapThrownError(error)
         return { ...response, error: { code: details.code, message: details.message } }
+    }
+}
+
+export async function orchestrateGetLineageComparisonReviews(input: GenerateImageEdgeOrchestrationInput): Promise<CreatureTransformationErrorResponse | GetLineageComparisonReviewsResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseGetLineageComparisonReviewsRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    if (!input.policy.enabled || !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', 'Il profilo autenticato non e autorizzato alle review lineage-first.')
+    try {
+        return { success: true, requestId: input.requestId, reviews: await input.reviewRepository.listLineageComparisons() }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message)
+    }
+}
+
+export async function orchestrateGetCreatureTransformationLabUsage(input: CreatureTransformationEdgeOrchestrationInput): Promise<CreatureTransformationLabUsageResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
+    const parsed = parseGetCreatureTransformationLabUsageRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    try {
+        const usage = await input.repository.getDailyUsage({ profileId: input.profileId })
+        return {
+            success: true,
+            requestId: input.requestId,
+            usage: {
+                requestCount: usage.requestCount,
+                requestLimit: input.policy.dailyRequestLimit,
+                realImageCount: usage.realImageCount,
+                realImageLimit: input.policy.dailyRealImageLimit,
+                globalRealImageCount: usage.globalRealImageCount,
+                globalRealImageLimit: input.policy.globalDailyRealImageLimit,
+                spentUsd: usage.spentUsd,
+                budgetUsd: input.policy.dailyBudgetUsd,
+            },
+        }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
     }
 }
 
@@ -1193,11 +1251,13 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     if (operation === 'GENERATE_LINEAGE_FIRST_EXPERIMENT') return orchestrateGenerateLineageFirstExperiment(input)
     if (operation === 'GENERATE_CURRENT_PIPELINE_EXPERIMENT') return orchestrateGenerateCurrentPipelineExperiment(input)
     if (operation === 'SUBMIT_LINEAGE_COMPARISON_REVIEW') return orchestrateSubmitLineageComparisonReview(input)
+    if (operation === 'GET_LINEAGE_COMPARISON_REVIEWS') return orchestrateGetLineageComparisonReviews(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
     if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return orchestrateListVisualBackgroundCleanup(input)
     if (operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return orchestrateSubmitVisualBackgroundCleanup(input)
     if (operation === 'GET_REQUEST_STATUS') return orchestrateGetTransformationRequestStatus(input)
+    if (operation === 'GET_LAB_USAGE') return orchestrateGetCreatureTransformationLabUsage(input)
     if (operation === 'SUBMIT_EXPERIMENT_REVIEW') return orchestrateSubmitExperimentReview(input)
     if (operation === 'GET_BENCHMARK_RESULTS') return orchestrateGetBenchmarkResults(input)
     if (operation === 'SELECT_VISUAL_PROGRESS_TRACK') return orchestrateSelectCreatureVisualProgressTrack(input)
