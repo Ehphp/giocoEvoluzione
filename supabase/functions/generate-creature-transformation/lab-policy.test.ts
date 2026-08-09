@@ -17,6 +17,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
+        expect(policy.lineageExperimentAllowedProfileIds.size).toBe(0)
         expect(policy.realImage).toMatchObject({ enabled: false, provider: null, apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null })
     })
 
@@ -36,6 +37,7 @@ describe('creature transformation lab policy', () => {
             CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED: 'true',
             CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER: 'OPENAI',
             CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1, profile-2',
+            CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS: 'profile-1',
             OPENAI_IMAGE_API_KEY: 'server-only-test-key',
             OPENAI_IMAGE_MODEL: 'configured-image-model',
             OPENAI_IMAGE_QUALITY: 'high',
@@ -59,6 +61,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
         expect(policy.realImage).toMatchObject({ enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1', 'profile-2']), model: 'configured-image-model', quality: 'high', timeoutMs: 90000, estimatedCostUsd: 0.12, maxEstimatedCostUsd: 0.25 })
+        expect(policy.lineageExperimentAllowedProfileIds).toEqual(new Set(['profile-1']))
         expect(policy.benchmark.allowedProfileIds).toEqual(new Set(['profile-1']))
         expect(policy.benchmark.reviewerProfileIds).toEqual(new Set(['profile-1']))
         expect(policy.benchmark.generationProfiles.profiles.get('openai-medium-v1')?.model).toBe('gpt-image-1.5')

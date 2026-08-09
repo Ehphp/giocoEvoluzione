@@ -70,6 +70,15 @@ describe('OpenAiCreatureImageProvider', () => {
         expect((fetchImplementation.mock.calls[0][1].body as FormData).get('background')).toBe('transparent')
     })
 
+    it('retries one gateway 520 response before failing the image request', async () => {
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response('', { status: 520 }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ b64_json: base64(createTestPng()) }] })))
+
+        await expect(provider(fetchImplementation).transformCreature(input())).resolves.toMatchObject({ provider: 'openai-image-api' })
+        expect(fetchImplementation).toHaveBeenCalledTimes(2)
+    })
+
     it('maps timeout, rate limit, bad request, moderation, provider error and invalid response without retrying', async () => {
         const timeout = provider(async (_url, init) => new Promise((_resolve, reject) => {
             init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))

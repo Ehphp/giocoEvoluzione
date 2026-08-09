@@ -171,4 +171,12 @@ export class SupabaseExperimentReviewRepository {
             return record ? [record] : []
         })
     }
+
+    async upsertLineageComparison(input: { profileId: string, creatureId: string, lineageRequestId: string, currentRequestId?: string, scores: { creativeSurprise: number, targetTransformationStrength: number, creatureContinuity: number, lineagePreservation: number, nonTargetStability: number }, preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE' }): Promise<void> {
+        const { error } = await this.client.rpc('upsert_creature_transformation_lineage_comparison_review', {
+            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_lineage_request_id: input.lineageRequestId, p_current_request_id: input.currentRequestId ?? null,
+            p_creative_surprise_score: input.scores.creativeSurprise, p_target_transformation_strength_score: input.scores.targetTransformationStrength, p_creature_continuity_score: input.scores.creatureContinuity, p_lineage_preservation_score: input.scores.lineagePreservation, p_non_target_stability_score: input.scores.nonTargetStability, p_preferred_result: input.preferredResult,
+        })
+        if (error) throw new ExperimentReviewRepositoryError('Non e stato possibile salvare la review A/B lineage-first.', { cause: error })
+    }
 }

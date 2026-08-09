@@ -18,6 +18,7 @@ export type CreatureTransformationRequestRecord = Readonly<{
     generationProfileId: string | null
     conceptSeed: string | null
     promptSha256: string | null
+    promptText: string | null
     generationQuality: 'low' | 'medium' | 'high' | null
     visualProgressTrackId: string | null
     sourceVisualVersionId: string | null
@@ -97,6 +98,7 @@ export type RequestTransitionData = TransformationCost & Readonly<{
     validationWarnings?: string[]
     generationQuality?: 'low' | 'medium' | 'high'
     promptSha256?: string
+    promptText?: string
     conceptSnapshot?: CreatureTransformationConcept
     errorCode?: string
     errorMessage?: string
@@ -185,7 +187,7 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         conceptMode: readString(record, 'concept_mode', true) as 'MOCK' | 'AI' | null,
         imageProviderMode: readString(record, 'image_provider_mode', true) as 'MOCK' | 'REAL' | null,
         benchmarkCaseId: readString(record, 'benchmark_case_id', true), generationProfileId: readString(record, 'generation_profile_id', true),
-        conceptSeed: readString(record, 'concept_seed', true), promptSha256: readString(record, 'prompt_sha256', true),
+        conceptSeed: readString(record, 'concept_seed', true), promptSha256: readString(record, 'prompt_sha256', true), promptText: readString(record, 'prompt_text', true),
         generationQuality: readString(record, 'generation_quality', true) as 'low' | 'medium' | 'high' | null,
         visualProgressTrackId: readString(record, 'visual_progress_track_id', true), sourceVisualVersionId: readString(record, 'source_visual_version_id', true),
         evolutionTargetId: readString(record, 'evolution_target_id', true) as EvolutionTargetId | null,
@@ -313,6 +315,7 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
                 p_asset_readiness: data.assetReadiness ?? null, p_validation_warnings: data.validationWarnings ?? null,
                 p_generation_quality: data.generationQuality ?? null, p_prompt_sha256: data.promptSha256 ?? null,
                 p_concept_snapshot: data.conceptSnapshot ?? null,
+                p_prompt_text: data.promptText ?? null,
             })
         } catch (error) {
             throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile aggiornare lo stato della richiesta.', { cause: error })

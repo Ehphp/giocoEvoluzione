@@ -4,6 +4,7 @@ import type { VisualTraitId } from './visual-traits.ts'
 import type { ExperimentReviewScores, ExperimentReviewVerdict, CreatureTransformationVisualIssue } from './experiment-reviews.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { ExperimentalLineage } from './experimental-lineage.ts'
 
 export type CreatureSemanticIdentity = {
     creatureId: string
@@ -55,6 +56,28 @@ export type GenerateImageRequest = {
     generationProfileId?: string
 }
 
+/** Runs the unchanged current concept pipeline through to a REAL experimental image. */
+export type GenerateCurrentPipelineExperimentRequest = {
+    operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT'
+    creatureId: string
+    evolutionTargetId: EvolutionTargetId
+    /** A completed experimental source selected for the next shared A/B round. */
+    experimentalSourceRequestId?: string
+    idempotencyKey: string
+}
+
+/** A deliberately isolated image operation: no production concept, track or adoption data is accepted. */
+export type GenerateLineageFirstExperimentRequest = {
+    operation: 'GENERATE_LINEAGE_FIRST_EXPERIMENT'
+    creatureId: string
+    evolutionTargetId: EvolutionTargetId
+    lineage: ExperimentalLineage
+    instruction?: string
+    /** A completed experimental request owned by this profile; never a production visual version. */
+    experimentalSourceRequestId?: string
+    idempotencyKey: string
+}
+
 export type GetTransformationRequestStatusRequest = {
     operation: 'GET_REQUEST_STATUS'
     transformationRequestId: string
@@ -67,6 +90,15 @@ export type SubmitExperimentReviewRequest = {
     verdict: ExperimentReviewVerdict
     issueFlags: CreatureTransformationVisualIssue[]
     notes?: string
+}
+
+export type SubmitLineageComparisonReviewRequest = {
+    operation: 'SUBMIT_LINEAGE_COMPARISON_REVIEW'
+    creatureId: string
+    lineageRequestId: string
+    currentRequestId?: string
+    scores: { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 }
+    preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
 }
 
 export type GetBenchmarkResultsRequest = {
@@ -145,4 +177,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest

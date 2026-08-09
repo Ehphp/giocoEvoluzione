@@ -19,8 +19,8 @@ import type {
 import { CREATURE_TRANSFORMATION_BENCHMARK_PLAN, getCreatureTransformationBenchmarkCase, type CreatureTransformationBenchmarkCase } from '../../../shared/creature-transformations/benchmark-plan.ts'
 import type { CreatureConceptGenerator } from '../../../shared/creature-transformations/concept-generator.ts'
 import { CreatureConceptGenerationError } from '../../../shared/creature-transformations/concept-generator.ts'
-import type { CreatureIdentityResolver, GenerateConceptRequest, GenerateImageRequest, GenerateUnlockedTransformationRequest } from '../../../shared/creature-transformations/contracts.ts'
-import type { CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
+import type { CreatureIdentityResolver, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest } from '../../../shared/creature-transformations/contracts.ts'
+import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
 import { getEnabledCreatureImageGenerationProfile, type CreatureImageGenerationProfile } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
@@ -34,7 +34,8 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { generateLineageFirstImage } from './lineage-first-image-service.ts'
 import {
     CreatureTransformationRequestRepositoryError,
     type CreatureTransformationRequestRecord,
@@ -75,6 +76,10 @@ export type GenerateImageEdgeOrchestrationInput = Readonly<{
     createRealImageProvider?: (configuration?: Pick<CreatureImageGenerationProfile, 'model' | 'quality' | 'estimatedCostUsd'>) => CreatureImageProvider
     deferBackgroundTask?: BackgroundTaskScheduler
     validator?: ImageValidator
+    /** Internal-only: comparison A/B assets are opaque raw experiments, not production visual assets. */
+    experimentalImageOutput?: boolean
+    /** Internal-only server-validated experimental source for the shared A/B round. */
+    experimentalSourcePath?: string
     reviewRepository: SupabaseExperimentReviewRepository
     visualRepository: SupabaseCreatureVisualProgressionRepository
 }> & PersistenceInput
@@ -168,6 +173,15 @@ function mapThrownError(error: unknown): FailureDetails {
     if (error instanceof ExperimentReviewRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof CreatureVisualProgressionRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof ImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
+    if (error instanceof CreatureImageProviderError) {
+        const diagnostics = [
+            error.providerStatus ? `HTTP ${error.providerStatus}` : null,
+            error.providerErrorCode ? `codice provider: ${error.providerErrorCode}` : null,
+            error.providerErrorParam ? `parametro: ${error.providerErrorParam}` : null,
+            error.transportErrorName ? `trasporto: ${error.transportErrorName}` : null,
+        ].filter((value): value is string => value !== null)
+        return { code: error.code, message: `Il provider immagini non e disponibile.${diagnostics.length ? ` (${diagnostics.join('; ')})` : ''}` }
+    }
     if (error instanceof OpenAiStructuredConceptModelError) {
         const providerDiagnostic = error.providerErrorCode ? ` (codice provider: ${error.providerErrorCode})` : ''
         if (error.code === 'AI_NOT_CONFIGURED') return { code: error.code, message: 'La modalita AI non e configurata.' }
@@ -373,9 +387,13 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
             profileId: input.profileId!, requestId: input.requestId, request: controlledRequest, resolver: input.resolver, storage: input.storage,
             provider, ...(input.validator ? { validator: input.validator } : {}),
             ...(benchmark ? { promptTemplateVersion: benchmark.profile.promptTemplateVersion } : {}),
+            ...(input.experimentalImageOutput ? { storageDestination: 'RAW_EXPERIMENT' as const } : {}),
+            ...(input.experimentalSourcePath ? { sourcePath: input.experimentalSourcePath } : {}),
         })
         if (!result.success) return markFailed(input.repository, input.requestId, input.profileId!, running, idempotencyStatus, { code: result.code, message: result.message, ...(result.problems ? { problems: result.problems } : {}) })
-        const resultPath = await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
+        const resultPath = input.experimentalImageOutput
+            ? await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey)
+            : await input.storage.createResultObjectPath(input.profileId!, request.idempotencyKey)
         const completed = await input.repository.markSucceeded({
             requestId: running.id, profileId: input.profileId!,
             data: {
@@ -387,6 +405,7 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
                 ...(request.imageProviderMode === 'MOCK' ? { actualCostUsd: 0 } : {}),
                 promptTemplateVersion: benchmark?.profile.promptTemplateVersion ?? CREATURE_PROMPT_TEMPLATE_VERSION,
                 promptSha256: result.promptSha256,
+                promptText: result.prompt,
                 conceptSnapshot: result.conceptSnapshot,
                 ...(benchmark ? { generationQuality: benchmark.profile.quality } : request.imageProviderMode === 'REAL' ? { generationQuality: input.policy.realImage.quality } : {}),
             },
@@ -929,6 +948,93 @@ export async function orchestrateGenerateImage(input: GenerateImageEdgeOrchestra
     return completeImageGeneration(input, parsed.request, running, input.createImageProvider(), 'CREATED', benchmark)
 }
 
+async function completeLineageFirstExperiment(input: GenerateImageEdgeOrchestrationInput, request: GenerateLineageFirstExperimentRequest, running: CreatureTransformationRequestRecord, sourcePath?: string): Promise<void> {
+    try {
+        const result = await generateLineageFirstImage({ profileId: input.profileId!, requestId: input.requestId, request, resolver: input.resolver, storage: input.storage, provider: input.createRealImageProvider!(), ...(sourcePath ? { sourcePath } : {}), ...(input.validator ? { validator: input.validator } : {}) })
+        await input.repository.markSucceeded({ requestId: running.id, profileId: input.profileId!, data: { provider: result.generation.provider, model: result.generation.model, providerRequestId: result.generation.providerRequestId, sourceSha256: result.sourceSha256, resultSha256: result.result.sha256, resultPath: result.resultPath, resultMimeType: result.result.mimeType, resultWidth: result.result.width, resultHeight: result.result.height, generationLatencyMs: result.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: result.validation.warnings, estimatedCostUsd: result.generation.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? undefined, promptTemplateVersion: 'lineage-first-experimental-v1', promptSha256: result.promptSha256, promptText: result.prompt, generationQuality: input.policy.realImage.quality } })
+    } catch (error) {
+        const details = error instanceof Error && error.message === 'SOURCE_IMAGE_INVALID'
+            ? { code: 'SOURCE_IMAGE_INVALID' as const, message: 'La sorgente sperimentale non ha superato i controlli tecnici.' }
+            : error instanceof Error && error.message === 'RESULT_IMAGE_INVALID'
+                ? { code: 'RESULT_IMAGE_INVALID' as const, message: 'Il risultato sperimentale non ha superato i controlli tecnici.' }
+                : mapThrownError(error)
+        await markFailed(input.repository, input.requestId, input.profileId!, running, 'CREATED', details)
+    }
+}
+
+/** Server-only experimental route. It cannot produce a production concept or a visual-progress record. */
+export async function orchestrateGenerateLineageFirstExperiment(input: GenerateImageEdgeOrchestrationInput): Promise<GenerateImageApiResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseGenerateLineageFirstExperimentRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
+    if (!input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', `Il profilo autenticato non e autorizzato al laboratorio lineage-first. Profile ID server: ${input.profileId}.`)
+    const imageAccess = generationAccessFailure(input)
+    if (imageAccess) return failure(input.requestId, imageAccess.code, imageAccess.message)
+    const realAccess = realImagePolicyFailure(input.policy, input.profileId, input.canGenerateImages)
+    if (realAccess) return failure(input.requestId, realAccess.code, realAccess.message)
+    if (!input.createRealImageProvider || !input.deferBackgroundTask) return failure(input.requestId, 'REQUEST_PERSISTENCE_FAILED', 'Il runtime asincrono del provider reale non e disponibile.')
+
+    let sourcePath: string | undefined
+    if (parsed.request.experimentalSourceRequestId) {
+        const source = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.experimentalSourceRequestId })
+        if (!source || source.creatureId !== parsed.request.creatureId || source.status !== 'SUCCEEDED' || source.assetReadiness !== 'EXPERIMENT_ONLY' || !source.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La source sperimentale selezionata non e disponibile per questa creatura.')
+        sourcePath = source.resultPath
+    }
+    let reservation: RequestReservationResult
+    try {
+        reservation = await input.repository.reserve({ profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey, operation: 'GENERATE_IMAGE', imageProviderMode: 'REAL', estimatedCostUsd: input.policy.realImage.estimatedCostUsd ?? undefined, dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd, requestFingerprint: await requestFingerprint(parsed.request), ...realImageReservationLimits(input.policy) })
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message)
+    }
+    if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
+    if (reservation.outcome === 'EXISTING') {
+        if (reservation.record.status === 'SUCCEEDED') return recoverSucceededImage(input, reservation.record)
+        if ((reservation.record.status === 'RESERVED' || reservation.record.status === 'RUNNING') && !isStale(reservation.record, input.policy.staleRequestSeconds)) return acceptedRealImage(input.requestId, reservation.record, 'EXISTING')
+        return existingStateFailure(input.requestId, reservation.record, input.policy)!
+    }
+    let running: CreatureTransformationRequestRecord
+    try { running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId }) } catch (error) { return markFailed(input.repository, input.requestId, input.profileId, reservation.record, 'CREATED', mapThrownError(error)) }
+    input.deferBackgroundTask(completeLineageFirstExperiment(input, parsed.request, running, sourcePath))
+    return acceptedRealImage(input.requestId, running, 'CREATED')
+}
+
+/** Same source and target as lineage-first, but preserves the current concept/evaluator/image pipeline intact. */
+export async function orchestrateGenerateCurrentPipelineExperiment(input: CreatureTransformationEdgeOrchestrationInput): Promise<GenerateImageApiResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseGenerateCurrentPipelineExperimentRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    if (!input.policy.enabled || !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', `Il profilo autenticato non e autorizzato al confronto A/B. Profile ID server: ${input.profileId}.`)
+    const access = generationAccessFailure(input)
+    if (access) return failure(input.requestId, access.code, access.message)
+    const realAccess = realImagePolicyFailure(input.policy, input.profileId, input.canGenerateImages)
+    if (realAccess) return failure(input.requestId, realAccess.code, realAccess.message)
+    const source = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
+    let experimentalSourcePath: string | undefined
+    if (parsed.request.experimentalSourceRequestId) {
+        const experimentalSource = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.experimentalSourceRequestId })
+        if (!experimentalSource || experimentalSource.creatureId !== parsed.request.creatureId || experimentalSource.status !== 'SUCCEEDED' || experimentalSource.assetReadiness !== 'EXPERIMENT_ONLY' || !experimentalSource.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La source sperimentale selezionata non e disponibile per questa creatura.')
+        experimentalSourcePath = experimentalSource.resultPath
+    }
+    const direction = resolveEvolutionDirection({ evolutionTargetId: parsed.request.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
+    if (!direction) return failure(input.requestId, 'CONCEPT_REJECTED', 'Il target anatomico non ha una direzione current generabile.')
+    const conceptResponse = await orchestrateGenerateConcept({ ...input, body: { operation: 'GENERATE_CONCEPT', creatureId: parsed.request.creatureId, visualTraitId: direction.visualTraitId, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction, intensity: 2, conceptMode: 'AI', idempotencyKey: `${parsed.request.idempotencyKey}:concept` } })
+    if (!conceptResponse.success) return conceptResponse
+    return orchestrateGenerateImage({ ...input, experimentalImageOutput: true, ...(experimentalSourcePath ? { experimentalSourcePath } : {}), body: { operation: 'GENERATE_IMAGE', creatureId: parsed.request.creatureId, concept: conceptResponse.concept, imageProviderMode: 'REAL', idempotencyKey: `${parsed.request.idempotencyKey}:image` } })
+}
+
+export async function orchestrateSubmitLineageComparisonReview(input: GenerateImageEdgeOrchestrationInput): Promise<CreatureTransformationErrorResponse | { success: true, requestId: string }> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseSubmitLineageComparisonReviewRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    if (!input.policy.enabled || !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', `Il profilo autenticato non e autorizzato alle review lineage-first. Profile ID server: ${input.profileId}.`)
+    const lineage = await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.lineageRequestId })
+    const current = parsed.request.currentRequestId ? await input.repository.getById({ profileId: input.profileId, requestId: parsed.request.currentRequestId }) : null
+    if (!lineage || lineage.creatureId !== parsed.request.creatureId || lineage.assetReadiness !== 'EXPERIMENT_ONLY' || (current && current.creatureId !== parsed.request.creatureId)) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'I risultati A/B non appartengono alla creatura selezionata.')
+    try { await input.reviewRepository.upsertLineageComparison({ profileId: input.profileId, creatureId: parsed.request.creatureId, lineageRequestId: parsed.request.lineageRequestId, ...(parsed.request.currentRequestId ? { currentRequestId: parsed.request.currentRequestId } : {}), scores: parsed.request.scores, preferredResult: parsed.request.preferredResult }); return { success: true, requestId: input.requestId } } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
+}
+
 export async function orchestrateGetTransformationRequestStatus(input: GenerateImageEdgeOrchestrationInput): Promise<TransformationRequestStatusResponse | CreatureTransformationErrorResponse> {
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseGetTransformationRequestStatusRequest(input.body)
@@ -954,6 +1060,7 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
                 ...(record.actualCostUsd === null ? {} : { actualCostUsd: record.actualCostUsd }),
             },
         } : {}),
+        ...(record.assetReadiness === 'EXPERIMENT_ONLY' && record.promptText && record.promptSha256 ? { prompt: { text: record.promptText, sha256: record.promptSha256 } } : {}),
         ...(record.status === 'FAILED' && record.errorCode && record.errorMessage ? { error: { code: record.errorCode, message: record.errorMessage } } : {}),
         ...(record.visualProgressTrackId && record.sourceVisualVersionId && record.visualTraitId ? {
             productPreview: {
@@ -1083,6 +1190,9 @@ export async function orchestrateGetBenchmarkResults(input: GenerateImageEdgeOrc
 export async function orchestrateCreatureTransformation(input: CreatureTransformationEdgeOrchestrationInput): Promise<CreatureTransformationApiResponse> {
     const operation = input.body && typeof input.body === 'object' && !Array.isArray(input.body) ? (input.body as { operation?: unknown }).operation : undefined
     if (operation === 'GENERATE_IMAGE') return orchestrateGenerateImage(input)
+    if (operation === 'GENERATE_LINEAGE_FIRST_EXPERIMENT') return orchestrateGenerateLineageFirstExperiment(input)
+    if (operation === 'GENERATE_CURRENT_PIPELINE_EXPERIMENT') return orchestrateGenerateCurrentPipelineExperiment(input)
+    if (operation === 'SUBMIT_LINEAGE_COMPARISON_REVIEW') return orchestrateSubmitLineageComparisonReview(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
     if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return orchestrateListVisualBackgroundCleanup(input)
