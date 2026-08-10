@@ -99,43 +99,113 @@
 /* Creature stage                                                              */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Two stacked rows, art over plaque. Nothing here is positioned on top of anything else, which is
+ * the point: the creature sprites do not share a framing — some carry a third of their height as
+ * transparent margin, `base.png` carries none — so any attempt to overlay the art and pull it back
+ * up by a measured offset is only ever correct for the one sprite it was measured on.
+ */
 .home-stage {
     position: relative;
     display: grid;
-    place-items: end center;
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+    gap: var(--ev-s-2);
     /* Elastic: the creature stage yields space before the identity bar or the call to action. */
-    flex: 1 1 180px;
-    min-height: 96px;
+    flex: 1 1 208px;
+    min-height: 110px;
+}
+
+/*
+ * The art's own box. The sprite is bounded by this, so it can never reach the plaque.
+ * Sized container so the fitted sprite below can measure itself against it in `cqh`/`cqw`.
+ */
+.home-stage__art {
+    position: relative;
+    container-type: size;
+    width: 100%;
+    min-height: 0;
 }
 
 .home-stage__halo {
     position: absolute;
-    bottom: 52px;
     left: 50%;
+    bottom: 0;
+    /* Pushed down so its core sits behind the animal's feet rather than its middle. */
+    translate: -50% 24%;
     width: min(78%, 300px);
     aspect-ratio: 1;
-    transform: translateX(-50%);
     border-radius: 50%;
     background: radial-gradient(circle, rgba(190, 255, 160, .3) 0%, rgba(120, 220, 200, .16) 42%, transparent 68%);
     pointer-events: none;
 }
 
+/**
+ * The unmeasured state, and the permanent state for any sprite whose pixels cannot be read: a
+ * plain contained fit. Correct and never cropped, but sized by the file — a sprite that is mostly
+ * transparent margin renders a small animal.
+ *
+ * Absolute, with an explicit width and height rather than a bare `inset: 0`. Both matter: as a
+ * replaced *grid item* a percentage height falls back to the sprite's intrinsic height, and as an
+ * absolute replaced box `inset` alone does not stretch it either — the intrinsic height wins and
+ * the sprite escapes the row into the plaque. Against an absolute containing block the percentages
+ * do resolve, so this is the form that actually bounds it.
+ *
+ * Decorative, and the drop shadow reaches past the box, so it must not take pointer events.
+ */
 .home-stage__creature {
     position: absolute;
-    bottom: 44px;
+    inset: 0;
     width: 100%;
-    height: calc(100% - 40px);
+    height: 100%;
     object-fit: contain;
     object-position: bottom center;
     transform-origin: bottom center;
     scale: var(--home-creature-scale, 1);
     translate: var(--home-creature-offset-x, 0) var(--home-creature-offset-y, 0);
     filter: drop-shadow(0 18px 24px rgba(4, 16, 10, .55));
+    pointer-events: none;
 }
 
+/**
+ * Measured: the *animal* is what gets sized and centred, not the file around it. The sprite is
+ * drawn at its natural aspect and blown up until the opaque area fills the box, so a creature reads
+ * the same size whether its sprite is trimmed tight or padded with a third of transparent margin.
+ *
+ * Height comes from whichever axis runs out first. `--home-subject-h` is the opaque height as a
+ * fraction of the sprite, so the first term fills the box vertically. `--home-subject-box-wph`
+ * bounds the *whole sprite*, transparent margin included, not just the animal: the margin is still
+ * a real element box, and since the sprite is centred on the animal rather than on itself, a
+ * lopsided one would otherwise hang off the side of the screen.
+ *
+ * The translate percentages resolve against the sprite's own box, which is what lets the opaque
+ * *centre* be parked on the box centre without knowing any of these sizes in pixels.
+ */
+.home-stage__creature--fitted {
+    --home-subject-fill: .94;
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: auto;
+    max-width: none;
+    height: min(
+        calc(100cqh * var(--home-subject-fill) / var(--home-subject-h)),
+        calc(100cqw / var(--home-subject-box-wph))
+    );
+    /* The box already carries the sprite's aspect, so this only guards against a future clamp
+       letterboxing rather than stretching the creature. */
+    object-fit: contain;
+    transform-origin: center;
+    translate:
+        calc(var(--home-subject-cx) * -100% + var(--home-creature-offset-x, 0))
+        calc(var(--home-subject-cy) * -100% + var(--home-creature-offset-y, 0));
+}
+
+/* The fallback is a line of text, so it centres in the art box instead of standing on its floor. */
 .home-stage__creature--missing {
     display: grid;
     place-items: center;
+    translate: none;
     color: var(--ev-on-dark-muted);
     font-size: var(--ev-fs-sm);
 }
@@ -337,7 +407,7 @@
     }
 
     .home-stage {
-        flex-basis: 140px;
+        flex-basis: 160px;
     }
 
     .home-cta__play {
@@ -355,6 +425,15 @@
     .home-stage {
         flex-basis: 96px;
         min-height: 72px;
+    }
+
+    /*
+     * The collapsed stage is 72px and the plaque alone is 64px of it, so the art row is left with
+     * nothing: the creature would render a few pixels tall. The plaque still names it. Same call
+     * the arena makes when it runs out of height.
+     */
+    .home-stage__art {
+        display: none;
     }
 
     .home-stage__plaque {

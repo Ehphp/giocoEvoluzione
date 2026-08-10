@@ -223,10 +223,26 @@ type OverlayProps = {
     align?: 'end' | 'center'
     children: ReactNode
     closeOnBackdrop?: boolean
+    /**
+     * `panel` backs a cream sheet, which carries its own contrast. `scene` is for content that
+     * sits straight on the artwork: it defocuses the scene harder but tints it less, so the layer
+     * reads as part of the game rather than as a page opening on top of it.
+     */
+    scrim?: 'panel' | 'scene'
+    /** `narrow` stops short of the app width so the scene stays visible down both sides. */
+    width?: 'app' | 'narrow'
 }
 
 /** Modal layer rendered into the document body, with Escape and backdrop dismissal. */
-export function Overlay({ label, onClose, align = 'end', children, closeOnBackdrop = true }: OverlayProps) {
+export function Overlay({
+    label,
+    onClose,
+    align = 'end',
+    children,
+    closeOnBackdrop = true,
+    scrim = 'panel',
+    width = 'app',
+}: OverlayProps) {
     const contentRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -251,11 +267,18 @@ export function Overlay({ label, onClose, align = 'end', children, closeOnBackdr
 
     return createPortal(
         <div
-            className={`ev-overlay ${align === 'center' ? 'ev-overlay--center' : ''}`}
+            className={`ev-overlay ${align === 'center' ? 'ev-overlay--center' : ''} ${scrim === 'scene' ? 'ev-overlay--scene' : ''}`}
             role="presentation"
             onPointerDown={closeOnBackdrop && onClose ? (event) => { if (event.target === event.currentTarget) onClose() } : undefined}
         >
-            <div ref={contentRef} className="ev-sheet" role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
+            <div
+                ref={contentRef}
+                className={`ev-sheet ${width === 'narrow' ? 'ev-sheet--narrow' : ''}`}
+                role="dialog"
+                aria-modal="true"
+                aria-label={label}
+                tabIndex={-1}
+            >
                 {children}
             </div>
         </div>,

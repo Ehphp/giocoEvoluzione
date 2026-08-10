@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { EVOLUTION_TARGET_BY_ID } from '../../../../shared/creature-transformations/evolution-targets.ts'
 import type { EvolutionTargetId } from '../../../../shared/creature-transformations/evolution-targets.ts'
 import { fetchEvolutionTargetProgress, type EvolutionTargetProgressRecord } from '../../../lib/evolution-progress-api'
-import { Notice, Overlay, Panel, ProgressBar } from '../../../ui/components'
+import { Notice, Overlay, ProgressBar } from '../../../ui/components'
 import { CrossroadsIcon, EvolutionTargetIcon } from '../../../ui/icons'
 
 type EvolutionDraftOverlayProps = {
@@ -59,10 +59,12 @@ export function EvolutionDraftOverlay({ options, creatureId, onChoose }: Evoluti
     }
 
     return (
-        <Overlay label="Scegli il tratto da far evolvere" align="center">
-            <Panel className="evolution-draft">
+        // No panel: the draft is a layer over the battlefield, not a page on top of it. The two
+        // option cards are the only solid surfaces; everything else sits on the blurred scene.
+        <Overlay label="Scegli il tratto da far evolvere" align="center" scrim="scene" width="narrow">
+            <div className="evolution-draft">
                 <span className="evolution-draft__mark" aria-hidden="true"><CrossroadsIcon /></span>
-                <span className="ev-eyebrow">Prima del primo round</span>
+                <span className="ev-eyebrow ev-eyebrow--light">Prima del primo round</span>
                 <h2>Su quale tratto punti?</h2>
                 <p className="evolution-draft__copy">
                     Vinci la partita e questo tratto avanza di una vittoria. Se perdi o pareggi, non avanza nulla.
@@ -112,7 +114,7 @@ export function EvolutionDraftOverlay({ options, creatureId, onChoose }: Evoluti
                 </div>
 
                 {pendingTargetId ? <p className="evolution-draft__pending" role="status">Registrazione della scelta...</p> : null}
-            </Panel>
+            </div>
         </Overlay>
     )
 }

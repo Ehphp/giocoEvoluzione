@@ -4,6 +4,7 @@ import { HomeScreen } from '../screens/home/HomeScreen'
 import { BattleScreen } from '../screens/battle/BattleScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
+import { CreatureTransformationLab } from '../components/creature-transformation-lab/CreatureTransformationLab'
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
 import type { UiPreviewRoute } from './uiPreviewRoute'
 import {
@@ -102,6 +103,14 @@ function EvolutionPreview() {
     )
 }
 
+/**
+ * The lab talks to the transformation API on mount. Without a session those calls fail, which is
+ * fine for design iteration: the panels, controls and the error state all render.
+ */
+function LabPreview() {
+    return <CreatureTransformationLab creature={PREVIEW_CREATURE} onBack={noop} />
+}
+
 /** Development-only rendering of the product screens, used for design iteration. */
 export function UiPreview({ route }: { route: UiPreviewRoute }) {
     if (route === 'battle') {
@@ -118,6 +127,10 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
 
     if (route === 'draft') {
         return <DraftPreview />
+    }
+
+    if (route === 'lab') {
+        return <LabPreview />
     }
 
     return <HomePreview />

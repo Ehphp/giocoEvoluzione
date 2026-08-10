@@ -1,61 +1,1251 @@
-.creature-transformation-lab { display: grid; width: min(100%, 860px); min-width: 0; gap: 16px; margin: 0 auto; padding: clamp(16px, 4vw, 28px); overflow: auto; border: 1px solid var(--game-border); border-radius: 24px; color: var(--game-text); background: linear-gradient(180deg, rgba(24, 52, 43, .97), rgba(14, 32, 26, .99)); }
-.creature-transformation-lab__header { display: flex; align-items: center; gap: 14px; }.creature-transformation-lab__header h1 { margin: 0; }.creature-transformation-lab__header button { min-height: 38px; padding: 8px 12px; border: 1px solid var(--game-border); border-radius: 12px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; cursor: pointer; }
-.creature-transformation-lab__identity { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid rgba(184,232,94,.28); border-radius: 16px; background: rgba(184,232,94,.08); }.creature-transformation-lab__identity img { width: 92px; height: 112px; object-fit: contain; }.creature-transformation-lab__identity div { display: grid; gap: 4px; }.creature-transformation-lab__identity span, .creature-transformation-lab__identity small, .creature-transformation-lab__identity p { margin: 0; color: var(--game-text-muted); }.creature-transformation-lab__identity strong { color: #d8ff9d; }
-.creature-transformation-lab__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.creature-transformation-lab__controls label { display: grid; gap: 6px; color: var(--game-text-muted); }.creature-transformation-lab__controls select { min-height: 42px; border: 1px solid var(--game-border); border-radius: 10px; padding-inline: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__trait-description { grid-column: 1 / -1; margin: 0; color: var(--game-text-muted); }.creature-transformation-lab__controls button { grid-column: 1 / -1; }
-.creature-transformation-lab__lineage { padding: 14px; border: 1px solid rgba(116,184,255,.42); border-radius: 16px; background: rgba(47,81,112,.16); }.creature-transformation-lab__lineage > header, .creature-transformation-lab__lineage > p, .creature-transformation-lab__lineage > small, .creature-transformation-lab__lineage > fieldset { grid-column: 1 / -1; }.creature-transformation-lab__lineage h2, .creature-transformation-lab__lineage p { margin: 0; }.creature-transformation-lab__lineage textarea, .creature-transformation-lab__lineage input, .creature-transformation-lab__lineage select, .creature-transformation-lab__review select { min-height: 38px; border: 1px solid var(--game-border); border-radius: 9px; padding: 8px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__lineage textarea { min-height: 86px; resize: vertical; }.creature-transformation-lab__lineage fieldset { display: grid; gap: 8px; margin: 0; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; }.creature-transformation-lab__lineage fieldset p { display: flex; align-items: center; gap: 8px; }.creature-transformation-lab__lineage fieldset button { grid-column: auto; }
-.creature-transformation-lab__error { padding: 12px; border: 1px solid rgba(255,130,120,.55); border-radius: 14px; background: rgba(151,35,27,.26); color: #ffd0ca; }.creature-transformation-lab__error p { margin: 6px 0; }.creature-transformation-lab__error ul, .creature-transformation-lab__evaluation ul { margin: 8px 0 0; padding-left: 20px; }
-.creature-transformation-lab__result { display: grid; gap: 14px; }.creature-transformation-lab__result > header { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }.creature-transformation-lab__result > header div, .creature-transformation-lab__evaluation, .creature-transformation-lab__result details { min-width: 0; padding: 11px; border: 1px solid rgba(255,255,255,.14); border-radius: 13px; background: rgba(255,255,255,.05); }.creature-transformation-lab__result header span { display: block; color: var(--game-text-muted); font-size: .7rem; }.creature-transformation-lab__result header strong { display: block; overflow-wrap: anywhere; color: var(--game-text); font-size: .78rem; }.creature-transformation-lab__evaluation h2, .creature-transformation-lab__evaluation p { margin: 0 0 6px; }.creature-transformation-lab__result summary { cursor: pointer; font-weight: 800; }.creature-transformation-lab__result pre { max-height: 340px; margin: 10px 0 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #e8f5d6; font: .76rem/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
-.creature-transformation-lab__image-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 12px; border: 1px solid rgba(184,232,94,.28); border-radius: 14px; background: rgba(184,232,94,.08); }.creature-transformation-lab__image-controls label { display: grid; gap: 6px; color: var(--game-text-muted); }.creature-transformation-lab__image-controls select { min-height: 42px; border: 1px solid var(--game-border); border-radius: 10px; padding-inline: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__image-controls button { min-height: 42px; }
-.creature-transformation-lab__image-result { display: grid; min-width: 0; gap: 12px; padding: 14px; border: 1px solid rgba(184,232,94,.34); border-radius: 16px; background: rgba(8, 22, 18, .6); }.creature-transformation-lab__mock-banner { min-width: 0; overflow-wrap: anywhere; padding: 11px; border: 1px solid #d7bd58; border-radius: 10px; color: #fff1a8; background: rgba(151, 117, 15, .36); font-weight: 800; }.creature-transformation-lab__image-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.creature-transformation-lab__image-compare figure { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.04); }.creature-transformation-lab__image-compare img { width: 100%; height: 280px; object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#1a322c 0 25%, #132721 0 50%) 50% / 18px 18px; }.creature-transformation-lab__image-compare figcaption { color: var(--game-text-muted); font-size: .78rem; }.creature-transformation-lab__image-metadata { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }.creature-transformation-lab__image-metadata div { min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; }.creature-transformation-lab__image-metadata dt { color: var(--game-text-muted); font-size: .7rem; }.creature-transformation-lab__image-metadata dd { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--game-text); font-size: .78rem; }.creature-transformation-lab__warnings { display: grid; gap: 4px; margin: 0; padding: 11px 11px 11px 28px; border-radius: 10px; color: #fff1a8; background: rgba(151, 117, 15, .22); font: .8rem/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; }
-.creature-transformation-lab__experimental-image { display: grid; justify-items: center; gap: 8px; min-width: 0; margin: 0; padding: 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.04); }.creature-transformation-lab__experimental-image img { display: block; width: 100%; max-width: 100%; height: auto; max-height: min(72vh, 560px); object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#1a322c 0 25%, #132721 0 50%) 50% / 18px 18px; }.creature-transformation-lab__experimental-image figcaption { color: var(--game-text-muted); font-size: .78rem; }
-.creature-transformation-lab__benchmark, .creature-transformation-lab__review, .creature-transformation-lab__metrics, .creature-transformation-lab__compare { display: grid; gap: 12px; padding: 14px; border: 1px solid rgba(116, 184, 255, .38); border-radius: 16px; background: rgba(47, 81, 112, .18); }.creature-transformation-lab__benchmark > header, .creature-transformation-lab__metrics > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }.creature-transformation-lab__benchmark h2, .creature-transformation-lab__benchmark h3 { margin: 0; }.creature-transformation-lab__benchmark button, .creature-transformation-lab__benchmark select, .creature-transformation-lab__benchmark textarea { min-height: 38px; border: 1px solid var(--game-border); border-radius: 9px; padding: 7px 9px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__benchmark button { cursor: pointer; }.creature-transformation-lab__benchmark-controls, .creature-transformation-lab__review, .creature-transformation-lab__compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }.creature-transformation-lab__benchmark-controls > p, .creature-transformation-lab__benchmark-controls > button, .creature-transformation-lab__benchmark-controls > details, .creature-transformation-lab__benchmark-controls > label:last-of-type, .creature-transformation-lab__review > h3, .creature-transformation-lab__review > fieldset, .creature-transformation-lab__review > label:last-of-type, .creature-transformation-lab__review > button, .creature-transformation-lab__compare > h3, .creature-transformation-lab__compare > p, .creature-transformation-lab__compare > div { grid-column: 1 / -1; }.creature-transformation-lab__benchmark label, .creature-transformation-lab__review label, .creature-transformation-lab__compare label { display: grid; gap: 6px; color: var(--game-text-muted); }.creature-transformation-lab__benchmark details { padding: 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; }.creature-transformation-lab__benchmark pre { max-height: 240px; overflow: auto; white-space: pre-wrap; font-size: .75rem; }.creature-transformation-lab__score-grid { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }.creature-transformation-lab__review fieldset { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; }.creature-transformation-lab__review fieldset label { display: block; font-size: .78rem; }.creature-transformation-lab__review textarea { min-height: 90px; resize: vertical; }.creature-transformation-lab__metrics > header > div { display: flex; gap: 8px; }.creature-transformation-lab__metrics p { margin: 0; color: var(--game-text-muted); }
-@media (max-width: 620px) { .creature-transformation-lab { width: 100%; padding: 10px; border-radius: 16px; }.creature-transformation-lab__controls, .creature-transformation-lab__benchmark-controls, .creature-transformation-lab__review, .creature-transformation-lab__compare, .creature-transformation-lab__score-grid { grid-template-columns: 1fr; }.creature-transformation-lab__result > header, .creature-transformation-lab__image-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }.creature-transformation-lab__image-controls, .creature-transformation-lab__image-compare { grid-template-columns: 1fr; }.creature-transformation-lab__identity { align-items: flex-start; }.creature-transformation-lab__identity img { width: 74px; height: 92px; }.creature-transformation-lab__image-result { padding: 10px; }.creature-transformation-lab__experimental-image { width: 100%; max-width: 320px; justify-self: center; overflow: hidden; }.creature-transformation-lab__experimental-image img { width: 100%; max-width: 100%; height: auto; max-height: 420px; } }
+/**
+ * Transformation lab.
+ *
+ * The lab is an internal tool, but it is not a different product: it uses the same cream-on-
+ * scenery language as the game — panels, strokes, lips, display headings — so moving between the
+ * game and the lab does not feel like changing app. Density stays higher than a product screen,
+ * because the lab shows prompts, metrics and A/B output side by side.
+ *
+ * Every block is a panel with a `--lab-accent` hue. The accent is the only thing that varies:
+ * green for the control pipeline, purple for the experiment, blue for shared configuration,
+ * gold for cost and limits, red for failures. Layout comes from the grid below.
+ */
 
-/* A/B workspace layout */
-.creature-transformation-lab { width: min(100%, 1120px); grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-.creature-transformation-lab__header, .creature-transformation-lab__identity, .creature-transformation-lab__evolution-chain, .creature-transformation-lab__error, .creature-transformation-lab__result, .creature-transformation-lab__image-result, .creature-transformation-lab__benchmark { grid-column: 1 / -1; }
-.creature-transformation-lab__evolution-chain { display: grid; gap: 12px; padding: 16px 18px; border: 1px solid rgba(184,232,94,.32); border-radius: 18px; background: rgba(184,232,94,.06); }.creature-transformation-lab__evolution-chain header { display: grid; gap: 3px; }.creature-transformation-lab__evolution-chain h2, .creature-transformation-lab__evolution-chain p { margin: 0; }.creature-transformation-lab__evolution-chain header p { color: var(--game-text-muted); }
-.creature-transformation-lab__evolution-chain ol { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0; padding: 2px; overflow-x: auto; list-style: none; scrollbar-color: rgba(184,232,94,.55) transparent; }.creature-transformation-lab__evolution-chain li { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; }.creature-transformation-lab__evolution-chain figure { display: grid; gap: 7px; width: 138px; margin: 0; padding: 9px; border: 1px solid rgba(255,255,255,.15); border-radius: 13px; background: rgba(0,0,0,.16); transition: border-color .18s ease, box-shadow .18s ease; }.creature-transformation-lab__evolution-chain li.is-active figure { border-color: #d8ff9d; box-shadow: 0 0 0 2px rgba(184,232,94,.18); }.creature-transformation-lab__evolution-chain img { width: 100%; height: 104px; object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#1a322c 0 25%, #132721 0 50%) 50% / 14px 14px; }.creature-transformation-lab__evolution-chain figcaption { min-height: 2.4em; color: var(--game-text-muted); font-size: .74rem; line-height: 1.2; }.creature-transformation-lab__evolution-chain li.is-active figcaption { color: #d8ff9d; font-weight: 800; }.creature-transformation-lab__chain-arrow { color: #b8e85e; font-size: 1.5rem; font-weight: 800; }
-.creature-transformation-lab__chain-stage-button { padding: 0; border: 0; border-radius: 13px; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; }.creature-transformation-lab__chain-stage-button:not(:disabled):hover figure { border-color: #d8ff9d; }.creature-transformation-lab__evolution-chain figcaption small { display: block; margin-top: 4px; color: #b8e85e; font-weight: 400; }
-.creature-transformation-lab__production-catalog { display: grid; grid-column: 1 / -1; gap: 13px; padding: 17px 18px; border: 1px solid rgba(116,184,255,.45); border-radius: 18px; background: rgba(47,81,112,.18); }.creature-transformation-lab__production-catalog > header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }.creature-transformation-lab__production-catalog h2, .creature-transformation-lab__production-catalog p { margin: 0; }.creature-transformation-lab__production-catalog header p { margin-top: 4px; color: var(--game-text-muted); }.creature-transformation-lab__production-catalog > header > button, .creature-transformation-lab__catalog-reset { min-height: 38px; padding: 7px 11px; border: 1px solid var(--game-border); border-radius: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; cursor: pointer; }.creature-transformation-lab__production-catalog > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 11px; }.creature-transformation-lab__production-catalog > div > button { display: grid; gap: 5px; min-width: 0; padding: 9px; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; color: var(--game-text); background: rgba(0,0,0,.16); font: inherit; text-align: left; cursor: pointer; }.creature-transformation-lab__production-catalog > div > button.is-selected { border-color: #d8ff9d; box-shadow: 0 0 0 2px rgba(184,232,94,.18); }.creature-transformation-lab__production-catalog > div img { width: 100%; height: 115px; object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#1a322c 0 25%, #132721 0 50%) 50% / 14px 14px; }.creature-transformation-lab__production-catalog > div small { min-height: 2.4em; color: var(--game-text-muted); font-size: .72rem; }.creature-transformation-lab__catalog-reset { justify-self: start; }
-.creature-transformation-lab__usage { display: grid; grid-column: 1 / -1; gap: 12px; padding: 15px 18px; border: 1px solid rgba(255,218,116,.4); border-radius: 18px; background: rgba(151,117,15,.14); }.creature-transformation-lab__usage header { display: grid; gap: 3px; }.creature-transformation-lab__usage h2, .creature-transformation-lab__usage p { margin: 0; }.creature-transformation-lab__usage > p { color: var(--game-text-muted); font-size: .8rem; }.creature-transformation-lab__usage dl { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin: 0; }.creature-transformation-lab__usage dl div { min-width: 0; padding: 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 11px; background: rgba(0,0,0,.14); }.creature-transformation-lab__usage dt, .creature-transformation-lab__usage small { color: var(--game-text-muted); font-size: .72rem; }.creature-transformation-lab__usage dd { margin: 4px 0; color: #fff1a8; font-weight: 800; }
-.creature-transformation-lab__shared-input { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 18px; border: 1px solid rgba(116,184,255,.42); border-radius: 18px; background: rgba(47,81,112,.16); }
-.creature-transformation-lab__shared-input > header, .creature-transformation-lab__shared-input > .creature-transformation-lab__cost-confirmation { grid-column: 1 / -1; }
-.creature-transformation-lab__shared-input header { display: grid; gap: 4px; }.creature-transformation-lab__shared-input h2, .creature-transformation-lab__shared-input p { margin: 0; }.creature-transformation-lab__shared-input p { color: var(--game-text-muted); }
-.creature-transformation-lab__shared-input label { display: grid; gap: 6px; color: var(--game-text-muted); }.creature-transformation-lab__shared-input select { min-height: 42px; border: 1px solid var(--game-border); border-radius: 10px; padding-inline: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }
-.creature-transformation-lab select option { color: #10251f; background: #f6f8f3; }
-.creature-transformation-lab__comparison-launch { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(250px, .9fr) auto; align-items: end; gap: 12px; padding: 14px; border: 1px solid rgba(184,232,94,.36); border-radius: 14px; background: rgba(184,232,94,.08); }.creature-transformation-lab__comparison-launch h3, .creature-transformation-lab__comparison-launch p { margin: 0; }.creature-transformation-lab__comparison-launch > div { display: grid; gap: 4px; }.creature-transformation-lab__comparison-launch > div > p, .creature-transformation-lab__comparison-launch > p { color: var(--game-text-muted); font-size: .82rem; }.creature-transformation-lab__comparison-launch > p { grid-column: 1 / -1; }.creature-transformation-lab__comparison-launch label { display: grid; gap: 6px; }.creature-transformation-lab__comparison-launch select, .creature-transformation-lab__comparison-launch button { min-height: 42px; border: 1px solid var(--game-border); border-radius: 10px; padding-inline: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__comparison-launch button { cursor: pointer; }
-.creature-transformation-lab__current, .creature-transformation-lab__lineage { align-self: stretch; padding: 18px; border-radius: 18px; }
-.creature-transformation-lab__current { border: 1px solid rgba(184,232,94,.28); background: rgba(184,232,94,.06); }
-.creature-transformation-lab__panel-heading { display: grid; grid-column: 1 / -1; gap: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,.12); }
-.creature-transformation-lab__panel-heading h2, .creature-transformation-lab__panel-heading p { margin: 0; }
-.creature-transformation-lab__panel-heading p { color: var(--game-text-muted); font-size: .88rem; line-height: 1.4; }
-.creature-transformation-lab__current .creature-transformation-lab__trait-description { min-height: 42px; padding: 9px 11px; border-radius: 10px; background: rgba(255,255,255,.04); }
-.creature-transformation-lab__current > label { display: none; }
-.creature-transformation-lab__lineage > header { grid-column: 1 / -1; }
-.creature-transformation-lab__lineage > fieldset, .creature-transformation-lab__lineage > p, .creature-transformation-lab__lineage > .creature-transformation-lab__cost-confirmation, .creature-transformation-lab__lineage > .creature-transformation-lab__lineage-actions { grid-column: 1 / -1; }
-.creature-transformation-lab__lineage > label { align-content: start; }
-.creature-transformation-lab__lineage > label > span { color: var(--game-text-muted); font-size: .76rem; font-weight: 400; }
-.creature-transformation-lab__lineage fieldset { padding: 12px; background: rgba(0,0,0,.12); }
-.creature-transformation-lab__lineage fieldset small { color: var(--game-text-muted); }
-.creature-transformation-lab__lineage fieldset p { justify-content: space-between; margin: 0; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
-.creature-transformation-lab__lineage fieldset p button { width: auto; min-height: 30px; padding: 4px 9px; }
-.creature-transformation-lab__cost-confirmation { display: flex !important; align-items: center; gap: 9px; padding: 11px 12px; border: 1px solid rgba(255,218,116,.36); border-radius: 10px; color: #fff1a8 !important; background: rgba(151,117,15,.16); }
-.creature-transformation-lab__lineage > .creature-transformation-lab__cost-confirmation { display: none !important; }
-.creature-transformation-lab__cost-confirmation input { width: 17px; height: 17px; accent-color: #b8e85e; }
-.creature-transformation-lab__lineage-actions { display: grid; gap: 8px; }.creature-transformation-lab__lineage-actions button { width: 100%; }.creature-transformation-lab__lineage-actions small { color: var(--game-text-muted); text-align: center; }
-.creature-transformation-lab__legacy-lineage-result, .creature-transformation-lab__legacy-current-result { display: none; }
-.creature-transformation-lab__comparison-workspace { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 16px; }
-.creature-transformation-lab__comparison-card { display: grid; min-width: 0; gap: 12px; padding: 16px; border: 1px solid rgba(255,255,255,.16); border-radius: 18px; background: rgba(8,22,18,.68); }
-.creature-transformation-lab__comparison-card--source { border-color: rgba(255,218,116,.4); }.creature-transformation-lab__comparison-card--current { border-color: rgba(184,232,94,.38); }.creature-transformation-lab__comparison-card--lineage { border-color: rgba(116,184,255,.5); }
-.creature-transformation-lab__comparison-card > header { display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.12); }.creature-transformation-lab__comparison-card h2, .creature-transformation-lab__comparison-card p { margin: 0; }
-.creature-transformation-lab__comparison-card > p { overflow-wrap: anywhere; color: var(--game-text-muted); font-size: .84rem; }.creature-transformation-lab__comparison-empty { min-height: 180px; display: grid; place-items: center; padding: 16px; border: 1px dashed rgba(255,255,255,.2); border-radius: 12px; text-align: center; }
-.creature-transformation-lab__comparison-card .creature-transformation-lab__experimental-image img { height: min(46vw, 420px); max-height: 420px; }.creature-transformation-lab__comparison-card > button { min-height: 40px; }
-.creature-transformation-lab__comparison-card--source > p { font-size: .78rem; line-height: 1.4; }
-.creature-transformation-lab__comparison-source-context { display: grid; align-content: end; gap: 7px; min-height: 154px; padding: 11px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: var(--game-text-muted); background: rgba(0,0,0,.12); font-size: .8rem; line-height: 1.4; }.creature-transformation-lab__comparison-source-context strong { color: var(--game-text); }
-.creature-transformation-lab__prompt { min-width: 0; padding: 11px; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: rgba(0,0,0,.17); }.creature-transformation-lab__prompt summary, .creature-transformation-lab__comparison-card > details > summary { cursor: pointer; color: var(--game-text); font-weight: 800; }.creature-transformation-lab__prompt pre, .creature-transformation-lab__comparison-card > details > pre { max-height: 260px; margin: 10px 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #e8f5d6; font: .75rem/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }.creature-transformation-lab__prompt small { display: block; overflow-wrap: anywhere; color: var(--game-text-muted); font: .7rem/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; }
-.creature-transformation-lab__comparison-card .creature-transformation-lab__review { display: none; }.creature-transformation-lab__comparison-review { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }.creature-transformation-lab__comparison-review legend, .creature-transformation-lab__comparison-review button, .creature-transformation-lab__comparison-review > p { grid-column: 1 / -1; }
-.creature-transformation-lab > .creature-transformation-lab__saved-lineage-reviews { display: none; }.creature-transformation-lab__saved-lineage-reviews { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(220px, .7fr) auto; align-items: end; gap: 12px; padding: 16px 18px; border: 1px solid rgba(116,184,255,.45); border-radius: 18px; background: rgba(47,81,112,.16); }.creature-transformation-lab__saved-lineage-reviews h2, .creature-transformation-lab__saved-lineage-reviews h3, .creature-transformation-lab__saved-lineage-reviews p { margin: 0; }.creature-transformation-lab__saved-lineage-reviews p { margin-top: 4px; color: var(--game-text-muted); font-size: .84rem; }.creature-transformation-lab__saved-lineage-reviews label { display: grid; gap: 6px; color: var(--game-text-muted); }.creature-transformation-lab__saved-lineage-reviews select, .creature-transformation-lab__saved-lineage-reviews button { min-height: 42px; border: 1px solid var(--game-border); border-radius: 10px; padding-inline: 10px; color: var(--game-text); background: rgba(255,255,255,.08); font: inherit; }.creature-transformation-lab__saved-lineage-reviews button { cursor: pointer; }
-@media (max-width: 820px) { .creature-transformation-lab { grid-template-columns: 1fr; }.creature-transformation-lab__current, .creature-transformation-lab__lineage { grid-column: 1; }.creature-transformation-lab__shared-input, .creature-transformation-lab__comparison-launch { grid-template-columns: 1fr; }.creature-transformation-lab__comparison-launch button { width: 100%; } }
-@media (max-width: 820px) { .creature-transformation-lab__comparison-workspace { grid-template-columns: 1fr; }.creature-transformation-lab__comparison-card .creature-transformation-lab__experimental-image img { height: auto; max-height: 420px; }.creature-transformation-lab__comparison-source-context { min-height: 0; }.creature-transformation-lab__comparison-review, .creature-transformation-lab__saved-lineage-reviews { grid-template-columns: 1fr; }.creature-transformation-lab__saved-lineage-reviews button { width: 100%; } }
-@media (max-width: 620px) { .creature-transformation-lab__usage dl { grid-template-columns: 1fr; } }
+.creature-transformation-lab {
+    --lab-accent: var(--ev-nav);
+    --lab-accent-soft: var(--ev-info-soft);
+
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    width: min(100%, 1120px);
+    min-width: 0;
+    gap: var(--ev-s-4);
+    margin: 0 auto;
+    padding: var(--ev-s-4) clamp(var(--ev-s-3), 4vw, var(--ev-s-6)) var(--ev-s-6);
+    color: var(--ev-ink);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(79, 184, 79, .16) 0%, transparent 60%),
+        var(--ev-grad-slate),
+        var(--ev-slate-deep);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panels                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * One panel recipe, applied by listing the blocks rather than adding a class to the markup —
+ * the lab's JSX is dense and a shared class per section would be noise there.
+ */
+.creature-transformation-lab__identity,
+.creature-transformation-lab__evolution-chain,
+.creature-transformation-lab__production-catalog,
+.creature-transformation-lab__usage,
+.creature-transformation-lab__shared-input,
+.creature-transformation-lab__saved-lineage-reviews,
+.creature-transformation-lab__comparison-launch,
+.creature-transformation-lab__current,
+.creature-transformation-lab__lineage,
+.creature-transformation-lab__error,
+.creature-transformation-lab__image-controls,
+.creature-transformation-lab__image-result,
+.creature-transformation-lab__benchmark,
+.creature-transformation-lab__metrics,
+.creature-transformation-lab__compare,
+.creature-transformation-lab__comparison-card {
+    position: relative;
+    min-width: 0;
+    padding: var(--ev-s-4);
+    border-radius: var(--ev-r-xl);
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-light);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip-cream);
+}
+
+/* The accent reads as a stripe along the top of the panel rather than a tinted fill. */
+.creature-transformation-lab__identity::before,
+.creature-transformation-lab__evolution-chain::before,
+.creature-transformation-lab__production-catalog::before,
+.creature-transformation-lab__usage::before,
+.creature-transformation-lab__shared-input::before,
+.creature-transformation-lab__saved-lineage-reviews::before,
+.creature-transformation-lab__comparison-launch::before,
+.creature-transformation-lab__current::before,
+.creature-transformation-lab__lineage::before,
+.creature-transformation-lab__error::before,
+.creature-transformation-lab__image-controls::before,
+.creature-transformation-lab__image-result::before,
+.creature-transformation-lab__benchmark::before,
+.creature-transformation-lab__metrics::before,
+.creature-transformation-lab__compare::before,
+.creature-transformation-lab__comparison-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--ev-s-5);
+    right: var(--ev-s-5);
+    height: 3px;
+    border-radius: 0 0 var(--ev-r-pill) var(--ev-r-pill);
+    background: var(--lab-accent);
+}
+
+/* Green is the control pipeline and everything that feeds it. */
+.creature-transformation-lab__identity,
+.creature-transformation-lab__evolution-chain,
+.creature-transformation-lab__current,
+.creature-transformation-lab__image-controls,
+.creature-transformation-lab__comparison-launch,
+.creature-transformation-lab__comparison-card--current {
+    --lab-accent: var(--ev-player);
+    --lab-accent-soft: var(--ev-good-soft);
+}
+
+/* Purple is the experiment, matching EVOLVI everywhere else in the app. */
+.creature-transformation-lab__lineage,
+.creature-transformation-lab__comparison-card--lineage {
+    --lab-accent: var(--ev-opponent);
+    --lab-accent-soft: #ece0fd;
+}
+
+/* Gold is cost, limits and anything the operator must acknowledge. */
+.creature-transformation-lab__usage,
+.creature-transformation-lab__comparison-card--source {
+    --lab-accent: var(--ev-gold);
+    --lab-accent-soft: var(--ev-warn-soft);
+}
+
+.creature-transformation-lab__error {
+    --lab-accent: var(--ev-bad);
+    --lab-accent-soft: var(--ev-bad-soft);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Headings and copy                                                           */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab h1,
+.creature-transformation-lab h2,
+.creature-transformation-lab h3 {
+    margin: 0;
+}
+
+.creature-transformation-lab p,
+.creature-transformation-lab legend {
+    margin: 0;
+}
+
+.creature-transformation-lab header > p,
+.creature-transformation-lab__trait-description,
+.creature-transformation-lab__metrics p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab .eyebrow {
+    color: var(--lab-accent);
+}
+
+.creature-transformation-lab legend {
+    padding-inline: var(--ev-s-2);
+    color: var(--ev-ink-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__header {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: var(--ev-s-3);
+    color: var(--ev-on-dark);
+}
+
+.creature-transformation-lab__header h1 {
+    margin: 0;
+}
+
+/* Icon + label on one line; the icon sizes from the button's font-size, as everywhere else. */
+.creature-transformation-lab__header > button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__header .eyebrow {
+    color: var(--ev-on-dark-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Controls                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab label {
+    display: grid;
+    gap: var(--ev-s-1);
+    min-width: 0;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+}
+
+.creature-transformation-lab input:not([type='checkbox']),
+.creature-transformation-lab select,
+.creature-transformation-lab textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 9px 12px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+    font: inherit;
+    font-weight: 700;
+}
+
+.creature-transformation-lab textarea {
+    min-height: 92px;
+    resize: vertical;
+}
+
+.creature-transformation-lab input:focus-visible,
+.creature-transformation-lab select:focus-visible,
+.creature-transformation-lab textarea:focus-visible {
+    outline: 2px solid var(--lab-accent);
+    outline-offset: 1px;
+}
+
+.creature-transformation-lab select option {
+    color: var(--ev-ink);
+    background: var(--ev-cream-light);
+}
+
+/*
+ * Every bare button in the lab is a cream control. `.primary-button` (technical-screens.css) stays
+ * the one green action per block, so the panels keep a single obvious next step.
+ */
+.creature-transformation-lab button:not(.primary-button):not(.creature-transformation-lab__chain-stage-button) {
+    min-height: 40px;
+    padding: 9px 14px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-ink);
+    box-shadow: var(--ev-lip-cream);
+    font: inherit;
+    font-family: var(--ev-font-display);
+    font-weight: 800;
+    cursor: pointer;
+    transition: filter var(--ev-dur-fast) var(--ev-ease), transform var(--ev-dur-fast) var(--ev-ease);
+}
+
+.creature-transformation-lab button:not(:disabled):hover {
+    filter: brightness(1.04);
+}
+
+.creature-transformation-lab button:not(:disabled):active {
+    transform: translateY(1px);
+}
+
+.creature-transformation-lab button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Identity                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__identity {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: var(--ev-s-4);
+}
+
+.creature-transformation-lab__identity img {
+    width: 92px;
+    height: 112px;
+    object-fit: contain;
+}
+
+.creature-transformation-lab__identity div {
+    display: grid;
+    gap: var(--ev-s-1);
+    min-width: 0;
+}
+
+.creature-transformation-lab__identity span,
+.creature-transformation-lab__identity small,
+.creature-transformation-lab__identity p {
+    margin: 0;
+    color: var(--ev-ink-muted);
+}
+
+.creature-transformation-lab__identity strong {
+    color: var(--ev-player-dark);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panel internals                                                             */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__controls,
+.creature-transformation-lab__shared-input,
+.creature-transformation-lab__benchmark-controls,
+.creature-transformation-lab__review,
+.creature-transformation-lab__compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__evolution-chain,
+.creature-transformation-lab__production-catalog,
+.creature-transformation-lab__usage,
+.creature-transformation-lab__benchmark,
+.creature-transformation-lab__metrics,
+.creature-transformation-lab__image-result {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__evolution-chain header,
+.creature-transformation-lab__usage header,
+.creature-transformation-lab__shared-input header {
+    display: grid;
+    gap: 3px;
+}
+
+.creature-transformation-lab__benchmark > header,
+.creature-transformation-lab__metrics > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__panel-heading {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--ev-s-1);
+    padding-bottom: var(--ev-s-2);
+    border-bottom: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__trait-description {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.creature-transformation-lab__controls button {
+    grid-column: 1 / -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Evolution chain                                                             */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__evolution-chain {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__evolution-chain ol {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-3);
+    min-width: 0;
+    margin: 0;
+    padding: 2px;
+    overflow-x: auto;
+    list-style: none;
+    scrollbar-color: var(--ev-cream-sunk) transparent;
+}
+
+.creature-transformation-lab__evolution-chain li {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__evolution-chain figure {
+    display: grid;
+    gap: 7px;
+    width: 138px;
+    margin: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-lg);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+    transition: border-color var(--ev-dur-fast) var(--ev-ease), box-shadow var(--ev-dur-fast) var(--ev-ease);
+}
+
+.creature-transformation-lab__evolution-chain li.is-active figure {
+    border-color: var(--ev-player);
+    box-shadow: 0 0 0 3px var(--ev-good-soft);
+}
+
+.creature-transformation-lab__evolution-chain figcaption {
+    min-height: 2.4em;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    line-height: 1.25;
+}
+
+.creature-transformation-lab__evolution-chain li.is-active figcaption {
+    color: var(--ev-player-dark);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__evolution-chain figcaption small {
+    display: block;
+    margin-top: var(--ev-s-1);
+    color: var(--ev-ink-faint);
+    font-weight: 700;
+}
+
+.creature-transformation-lab__chain-arrow {
+    display: grid;
+    place-items: center;
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-xl);
+}
+
+.creature-transformation-lab__chain-stage-button {
+    padding: 0;
+    border: 0;
+    border-radius: var(--ev-r-lg);
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.creature-transformation-lab__chain-stage-button:not(:disabled):hover figure {
+    border-color: var(--ev-player);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Image plates                                                                */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Generated art is transparent PNG: the checker plate is what makes the cut-out readable. It is
+ * built from the cream tokens so it belongs to this palette rather than the usual grey checker.
+ */
+.creature-transformation-lab__evolution-chain img,
+.creature-transformation-lab__production-catalog > div img,
+.creature-transformation-lab__image-compare img,
+.creature-transformation-lab__experimental-image img {
+    display: block;
+    width: 100%;
+    object-fit: contain;
+    border-radius: var(--ev-r-md);
+    background: repeating-conic-gradient(var(--ev-cream-deep) 0 25%, var(--ev-cream-sunk) 0 50%) 50% / 18px 18px;
+}
+
+.creature-transformation-lab__evolution-chain img {
+    height: 104px;
+}
+
+.creature-transformation-lab__experimental-image {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-2);
+    min-width: 0;
+    margin: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-lg);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__experimental-image img {
+    max-width: 100%;
+    height: auto;
+    max-height: min(72vh, 560px);
+}
+
+.creature-transformation-lab__experimental-image figcaption,
+.creature-transformation-lab__image-compare figcaption {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Production catalogue                                                        */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__production-catalog {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__production-catalog > header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__production-catalog > header p {
+    margin-top: var(--ev-s-1);
+}
+
+.creature-transformation-lab__production-catalog > div {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__production-catalog > div > button {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    padding: var(--ev-s-2);
+    text-align: left;
+}
+
+.creature-transformation-lab__production-catalog > div > button.is-selected {
+    border-color: var(--ev-player);
+    box-shadow: 0 0 0 3px var(--ev-good-soft);
+}
+
+.creature-transformation-lab__production-catalog > div img {
+    height: 115px;
+}
+
+.creature-transformation-lab__production-catalog > div small {
+    min-height: 2.4em;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 700;
+}
+
+.creature-transformation-lab__catalog-reset {
+    justify-self: start;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Usage limits                                                                */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__usage {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__usage > p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab__usage dl {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--ev-s-3);
+    margin: 0;
+}
+
+.creature-transformation-lab__usage dl div {
+    min-width: 0;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-warn-soft);
+    border: 2px solid rgba(232, 160, 32, .35);
+}
+
+.creature-transformation-lab__usage dt,
+.creature-transformation-lab__usage small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__usage dd {
+    margin: var(--ev-s-1) 0;
+    color: var(--ev-ink);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-lg);
+    font-weight: 800;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared input and launch                                                     */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__shared-input {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__shared-input > header,
+.creature-transformation-lab__shared-input > .creature-transformation-lab__cost-confirmation {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__comparison-launch {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, .9fr) auto;
+    align-items: end;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__comparison-launch > div {
+    display: grid;
+    gap: var(--ev-s-1);
+}
+
+.creature-transformation-lab__comparison-launch > div > p,
+.creature-transformation-lab__comparison-launch > p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab__comparison-launch > p {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__saved-lineage-reviews {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, .7fr) auto;
+    align-items: end;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__saved-lineage-reviews p {
+    margin-top: var(--ev-s-1);
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+/* The lab renders this block twice; only the one inside the shared input is current. */
+.creature-transformation-lab > .creature-transformation-lab__saved-lineage-reviews {
+    display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cost acknowledgement                                                        */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__cost-confirmation {
+    display: flex !important;
+    align-items: center;
+    gap: var(--ev-s-2);
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink) !important;
+    background: var(--ev-warn-soft);
+    border: 2px solid rgba(232, 160, 32, .55);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+}
+
+/*
+ * Every checkbox in the lab is a 40×40 target with a checkbox-sized box drawn inside it. The
+ * label already toggles it, but the input has to clear the mobile minimum on its own, and a
+ * native control cannot separate its hit area from its glyph — so the control is drawn here.
+ */
+.creature-transformation-lab input[type='checkbox'] {
+    appearance: none;
+    position: relative;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.creature-transformation-lab input[type='checkbox']::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22px;
+    height: 22px;
+    translate: -50% -50%;
+    border-radius: var(--ev-r-sm);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink-strong);
+}
+
+.creature-transformation-lab input[type='checkbox']:checked::before {
+    background: var(--ev-grad-use);
+    border-color: var(--ev-player-dark);
+}
+
+/* The tick is two borders on a rotated box, so it needs neither a glyph nor an asset. */
+.creature-transformation-lab input[type='checkbox']:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 11px;
+    translate: -50% -62%;
+    rotate: 45deg;
+    border-right: 3px solid #fff;
+    border-bottom: 3px solid #fff;
+}
+
+.creature-transformation-lab input[type='checkbox']:focus-visible {
+    outline: 2px solid var(--ev-player-dark);
+    outline-offset: -8px;
+    border-radius: var(--ev-r-md);
+}
+
+.creature-transformation-lab input[type='checkbox']:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+/* A single acknowledgement governs both pipelines; the duplicate in B is hidden. */
+.creature-transformation-lab__lineage > .creature-transformation-lab__cost-confirmation {
+    display: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pipeline panels                                                             */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * A carries far fewer controls than B, so both panels take their natural height rather than
+ * matching: stretching either one only pads it with empty cream, and stretching the rows inside
+ * inflates whichever control happens to be last.
+ */
+.creature-transformation-lab__current,
+.creature-transformation-lab__lineage {
+    align-self: start;
+    align-content: start;
+}
+
+.creature-transformation-lab__current > label {
+    display: none;
+}
+
+.creature-transformation-lab__current .creature-transformation-lab__trait-description {
+    min-height: 42px;
+    padding: var(--ev-s-2) var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__lineage {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__lineage > header,
+.creature-transformation-lab__lineage > p,
+.creature-transformation-lab__lineage > small,
+.creature-transformation-lab__lineage > fieldset,
+.creature-transformation-lab__lineage > .creature-transformation-lab__cost-confirmation,
+.creature-transformation-lab__lineage > .creature-transformation-lab__lineage-actions {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__lineage > label {
+    align-content: start;
+}
+
+.creature-transformation-lab__lineage > label > span {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-xs);
+    font-weight: 700;
+}
+
+.creature-transformation-lab fieldset {
+    display: grid;
+    gap: var(--ev-s-2);
+    margin: 0;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__lineage fieldset small {
+    color: var(--ev-ink-muted);
+}
+
+.creature-transformation-lab__lineage fieldset p {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-2);
+    margin: 0;
+    padding: var(--ev-s-2) 0;
+    border-bottom: 1px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__lineage fieldset p button {
+    width: auto;
+    min-height: 32px;
+    padding: 4px 10px;
+}
+
+.creature-transformation-lab__lineage-actions {
+    display: grid;
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__lineage-actions button {
+    width: 100%;
+}
+
+.creature-transformation-lab__lineage-actions small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    text-align: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Errors and warnings                                                         */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__error {
+    grid-column: 1 / -1;
+    color: var(--ev-ink);
+    background: var(--ev-bad-soft);
+    border-color: rgba(229, 84, 74, .55);
+}
+
+.creature-transformation-lab__error strong {
+    color: #97281f;
+}
+
+.creature-transformation-lab__error p {
+    margin: var(--ev-s-1) 0;
+}
+
+.creature-transformation-lab__error ul,
+.creature-transformation-lab__evaluation ul {
+    margin: var(--ev-s-2) 0 0;
+    padding-left: var(--ev-s-5);
+}
+
+.creature-transformation-lab__mock-banner {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    background: var(--ev-warn-soft);
+    border: 2px solid rgba(232, 160, 32, .55);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__warnings {
+    display: grid;
+    gap: var(--ev-s-1);
+    margin: 0;
+    padding: var(--ev-s-3) var(--ev-s-3) var(--ev-s-3) var(--ev-s-6);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    background: var(--ev-warn-soft);
+    font-size: var(--ev-fs-sm);
+    font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Result and metadata                                                         */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__result {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--ev-s-4);
+}
+
+.creature-transformation-lab__result > header {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__result > header div,
+.creature-transformation-lab__evaluation,
+.creature-transformation-lab__result details {
+    min-width: 0;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__result header span {
+    display: block;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__result header strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--ev-ink);
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab__evaluation h2,
+.creature-transformation-lab__evaluation p {
+    margin: 0 0 var(--ev-s-1);
+}
+
+.creature-transformation-lab__result summary {
+    cursor: pointer;
+    font-family: var(--ev-font-display);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__image-metadata {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+    margin: 0;
+}
+
+.creature-transformation-lab__image-metadata div {
+    min-width: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__image-metadata dt {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__image-metadata dd {
+    margin: 3px 0 0;
+    overflow-wrap: anywhere;
+    color: var(--ev-ink);
+    font-size: var(--ev-fs-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Image controls and legacy result blocks                                     */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__image-controls {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__image-result {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__image-compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__image-compare figure {
+    display: grid;
+    gap: var(--ev-s-2);
+    min-width: 0;
+    margin: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__image-compare img {
+    height: 280px;
+}
+
+/* Superseded by the A/B workspace, kept in the DOM for the legacy single-pipeline flow. */
+.creature-transformation-lab__legacy-lineage-result,
+.creature-transformation-lab__legacy-current-result {
+    display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* A/B workspace                                                               */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__comparison-workspace {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--ev-s-4);
+}
+
+.creature-transformation-lab__comparison-card {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__comparison-card > header {
+    display: grid;
+    gap: var(--ev-s-1);
+    padding-bottom: var(--ev-s-3);
+    border-bottom: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__comparison-card > p {
+    overflow-wrap: anywhere;
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab__comparison-card--source > p {
+    font-size: var(--ev-fs-xs);
+    line-height: 1.45;
+}
+
+.creature-transformation-lab__comparison-card .creature-transformation-lab__experimental-image img {
+    height: min(46vw, 420px);
+    max-height: 420px;
+}
+
+.creature-transformation-lab__comparison-card > button {
+    min-height: 42px;
+}
+
+.creature-transformation-lab__comparison-empty {
+    display: grid;
+    place-items: center;
+    min-height: 180px;
+    padding: var(--ev-s-4);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink-faint);
+    border: 2px dashed var(--ev-stroke-ink-strong);
+    text-align: center;
+}
+
+.creature-transformation-lab__comparison-source-context {
+    display: grid;
+    align-content: end;
+    gap: 7px;
+    min-height: 154px;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-ink-muted);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+    font-size: var(--ev-fs-sm);
+    line-height: 1.45;
+}
+
+.creature-transformation-lab__comparison-source-context strong {
+    color: var(--ev-ink);
+}
+
+/* The per-card review is superseded by the workspace-wide one below the three cards. */
+.creature-transformation-lab__comparison-card .creature-transformation-lab__review {
+    display: none;
+}
+
+.creature-transformation-lab__comparison-review {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.creature-transformation-lab__comparison-review legend,
+.creature-transformation-lab__comparison-review button,
+.creature-transformation-lab__comparison-review > p {
+    grid-column: 1 / -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Prompts and transcripts                                                     */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__prompt {
+    min-width: 0;
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__prompt summary,
+.creature-transformation-lab__comparison-card > details > summary {
+    cursor: pointer;
+    color: var(--ev-ink);
+    font-family: var(--ev-font-display);
+    font-weight: 800;
+}
+
+.creature-transformation-lab pre {
+    max-height: 300px;
+    margin: var(--ev-s-3) 0 0;
+    padding: var(--ev-s-3);
+    overflow: auto;
+    border-radius: var(--ev-r-sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--ev-ink);
+    background: var(--ev-cream-sunk);
+    font: var(--ev-fs-sm) / 1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.creature-transformation-lab__prompt small {
+    display: block;
+    margin-top: var(--ev-s-2);
+    overflow-wrap: anywhere;
+    color: var(--ev-ink-faint);
+    font: var(--ev-fs-xs) / 1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Benchmark, metrics, review                                                  */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__benchmark {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__benchmark-controls > p,
+.creature-transformation-lab__benchmark-controls > button,
+.creature-transformation-lab__benchmark-controls > details,
+.creature-transformation-lab__benchmark-controls > label:last-of-type,
+.creature-transformation-lab__review > h3,
+.creature-transformation-lab__review > fieldset,
+.creature-transformation-lab__review > label:last-of-type,
+.creature-transformation-lab__review > button,
+.creature-transformation-lab__compare > h3,
+.creature-transformation-lab__compare > p,
+.creature-transformation-lab__compare > div {
+    grid-column: 1 / -1;
+}
+
+.creature-transformation-lab__benchmark details {
+    padding: var(--ev-s-3);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.creature-transformation-lab__benchmark pre {
+    max-height: 240px;
+}
+
+.creature-transformation-lab__score-grid {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__review fieldset {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ev-s-2) var(--ev-s-4);
+}
+
+.creature-transformation-lab__review fieldset label {
+    display: block;
+    font-size: var(--ev-fs-sm);
+}
+
+.creature-transformation-lab__metrics > header > div {
+    display: flex;
+    gap: var(--ev-s-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Narrow viewports                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 820px) {
+    .creature-transformation-lab {
+        grid-template-columns: 1fr;
+    }
+
+    .creature-transformation-lab__current,
+    .creature-transformation-lab__lineage {
+        grid-column: 1;
+    }
+
+    .creature-transformation-lab__shared-input,
+    .creature-transformation-lab__comparison-launch,
+    .creature-transformation-lab__comparison-workspace,
+    .creature-transformation-lab__comparison-review,
+    .creature-transformation-lab__saved-lineage-reviews {
+        grid-template-columns: 1fr;
+    }
+
+    .creature-transformation-lab__comparison-launch button,
+    .creature-transformation-lab__saved-lineage-reviews button {
+        width: 100%;
+    }
+
+    .creature-transformation-lab__comparison-card .creature-transformation-lab__experimental-image img {
+        height: auto;
+        max-height: 420px;
+    }
+
+    .creature-transformation-lab__comparison-source-context {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 620px) {
+    .creature-transformation-lab {
+        width: 100%;
+        padding: var(--ev-s-3);
+    }
+
+    .creature-transformation-lab__controls,
+    .creature-transformation-lab__lineage,
+    .creature-transformation-lab__benchmark-controls,
+    .creature-transformation-lab__review,
+    .creature-transformation-lab__compare,
+    .creature-transformation-lab__score-grid,
+    .creature-transformation-lab__image-controls,
+    .creature-transformation-lab__image-compare,
+    .creature-transformation-lab__usage dl {
+        grid-template-columns: 1fr;
+    }
+
+    .creature-transformation-lab__result > header,
+    .creature-transformation-lab__image-metadata {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .creature-transformation-lab__identity {
+        align-items: flex-start;
+    }
+
+    .creature-transformation-lab__identity img {
+        width: 74px;
+        height: 92px;
+    }
+
+    .creature-transformation-lab__experimental-image {
+        width: 100%;
+        max-width: 320px;
+        justify-self: center;
+        overflow: hidden;
+    }
+
+    .creature-transformation-lab__experimental-image img {
+        max-height: 420px;
+    }
+}

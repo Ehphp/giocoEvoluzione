@@ -6,7 +6,6 @@ import {
     type CreatureVisual,
 } from '../../../components/game-v2/gameSelectionAssets'
 import { shouldMirrorCreature, type CreatureFacing } from '../../../components/game-v2/components/creatureOrientation'
-import { ASSETS } from '../../../ui/assets'
 
 type BattleArenaProps = {
     playerCreature: CreatureVisual | null
@@ -51,12 +50,16 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleS
     )
 }
 
+/*
+ * No VS emblem between the creatures: it sat on the centre line and made the two halves read as
+ * unequal. The header already says who is facing whom, and each creature now owns exactly half
+ * the arena, which reads as a fair split on its own.
+ */
 export function BattleArena({ playerCreature, opponentCreature }: BattleArenaProps) {
     return (
         <section className="arena" aria-label="Scena di battaglia">
             {playerCreature ? <CreatureLayer visual={playerCreature} side="player" /> : null}
             {opponentCreature ? <CreatureLayer visual={opponentCreature} side="opponent" /> : null}
-            <img className="arena__versus" src={ASSETS.battle.versus} alt="" aria-hidden="true" />
         </section>
     )
 }

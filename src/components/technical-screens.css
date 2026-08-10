@@ -1,7 +1,9 @@
 /**
  * Shared base for the flag-gated technical screens (transformation lab, background cleanup).
- * These are internal tools, not product surfaces: they keep a plain, dense look and only borrow
- * the palette tokens from the design system.
+ *
+ * These are internal tools, so they stay denser than a product screen — but they are the same
+ * product, and they now wear the same clothes: cream panels, display headings, the token palette
+ * and the chunky pressable lip. Only the density differs from `src/ui`.
  */
 
 /**
@@ -43,32 +45,42 @@
     min-height: 42px;
     padding: 9px 12px;
     border-radius: var(--ev-r-md);
-    border: 2px solid rgba(160, 138, 92, .3);
+    color: var(--ev-ink);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+    font: inherit;
+    font-weight: 700;
 }
 
 /**
- * Action button used by the transformation lab. It lived in the removed `App.css`; the tools
- * keep it here rather than pulling in the product design system.
+ * The one green action per block, matching the product's USA button: same gradient, same lip.
+ * Everything else on a technical screen is a cream control, so this reads as the next step.
  */
 .primary-button {
-    min-height: 40px;
-    padding: 10px 16px;
+    min-height: 42px;
+    padding: 10px 18px;
     border-radius: var(--ev-r-md);
-    border: 2px solid transparent;
+    border: 2px solid var(--ev-stroke-light);
     color: #fff;
     font: inherit;
+    font-family: var(--ev-font-display);
     font-weight: 800;
     cursor: pointer;
-    background: var(--ev-player-dark);
-    transition: filter 150ms ease;
+    background: var(--ev-grad-use);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip);
+    transition: filter var(--ev-dur-fast) var(--ev-ease), transform var(--ev-dur-fast) var(--ev-ease);
 }
 
 .primary-button:hover:not(:disabled) {
-    filter: brightness(1.08);
+    filter: brightness(1.06);
+}
+
+.primary-button:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
 .primary-button:disabled {
-    opacity: .6;
+    opacity: .55;
     cursor: not-allowed;
 }
 

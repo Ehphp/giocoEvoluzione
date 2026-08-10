@@ -5,6 +5,7 @@ import { AppShell, Avatar, Button, IconButton, Notice, Pill, ProgressBar } from 
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
 import { ASSETS } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
+import { measureCreatureSubject, type CreatureSubject } from './creatureSubjectFit'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
 
 import './HomeScreen.css'
@@ -17,16 +18,41 @@ type HomeScreenProps = {
 function CreatureArt({ image }: { image: HomeCreatureImage }) {
     const [source, setSource] = useState(image.src)
     const [hasFailed, setHasFailed] = useState(false)
+    const [subject, setSubject] = useState<CreatureSubject | null>(null)
 
     useEffect(() => {
         setSource(image.src)
         setHasFailed(false)
     }, [image.src])
 
+    /*
+     * How much of the sprite is actually animal. Until this resolves — and forever, if the image
+     * cannot be read — the sprite renders as a plain contained fit, which is correct but sized by
+     * the file rather than by the creature in it.
+     */
+    useEffect(() => {
+        let isCurrent = true
+
+        setSubject(null)
+        void measureCreatureSubject(source).then((measured) => {
+            if (isCurrent) {
+                setSubject(measured)
+            }
+        })
+
+        return () => { isCurrent = false }
+    }, [source])
+
     const style = {
         '--home-creature-scale': image.scale ?? 1,
         '--home-creature-offset-x': `${image.offsetX ?? 0}%`,
         '--home-creature-offset-y': `${image.offsetY ?? 0}%`,
+        ...(subject ? {
+            '--home-subject-h': subject.heightRatio,
+            '--home-subject-box-wph': subject.boxWidthPerHeight,
+            '--home-subject-cx': subject.centreX,
+            '--home-subject-cy': subject.centreY,
+        } : null),
     } as CSSProperties
 
     if (hasFailed) {
@@ -35,7 +61,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
 
     return (
         <img
-            className="home-stage__creature"
+            className={`home-stage__creature ${subject ? 'home-stage__creature--fitted' : ''}`}
             src={source}
             alt={image.alt}
             style={style}
@@ -130,8 +156,18 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
 
                 {viewModel.creature ? (
                     <section className="home-stage" aria-label="La tua creatura" data-testid="home-creature-stage">
-                        <span className="home-stage__halo" aria-hidden="true" />
-                        <CreatureArt image={viewModel.creature.image} />
+                        {/*
+                          * The art has its own box and the plaque sits below it, as siblings. The
+                          * creature used to be positioned over the plaque and pulled back up by a
+                          * constant measured off one sprite — but the sprites do not share a
+                          * framing (some carry a third of their height as transparent margin,
+                          * others none), so that constant dropped the unpadded ones through the
+                          * plaque. Stacked boxes cannot overlap whatever the sprite looks like.
+                          */}
+                        <div className="home-stage__art">
+                            <span className="home-stage__halo" aria-hidden="true" />
+                            <CreatureArt image={viewModel.creature.image} />
+                        </div>
                         <div className="home-stage__plaque">
                             <span className="ev-eyebrow ev-eyebrow--light">La tua creatura</span>
                             <strong className="ev-truncate">{viewModel.creature.name}</strong>

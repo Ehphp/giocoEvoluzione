@@ -115,6 +115,20 @@
     --ev-glass: rgba(10, 28, 22, .58);
     --ev-glass-strong: rgba(8, 24, 19, .78);
 
+    /*
+     * Overlay scrims. Overlays are game layers, not new pages: the scene behind stays readable as
+     * a scene. Two tiers, and the difference is *where the contrast comes from*.
+     * The default tier backs a cream panel, which carries its own contrast, so it only needs to
+     * push the scene back. The `-scene` tier backs loose content sitting straight on the artwork:
+     * it defocuses harder and tints lighter, so the field reads as depth rather than as a wall.
+     */
+    --ev-scrim: rgba(4, 14, 10, .46);
+    --ev-scrim-blur: 4px;
+    --ev-scrim-scene: rgba(4, 14, 10, .38);
+    --ev-scrim-scene-blur: 5px;
+    /* Local ground for loose content on the `-scene` tier: contrast without a card edge. */
+    --ev-scrim-focus: radial-gradient(ellipse at center, rgba(4, 14, 10, .5) 0%, rgba(4, 14, 10, 0) 72%);
+
     /* Three-stop "candy" gradients. */
     --ev-grad-player: linear-gradient(150deg, var(--ev-player-light) 0%, var(--ev-player) 52%, var(--ev-player-dark) 100%);
     --ev-grad-opponent: linear-gradient(150deg, var(--ev-opponent-light) 0%, var(--ev-opponent) 52%, var(--ev-opponent-dark) 100%);
@@ -138,6 +152,8 @@
     --ev-shadow-lg: 0 16px 38px rgba(6, 20, 14, .42);
     --ev-shadow-glow-player: 0 0 0 3px color-mix(in srgb, var(--ev-gene-agility) 50%, transparent), 0 10px 26px rgba(69, 153, 42, .45);
     --ev-shadow-glow-gold: 0 0 22px color-mix(in srgb, var(--ev-gold) 55%, transparent);
+    /* Text drawn straight on artwork: keeps light copy legible over any scenery. */
+    --ev-shadow-text-on-scene: 0 2px 10px rgba(4, 14, 10, .85), 0 1px 2px rgba(4, 14, 10, .9);
     /* Chunky "toy" lip under pressable surfaces. */
     --ev-lip: inset 0 -4px 0 rgba(0, 0, 0, .22), inset 0 2px 0 rgba(255, 255, 255, .38);
     --ev-lip-cream: inset 0 -3px 0 rgba(160, 138, 92, .28), inset 0 2px 0 rgba(255, 255, 255, .9);
@@ -163,6 +179,8 @@
 
     /* Layout. */
     --ev-app-max-width: 460px;
+    /* Narrow overlays deliberately stop short of the app width so the scene shows at the sides. */
+    --ev-sheet-width-narrow: 336px;
     --ev-safe-top: env(safe-area-inset-top, 0px);
     --ev-safe-bottom: env(safe-area-inset-bottom, 0px);
     --ev-dock-height: 68px;

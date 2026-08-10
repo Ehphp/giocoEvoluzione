@@ -33,6 +33,7 @@ import { canGenerateMockImage } from './lab-image-state'
 import { CreatureTransformationBenchmark } from './CreatureTransformationBenchmark'
 import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
+import { ArrowRightIcon, BackIcon } from '../../ui/icons'
 
 import '../technical-screens.css'
 import './CreatureTransformationLab.css'
@@ -517,7 +518,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     return (
         <section className="creature-transformation-lab" aria-labelledby="creature-transformation-lab-title">
             <header className="creature-transformation-lab__header">
-                <button type="button" onClick={onBack}>{'<- Home'}</button>
+                <button type="button" onClick={onBack}><BackIcon aria-hidden="true" />Home</button>
                 <div>
                     <span className="eyebrow">Development-only</span>
                     <h1 id="creature-transformation-lab-title">Laboratorio trasformazioni</h1>
@@ -529,7 +530,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 <ol>
                     {evolutionChain.map((stage, index) => <li key={stage.id} className={stage.active ? 'is-active' : ''}>
                         {index === 0 ? <button type="button" className="creature-transformation-lab__chain-stage-button" onClick={() => setIsProductionCatalogOpen(true)} disabled={isBusy}><figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}<small>Scegli dal catalogo</small></figcaption></figure></button> : <figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}</figcaption></figure>}
-                        {index < evolutionChain.length - 1 ? <span className="creature-transformation-lab__chain-arrow" aria-hidden="true">→</span> : null}
+                        {index < evolutionChain.length - 1 ? <span className="creature-transformation-lab__chain-arrow" aria-hidden="true"><ArrowRightIcon /></span> : null}
                     </li>)}
                 </ol>
             </section>

@@ -6,6 +6,15 @@
     flex-direction: column;
     gap: var(--ev-s-2);
     min-height: 0;
+    /*
+     * The arena and the decision panel deliberately bleed past this column (negative margins) to
+     * reach toward the screen edge. `overflow-y: auto` makes this a scroll container on *both*
+     * axes, which turned that bleed into 8px of real horizontal scroll. Widening this element by
+     * the bleed and paying it back as padding leaves the children exactly where they were, with
+     * nothing sticking out to scroll to. Keep this padding >= the widest child bleed.
+     */
+    margin-inline: -8px;
+    padding-inline: 8px;
     /* Short viewports scroll rather than hiding the gene row or the actions. */
     overflow-y: auto;
     overscroll-behavior-y: contain;
@@ -418,7 +427,7 @@
      * The arena is the only elastic block: it absorbs whatever the header, briefing and
      * decision controls do not need, so safe-area insets never push the actions off screen.
      */
-    flex: 1 1 124px;
+    flex: 1 1 138px;
     min-height: 48px;
     /* Sized container so the sprites can bow out when the arena is squeezed. */
     container-type: size;
@@ -426,11 +435,20 @@
     margin: 0 -6px -26px;
 }
 
+/**
+ * The lane is the creature's frame. It reaches above the arena rather than scaling the sprite,
+ * which is what makes the art read about a tenth larger without cropping it.
+ *
+ * Exactly half the arena each, so the two lanes tile it with no overlap and each sprite — centred
+ * in its own lane by `object-position` — sits on the quarter line of its half. The arena is
+ * symmetrically inset from the column, so those halves are the screen's halves. The sprites are
+ * height-limited well inside 50%, so the narrower lane costs no size.
+ */
 .arena__creature {
     position: absolute;
     bottom: 0;
-    width: 52%;
-    height: 100%;
+    width: 50%;
+    height: 110%;
     translate: var(--arena-creature-offset-x, 0) 0;
 }
 
@@ -464,7 +482,8 @@
 
 .arena__shadow {
     position: absolute;
-    bottom: 4%;
+    /* Percentage of the taller lane: keeps the contact shadow where the arena floor is. */
+    bottom: 3.6%;
     left: 50%;
     width: 62%;
     height: 12px;
@@ -475,21 +494,9 @@
 
 /* Below this the sprites would read as specks; the biome alone is a cleaner fallback. */
 @container (max-height: 74px) {
-    .arena__creature,
-    .arena__versus {
+    .arena__creature {
         display: none;
     }
-}
-
-.arena__versus {
-    position: absolute;
-    top: 58%;
-    left: 50%;
-    z-index: 2;
-    width: 74px;
-    transform: translate(-50%, -50%);
-    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .45));
-    pointer-events: none;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -514,19 +521,6 @@
     gap: 4px;
 }
 
-.gene-carousel__head {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--ev-s-2);
-}
-
-.gene-carousel__arrow {
-    width: 40px;
-    height: 40px;
-    font-size: 13px;
-}
-
 .gene-carousel__track {
     display: flex;
     gap: 5px;
@@ -540,16 +534,16 @@
     display: none;
 }
 
+/* The row carries no heading, so the cards themselves take that height and sit at full size. */
 .gene-card {
     position: relative;
     display: grid;
     justify-items: center;
     align-content: start;
-    gap: 2px;
+    gap: 3px;
     flex: 1 1 0;
     min-width: 56px;
-    padding: 6px 3px 4px;
-    scale: .96;
+    padding: 9px 4px 6px;
     border-radius: var(--ev-r-md);
     color: var(--ev-ink);
     scroll-snap-align: center;
@@ -574,29 +568,30 @@
     opacity: .78;
 }
 
+/* The glyph is what the row is read by, so it is the largest thing on the card. */
 .gene-card__icon {
     position: relative;
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--ev-r-pill);
-    font-size: 21px;
+    font-size: 29px;
     background: rgba(255, 255, 255, .7);
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
 }
 
 .gene-card__value {
     position: absolute;
-    right: -7px;
-    bottom: -4px;
-    min-width: 18px;
-    padding: 0 4px;
+    right: -8px;
+    bottom: -5px;
+    min-width: 21px;
+    padding: 0 5px;
     border-radius: var(--ev-r-pill);
     color: #fff;
     font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-2xs);
-    line-height: 15px;
+    font-size: var(--ev-fs-xs);
+    line-height: 18px;
     background: var(--gene-color-strong, var(--ev-ink));
     border: 1.5px solid #fff;
 }
@@ -604,7 +599,7 @@
 .gene-card__name {
     max-width: 100%;
     font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-2xs);
+    font-size: var(--ev-fs-xs);
     font-weight: 800;
     letter-spacing: .01em;
     text-transform: uppercase;
@@ -618,9 +613,9 @@
 
 .gene-card__affinity {
     width: 100%;
-    padding: 1px 2px;
+    padding: 2px;
     border-radius: var(--ev-r-sm);
-    font-size: var(--ev-fs-2xs);
+    font-size: var(--ev-fs-xs);
     font-weight: 800;
 }
 
@@ -931,7 +926,7 @@
     }
 
     .arena {
-        flex-basis: 104px;
+        flex-basis: 114px;
     }
 }
 
@@ -954,24 +949,15 @@
     }
 
     .arena {
-        flex-basis: 80px;
+        flex-basis: 88px;
     }
 
     .gene-matchup {
         min-height: 40px;
     }
 
-    /*
-     * Below this height the arrows would have to shrink under a comfortable touch target.
-     * They are redundant — every card is directly tappable — so they are dropped instead.
-     */
-    .gene-carousel__arrow {
-        display: none;
-    }
-
-    .gene-carousel__head {
-        grid-template-columns: minmax(0, 1fr);
-        min-height: 0;
+    .gene-card {
+        padding-top: 7px;
     }
 
     .ev-action-btn {
@@ -990,9 +976,9 @@
     }
 
     .gene-card__icon {
-        width: 26px;
-        height: 26px;
-        font-size: 17px;
+        width: 34px;
+        height: 34px;
+        font-size: 24px;
     }
 
     .gene-card__level {
@@ -1038,9 +1024,19 @@
         padding-inline: 2px;
     }
 
+    .gene-card__icon {
+        width: 36px;
+        height: 36px;
+        font-size: 26px;
+    }
+
     .gene-card__name {
         font-size: 9px;
         letter-spacing: -.01em;
+    }
+
+    .gene-card__affinity {
+        font-size: var(--ev-fs-2xs);
     }
 
     .gene-carousel__track {
@@ -1267,11 +1263,23 @@
 /* Battle-start evolution draft                                                */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Panel-less by design: the draft is an overlay *on* the battlefield. The loose text gets its
+ * contrast from a soft radial ground plus a drop shadow instead of from a card edge, which is
+ * what keeps the scene continuous behind it.
+ */
 .evolution-draft {
     display: grid;
     justify-items: center;
     gap: var(--ev-s-2);
+    padding: var(--ev-s-4) var(--ev-s-2) var(--ev-s-4);
+    color: var(--ev-on-dark);
     text-align: center;
+    background: var(--ev-scrim-focus);
+}
+
+.evolution-draft h2 {
+    text-shadow: var(--ev-shadow-text-on-scene);
 }
 
 .evolution-draft__mark {
@@ -1288,8 +1296,9 @@
 }
 
 .evolution-draft__copy {
-    color: var(--ev-ink-muted);
+    color: var(--ev-on-dark-muted);
     font-size: var(--ev-fs-sm);
+    text-shadow: var(--ev-shadow-text-on-scene);
 }
 
 /* Two side-by-side cards: the choice is a direct comparison. */
@@ -1375,7 +1384,8 @@
 }
 
 .evolution-draft__pending {
-    color: var(--ev-ink-muted);
+    color: var(--ev-on-dark-muted);
     font-size: var(--ev-fs-xs);
     font-weight: 700;
+    text-shadow: var(--ev-shadow-text-on-scene);
 }
