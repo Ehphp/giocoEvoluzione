@@ -34,6 +34,7 @@ import { canGenerateMockImage } from './lab-image-state'
 import { CreatureTransformationBenchmark } from './CreatureTransformationBenchmark'
 import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
+import { ArrowRightIcon, BackIcon } from '../../ui/icons'
 import { isExpressiveConceptExperimentVisible } from './lab-expressive-concept-flag'
 
 import '../technical-screens.css'
@@ -171,9 +172,9 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         ? { signedUrl: lineageSourcePreview.signedUrl, label: 'Risultato sperimentale condiviso A/B' }
         : selectedProductionSource
             ? { signedUrl: selectedProductionSource.signedUrl, label: selectedProductionSource.label }
-        : canonicalSourcePreview
-            ? { signedUrl: canonicalSourcePreview.signedUrl, label: canonicalSourcePreview.isBaseVersion ? 'Visuale base canonica del profilo' : 'Ultima evoluzione attiva del profilo' }
-            : { signedUrl: FALLBACK_SOURCE_PREVIEW, label: 'Anteprima della visuale canonica del profilo' }
+            : canonicalSourcePreview
+                ? { signedUrl: canonicalSourcePreview.signedUrl, label: canonicalSourcePreview.isBaseVersion ? 'Visuale base canonica del profilo' : 'Ultima evoluzione attiva del profilo' }
+                : { signedUrl: FALLBACK_SOURCE_PREVIEW, label: 'Anteprima della visuale canonica del profilo' }
     const evolutionChain = [
         { id: selectedProductionSource?.versionId ?? 'productive-current', signedUrl: selectedProductionSource?.signedUrl ?? canonicalSourcePreview?.signedUrl ?? FALLBACK_SOURCE_PREVIEW, label: selectedProductionSource?.label ?? (canonicalSourcePreview?.isBaseVersion ? 'Forma produttiva base' : 'Forma produttiva attiva'), active: !lineageSourceRequestId },
         ...lineageSourceChain.map((step, index) => ({ id: step.requestId, signedUrl: step.signedUrl, label: `Esperimento B · stadio ${index + 1}`, active: step.requestId === lineageSourceRequestId })),
@@ -582,7 +583,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     return (
         <section className="creature-transformation-lab" aria-labelledby="creature-transformation-lab-title">
             <header className="creature-transformation-lab__header">
-                <button type="button" onClick={onBack}>{'<- Home'}</button>
+                <button type="button" onClick={onBack}><BackIcon aria-hidden="true" />Home</button>
                 <div>
                     <span className="eyebrow">Development-only</span>
                     <h1 id="creature-transformation-lab-title">Laboratorio trasformazioni</h1>
@@ -594,7 +595,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 <ol>
                     {evolutionChain.map((stage, index) => <li key={stage.id} className={stage.active ? 'is-active' : ''}>
                         {index === 0 ? <button type="button" className="creature-transformation-lab__chain-stage-button" onClick={() => setIsProductionCatalogOpen(true)} disabled={isBusy}><figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}<small>Scegli dal catalogo</small></figcaption></figure></button> : <figure><img src={stage.signedUrl} alt={stage.label} /><figcaption>{stage.label}</figcaption></figure>}
-                        {index < evolutionChain.length - 1 ? <span className="creature-transformation-lab__chain-arrow" aria-hidden="true">→</span> : null}
+                        {index < evolutionChain.length - 1 ? <span className="creature-transformation-lab__chain-arrow" aria-hidden="true"><ArrowRightIcon /></span> : null}
                     </li>)}
                 </ol>
             </section>

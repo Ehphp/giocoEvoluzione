@@ -238,7 +238,8 @@ describe('BattleScreen', () => {
         expect(opponent.classList.contains('is-mirrored')).toBe(false)
         // The supplied bot sprite already faces left, so it must not be mirrored again.
         expect(opponent.querySelector('img')?.classList.contains('is-mirrored')).toBe(false)
-        expect(container.querySelector<HTMLImageElement>('.arena__versus')?.getAttribute('src')).toContain('/assets/game-ui/battle-versus.png')
+        // The centre emblem is gone: the arena is split evenly between the two creatures instead.
+        expect(container.querySelector('.arena__versus')).toBeNull()
     })
 
     it('confirms before abandoning a running match', () => {

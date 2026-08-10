@@ -608,13 +608,19 @@
     justify-items: center;
     padding: var(--ev-s-3);
     padding-bottom: calc(var(--ev-safe-bottom) + var(--ev-s-3));
-    background: rgba(4, 14, 10, .68);
-    backdrop-filter: blur(6px);
+    background: var(--ev-scrim);
+    backdrop-filter: blur(var(--ev-scrim-blur));
     animation: ev-fade var(--ev-dur-base) var(--ev-ease);
 }
 
 .ev-overlay--center {
     align-items: center;
+}
+
+/* Content sits on the artwork itself: defocus more, tint less. */
+.ev-overlay--scene {
+    background: var(--ev-scrim-scene);
+    backdrop-filter: blur(var(--ev-scrim-scene-blur));
 }
 
 .ev-sheet {
@@ -625,6 +631,10 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     animation: ev-rise var(--ev-dur-base) var(--ev-ease);
+}
+
+.ev-sheet--narrow {
+    width: min(100%, var(--ev-sheet-width-narrow));
 }
 
 /* The sheet is focused programmatically to scope the dialog; it is not itself a control. */

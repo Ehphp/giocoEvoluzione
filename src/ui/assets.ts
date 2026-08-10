@@ -29,10 +29,6 @@ export const ASSETS = {
         base: '/assets/creatures/base.png',
     },
 
-    battle: {
-        versus: '/assets/game-ui/battle-versus.png',
-    },
-
     /** Fallbacks used when a signed or generated asset is unavailable. */
     placeholders: {
         playerAvatar: '/assets/game-ui/placeholders/player-avatar.svg',

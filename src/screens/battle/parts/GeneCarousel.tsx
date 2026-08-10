@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import { NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
-import { Chip, IconButton, Overlay, Panel, SectionLabel, SheetHeader } from '../../../ui/components'
-import { ArrowDownIcon, ArrowUpIcon, ChevronIcon, GeneIcon, InfoIcon } from '../../../ui/icons'
+import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
+import { ArrowDownIcon, ArrowUpIcon, GeneIcon, InfoIcon } from '../../../ui/icons'
 import type { GeneCardV2 } from '../../../components/game-v2/types'
 
 type GeneCarouselProps = {
@@ -168,26 +168,10 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
 
     return (
         <section className="gene-carousel" aria-label="Selettore adattamenti">
-            <div className="gene-carousel__head">
-                <IconButton
-                    label="Adattamento precedente"
-                    className="gene-carousel__arrow"
-                    disabled={disableSelection || selectedIndex <= 0}
-                    onClick={() => selectByIndex(selectedIndex - 1)}
-                >
-                    <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
-                </IconButton>
-                <SectionLabel>Scegli un gene</SectionLabel>
-                <IconButton
-                    label="Adattamento successivo"
-                    className="gene-carousel__arrow"
-                    disabled={disableSelection || selectedIndex >= genes.length - 1}
-                    onClick={() => selectByIndex(selectedIndex + 1)}
-                >
-                    <ChevronIcon />
-                </IconButton>
-            </div>
-
+            {/*
+             * No heading and no stepper arrows: every card is directly tappable and arrow keys still
+             * move the selection, so the row spends the whole width and height on the cards themselves.
+             */}
             <div ref={trackRef} className="gene-carousel__track" role="listbox" aria-label="Adattamenti disponibili">
                 {genes.map((gene, index) => (
                     <GeneCard

@@ -21,7 +21,7 @@ The refactor rewired the presentation; it did not change the game. **Keep it tha
 | View models / controllers | `src/components/game-v2/{controller,types.ts}`, `src/components/game-results/{buildMatchResultViewModel,types}.ts`, `src/screens/home/{buildHomeViewModel,types}.ts` | **read and re-wire, do not re-derive** |
 | Presentation config | `src/components/game-v2/gameSelectionAssets.ts`, `src/components/game-v2/components/creatureOrientation.ts` | tune sizing/paths only |
 | Game rules & data | `shared/**`, `src/game/**`, `src/lib/**`, `src/auth/**`, `supabase/**`, `tools/**` | **do not touch for UI work** |
-| Internal tools (flag-gated) | `creature-transformation-lab`, `visual-background-cleanup` | keep functional; plain styling is fine |
+| Internal tools (flag-gated) | `creature-transformation-lab`, `visual-background-cleanup` | keep functional; they wear the design system too (see §3) |
 
 If a screen needs a value the view model does not expose, **add it in the view model**, do not
 recompute rules in a component. Scores, affinities, predictions and labels all come from the
@@ -61,6 +61,16 @@ on a container and use `var(--gene-color)`, `var(--gene-color-strong)`, `var(--g
   `IconButton` variants: `glass` · `cream` · `danger`.
 - Gold is reserved for the VS badge and the single primary call to action on a screen.
 - Green is always "you" / USA; purple is always the opponent / EVOLVI and everything evolution.
+
+**The internal tools use the same language.** They are denser than a product screen, but they are
+cream panels with token colour, display headings and the same pressable lip — not a second visual
+system. They style with CSS against the tokens rather than importing `src/ui` primitives, because
+their markup is deliberately dense; the result must still be indistinguishable in *look*.
+
+**Overlays are game layers, not pages.** `Overlay` takes `scrim` and `width`: `scrim="scene"` +
+`width="narrow"` is for content that sits straight on the battlefield with no panel under it, so
+the scene stays visible and readable behind. Reach for `--ev-scrim-focus` and
+`--ev-shadow-text-on-scene` to give loose copy contrast without reintroducing a card edge.
 
 ---
 
@@ -167,6 +177,8 @@ npm run audit:mobile -- battle
 npm run audit:mobile -- battle safe-area
 npm run audit:mobile -- battle landscape
 npm run audit:mobile -- battle "sheet:.environment-card__main"
+npm run audit:mobile -- draft            # the battle-start overlay
+npm run audit:mobile -- lab              # the transformation lab
 ```
 
 Routes: `/` (auth), `home`, `battle`, `profile`, `evolution`.
@@ -175,15 +187,24 @@ Modes: *(none)* · `safe-area` · `landscape` · `sheet:<css-selector>`.
 **A UI change is not finished until the audit passes for every route it touches, in all three
 modes, plus any overlay it can open.**
 
-Inspect screens without a backend session with `?ui-preview=home|battle|profile|evolution`
-(development only, fixtures in `src/dev/uiPreviewFixtures.ts`). The `evolution` route still calls
-the transformation API — stub `**/functions/v1/**` to reach its later states.
+Inspect screens without a backend session with
+`?ui-preview=home|battle|profile|evolution|draft|lab` (development only, fixtures in
+`src/dev/uiPreviewFixtures.ts`). `draft` is the battle-start overlay over a live battle screen;
+`lab` is the transformation lab. The `evolution` and `lab` routes still call the transformation
+API — stub `**/functions/v1/**` to reach their later states.
 
-### Known pre-existing failure
+### Known pre-existing failures
 
-`supabase/functions/generate-creature-transformation/security-hardening.test.ts` fails on
-`expect(authProvider).not.toContain('.auth.signUp(')`. It predates this work and lives in auth
-logic, not the UI. Leave it; do not "fix" it by editing the UI.
+Ten tests across three files fail on a clean checkout. Confirm with `git stash` before assuming
+your change caused one.
+
+- `supabase/functions/generate-creature-transformation/security-hardening.test.ts` fails on
+  `expect(authProvider).not.toContain('.auth.signUp(')`. It lives in auth logic, not the UI.
+  Leave it; do not "fix" it by editing the UI.
+- `CreatureTransformationLab.persistence.test.tsx` (7) and `CreatureTransformationLab.real.test.tsx`
+  (2) fail in their `button('Genera concept')` helper — the lab's single-pipeline flow was replaced
+  by the A/B workspace and that button no longer exists. The tests need rewriting against the
+  current flow, not the styling; a restyle cannot fix or break them.
 
 ---
 

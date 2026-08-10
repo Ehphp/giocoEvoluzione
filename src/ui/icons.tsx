@@ -1,6 +1,8 @@
 import type { SVGProps } from 'react'
 import {
     ArrowDown,
+    ArrowLeft,
+    ArrowRight,
     ArrowUp,
     Backpack,
     ChevronRight,
@@ -242,3 +244,5 @@ export const CrossroadsIcon = Signpost
 export const ShieldCheckIcon = ShieldCheck
 export const ArrowUpIcon = ArrowUp
 export const ArrowDownIcon = ArrowDown
+export const BackIcon = ArrowLeft
+export const ArrowRightIcon = ArrowRight

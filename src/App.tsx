@@ -617,7 +617,9 @@ function App() {
     clearStoredSession()
     setSnapshot(null)
     setRoomCode('')
-    setStatusMessage('Sessione locale rimossa.')
+    // No confirmation notice: landing back on the home screen is the feedback, and a banner about
+    // local session plumbing is not something the player should be reading there.
+    setStatusMessage(null)
   }
 
   function handleLeaveCreatureTransformationLab() {
