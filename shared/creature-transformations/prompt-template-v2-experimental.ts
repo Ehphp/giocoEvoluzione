@@ -3,6 +3,7 @@ import { composeCreatureTransformationPromptTemplateV1 } from './prompt-template
 import { resolveColorEvolution } from './concepts.ts'
 
 export const CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL = 'creature-transformation-v2-experimental' as const
+export const CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE = 'creature-transformation-v3-expressive' as const
 
 export function composeCreatureTransformationPromptTemplateV2Experimental(input: PromptTemplateV1Input): CreaturePromptSections {
     const v1 = composeCreatureTransformationPromptTemplateV1(input)
@@ -17,5 +18,19 @@ export function composeCreatureTransformationPromptTemplateV2Experimental(input:
         prohibitions: `${v1.prohibitions} Do not introduce global changes outside the concept. Do not create a new species or replace the anatomy.`,
         style: `${v1.style} Preserve the source image composition and visual identity without global reinterpretation.`,
         technical: v1.technical,
+    }
+}
+
+/** Keeps production guardrails, but removes the duplicated language that made A needlessly timid. */
+export function composeCreatureTransformationPromptTemplateV3Expressive(input: PromptTemplateV1Input): CreaturePromptSections {
+    const v2 = composeCreatureTransformationPromptTemplateV2Experimental(input)
+    return {
+        ...v2,
+        transformation: v2.transformation
+            .replace('Limit the mutation to the requested body areas and concept commitments only. The requested anatomical focus must remain the dominant new visual change.', 'Make this the dominant, unmistakable new visual change. A coherent supporting consequence is allowed when it is visibly caused by the requested target; it must not compete with the target.'),
+        preservation: v2.preservation
+            .replace('Keep the same pose and overall silhouette.', 'Keep the same pose and a recognisable overall silhouette; let the requested evolution read clearly at game scale.'),
+        prohibitions: v2.prohibitions
+            .replace('Do not introduce global changes outside the concept. Do not create a new species or replace the anatomy.', 'Do not create a new species, erase prior adaptations, or replace the creature anatomy wholesale.'),
     }
 }

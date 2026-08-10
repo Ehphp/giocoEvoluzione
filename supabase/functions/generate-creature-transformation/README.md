@@ -199,6 +199,7 @@ CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED=true
 CREATURE_VISUAL_ADOPTION_ENABLED=true
 CREATURE_VISUAL_PRODUCTION_PROFILE_IDS=<uuid-profilo-pilot>
 CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED=3
+CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE=CONSERVATIVE
 ```
 
 La soglia ha un solo default server-side (`3`), con limiti da 1 a 100. Per la generazione reale restano obbligatorie la configurazione OpenAI e i limiti Fase 6B (`CREATURE_TRANSFORMATION_REAL_IMAGE_*`, `OPENAI_IMAGE_*`, `CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD`).
@@ -211,6 +212,17 @@ CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON=<catalogo-json>
 ```
 
 In assenza dell'ID il percorso usa `OPENAI_IMAGE_*`. Il browser non invia modello, qualita, costo, provider, prompt o source version. Il flag frontend, puramente visuale, è `VITE_CREATURE_VISUAL_PROGRESSION_ENABLED=true`. Con la progressione abilitata, la lettura delle visuali è disponibile a tutti i profili autenticati; `CREATURE_VISUAL_PRODUCTION_PROFILE_IDS` limita invece le azioni di generazione e adozione, che modificano stato o possono generare costi.
+
+### Calibrazione creativa della pipeline A nel Lab
+
+Il Lab puo confrontare A conservativa ed A espressiva sulla stessa sorgente, target e direzione evolutiva. Entrambi i flag devono essere esplicitamente abilitati:
+
+```text
+CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED=true
+VITE_CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED=true
+```
+
+Il flag browser mostra solo il controllo; il server resta autorevole e rifiuta `EXPRESSIVE` se non e configurato. La candidata usa il template `creature-transformation-v3-expressive`; controllo e candidata restano `EXPERIMENT_ONLY` e non possono essere adottati dal Lab.
 
 ### Migration e backfill remoto
 

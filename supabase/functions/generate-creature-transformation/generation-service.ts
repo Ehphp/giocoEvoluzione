@@ -7,6 +7,7 @@ import type { GenerateConceptRequest, CreatureIdentityResolver } from '../../../
 import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
 import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
+import { conceptPromptTemplateVersion, DEFAULT_CONCEPT_CREATIVE_PROFILE } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 
 export type GeneratedConceptResponse = Omit<GenerateConceptResponse, 'requestPersistence'>
 
@@ -79,6 +80,7 @@ export async function generateConceptForAuthenticatedProfile(
             evolutionFunction: input.request.evolutionFunction,
             intensity: input.request.intensity,
             previousTransformations: resolvedCreature.previousTransformations,
+            creativeProfile: input.request.creativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE,
             seed: input.benchmarkConceptSeed ?? [
                 input.profileId,
                 input.request.creatureId,
@@ -111,7 +113,7 @@ export async function generateConceptForAuthenticatedProfile(
             identity: resolvedCreature.identity,
             concept: generated.concept,
             renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
-            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION,
+            templateVersion: input.request.creativeProfile ? conceptPromptTemplateVersion(input.request.creativeProfile) : CREATURE_PROMPT_TEMPLATE_VERSION,
             previousTransformations: resolvedCreature.previousTransformations,
         }),
         generation: {

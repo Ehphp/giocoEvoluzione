@@ -1,6 +1,7 @@
 import {
     CREATURE_PROMPT_TEMPLATE_VERSION,
     CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE,
     type CreaturePromptTemplateVersion,
 } from './prompt-composer.ts'
 
@@ -25,6 +26,7 @@ const PROFILE_FIELDS = new Set(['provider', 'model', 'quality', 'promptTemplateV
 const PROMPT_TEMPLATE_VERSIONS = new Set<CreaturePromptTemplateVersion>([
     CREATURE_PROMPT_TEMPLATE_VERSION,
     CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE,
 ])
 const QUALITIES = new Set(['low', 'medium', 'high'])
 

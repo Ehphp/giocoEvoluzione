@@ -4,10 +4,11 @@ import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest,
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { EVOLUTION_FUNCTION_IDS, EVOLUTION_TARGET_BY_ID, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { isConceptCreativeProfileId } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 
-const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'evolutionTargetId', 'evolutionFunction', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId'])
+const CONCEPT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'visualTraitId', 'evolutionTargetId', 'evolutionFunction', 'intensity', 'conceptMode', 'idempotencyKey', 'benchmarkCaseId', 'creativeProfile'])
 const IMAGE_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'concept', 'imageProviderMode', 'idempotencyKey', 'benchmarkCaseId', 'generationProfileId'])
-const CURRENT_PIPELINE_EXPERIMENT_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'idempotencyKey'])
+const CURRENT_PIPELINE_EXPERIMENT_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'idempotencyKey', 'creativeProfile', 'comparisonKey'])
 const LINEAGE_EXPERIMENT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'lineage', 'instruction', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'idempotencyKey'])
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'reviewOwnerProfileId'])
 const LAB_USAGE_REQUEST_FIELDS = new Set(['operation'])
@@ -113,6 +114,8 @@ export function parseGenerateConceptRequest(value: unknown): ParsedGenerateConce
 
     const benchmarkCaseId = readOptionalIdentifier(body, 'benchmarkCaseId')
     if (benchmarkCaseId === null) return { valid: false, code: 'INVALID_REQUEST', message: 'benchmarkCaseId non e valido.' }
+    const creativeProfile = body.creativeProfile === undefined ? undefined : isConceptCreativeProfileId(body.creativeProfile) ? body.creativeProfile : null
+    if (creativeProfile === null) return { valid: false, code: 'INVALID_REQUEST', message: 'creativeProfile non e valido.' }
     const evolutionTargetId = body.evolutionTargetId === undefined ? undefined : typeof body.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
     const evolutionFunction = body.evolutionFunction === undefined ? undefined : typeof body.evolutionFunction === 'string' && EVOLUTION_FUNCTION_IDS.includes(body.evolutionFunction as EvolutionFunctionId) ? body.evolutionFunction as EvolutionFunctionId : null
     if (evolutionTargetId === null || evolutionFunction === null || Boolean(evolutionTargetId) !== Boolean(evolutionFunction)) return { valid: false, code: 'INVALID_REQUEST', message: 'target anatomico e funzione evolutiva devono essere entrambi validi.' }
@@ -127,6 +130,7 @@ export function parseGenerateConceptRequest(value: unknown): ParsedGenerateConce
             idempotencyKey: required.idempotencyKey,
             ...(evolutionTargetId && evolutionFunction ? { evolutionTargetId, evolutionFunction } : {}),
             ...(benchmarkCaseId ? { benchmarkCaseId } : {}),
+            ...(creativeProfile ? { creativeProfile } : {}),
         },
     }
 }
@@ -209,8 +213,15 @@ export function parseGenerateCurrentPipelineExperimentRequest(value: unknown): {
     const body = asRecord(value)
     const required = body ? readRequiredStrings(body) : null
     const evolutionTargetId = typeof body?.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
-    if (!body || !hasOnlyFields(body, CURRENT_PIPELINE_EXPERIMENT_FIELDS) || body.operation !== 'GENERATE_CURRENT_PIPELINE_EXPERIMENT' || !required || !evolutionTargetId || (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId')) || (body.sourceVisualVersionId !== undefined && !readUuid(body, 'sourceVisualVersionId')) || (body.experimentalSourceRequestId !== undefined && body.sourceVisualVersionId !== undefined)) return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta Current pipeline non rispetta il contratto pubblico.' }
-    return { valid: true, request: { operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: required.creatureId, evolutionTargetId, ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId.trim() } : {}), ...(typeof body.sourceVisualVersionId === 'string' ? { sourceVisualVersionId: body.sourceVisualVersionId.trim() } : {}), idempotencyKey: required.idempotencyKey } }
+    const creativeProfile = body?.creativeProfile === undefined ? undefined : isConceptCreativeProfileId(body?.creativeProfile) ? body.creativeProfile : null
+    const comparisonKey = body?.comparisonKey === undefined ? undefined : readUuid(body, 'comparisonKey')
+    if (!body || !hasOnlyFields(body, CURRENT_PIPELINE_EXPERIMENT_FIELDS) || body.operation !== 'GENERATE_CURRENT_PIPELINE_EXPERIMENT' || !required || !evolutionTargetId) return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta Current pipeline non rispetta il contratto pubblico.' }
+    if (creativeProfile === null) return { valid: false, code: 'INVALID_REQUEST', message: 'creativeProfile deve essere CONSERVATIVE oppure EXPRESSIVE.' }
+    if (comparisonKey === null) return { valid: false, code: 'INVALID_REQUEST', message: 'comparisonKey deve essere un UUID valido.' }
+    if (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId')) return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalSourceRequestId deve essere un UUID valido.' }
+    if (body.sourceVisualVersionId !== undefined && !readUuid(body, 'sourceVisualVersionId')) return { valid: false, code: 'INVALID_REQUEST', message: 'sourceVisualVersionId deve essere un UUID valido.' }
+    if (body.experimentalSourceRequestId !== undefined && body.sourceVisualVersionId !== undefined) return { valid: false, code: 'INVALID_REQUEST', message: 'Imposta una sola sorgente: sperimentale oppure produttiva.' }
+    return { valid: true, request: { operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: required.creatureId, evolutionTargetId, ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId.trim() } : {}), ...(typeof body.sourceVisualVersionId === 'string' ? { sourceVisualVersionId: body.sourceVisualVersionId.trim() } : {}), ...(creativeProfile ? { creativeProfile } : {}), ...(comparisonKey ? { comparisonKey } : {}), idempotencyKey: required.idempotencyKey } }
 }
 
 export function parseSubmitExperimentReviewRequest(value: unknown): ParsedSubmitExperimentReviewRequest {

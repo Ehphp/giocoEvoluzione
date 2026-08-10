@@ -16,7 +16,7 @@ import { formatPromptList, uniquePromptItems, withTerminalPunctuation } from './
 
 export const CREATURE_PROMPT_TEMPLATE_VERSION = 'creature-transformation-v1' as const
 
-export type CreaturePromptTemplateVersion = typeof CREATURE_PROMPT_TEMPLATE_VERSION | 'creature-transformation-v2-experimental'
+export type CreaturePromptTemplateVersion = typeof CREATURE_PROMPT_TEMPLATE_VERSION | 'creature-transformation-v2-experimental' | 'creature-transformation-v3-expressive'
 
 export type CreaturePromptSections = {
     identity: string

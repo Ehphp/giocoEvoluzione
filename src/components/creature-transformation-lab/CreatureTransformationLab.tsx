@@ -12,6 +12,7 @@ import {
     EVOLUTION_TARGETS,
     type EvolutionTargetId,
     type ExperimentalLineage,
+    type ConceptCreativeProfileId,
 } from '../../../shared/creature-transformations/index.ts'
 import type { PlayerCreatureRecord } from '../../lib/profile-api'
 import {
@@ -33,6 +34,7 @@ import { canGenerateMockImage } from './lab-image-state'
 import { CreatureTransformationBenchmark } from './CreatureTransformationBenchmark'
 import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
+import { isExpressiveConceptExperimentVisible } from './lab-expressive-concept-flag'
 
 import '../technical-screens.css'
 import './CreatureTransformationLab.css'
@@ -49,9 +51,15 @@ type LineageComparisonDraft = Readonly<{
     scores: Record<LineageReviewKey, number>
     preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
 }>
+type CurrentPipelineLaunchOptions = Readonly<{
+    creativeProfile?: ConceptCreativeProfileId
+    comparisonKey?: string
+    onAccepted?: (request: TransformationRequestPersistence) => void
+}>
 const LINEAGE_REVIEW_KEYS: readonly LineageReviewKey[] = ['creativeSurprise', 'targetTransformationStrength', 'creatureContinuity', 'lineagePreservation', 'nonTargetStability']
 const REAL_IMAGE_FRONTEND_ENABLED = isRealImageExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED)
 const BENCHMARK_FRONTEND_ENABLED = isCreatureTransformationBenchmarkVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED)
+const EXPRESSIVE_CONCEPT_FRONTEND_ENABLED = isExpressiveConceptExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED)
 const REAL_POLL_INTERVAL_MS = 2500
 const REAL_POLL_TIMEOUT_MS = 60000
 const COMPARISON_SEQUENCE_TIMEOUT_MS = 10 * 60 * 1000
@@ -148,9 +156,16 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     const [isLaunchingComparison, setIsLaunchingComparison] = useState(false)
     const [comparisonLaunchMessage, setComparisonLaunchMessage] = useState<string | null>(null)
     const [isLineageDraftReady, setIsLineageDraftReady] = useState(false)
+    const [calibrationControlRequest, setCalibrationControlRequest] = useState<TransformationRequestPersistence | null>(null)
+    const [calibrationControlStatus, setCalibrationControlStatus] = useState<TransformationRequestStatusResponse | null>(null)
+    const [calibrationExpressiveRequest, setCalibrationExpressiveRequest] = useState<TransformationRequestPersistence | null>(null)
+    const [calibrationExpressiveStatus, setCalibrationExpressiveStatus] = useState<TransformationRequestStatusResponse | null>(null)
+    const [isLaunchingCalibration, setIsLaunchingCalibration] = useState(false)
     const realRequestIsRunning = Boolean(realRequestPersistence && !isTerminalRequestStatus(realStatus?.requestPersistence.status ?? realRequestPersistence.status) && !realPollingTimedOut)
     const lineageRequestIsRunning = Boolean(lineageRequest && !isTerminalRequestStatus(lineageStatus?.requestPersistence.status ?? lineageRequest.status))
-    const isBusy = isGeneratingConcept || isGeneratingImage || isLaunchingComparison || realRequestIsRunning || lineageRequestIsRunning
+    const calibrationControlRunning = Boolean(calibrationControlRequest && !isTerminalRequestStatus(calibrationControlStatus?.requestPersistence.status ?? calibrationControlRequest.status))
+    const calibrationExpressiveRunning = Boolean(calibrationExpressiveRequest && !isTerminalRequestStatus(calibrationExpressiveStatus?.requestPersistence.status ?? calibrationExpressiveRequest.status))
+    const isBusy = isGeneratingConcept || isGeneratingImage || isLaunchingComparison || isLaunchingCalibration || realRequestIsRunning || lineageRequestIsRunning || calibrationControlRunning || calibrationExpressiveRunning
     const imageGenerationAvailable = canGenerateMockImage(conceptResult, isGeneratingConcept, isGeneratingImage) && !realRequestIsRunning
     const comparisonSource = lineageSourceRequestId && lineageSourcePreview?.requestId === lineageSourceRequestId
         ? { signedUrl: lineageSourcePreview.signedUrl, label: 'Risultato sperimentale condiviso A/B' }
@@ -289,6 +304,34 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     }, [lineageRequest, lineageStatus?.requestPersistence.status])
 
     useEffect(() => {
+        if (!calibrationControlRequest || isTerminalRequestStatus(calibrationControlStatus?.requestPersistence.status)) return undefined
+        let cancelled = false
+        const poll = async () => {
+            try {
+                const next = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: calibrationControlRequest.transformationRequestId })
+                if (!cancelled) { setCalibrationControlStatus(next); if (isTerminalRequestStatus(next.requestPersistence.status)) void refreshLabUsage() }
+            } catch (nextError) { if (!cancelled) setError(nextError instanceof Error ? nextError : new Error('Impossibile aggiornare il controllo della calibrazione A.')) }
+        }
+        const interval = window.setInterval(() => void poll(), REAL_POLL_INTERVAL_MS)
+        void poll()
+        return () => { cancelled = true; window.clearInterval(interval) }
+    }, [calibrationControlRequest, calibrationControlStatus?.requestPersistence.status])
+
+    useEffect(() => {
+        if (!calibrationExpressiveRequest || isTerminalRequestStatus(calibrationExpressiveStatus?.requestPersistence.status)) return undefined
+        let cancelled = false
+        const poll = async () => {
+            try {
+                const next = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: calibrationExpressiveRequest.transformationRequestId })
+                if (!cancelled) { setCalibrationExpressiveStatus(next); if (isTerminalRequestStatus(next.requestPersistence.status)) void refreshLabUsage() }
+            } catch (nextError) { if (!cancelled) setError(nextError instanceof Error ? nextError : new Error('Impossibile aggiornare la candidata espressiva della calibrazione A.')) }
+        }
+        const interval = window.setInterval(() => void poll(), REAL_POLL_INTERVAL_MS)
+        void poll()
+        return () => { cancelled = true; window.clearInterval(interval) }
+    }, [calibrationExpressiveRequest, calibrationExpressiveStatus?.requestPersistence.status])
+
+    useEffect(() => {
         if (!isLineageDraftReady || !lineageRequest || !lineageStatus?.result) return undefined
         let cancelled = false
         const timer = window.setTimeout(() => {
@@ -325,15 +368,15 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         }
     }
 
-    async function launchCurrentPipeline(): Promise<TransformationRequestPersistence | null> {
+    async function launchCurrentPipeline(options: CurrentPipelineLaunchOptions = {}): Promise<TransformationRequestPersistence | null> {
         setIsGeneratingImage(true)
         setError(null)
         setRealPollingTimedOut(false)
         try {
-            const response = await generateCurrentPipelineExperiment({ operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : selectedProductionSource ? { sourceVisualVersionId: selectedProductionSource.versionId } : {}), idempotencyKey: createImageIdempotencyKey() })
+            const response = await generateCurrentPipelineExperiment({ operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: creature.id, evolutionTargetId: lineageTargetId, ...(lineageSourceRequestId ? { experimentalSourceRequestId: lineageSourceRequestId } : selectedProductionSource ? { sourceVisualVersionId: selectedProductionSource.versionId } : {}), ...(options.creativeProfile ? { creativeProfile: options.creativeProfile } : {}), ...(options.comparisonKey ? { comparisonKey: options.comparisonKey } : {}), idempotencyKey: createImageIdempotencyKey() })
             if (!response.success || !('requestPersistence' in response) || !response.requestPersistence) throw new Error('Risposta Current pipeline non valida.')
-            setRealRequestPersistence(response.requestPersistence)
-            setRealStatus(null)
+            if (options.onAccepted) options.onAccepted(response.requestPersistence)
+            else { setRealRequestPersistence(response.requestPersistence); setRealStatus(null) }
             void refreshLabUsage()
             return response.requestPersistence
         } catch (nextError) {
@@ -352,20 +395,42 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         await launchCurrentPipeline()
     }
 
-    async function waitForCurrentPipeline(request: TransformationRequestPersistence): Promise<TransformationRequestStatusResponse | null> {
+    async function handleGenerateConceptCalibration() {
+        if (!realCostConfirmed || isBusy) return
+        setIsLaunchingCalibration(true)
+        setCalibrationControlRequest(null)
+        setCalibrationControlStatus(null)
+        setCalibrationExpressiveRequest(null)
+        setCalibrationExpressiveStatus(null)
+        const comparisonKey = crypto.randomUUID()
+        try {
+            const control = await launchCurrentPipeline({ creativeProfile: 'CONSERVATIVE', comparisonKey, onAccepted: (request) => { setCalibrationControlRequest(request); setCalibrationControlStatus(null) } })
+            if (!control) return
+            const completed = await waitForCurrentPipeline(control, setCalibrationControlStatus, 'Impossibile attendere il controllo della calibrazione A.', 'Il controllo della calibrazione A non ha concluso entro dieci minuti: la candidata espressiva non è stata avviata.')
+            if (completed?.requestPersistence.status !== 'SUCCEEDED') {
+                if (completed) setError(new Error('Il controllo della calibrazione A non è riuscito: la candidata espressiva non è stata avviata.'))
+                return
+            }
+            await launchCurrentPipeline({ creativeProfile: 'EXPRESSIVE', comparisonKey, onAccepted: (request) => { setCalibrationExpressiveRequest(request); setCalibrationExpressiveStatus(null) } })
+        } finally {
+            setIsLaunchingCalibration(false)
+        }
+    }
+
+    async function waitForCurrentPipeline(request: TransformationRequestPersistence, onStatus: (status: TransformationRequestStatusResponse) => void = setRealStatus, waitErrorMessage = 'Impossibile attendere il risultato A.', timeoutMessage = 'A non ha concluso entro dieci minuti: B non e stata avviata.'): Promise<TransformationRequestStatusResponse | null> {
         const deadline = Date.now() + COMPARISON_SEQUENCE_TIMEOUT_MS
         while (Date.now() < deadline) {
             try {
                 const status = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: request.transformationRequestId })
-                setRealStatus(status)
+                onStatus(status)
                 if (isTerminalRequestStatus(status.requestPersistence.status)) return status
             } catch (nextError) {
-                setError(nextError instanceof Error ? nextError : new Error('Impossibile attendere il risultato A.'))
+                setError(nextError instanceof Error ? nextError : new Error(waitErrorMessage))
                 return null
             }
             await new Promise<void>((resolve) => window.setTimeout(resolve, REAL_POLL_INTERVAL_MS))
         }
-        setError(new Error('A non ha concluso entro dieci minuti: B non e stata avviata.'))
+        setError(new Error(timeoutMessage))
         return null
     }
 
@@ -558,6 +623,11 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                     <button type="button" className="primary-button" onClick={() => void handleGenerateComparison()} disabled={!realCostConfirmed || isBusy}>{isLaunchingComparison ? 'Avvio confronto…' : 'Genera confronto A/B'}</button>
                     {comparisonLaunchMessage ? <p aria-live="polite">{comparisonLaunchMessage}</p> : null}
                 </section>
+                {EXPRESSIVE_CONCEPT_FRONTEND_ENABLED ? <section className="creature-transformation-lab__comparison-launch" aria-label="Calibrazione creativa della pipeline A">
+                    <div><span className="eyebrow">CALIBRAZIONE A</span><h3>Controllo / espressiva</h3><p>Due pipeline A con stessa sorgente, target, trait e funzione. Cambia solo la policy creativa server-side.</p></div>
+                    <p>Entrambe producono asset sperimentali non adottabili e consumano due generazioni REAL.</p>
+                    <button type="button" className="primary-button" onClick={() => void handleGenerateConceptCalibration()} disabled={!realCostConfirmed || isBusy}>{isLaunchingCalibration ? 'Avvio calibrazione…' : 'Genera calibrazione A'}</button>
+                </section> : null}
             </section>
 
             <section className="creature-transformation-lab__controls creature-transformation-lab__current" aria-label="Configurazione pipeline corrente">
@@ -599,6 +669,21 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
 
             {lineageError ? <section className="creature-transformation-lab__error" role="alert"><strong>Lineage-first experimental</strong><p>{lineageError.message}</p></section> : null}
             {savedLineageReviews.length ? <section className="creature-transformation-lab__saved-lineage-reviews" aria-label="Review lineage-first salvate"><div><span className="eyebrow">REVIEW SALVATE</span><h2>Riapri un confronto A/B</h2><p>Carica punteggi e risultati associati a una review precedentemente salvata.</p></div><label>Review<select value={selectedSavedLineageReviewId} onChange={(event) => setSelectedSavedLineageReviewId(event.target.value)}><option value="">Seleziona una review</option>{savedLineageReviews.map((review) => <option key={review.lineageRequestId} value={review.lineageRequestId}>B {review.lineageRequestId.slice(0, 8)} · {new Date(review.updatedAt).toLocaleString('it-IT')}</option>)}</select></label><button type="button" onClick={() => void handleLoadSavedLineageReview()} disabled={!selectedSavedLineageReviewId || isLoadingSavedLineageReview}>{isLoadingSavedLineageReview ? 'Apertura...' : 'Apri review salvata'}</button></section> : null}
+            {calibrationControlRequest || calibrationExpressiveRequest ? <section className="creature-transformation-lab__comparison-workspace" aria-label="Calibrazione creativa della pipeline A" aria-live="polite">
+                <article className="creature-transformation-lab__comparison-card creature-transformation-lab__comparison-card--source">
+                    <header><span className="eyebrow">INPUT BLOCCATO</span><h2>Sorgente condivisa</h2></header>
+                    <div className="creature-transformation-lab__comparison-source-context"><strong>Confronto controllato</strong><span>Il server risolve la stessa direzione per controllo ed espressiva.</span></div>
+                    <figure className="creature-transformation-lab__experimental-image"><img src={comparisonSource.signedUrl} alt="Immagine di partenza condivisa dalla calibrazione A" /><figcaption>{comparisonSource.label}</figcaption></figure>
+                </article>
+                <article className="creature-transformation-lab__comparison-card creature-transformation-lab__comparison-card--current">
+                    <header><span className="eyebrow">A · CONTROLLO</span><h2>Conservativa</h2></header>
+                    {calibrationControlRequest ? <><p><strong>Request:</strong> {calibrationControlRequest.transformationRequestId} · {calibrationControlStatus?.requestPersistence.status ?? calibrationControlRequest.status}</p>{calibrationControlStatus?.result ? <figure className="creature-transformation-lab__experimental-image"><img src={calibrationControlStatus.result.signedUrl} alt="Risultato controllo conservativo" /><figcaption>{calibrationControlStatus.result.assetReadiness} — non adottabile</figcaption></figure> : null}{calibrationControlStatus?.error ? <div className="creature-transformation-lab__error" role="alert"><strong>{calibrationControlStatus.error.code}</strong><p>{calibrationControlStatus.error.message}</p></div> : null}<details className="creature-transformation-lab__prompt" open><summary>Prompt controllo</summary>{calibrationControlStatus?.prompt ? <><pre>{calibrationControlStatus.prompt.text}</pre><small>SHA-256: {shortHash(calibrationControlStatus.prompt.sha256)}</small></> : <p>Il prompt sarà disponibile al termine.</p>}</details></> : <p className="creature-transformation-lab__comparison-empty">Il controllo non è stato avviato.</p>}
+                </article>
+                <article className="creature-transformation-lab__comparison-card creature-transformation-lab__comparison-card--lineage">
+                    <header><span className="eyebrow">A · CANDIDATA</span><h2>Espressiva</h2></header>
+                    {calibrationExpressiveRequest ? <><p><strong>Request:</strong> {calibrationExpressiveRequest.transformationRequestId} · {calibrationExpressiveStatus?.requestPersistence.status ?? calibrationExpressiveRequest.status}</p>{calibrationExpressiveStatus?.result ? <figure className="creature-transformation-lab__experimental-image"><img src={calibrationExpressiveStatus.result.signedUrl} alt="Risultato candidata espressiva" /><figcaption>{calibrationExpressiveStatus.result.assetReadiness} — non adottabile</figcaption></figure> : null}{calibrationExpressiveStatus?.error ? <div className="creature-transformation-lab__error" role="alert"><strong>{calibrationExpressiveStatus.error.code}</strong><p>{calibrationExpressiveStatus.error.message}</p></div> : null}<details className="creature-transformation-lab__prompt" open><summary>Prompt candidata espressiva</summary>{calibrationExpressiveStatus?.prompt ? <><pre>{calibrationExpressiveStatus.prompt.text}</pre><small>SHA-256: {shortHash(calibrationExpressiveStatus.prompt.sha256)}</small></> : <p>Il prompt sarà disponibile al termine.</p>}</details></> : <p className="creature-transformation-lab__comparison-empty">La candidata non è stata avviata.</p>}
+                </article>
+            </section> : null}
             {realRequestPersistence || lineageRequest ? (
                 <section className="creature-transformation-lab__comparison-workspace" aria-label="Confronto risultati e prompt A B" aria-live="polite">
                     <article className="creature-transformation-lab__comparison-card creature-transformation-lab__comparison-card--source">

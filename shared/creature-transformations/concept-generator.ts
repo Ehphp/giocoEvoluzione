@@ -3,6 +3,7 @@ import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { EvolutionFunctionId, EvolutionTargetDefinition, EvolutionTargetId } from './evolution-targets.ts'
 import type { VisualTraitDefinition } from './visual-traits.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { ConceptCreativeProfileId } from './concept-creative-profiles.ts'
 
 export type CreatureConceptGenerationInput = {
     identity: CreatureSemanticIdentity
@@ -15,6 +16,7 @@ export type CreatureConceptGenerationInput = {
     seed?: string
     /** Internal feedback supplied only by retry orchestration. */
     correctionFeedback?: readonly string[]
+    creativeProfile?: ConceptCreativeProfileId
 }
 
 export type ConceptGeneratorMetadata = {
@@ -48,6 +50,7 @@ export type StructuredConceptModelInput = {
     previousTransformations?: readonly PreviousCreatureTransformationSummary[]
     seed?: string
     correctionFeedback: readonly string[]
+    creativeProfile?: ConceptCreativeProfileId
 }
 
 export interface StructuredConceptModel {

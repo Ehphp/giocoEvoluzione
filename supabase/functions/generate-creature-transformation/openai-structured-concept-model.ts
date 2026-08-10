@@ -1,5 +1,6 @@
 import type { StructuredConceptModel, StructuredConceptModelInput } from '../../../shared/creature-transformations/concept-generator.ts'
 import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
+import { DEFAULT_CONCEPT_CREATIVE_PROFILE } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 
 type FetchLike = typeof fetch
 
@@ -17,12 +18,14 @@ export type OpenAiStructuredConceptModelErrorCode =
 export class OpenAiStructuredConceptModelError extends Error {
     readonly code: OpenAiStructuredConceptModelErrorCode
     readonly providerErrorCode: string | null
+    readonly providerStatus: number | null
 
-    constructor(code: OpenAiStructuredConceptModelErrorCode, message: string, options?: { cause?: unknown, providerErrorCode?: string | null }) {
+    constructor(code: OpenAiStructuredConceptModelErrorCode, message: string, options?: { cause?: unknown, providerErrorCode?: string | null, providerStatus?: number | null }) {
         super(message, options)
         this.name = 'OpenAiStructuredConceptModelError'
         this.code = code
         this.providerErrorCode = options?.providerErrorCode ?? null
+        this.providerStatus = options?.providerStatus ?? null
     }
 }
 
@@ -61,6 +64,10 @@ function createInstructions(input: StructuredConceptModelInput): string {
     const correctionFeedback = input.correctionFeedback.length
         ? `Correction feedback from the prior attempt: ${input.correctionFeedback.join(' | ')}.`
         : 'There is no correction feedback for this first attempt.'
+    const creativeProfile = input.creativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE
+    const creativeDirection = creativeProfile === 'EXPRESSIVE'
+        ? 'Propose one bold, memorable primary mutation. The requested target must remain unmistakably dominant; one supporting anatomical consequence is welcome when it is biologically caused by that mutation. Prefer a visible material, colour, or structural consequence over a merely decorative detail.'
+        : 'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations.'
 
     return [
         'Create one creature transformation concept as strict JSON only.',
@@ -80,7 +87,7 @@ function createInstructions(input: StructuredConceptModelInput): string {
         `Allowed primary body areas: ${constraints.allowedPrimaryBodyAreas.join(', ')}.`,
         `Allowed mutation archetypes: ${input.visualTrait.allowedMutationArchetypes.join(', ')}.`,
         `Creative limits: at most ${input.visualTrait.creativeLimits.maxPrimaryBodyAreas} primary body areas and ${input.visualTrait.creativeLimits.maxSecondaryMutations} secondary mutations.`,
-        'Propose exactly one additional primary mutation. Preserve all previously adopted mutations, do not repeat an earlier concept, and do not remove prior visual adaptations. Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.',
+        `${creativeDirection} Do not introduce a new species, clothing, weapons, text, scenes, technical rendering instructions, paths, or URLs.`,
         input.evolutionTarget
             ? `Always return colorEvolution. Allowed modes: ${constraints.colorEvolution.allowedModes.join(', ')}. PRESERVE uses intensity 0 with no added colours, effects or affected areas. Non-preserve modes use intensity ${input.intensity}, must affect only: ${constraints.allowedColorBodyAreas.join(', ')}${constraints.colorEvolution.requiresVisuallySignificantAreaForModes.length ? `, and must include one of the readable full-image areas: ${constraints.colorEvolution.visuallySignificantBodyAreas.join(', ')}` : ''}${constraints.colorEvolution.requiresSkinSurfaceForModes.length ? ', and must include SKIN_SURFACE' : ''}. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.`
             : 'Do not return colorEvolution for this legacy trait-based concept; retain the established palette.',
@@ -242,6 +249,7 @@ export class OpenAiStructuredConceptModel implements StructuredConceptModel {
             }
             if (!response.ok) {
                 throw new OpenAiStructuredConceptModelError(mapProviderHttpFailure(response.status), 'Il provider AI non ha completato la richiesta.', {
+                    providerStatus: response.status,
                     providerErrorCode: await readSafeProviderErrorCode(response),
                 })
             }

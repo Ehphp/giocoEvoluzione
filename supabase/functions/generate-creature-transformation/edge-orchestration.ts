@@ -21,14 +21,15 @@ import type {
 import { CREATURE_TRANSFORMATION_BENCHMARK_PLAN, getCreatureTransformationBenchmarkCase, type CreatureTransformationBenchmarkCase } from '../../../shared/creature-transformations/benchmark-plan.ts'
 import type { CreatureConceptGenerator } from '../../../shared/creature-transformations/concept-generator.ts'
 import { CreatureConceptGenerationError } from '../../../shared/creature-transformations/concept-generator.ts'
-import type { CreatureIdentityResolver, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { CreatureIdentityResolver, GenerateConceptRequest, GenerateImageRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest } from '../../../shared/creature-transformations/contracts.ts'
 import { CreatureImageProviderError, type CreatureImageProvider } from '../../../shared/creature-transformations/image-generation.ts'
 import { getEnabledCreatureImageGenerationProfile, type CreatureImageGenerationProfile } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { MockCreatureConceptGenerator } from '../../../shared/creature-transformations/mock-concept-generator.ts'
 import { classifyExperimentReview, summarizeCreatureTransformationBenchmark, type CreatureTransformationBenchmarkMetricRecord, type CreatureTransformationExperimentReview } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL } from '../../../shared/creature-transformations/prompt-composer.ts'
+import { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL, CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE } from '../../../shared/creature-transformations/prompt-composer.ts'
+import { conceptPromptTemplateVersion, DEFAULT_CONCEPT_CREATIVE_PROFILE, type ConceptCreativeProfileId } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 import type { TransformationCost, TransformationRequestIdempotencyStatus, TransformationRequestPersistence, TransformationRequestStatusPersistence } from '../../../shared/creature-transformations/request-persistence.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { resolveEvolutionDirection, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
@@ -80,6 +81,8 @@ export type GenerateImageEdgeOrchestrationInput = Readonly<{
     validator?: ImageValidator
     /** Internal-only: comparison A/B assets are opaque raw experiments, not production visual assets. */
     experimentalImageOutput?: boolean
+    /** Internal-only: a server-selected concept policy determines the prompt template. */
+    experimentalPromptTemplateVersion?: typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE
     /** Internal-only server-validated experimental source for the shared A/B round. */
     experimentalSourcePath?: string
     /** Internal-only server-selected production visual for the shared A/B round. */
@@ -187,7 +190,11 @@ function mapThrownError(error: unknown): FailureDetails {
         return { code: error.code, message: `Il provider immagini non e disponibile.${diagnostics.length ? ` (${diagnostics.join('; ')})` : ''}` }
     }
     if (error instanceof OpenAiStructuredConceptModelError) {
-        const providerDiagnostic = error.providerErrorCode ? ` (codice provider: ${error.providerErrorCode})` : ''
+        const providerDiagnostics = [
+            error.providerStatus ? `HTTP ${error.providerStatus}` : null,
+            error.providerErrorCode ? `codice provider: ${error.providerErrorCode}` : null,
+        ].filter((value): value is string => value !== null)
+        const providerDiagnostic = providerDiagnostics.length ? ` (${providerDiagnostics.join('; ')})` : ''
         if (error.code === 'AI_NOT_CONFIGURED') return { code: error.code, message: 'La modalita AI non e configurata.' }
         if (error.code === 'AI_BAD_REQUEST') return { code: error.code, message: `La richiesta AI non e accettata dal provider.${providerDiagnostic}` }
         if (error.code === 'AI_AUTHENTICATION_FAILED') return { code: error.code, message: `La credenziale AI non e accettata dal provider.${providerDiagnostic}` }
@@ -391,7 +398,7 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
         const result = await generateImageForAuthenticatedProfile({
             profileId: input.profileId!, requestId: input.requestId, request: controlledRequest, resolver: input.resolver, storage: input.storage,
             provider, ...(input.validator ? { validator: input.validator } : {}),
-            ...(benchmark ? { promptTemplateVersion: benchmark.profile.promptTemplateVersion } : {}),
+            ...(benchmark ? { promptTemplateVersion: benchmark.profile.promptTemplateVersion } : input.experimentalPromptTemplateVersion ? { promptTemplateVersion: input.experimentalPromptTemplateVersion } : {}),
             ...(input.experimentalImageOutput ? { storageDestination: 'RAW_EXPERIMENT' as const } : {}),
             ...(input.experimentalSourcePath ? { sourcePath: input.experimentalSourcePath } : {}),
             ...(input.comparisonSourceVisual ? { sourceVisual: input.comparisonSourceVisual } : {}),
@@ -409,7 +416,7 @@ async function completeImageGeneration(input: GenerateImageEdgeOrchestrationInpu
                 assetReadiness: result.result.assetReadiness, validationWarnings: result.validation.warnings,
                 ...(result.generation.estimatedCostUsd === undefined ? estimateImageCost(request, input.policy, benchmark) : { estimatedCostUsd: result.generation.estimatedCostUsd }),
                 ...(request.imageProviderMode === 'MOCK' ? { actualCostUsd: 0 } : {}),
-                promptTemplateVersion: benchmark?.profile.promptTemplateVersion ?? CREATURE_PROMPT_TEMPLATE_VERSION,
+                promptTemplateVersion: benchmark?.profile.promptTemplateVersion ?? input.experimentalPromptTemplateVersion ?? CREATURE_PROMPT_TEMPLATE_VERSION,
                 promptSha256: result.promptSha256,
                 promptText: result.prompt,
                 conceptSnapshot: result.conceptSnapshot,
@@ -498,11 +505,12 @@ async function runUnlockedTransformationTask(
     evolutionTargetId: EvolutionTargetId | undefined,
     evolutionFunction: EvolutionFunctionId | undefined,
     profile: CreatureImageGenerationProfile | null,
+    creativeProfile: ConceptCreativeProfileId,
 ): Promise<void> {
     try {
         const conceptRequest: GenerateConceptRequest = {
             operation: 'GENERATE_CONCEPT', creatureId: request.creatureId, visualTraitId, evolutionTargetId, evolutionFunction, intensity: 2,
-            conceptMode: 'AI', idempotencyKey: request.idempotencyKey,
+            conceptMode: 'AI', idempotencyKey: request.idempotencyKey, creativeProfile,
         }
         const concept = await generateConceptForAuthenticatedProfile({
             profileId: input.profileId!, requestId: input.requestId, request: conceptRequest,
@@ -522,7 +530,7 @@ async function runUnlockedTransformationTask(
         const generated = await generateImageForAuthenticatedProfile({
             profileId: input.profileId!, requestId: input.requestId, request: imageRequest, resolver: input.resolver,
             storage: input.storage, provider: input.createRealImageProvider!(profile ?? undefined),
-            ...(input.validator ? { validator: input.validator } : {}), promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+            ...(input.validator ? { validator: input.validator } : {}), promptTemplateVersion: conceptPromptTemplateVersion(creativeProfile),
             storageDestination: 'RAW_EXPERIMENT',
         })
         if (!generated.success) {
@@ -537,7 +545,7 @@ async function runUnlockedTransformationTask(
                 resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
                 assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: [...generated.validation.warnings, 'BACKGROUND_REMOVAL_PENDING_CLIENT'],
                 estimatedCostUsd: generated.generation.estimatedCostUsd ?? profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
-                promptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL, promptSha256: generated.promptSha256,
+                promptTemplateVersion: conceptPromptTemplateVersion(creativeProfile), promptSha256: generated.promptSha256,
                 conceptSnapshot: generated.conceptSnapshot, generationQuality: profile?.quality ?? input.policy.realImage.quality,
             },
         })
@@ -691,7 +699,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             await restoreVisualTrackAfterFailure(input, track.id, running)
             return failure(input.requestId, 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', 'La generazione visuale non e disponibile.')
         }
-        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, resolvedTrack.visualTraitId, resolvedTrack.evolutionTargetId ?? undefined, direction?.evolutionFunction, profile))
+        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, resolvedTrack.visualTraitId, resolvedTrack.evolutionTargetId ?? undefined, direction?.evolutionFunction, profile, input.policy.visualProgression.productionConceptCreativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE))
         return acceptedRealImage(input.requestId, running, 'CREATED')
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }
@@ -842,6 +850,7 @@ export async function orchestrateGenerateConcept(input: GenerateConceptEdgeOrche
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
     if (!input.policy.allowedConceptModes.has(parsed.request.conceptMode)) return failure(input.requestId, 'CONCEPT_MODE_NOT_ALLOWED', 'La modalita concept richiesta non e autorizzata.')
+    if (parsed.request.creativeProfile === 'EXPRESSIVE' && input.policy.expressiveConceptExperimentEnabled !== true) return failure(input.requestId, 'CONCEPT_MODE_NOT_ALLOWED', 'Il profilo concept espressivo non e abilitato nel laboratorio.')
     if (parsed.request.conceptMode === 'AI') {
         const accessFailure = generationAccessFailure(input)
         if (accessFailure) return failure(input.requestId, accessFailure.code, accessFailure.message)
@@ -1017,6 +1026,7 @@ export async function orchestrateGenerateCurrentPipelineExperiment(input: Creatu
     const parsed = parseGenerateCurrentPipelineExperimentRequest(input.body)
     if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
     if (!input.policy.enabled || !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', `Il profilo autenticato non e autorizzato al confronto A/B. Profile ID server: ${input.profileId}.`)
+    if (parsed.request.creativeProfile === 'EXPRESSIVE' && !input.policy.expressiveConceptExperimentEnabled) return failure(input.requestId, 'CONCEPT_MODE_NOT_ALLOWED', 'Il profilo concept espressivo non e abilitato nel laboratorio.')
     const access = generationAccessFailure(input)
     if (access) return failure(input.requestId, access.code, access.message)
     const realAccess = realImagePolicyFailure(input.policy, input.profileId, input.canGenerateImages)
@@ -1033,11 +1043,12 @@ export async function orchestrateGenerateCurrentPipelineExperiment(input: Creatu
         if (!sourceVersion || sourceVersion.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile per questa creatura.')
         comparisonSourceVisual = { assetPath: sourceVersion.assetPath, isBaseVersion: sourceVersion.visualTraitId === null }
     }
-    const direction = resolveEvolutionDirection({ evolutionTargetId: parsed.request.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
+    const direction = resolveEvolutionDirection({ evolutionTargetId: parsed.request.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.comparisonKey ?? parsed.request.idempotencyKey })
     if (!direction) return failure(input.requestId, 'CONCEPT_REJECTED', 'Il target anatomico non ha una direzione current generabile.')
-    const conceptResponse = await orchestrateGenerateConcept({ ...input, body: { operation: 'GENERATE_CONCEPT', creatureId: parsed.request.creatureId, visualTraitId: direction.visualTraitId, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction, intensity: 2, conceptMode: 'AI', idempotencyKey: `${parsed.request.idempotencyKey}:concept` } })
+    const creativeProfile = parsed.request.creativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE
+    const conceptResponse = await orchestrateGenerateConcept({ ...input, body: { operation: 'GENERATE_CONCEPT', creatureId: parsed.request.creatureId, visualTraitId: direction.visualTraitId, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction, intensity: 2, conceptMode: 'AI', creativeProfile, idempotencyKey: `${parsed.request.idempotencyKey}:concept` } })
     if (!conceptResponse.success) return conceptResponse
-    return orchestrateGenerateImage({ ...input, experimentalImageOutput: true, ...(experimentalSourcePath ? { experimentalSourcePath } : {}), ...(comparisonSourceVisual ? { comparisonSourceVisual } : {}), body: { operation: 'GENERATE_IMAGE', creatureId: parsed.request.creatureId, concept: conceptResponse.concept, imageProviderMode: 'REAL', idempotencyKey: `${parsed.request.idempotencyKey}:image` } })
+    return orchestrateGenerateImage({ ...input, experimentalImageOutput: true, ...(experimentalSourcePath ? { experimentalSourcePath } : {}), ...(comparisonSourceVisual ? { comparisonSourceVisual } : {}), body: { operation: 'GENERATE_IMAGE', creatureId: parsed.request.creatureId, concept: conceptResponse.concept, imageProviderMode: 'REAL', idempotencyKey: `${parsed.request.idempotencyKey}:image` }, ...(creativeProfile === 'EXPRESSIVE' ? { experimentalPromptTemplateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE } : {}) })
 }
 
 export async function orchestrateSubmitLineageComparisonReview(input: GenerateImageEdgeOrchestrationInput): Promise<CreatureTransformationErrorResponse | { success: true, requestId: string }> {
@@ -1147,8 +1158,8 @@ export async function orchestrateGetCreatureTransformationLabUsage(input: Creatu
     }
 }
 
-function isKnownPromptTemplateVersion(value: string | null): value is typeof CREATURE_PROMPT_TEMPLATE_VERSION | typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL {
-    return value === CREATURE_PROMPT_TEMPLATE_VERSION || value === CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL
+function isKnownPromptTemplateVersion(value: string | null): value is typeof CREATURE_PROMPT_TEMPLATE_VERSION | typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL | typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE {
+    return value === CREATURE_PROMPT_TEMPLATE_VERSION || value === CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL || value === CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE
 }
 
 async function toBenchmarkResultEntry(

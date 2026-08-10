@@ -51,6 +51,7 @@ export class AiCreatureConceptGenerator implements CreatureConceptGenerator {
                 previousTransformations: input.previousTransformations,
                 seed: input.seed,
                 correctionFeedback: input.correctionFeedback ?? [],
+                creativeProfile: input.creativeProfile,
             })
         } catch (error) {
             if (error instanceof CreatureConceptGenerationError) throw error

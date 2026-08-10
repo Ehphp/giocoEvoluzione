@@ -123,6 +123,19 @@ describe('generate concept edge orchestration', () => {
         expect(getGenerateConceptFailureStatus('OPERATION_NOT_IMPLEMENTED')).toBe(501)
     })
 
+    it('reports safe provider diagnostics for concept-model HTTP failures', async () => {
+        const result = await orchestrateGenerateConcept({
+            profileId: 'profile-1', requestId: 'request-provider-diagnostic', body: request({ conceptMode: 'AI' }), policy: allowedPolicy,
+            resolver: createResolver(),
+            createGenerator: () => { throw new OpenAiStructuredConceptModelError('AI_PROVIDER_ERROR', 'provider', { providerStatus: 404, providerErrorCode: 'model_not_found' }) },
+            repository: createInMemoryRequestRepository().repository,
+        })
+
+        expect(result).toMatchObject({ success: false, code: 'AI_PROVIDER_ERROR' })
+        expect(result.message).toContain('HTTP 404')
+        expect(result.message).toContain('model_not_found')
+    })
+
     it('persists rejected and provider-failed concepts as FAILED', async () => {
         const rejectedRepository = createInMemoryRequestRepository()
         const invalid = { ...createCanonicalConcept(), intensity: 1 } as unknown as CreatureTransformationConcept

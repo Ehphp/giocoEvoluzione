@@ -12,12 +12,14 @@ import {
 import {
     composeCreatureTransformationPromptTemplateV2Experimental,
     CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+    composeCreatureTransformationPromptTemplateV3Expressive,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE,
 } from './prompt-template-v2-experimental.ts'
 import { normalizePromptText, uniquePromptItems } from './prompt-normalization.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
 export type { CreaturePromptSections, CreaturePromptTemplateVersion }
-export { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL }
+export { CREATURE_PROMPT_TEMPLATE_VERSION, CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL, CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE }
 
 export type ComposeCreatureTransformationPromptInput = Readonly<{
     identity: CreatureSemanticIdentity
@@ -117,7 +119,7 @@ function formatPrompt(sections: CreaturePromptSections): string {
 export function composeCreatureTransformationPrompt(
     input: ComposeCreatureTransformationPromptInput,
 ): ComposedCreatureTransformationPrompt {
-    if (input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION && input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL) {
+    if (input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION && input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL && input.templateVersion !== CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE) {
         throw new CreaturePromptCompositionError('UNSUPPORTED_TEMPLATE_VERSION', 'La versione del template prompt non e supportata.')
     }
 
@@ -142,7 +144,9 @@ export function composeCreatureTransformationPrompt(
     }
     const sections = input.templateVersion === CREATURE_PROMPT_TEMPLATE_VERSION
         ? composeCreatureTransformationPromptTemplateV1(templateInput)
-        : composeCreatureTransformationPromptTemplateV2Experimental(templateInput)
+        : input.templateVersion === CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE
+            ? composeCreatureTransformationPromptTemplateV3Expressive(templateInput)
+            : composeCreatureTransformationPromptTemplateV2Experimental(templateInput)
     for (const section of SECTION_ORDER) {
         if (!normalizePromptText(sections[section])) {
             throw new CreaturePromptCompositionError('EMPTY_COMPOSED_SECTION', `La sezione ${SECTION_HEADINGS[section]} non puo essere vuota.`)

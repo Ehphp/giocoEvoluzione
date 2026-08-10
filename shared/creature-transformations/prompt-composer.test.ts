@@ -7,6 +7,7 @@ import {
     composeCreatureTransformationPrompt,
     CREATURE_PROMPT_TEMPLATE_VERSION,
     CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL,
+    CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE,
     CreaturePromptCompositionError,
     type CreaturePromptTemplateVersion,
 } from './prompt-composer.ts'
@@ -137,6 +138,19 @@ describe('composeCreatureTransformationPrompt', () => {
         expect(v2.sections.preservation).toContain('Follow the requested colour evolution')
         expect(v2.sections.preservation).not.toContain('Keep the dominant palette')
         expect(v1.sections.preservation).toContain('Keep the face and expression recognisable')
+    })
+
+    it('keeps the target dominant while allowing a causal supporting consequence in the expressive policy', () => {
+        const result = composeCreatureTransformationPrompt({
+            identity: TEST_CREATURE_IDENTITY, concept: createValidConcept(), renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+            templateVersion: CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE,
+        })
+
+        expect(result.templateVersion).toBe(CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE)
+        expect(result.sections.transformation).toContain('dominant, unmistakable new visual change')
+        expect(result.sections.transformation).toContain('coherent supporting consequence')
+        expect(result.sections.prohibitions).toContain('erase prior adaptations')
+        expect(result.sections.preservation).toContain('recognisable overall silhouette')
     })
 
     it('preserves the palette for legacy concepts with no colour-evolution field', () => {

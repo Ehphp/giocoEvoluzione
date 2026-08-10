@@ -5,6 +5,7 @@ import type { ExperimentReviewScores, ExperimentReviewVerdict, CreatureTransform
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 import type { ExperimentalLineage } from './experimental-lineage.ts'
+import type { ConceptCreativeProfileId } from './concept-creative-profiles.ts'
 
 export type CreatureSemanticIdentity = {
     creatureId: string
@@ -44,6 +45,8 @@ export type GenerateConceptRequest = {
     conceptMode: 'MOCK' | 'AI'
     idempotencyKey: string
     benchmarkCaseId?: string
+    /** An allowlisted server policy; the browser never supplies creative instructions. */
+    creativeProfile?: ConceptCreativeProfileId
 }
 
 export type GenerateImageRequest = {
@@ -65,6 +68,10 @@ export type GenerateCurrentPipelineExperimentRequest = {
     experimentalSourceRequestId?: string
     /** A server-owned productive visual version selected from the creature catalog. */
     sourceVisualVersionId?: string
+    /** Lets the Lab compare two controlled A policies without accepting free-form prompts. */
+    creativeProfile?: ConceptCreativeProfileId
+    /** Shared only to resolve an identical evolution direction for a paired comparison. */
+    comparisonKey?: string
     idempotencyKey: string
 }
 

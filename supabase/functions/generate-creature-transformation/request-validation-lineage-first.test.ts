@@ -18,4 +18,11 @@ describe('lineage-first request validation', () => {
         expect(parseGenerateCurrentPipelineExperimentRequest(current)).toMatchObject({ valid: true, request: { experimentalSourceRequestId: current.experimentalSourceRequestId } })
         expect(parseGenerateCurrentPipelineExperimentRequest({ ...current, experimentalSourceRequestId: 'not-a-uuid' })).toMatchObject({ valid: false, code: 'INVALID_REQUEST' })
     })
+
+    it('accepts only the controlled creative-profile enum and UUID comparison key for A calibration', () => {
+        const current = { operation: 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', creatureId: 'creature-1', evolutionTargetId: 'TAIL', creativeProfile: 'EXPRESSIVE', comparisonKey: 'a8d5c988-a8f0-4a53-9eee-5af9b3ef759c', idempotencyKey: 'current-expressive-1' }
+        expect(parseGenerateCurrentPipelineExperimentRequest(current)).toMatchObject({ valid: true, request: { creativeProfile: 'EXPRESSIVE', comparisonKey: current.comparisonKey } })
+        expect(parseGenerateCurrentPipelineExperimentRequest({ ...current, creativeProfile: 'free-form' })).toMatchObject({ valid: false, code: 'INVALID_REQUEST' })
+        expect(parseGenerateCurrentPipelineExperimentRequest({ ...current, comparisonKey: 'not-a-uuid' })).toMatchObject({ valid: false, code: 'INVALID_REQUEST' })
+    })
 })

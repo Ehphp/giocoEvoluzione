@@ -1,6 +1,7 @@
 import type { GenerateConceptRequest, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
 import { parseCreatureImageGenerationProfiles, type CreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
+import { DEFAULT_CONCEPT_CREATIVE_PROFILE, isConceptCreativeProfileId, type ConceptCreativeProfileId } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 
 type ConceptMode = GenerateConceptRequest['conceptMode']
 type ImageProviderMode = GenerateImageRequest['imageProviderMode']
@@ -52,6 +53,7 @@ export type CreatureTransformationLabPolicy = Readonly<{
     realImage: RealImagePolicy
     /** Separate server-side allowlist; a VITE flag is deliberately not sufficient. */
     lineageExperimentAllowedProfileIds: ReadonlySet<string>
+    expressiveConceptExperimentEnabled?: boolean
     benchmark: BenchmarkPolicy
     visualProgression: Readonly<{
         enabled: boolean
@@ -61,6 +63,7 @@ export type CreatureTransformationLabPolicy = Readonly<{
         allowedProfileIds: ReadonlySet<string>
         winsRequired: number
         productionGenerationProfileId: string | null
+        productionConceptCreativeProfile?: ConceptCreativeProfileId
     }>
 }>
 
@@ -125,6 +128,9 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_VISUAL_PRODUCTION_PROFILE_IDS')),
         winsRequired: readCreatureVisualProgressionWinsRequired(readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED')),
         productionGenerationProfileId: profileId && /^[a-z][a-z0-9-]{1,63}$/.test(profileId) ? profileId : null,
+        productionConceptCreativeProfile: isConceptCreativeProfileId(readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE'))
+            ? readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE')
+            : DEFAULT_CONCEPT_CREATIVE_PROFILE,
     })
 }
 
@@ -158,5 +164,5 @@ export function readCreatureTransformationLabPolicy(readEnvironment: (name: stri
     const globalConcurrentRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100)
     const realImageCooldownSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400)
 
-    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), lineageExperimentAllowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')), benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
+    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), lineageExperimentAllowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')), expressiveConceptExperimentEnabled: readEnvironment('CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED') === 'true', benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
 }
