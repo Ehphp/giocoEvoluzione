@@ -1,6 +1,6 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureTransformationLabUsageRequest, GetLineageComparisonReviewsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitLineageComparisonReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureTransformationLabUsageRequest, GetGeneratedImageCatalogRequest, GetLineageComparisonReviewsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitLineageComparisonReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { EVOLUTION_FUNCTION_IDS, EVOLUTION_TARGET_BY_ID, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
@@ -12,6 +12,7 @@ const CURRENT_PIPELINE_EXPERIMENT_FIELDS = new Set(['operation', 'creatureId', '
 const LINEAGE_EXPERIMENT_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'lineage', 'instruction', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'idempotencyKey'])
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'reviewOwnerProfileId'])
 const LAB_USAGE_REQUEST_FIELDS = new Set(['operation'])
+const GENERATED_IMAGE_CATALOG_REQUEST_FIELDS = new Set(['operation', 'page'])
 const REVIEW_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'scores', 'verdict', 'issueFlags', 'notes'])
 const LINEAGE_REVIEW_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'lineageRequestId', 'currentRequestId', 'scores', 'preferredResult'])
 const LINEAGE_REVIEW_LIST_REQUEST_FIELDS = new Set(['operation'])
@@ -156,6 +157,15 @@ export function parseGetCreatureTransformationLabUsageRequest(value: unknown): P
         return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta di utilizzo giornaliero non rispetta il contratto pubblico.' }
     }
     return { valid: true, request: { operation: 'GET_LAB_USAGE' } }
+}
+
+export function parseGetGeneratedImageCatalogRequest(value: unknown): { valid: true, request: GetGeneratedImageCatalogRequest } | Extract<ParsedCreatureTransformationRequest, { valid: false }> {
+    const body = asRecord(value)
+    const page = body?.page === undefined ? 0 : body?.page
+    if (!body || !hasOnlyFields(body, GENERATED_IMAGE_CATALOG_REQUEST_FIELDS) || body.operation !== 'GET_GENERATED_IMAGE_CATALOG' || !Number.isInteger(page) || typeof page !== 'number' || page < 0 || page > 999) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'La pagina del catalogo immagini non e valida.' }
+    }
+    return { valid: true, request: { operation: 'GET_GENERATED_IMAGE_CATALOG', ...(page ? { page } : {}) } }
 }
 
 export function parseGenerateImageRequest(value: unknown): ParsedGenerateImageRequest {
@@ -352,6 +362,7 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'GENERATE_CURRENT_PIPELINE_EXPERIMENT') return parseGenerateCurrentPipelineExperimentRequest(body)
     if (body.operation === 'GET_REQUEST_STATUS') return parseGetTransformationRequestStatusRequest(body)
     if (body.operation === 'GET_LAB_USAGE') return parseGetCreatureTransformationLabUsageRequest(body)
+    if (body.operation === 'GET_GENERATED_IMAGE_CATALOG') return parseGetGeneratedImageCatalogRequest(body)
     if (body.operation === 'SUBMIT_EXPERIMENT_REVIEW') return parseSubmitExperimentReviewRequest(body)
     if (body.operation === 'SUBMIT_LINEAGE_COMPARISON_REVIEW') return parseSubmitLineageComparisonReviewRequest(body)
     if (body.operation === 'GET_LINEAGE_COMPARISON_REVIEWS') return parseGetLineageComparisonReviewsRequest(body)

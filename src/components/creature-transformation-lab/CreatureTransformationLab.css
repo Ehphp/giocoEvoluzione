@@ -41,6 +41,7 @@
 .creature-transformation-lab__identity,
 .creature-transformation-lab__evolution-chain,
 .creature-transformation-lab__production-catalog,
+.creature-transformation-lab__generated-catalog,
 .creature-transformation-lab__usage,
 .creature-transformation-lab__shared-input,
 .creature-transformation-lab__saved-lineage-reviews,
@@ -68,6 +69,7 @@
 .creature-transformation-lab__identity::before,
 .creature-transformation-lab__evolution-chain::before,
 .creature-transformation-lab__production-catalog::before,
+.creature-transformation-lab__generated-catalog::before,
 .creature-transformation-lab__usage::before,
 .creature-transformation-lab__shared-input::before,
 .creature-transformation-lab__saved-lineage-reviews::before,
@@ -111,6 +113,7 @@
 
 /* Gold is cost, limits and anything the operator must acknowledge. */
 .creature-transformation-lab__usage,
+.creature-transformation-lab__generated-catalog,
 .creature-transformation-lab__comparison-card--source {
     --lab-accent: var(--ev-gold);
     --lab-accent-soft: var(--ev-warn-soft);
@@ -179,6 +182,10 @@
     flex: 0 0 auto;
     align-items: center;
     gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__open-generated-catalog {
+    margin-left: auto;
 }
 
 .creature-transformation-lab__header .eyebrow {
@@ -490,6 +497,182 @@
 
 .creature-transformation-lab__production-catalog {
     grid-column: 1 / -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Generated-image catalogue                                                   */
+/* -------------------------------------------------------------------------- */
+
+.creature-transformation-lab__generated-catalog {
+    --lab-accent: var(--ev-opponent);
+    --lab-accent-soft: var(--ev-opponent-soft);
+
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__generated-catalog > header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__generated-catalog > header > div {
+    min-width: 0;
+}
+
+.creature-transformation-lab__generated-catalog h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__generated-catalog h2 svg {
+    font-size: var(--ev-fs-lg);
+}
+
+.creature-transformation-lab__generated-catalog > header p {
+    margin-top: var(--ev-s-1);
+}
+
+.creature-transformation-lab__catalog-error {
+    color: var(--ev-bad-dark);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__generated-catalog-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--ev-s-3);
+}
+
+.creature-transformation-lab__generated-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--ev-catalog-tile-min), 1fr));
+    align-content: start;
+    gap: var(--ev-s-2);
+    max-height: var(--ev-scroll-max-tall);
+    padding: var(--ev-s-1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.creature-transformation-lab__generated-catalog-grid button {
+    display: grid;
+    gap: var(--ev-s-1);
+    min-width: 0;
+    min-height: var(--ev-touch-min);
+    padding: var(--ev-s-2);
+    color: var(--ev-ink);
+    background: var(--ev-cream-light);
+    border: var(--ev-stroke-width) solid var(--ev-stroke-ink);
+    border-radius: var(--ev-r-lg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.creature-transformation-lab__generated-catalog-grid button.is-selected {
+    border-color: var(--ev-opponent);
+    box-shadow: 0 0 0 var(--ev-focus-ring) var(--lab-accent-soft);
+}
+
+.creature-transformation-lab__generated-catalog-grid img,
+.creature-transformation-lab__generated-catalog-detail figure img {
+    display: block;
+    width: 100%;
+    object-fit: contain;
+    background: repeating-conic-gradient(var(--ev-cream-deep) 0 25%, var(--ev-cream-sunk) 0 50%) 50% / var(--ev-s-4) var(--ev-s-4);
+}
+
+.creature-transformation-lab__generated-catalog-grid img {
+    aspect-ratio: 1;
+    border-radius: var(--ev-r-md);
+}
+
+.creature-transformation-lab__generated-catalog-grid span {
+    color: var(--ev-ink);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__generated-catalog-grid small,
+.creature-transformation-lab__generated-catalog-detail figcaption,
+.creature-transformation-lab__generated-catalog-detail dd,
+.creature-transformation-lab__generated-catalog-detail details small {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+}
+
+.creature-transformation-lab__generated-catalog-detail {
+    display: grid;
+    align-content: start;
+    gap: var(--ev-s-3);
+    min-width: 0;
+}
+
+.creature-transformation-lab__generated-catalog-detail figure {
+    display: grid;
+    gap: var(--ev-s-1);
+    margin: 0;
+}
+
+.creature-transformation-lab__generated-catalog-detail figure img {
+    aspect-ratio: 1;
+    max-height: var(--ev-scroll-max-medium);
+    border-radius: var(--ev-r-lg);
+}
+
+.creature-transformation-lab__generated-catalog-detail dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+    margin: 0;
+}
+
+.creature-transformation-lab__generated-catalog-detail dl div {
+    min-width: 0;
+    padding: var(--ev-s-2);
+    background: var(--ev-cream-sunk);
+    border-radius: var(--ev-r-md);
+}
+
+.creature-transformation-lab__generated-catalog-detail dt {
+    color: var(--ev-ink-faint);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.creature-transformation-lab__generated-catalog-detail dd {
+    min-width: 0;
+    margin: var(--ev-s-1) 0 0;
+    overflow-wrap: anywhere;
+}
+
+.creature-transformation-lab__generated-catalog-detail details {
+    min-width: 0;
+}
+
+.creature-transformation-lab__generated-catalog-detail pre {
+    max-height: var(--ev-scroll-max-compact);
+    margin: var(--ev-s-2) 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.creature-transformation-lab__generated-catalog-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: var(--ev-s-2);
+}
+
+.creature-transformation-lab__generated-catalog-pagination span {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
 }
 
 .creature-transformation-lab__production-catalog > header {
@@ -1220,6 +1403,7 @@
     .creature-transformation-lab__score-grid,
     .creature-transformation-lab__image-controls,
     .creature-transformation-lab__image-compare,
+    .creature-transformation-lab__generated-catalog-content,
     .creature-transformation-lab__usage dl {
         grid-template-columns: 1fr;
     }

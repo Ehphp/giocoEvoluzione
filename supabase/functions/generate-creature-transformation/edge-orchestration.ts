@@ -16,6 +16,7 @@ import type {
     SubmitExperimentReviewResponse,
     TransformationRequestStatusResponse,
     CreatureTransformationLabUsageResponse,
+    GeneratedImageCatalogResponse,
     GetLineageComparisonReviewsResponse,
 } from '../../../shared/creature-transformations/api-contracts.ts'
 import { CREATURE_TRANSFORMATION_BENCHMARK_PLAN, getCreatureTransformationBenchmarkCase, type CreatureTransformationBenchmarkCase } from '../../../shared/creature-transformations/benchmark-plan.ts'
@@ -37,7 +38,7 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import { generateLineageFirstImage } from './lineage-first-image-service.ts'
 import {
     CreatureTransformationRequestRepositoryError,
@@ -1158,6 +1159,40 @@ export async function orchestrateGetCreatureTransformationLabUsage(input: Creatu
     }
 }
 
+const GENERATED_IMAGE_CATALOG_PAGE_SIZE = 24
+
+export async function orchestrateGetGeneratedImageCatalog(input: GenerateImageEdgeOrchestrationInput): Promise<GeneratedImageCatalogResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    if (!input.policy.enabled) return failure(input.requestId, 'LAB_DISABLED', 'Il laboratorio trasformazioni non e abilitato.')
+    const parsed = parseGetGeneratedImageCatalogRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    try {
+        const page = parsed.request.page ?? 0
+        const records = await input.repository.listCompletedImageRecords({ profileId: input.profileId, offset: page * GENERATED_IMAGE_CATALOG_PAGE_SIZE, limit: GENERATED_IMAGE_CATALOG_PAGE_SIZE + 1 })
+        const visibleRecords = records.slice(0, GENERATED_IMAGE_CATALOG_PAGE_SIZE)
+        const entries = await Promise.all(visibleRecords.map(async (record) => {
+            const signed = await input.storage.createResultSignedUrl(record.resultPath!)
+            return {
+                transformationRequestId: record.id,
+                creatureId: record.creatureId,
+                createdAt: record.createdAt,
+                completedAt: record.completedAt,
+                imageProviderMode: record.imageProviderMode,
+                provider: record.provider,
+                model: record.model,
+                promptTemplateVersion: record.promptTemplateVersion,
+                assetReadiness: record.assetReadiness,
+                prompt: record.promptText ? { text: record.promptText, sha256: record.promptSha256 } : null,
+                result: { signedUrl: signed.signedUrl, expiresAt: signed.expiresAt, mimeType: record.resultMimeType!, width: record.resultWidth!, height: record.resultHeight!, sha256: record.resultSha256! },
+            }
+        }))
+        return { success: true, requestId: input.requestId, page, hasMore: records.length > GENERATED_IMAGE_CATALOG_PAGE_SIZE, entries }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message, details.problems)
+    }
+}
+
 function isKnownPromptTemplateVersion(value: string | null): value is typeof CREATURE_PROMPT_TEMPLATE_VERSION | typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL | typeof CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE {
     return value === CREATURE_PROMPT_TEMPLATE_VERSION || value === CREATURE_PROMPT_TEMPLATE_VERSION_EXPERIMENTAL || value === CREATURE_PROMPT_TEMPLATE_VERSION_EXPRESSIVE
 }
@@ -1269,6 +1304,7 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     if (operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return orchestrateSubmitVisualBackgroundCleanup(input)
     if (operation === 'GET_REQUEST_STATUS') return orchestrateGetTransformationRequestStatus(input)
     if (operation === 'GET_LAB_USAGE') return orchestrateGetCreatureTransformationLabUsage(input)
+    if (operation === 'GET_GENERATED_IMAGE_CATALOG') return orchestrateGetGeneratedImageCatalog(input)
     if (operation === 'SUBMIT_EXPERIMENT_REVIEW') return orchestrateSubmitExperimentReview(input)
     if (operation === 'GET_BENCHMARK_RESULTS') return orchestrateGetBenchmarkResults(input)
     if (operation === 'SELECT_VISUAL_PROGRESS_TRACK') return orchestrateSelectCreatureVisualProgressTrack(input)

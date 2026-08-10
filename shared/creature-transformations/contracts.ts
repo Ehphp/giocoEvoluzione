@@ -100,6 +100,12 @@ export type GetCreatureTransformationLabUsageRequest = {
     operation: 'GET_LAB_USAGE'
 }
 
+/** Paged owner-only archive of completed generated images in the transformation lab. */
+export type GetGeneratedImageCatalogRequest = {
+    operation: 'GET_GENERATED_IMAGE_CATALOG'
+    page?: number
+}
+
 export type SubmitExperimentReviewRequest = {
     operation: 'SUBMIT_EXPERIMENT_REVIEW'
     transformationRequestId: string
@@ -198,4 +204,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetLineageComparisonReviewsRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetGeneratedImageCatalogRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetLineageComparisonReviewsRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest

@@ -273,6 +273,33 @@ export type CreatureTransformationLabUsageResponse = Readonly<{
     }
 }>
 
+export type GeneratedImageCatalogResponse = Readonly<{
+    success: true
+    requestId: string
+    page: number
+    hasMore: boolean
+    entries: readonly {
+        transformationRequestId: string
+        creatureId: string
+        createdAt: string
+        completedAt: string | null
+        imageProviderMode: 'MOCK' | 'REAL' | null
+        provider: string | null
+        model: string | null
+        promptTemplateVersion: string | null
+        assetReadiness: CreatureTransformationAssetReadiness | null
+        prompt: { text: string, sha256: string | null } | null
+        result: {
+            signedUrl: string
+            expiresAt: string
+            mimeType: 'image/png'
+            width: number
+            height: number
+            sha256: string
+        }
+    }[]
+}>
+
 export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
 export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | CreatureTransformationLabUsageResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetLineageComparisonReviewsResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | CreatureTransformationLabUsageResponse | GeneratedImageCatalogResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetLineageComparisonReviewsResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse

@@ -31,7 +31,7 @@ function applyTransition(record: CreatureTransformationRequestRecord, status: 'R
         ...record,
         status,
         provider: data.provider ?? record.provider, model: data.model ?? record.model, providerRequestId: data.providerRequestId ?? record.providerRequestId,
-        promptTemplateVersion: data.promptTemplateVersion ?? record.promptTemplateVersion, conceptSchemaVersion: data.conceptSchemaVersion ?? record.conceptSchemaVersion, promptText: data.promptText ?? record.promptText,
+        promptTemplateVersion: data.promptTemplateVersion ?? record.promptTemplateVersion, conceptSchemaVersion: data.conceptSchemaVersion ?? record.conceptSchemaVersion, promptSha256: data.promptSha256 ?? record.promptSha256, promptText: data.promptText ?? record.promptText,
         sourceSha256: data.sourceSha256 ?? record.sourceSha256, resultSha256: data.resultSha256 ?? record.resultSha256, resultPath: data.resultPath ?? record.resultPath,
         resultMimeType: data.resultMimeType ?? record.resultMimeType, resultWidth: data.resultWidth ?? record.resultWidth, resultHeight: data.resultHeight ?? record.resultHeight,
         generationLatencyMs: data.generationLatencyMs ?? record.generationLatencyMs, estimatedCostUsd: data.estimatedCostUsd ?? record.estimatedCostUsd,
@@ -109,6 +109,12 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
                 globalRealImageCount: [...records.values()].filter((record) => record.imageProviderMode === 'REAL').length,
                 spentUsd: profileRecords.reduce((sum, record) => sum + (record.actualCostUsd ?? record.estimatedCostUsd ?? 0), 0),
             }
+        },
+        async listCompletedImageRecords(input) {
+            return [...records.values()]
+                .filter((record) => record.profileId === input.profileId && record.status === 'SUCCEEDED' && record.resultPath && record.resultSha256 && record.resultMimeType && record.resultWidth && record.resultHeight)
+                .sort((left, right) => right.completedAt!.localeCompare(left.completedAt!))
+                .slice(input.offset, input.offset + input.limit)
         },
     }
 

@@ -121,6 +121,7 @@ export interface CreatureTransformationRequestRepository {
     getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null>
     getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null>
     getDailyUsage(input: { profileId: string }): Promise<CreatureTransformationDailyUsage>
+    listCompletedImageRecords(input: { profileId: string; offset: number; limit: number }): Promise<CreatureTransformationRequestRecord[]>
 }
 
 type DatabaseError = { message?: string } | null
@@ -128,10 +129,15 @@ type RequestReadQuery = {
     eq(column: string, value: string): RequestReadQuery
     maybeSingle(): Promise<{ data: unknown; error: DatabaseError }>
 }
+type RequestListQuery = {
+    eq(column: string, value: string): RequestListQuery
+    order(column: string, options: { ascending: boolean }): RequestListQuery
+    range(from: number, to: number): Promise<{ data: unknown; error: DatabaseError }>
+}
 export interface CreatureTransformationRequestRepositoryClient {
     rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: DatabaseError }>
     from(table: string): {
-        select(columns: string): RequestReadQuery
+        select(columns: string): RequestReadQuery & RequestListQuery
     }
 }
 
@@ -354,5 +360,18 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
         if (result.outcome === 'CONFLICT') throw new CreatureTransformationRequestRepositoryError('REQUEST_STATE_CONFLICT', 'La richiesta e in uno stato non compatibile con questa operazione.')
         if (result.outcome !== 'UPDATED' || !result.record) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'La transizione persistente non ha restituito il record aggiornato.')
         return result.record
+    }
+
+    async listCompletedImageRecords(input: { profileId: string; offset: number; limit: number }): Promise<CreatureTransformationRequestRecord[]> {
+        const from = input.offset
+        const to = from + input.limit - 1
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.from('creature_transformation_requests').select('*').eq('profile_id', input.profileId).eq('status', 'SUCCEEDED').order('completed_at', { ascending: false }).range(from, to)
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile leggere il catalogo delle immagini.', { cause: error })
+        }
+        if (response.error || !Array.isArray(response.data)) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile leggere il catalogo delle immagini.', { cause: response.error })
+        return response.data.map(mapRecord).filter((record) => Boolean(record.resultPath && record.resultSha256 && record.resultMimeType && record.resultWidth && record.resultHeight))
     }
 }

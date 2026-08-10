@@ -32,9 +32,10 @@ import {
 } from '../../lib/creature-transformations-api'
 import { canGenerateMockImage } from './lab-image-state'
 import { CreatureTransformationBenchmark } from './CreatureTransformationBenchmark'
+import { GeneratedImageCatalog } from './GeneratedImageCatalog'
 import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
-import { ArrowRightIcon, BackIcon } from '../../ui/icons'
+import { ArrowRightIcon, BackIcon, CollectionIcon } from '../../ui/icons'
 import { isExpressiveConceptExperimentVisible } from './lab-expressive-concept-flag'
 
 import '../technical-screens.css'
@@ -145,6 +146,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     const [productionSourceCatalog, setProductionSourceCatalog] = useState<Array<{ id: string; versionNumber: number; conceptName: string | null; signedUrl: string }>>([])
     const [selectedProductionSource, setSelectedProductionSource] = useState<{ versionId: string; signedUrl: string; label: string } | null>(null)
     const [isProductionCatalogOpen, setIsProductionCatalogOpen] = useState(false)
+    const [isGeneratedImageCatalogOpen, setIsGeneratedImageCatalogOpen] = useState(false)
     const [labUsage, setLabUsage] = useState<{ requestCount: number; requestLimit: number; realImageCount: number; realImageLimit: number; globalRealImageCount: number; globalRealImageLimit: number; spentUsd: number; budgetUsd: number } | null>(null)
     const [lineageReview, setLineageReview] = useState<Record<LineageReviewKey, number>>({ creativeSurprise: 3, targetTransformationStrength: 3, creatureContinuity: 3, lineagePreservation: 3, nonTargetStability: 3 })
     const [preferredResult, setPreferredResult] = useState<'CURRENT' | 'LINEAGE_FIRST' | 'NONE'>('NONE')
@@ -588,7 +590,10 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                     <span className="eyebrow">Development-only</span>
                     <h1 id="creature-transformation-lab-title">Laboratorio trasformazioni</h1>
                 </div>
+                <button type="button" className="creature-transformation-lab__open-generated-catalog" onClick={() => setIsGeneratedImageCatalogOpen(true)}><CollectionIcon aria-hidden="true" />Archivio</button>
             </header>
+
+            {isGeneratedImageCatalogOpen ? <GeneratedImageCatalog onClose={() => setIsGeneratedImageCatalogOpen(false)} /> : null}
 
             <section className="creature-transformation-lab__evolution-chain" aria-label="Catena delle sorgenti evolutive A B">
                 <header><span className="eyebrow">CATENA EVOLUTIVA</span><h2>Stadi della sorgente condivisa</h2><p>A e B partono sempre dallo stadio evidenziato.</p></header>
