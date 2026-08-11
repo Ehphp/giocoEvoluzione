@@ -13,7 +13,7 @@ const input = {
 
 describe('FluxMicroConceptGenerator', () => {
     it('uses strict structured output with target/history and no legacy concept contract', async () => {
-        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }) })))
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'], avoid: [] }) })))
         const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
 
         await expect(generator.generate(input)).resolves.toMatchObject({ conceptName: 'Pale rematrici' })
@@ -24,6 +24,7 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toContain('mutationArchetype')
         expect(prompt).not.toContain('colorEvolution')
         expect(JSON.stringify(request)).toContain('additionalProperties')
+        expect(request.text.format.schema.required).toEqual(['conceptName', 'mutationIdea', 'visualDetails', 'avoid'])
     })
 
     it('retries one malformed schema response then rejects an invalid contract', async () => {

@@ -46,7 +46,9 @@ function instructions(input: GenerateFluxMicroConceptInput): string {
 
 const SCHEMA = {
     type: 'object', additionalProperties: false,
-    required: ['conceptName', 'mutationIdea', 'visualDetails'],
+    // Strict Structured Outputs requires every declared property to be required.
+    // An empty list preserves the domain-level optionality of `avoid`.
+    required: ['conceptName', 'mutationIdea', 'visualDetails', 'avoid'],
     properties: {
         conceptName: { type: 'string' },
         mutationIdea: { type: 'string' },
