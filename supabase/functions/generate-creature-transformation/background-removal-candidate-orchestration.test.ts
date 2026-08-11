@@ -6,7 +6,7 @@ import { createInMemoryRequestRepository } from './test-request-repository.ts'
 const profileId = 'profile-1'
 const requestId = '00000000-0000-4000-8000-000000000001'
 
-async function pendingRequest() {
+async function pendingRequest(rawDimensions: readonly [number, number] = [1024, 1536]) {
     const requests = createInMemoryRequestRepository()
     const reserved = await requests.repository.reserve({
         profileId, creatureId: 'creature-1', idempotencyKey: 'raw-key', operation: 'GENERATE_UNLOCKED_TRANSFORMATION',
@@ -16,7 +16,7 @@ async function pendingRequest() {
     await requests.repository.markRunning({ profileId, requestId: reserved.record.id })
     await requests.repository.markSucceeded({
         profileId, requestId: reserved.record.id,
-        data: { resultPath: 'experiments/raw/profile-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png', resultSha256: 'a'.repeat(64), resultMimeType: 'image/png', resultWidth: 1024, resultHeight: 1536, assetReadiness: 'EXPERIMENT_ONLY' },
+        data: { resultPath: 'experiments/raw/profile-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png', resultSha256: 'a'.repeat(64), resultMimeType: 'image/png', resultWidth: rawDimensions[0], resultHeight: rawDimensions[1], assetReadiness: 'EXPERIMENT_ONLY' },
     })
     return { requests, transformationRequestId: reserved.record.id }
 }
@@ -43,6 +43,15 @@ describe('browser background removal candidate gate', () => {
         await expect(orchestrateSubmitBackgroundRemovalCandidate(prepared as never)).resolves.toMatchObject({ success: true, candidate: { assetReadiness: 'FINAL_ASSET' } })
         expect(prepared.uploads).toHaveLength(1)
         expect(pending.requests.get(profileId, 'raw-key')).toMatchObject({ assetReadiness: 'FINAL_ASSET', resultSha256: 'b'.repeat(64) })
+    })
+
+    it('accepts a FLUX raw PNG at 768 by 1152 before promoting the normalized master', async () => {
+        const pending = await pendingRequest([768, 1152])
+        const prepared = input(pending.transformationRequestId, pending.requests.repository, {
+            async validate() { return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true, transparentPixelRatio: 0.5, visiblePixelRatio: 0.5, sha256: 'b'.repeat(64), bytes: 32 }, warnings: [] } },
+        })
+        await expect(orchestrateSubmitBackgroundRemovalCandidate(prepared as never)).resolves.toMatchObject({ success: true, candidate: { assetReadiness: 'FINAL_ASSET', width: 1024, height: 1536 } })
+        expect(pending.requests.get(profileId, 'raw-key')).toMatchObject({ resultWidth: 1024, resultHeight: 1536, assetReadiness: 'FINAL_ASSET' })
     })
 
     it('rejects an opaque candidate before upload and leaves the raw request retryable', async () => {
