@@ -38,6 +38,9 @@ import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse }
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { OpenAiStructuredConceptModelError } from './openai-structured-concept-model.ts'
+import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
+import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
+import { FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
 import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import { generateLineageFirstImage } from './lineage-first-image-service.ts'
 import {
@@ -78,6 +81,8 @@ export type GenerateImageEdgeOrchestrationInput = Readonly<{
     storage: SupabaseCreatureTransformationStorageAdapter
     createImageProvider: () => CreatureImageProvider
     createRealImageProvider?: (configuration?: Pick<CreatureImageGenerationProfile, 'model' | 'quality' | 'estimatedCostUsd'>) => CreatureImageProvider
+    createFluxMicroConceptGenerator?: () => FluxMicroConceptGenerator
+    createFalFluxImageProvider?: () => FalFluxImageProvider
     deferBackgroundTask?: BackgroundTaskScheduler
     validator?: ImageValidator
     /** Internal-only: comparison A/B assets are opaque raw experiments, not production visual assets. */
@@ -162,14 +167,14 @@ export function getGenerateConceptFailureStatus(code: string): number {
     if (code === 'UNAUTHENTICATED') return 401
     if (code === 'LAB_DISABLED' || code === 'CONCEPT_MODE_NOT_ALLOWED' || code === 'IMAGE_PROVIDER_MODE_NOT_ALLOWED' || code === 'CREATURE_NOT_OWNED' || code === 'REAL_IMAGE_PROVIDER_DISABLED' || code === 'REAL_IMAGE_PROVIDER_NOT_ALLOWED' || code === 'IMAGE_GENERATION_NOT_ALLOWED' || code === 'BENCHMARK_NOT_ALLOWED' || code === 'BENCHMARK_REVIEWER_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'BACKGROUND_CLEANUP_DISABLED' || code === 'VISUAL_PROFILE_NOT_ALLOWED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
     if (code === 'CREATURE_NOT_FOUND' || code === 'SOURCE_IMAGE_NOT_FOUND' || code === 'REQUEST_NOT_FOUND' || code === 'VISUAL_TRACK_NOT_FOUND' || code === 'VISUAL_VERSION_NOT_FOUND' || code === 'CURRENT_VISUAL_UNAVAILABLE') return 404
-    if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED') return 429
-    if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID') return 503
+    if (code === 'AI_RATE_LIMITED' || code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'OPENAI_IMAGE_RATE_LIMITED' || code === 'FAL_FLUX_RATE_LIMITED') return 429
+    if (code === 'AI_NOT_CONFIGURED' || code === 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED' || code === 'GENERATION_PROFILE_CONFIGURATION_INVALID' || code === 'FAL_FLUX_NOT_CONFIGURED' || code === 'FLUX_CONCEPT_NOT_CONFIGURED') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
     if (code === 'PNG_ALPHA_COVERAGE_INVALID' || code === 'BACKGROUND_REMOVAL_CANDIDATE_INVALID' || code === 'BACKGROUND_CLEANUP_CANDIDATE_INVALID') return 422
-    if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT') return 504
+    if (code === 'AI_TIMEOUT' || code === 'IMAGE_PROVIDER_TIMEOUT' || code === 'OPENAI_IMAGE_TIMEOUT' || code === 'FAL_FLUX_TIMEOUT' || code === 'FLUX_CONCEPT_TIMEOUT') return 504
     if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE' || code === 'BACKGROUND_CLEANUP_VERSION_CONFLICT') return 409
-    if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH') return 422
-    if (code === 'AI_AUTHENTICATION_FAILED' || code === 'AI_PERMISSION_DENIED' || code === 'AI_NETWORK_ERROR' || code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID') return 502
+    if (code === 'CONCEPT_REJECTED' || code === 'CREATURE_IDENTITY_NOT_SUPPORTED' || code === 'CREATURE_IDENTITY_CONFIGURATION_INVALID' || code === 'SOURCE_IMAGE_INVALID' || code === 'RESULT_IMAGE_EMPTY' || code === 'RESULT_IMAGE_INVALID' || code === 'RESULT_IMAGE_UNCHANGED' || code === 'AI_BAD_REQUEST' || code === 'OPENAI_IMAGE_BAD_REQUEST' || code === 'OPENAI_IMAGE_MODERATION_BLOCKED' || code === 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED' || code === 'BENCHMARK_CONCEPT_MISMATCH' || code === 'FLUX_BODY_PLAN_UNSUPPORTED' || code === 'FLUX_SOURCE_IMAGE_INVALID' || code === 'FLUX_RESULT_IMAGE_INVALID' || code === 'FLUX_RESULT_IMAGE_UNCHANGED' || code === 'FAL_FLUX_BAD_REQUEST' || code === 'FLUX_CONCEPT_RESPONSE_INVALID') return 422
+    if (code === 'AI_AUTHENTICATION_FAILED' || code === 'AI_PERMISSION_DENIED' || code === 'AI_NETWORK_ERROR' || code === 'AI_PROVIDER_ERROR' || code === 'MOCK_PROVIDER_FAILED' || code === 'STORAGE_UPLOAD_FAILED' || code === 'SIGNED_URL_FAILED' || code === 'OPENAI_IMAGE_PROVIDER_ERROR' || code === 'OPENAI_IMAGE_RESPONSE_INVALID' || code === 'OPENAI_IMAGE_BASE64_INVALID' || code === 'FAL_FLUX_PROVIDER_ERROR' || code === 'FAL_FLUX_RESPONSE_INVALID' || code === 'FLUX_CONCEPT_PROVIDER_ERROR') return 502
     if (code === 'REQUEST_RESERVATION_FAILED' || code === 'REQUEST_PERSISTENCE_FAILED' || code === 'INTERNAL_ERROR' || code === 'CREATURE_LOOKUP_FAILED') return 500
     return 400
 }
@@ -181,6 +186,8 @@ function mapThrownError(error: unknown): FailureDetails {
     if (error instanceof ExperimentReviewRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof CreatureVisualProgressionRepositoryError) return { code: error.code, message: error.message }
     if (error instanceof ImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
+    if (error instanceof FluxImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
+    if (error instanceof FluxMicroConceptGeneratorError || error instanceof FalFluxImageProviderError) return { code: error.code, message: error.message }
     if (error instanceof CreatureImageProviderError) {
         const diagnostics = [
             error.providerStatus ? `HTTP ${error.providerStatus}` : null,
@@ -471,6 +478,15 @@ function productionRealImageFailure(policy: CreatureTransformationLabPolicy, pro
     return null
 }
 
+function productionFluxFailure(policy: CreatureTransformationLabPolicy): FailureDetails | null {
+    const flux = policy.visualProgression.flux
+    if (!flux?.apiKey || !flux.microConceptApiKey || !flux.microConceptModel || flux.estimatedCostUsd === null || flux.maxEstimatedCostUsd === null) {
+        return { code: 'FAL_FLUX_NOT_CONFIGURED', message: 'La pipeline FLUX di produzione non e configurata.' }
+    }
+    if (flux.estimatedCostUsd > flux.maxEstimatedCostUsd) return { code: 'REAL_IMAGE_REQUEST_COST_LIMIT_EXCEEDED', message: 'Il costo stimato FLUX supera il limite consentito.' }
+    return null
+}
+
 async function toCurrentVisualResponse(input: GenerateImageEdgeOrchestrationInput, version: StoredVisualVersion) {
     const displayAvailable = Boolean(version.displayAssetPath && version.displayAssetSha256 && version.displayMimeType === 'image/webp' && version.displayWidth && version.displayHeight)
     const assetPath = displayAvailable ? version.displayAssetPath! : version.assetPath
@@ -507,8 +523,32 @@ async function runUnlockedTransformationTask(
     evolutionFunction: EvolutionFunctionId | undefined,
     profile: CreatureImageGenerationProfile | null,
     creativeProfile: ConceptCreativeProfileId,
+    pipeline: 'legacy' | 'flux',
 ): Promise<void> {
     try {
+        if (pipeline === 'flux') {
+            if (!evolutionTargetId || !evolutionFunction || !input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider) {
+                throw new FluxImageGenerationServiceError('FAL_FLUX_NOT_CONFIGURED', 'La pipeline FLUX di produzione non e configurata.')
+            }
+            const generated = await generateFluxImageForAuthenticatedProfile({
+                profileId: input.profileId!, requestId: input.requestId, request,
+                evolutionTargetId, evolutionFunction, resolver: input.resolver, storage: input.storage,
+                microConceptGenerator: input.createFluxMicroConceptGenerator(), provider: input.createFalFluxImageProvider(),
+                ...(input.validator ? { validator: input.validator } : {}),
+            })
+            const completed = await input.repository.markSucceeded({
+                requestId: running.id, profileId: input.profileId!, data: {
+                    provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
+                    sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256, resultPath: await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey), resultMimeType: generated.result.mimeType,
+                    resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
+                    assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: generated.validation.warnings,
+                    estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.visualProgression.flux?.estimatedCostUsd ?? 0,
+                    promptTemplateVersion: 'flux-micro-v1', promptSha256: generated.promptSha256, conceptSnapshot: generated.conceptSnapshot,
+                },
+            })
+            await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
+            return
+        }
         const conceptRequest: GenerateConceptRequest = {
             operation: 'GENERATE_CONCEPT', creatureId: request.creatureId, visualTraitId, evolutionTargetId, evolutionFunction, intensity: 2,
             conceptMode: 'AI', idempotencyKey: request.idempotencyKey, creativeProfile,
@@ -641,10 +681,11 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
     if (access) return failure(input.requestId, access.code, access.message)
     const generationAccess = generationAccessFailure(input)
     if (generationAccess) return failure(input.requestId, generationAccess.code, generationAccess.message)
-    const profile = productionImageProfile(input.policy)
-    if (input.policy.visualProgression.productionGenerationProfileId && !profile) return failure(input.requestId, 'GENERATION_PROFILE_CONFIGURATION_INVALID', 'Il profilo di generazione produzione non e disponibile.')
-    const realFailure = productionRealImageFailure(input.policy, profile)
-    if (realFailure) return failure(input.requestId, realFailure.code, realFailure.message)
+    const pipeline = input.policy.visualProgression.productionPipeline ?? 'legacy'
+    const profile = pipeline === 'legacy' ? productionImageProfile(input.policy) : null
+    if (pipeline === 'legacy' && input.policy.visualProgression.productionGenerationProfileId && !profile) return failure(input.requestId, 'GENERATION_PROFILE_CONFIGURATION_INVALID', 'Il profilo di generazione produzione non e disponibile.')
+    const providerFailure = pipeline === 'flux' ? productionFluxFailure(input.policy) : productionRealImageFailure(input.policy, profile)
+    if (providerFailure) return failure(input.requestId, providerFailure.code, providerFailure.message)
     try {
         const [track, source] = await Promise.all([
             input.visualRepository.getTrack({ profileId: input.profileId, creatureId: parsed.request.creatureId }),
@@ -653,6 +694,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         if (!track || track.id !== parsed.request.progressTrackId) return failure(input.requestId, 'VISUAL_TRACK_NOT_FOUND', 'Il percorso visuale non e disponibile.')
         if (track.status === 'GENERATING') return failure(input.requestId, 'VISUAL_GENERATION_ALREADY_RUNNING', 'La generazione visuale e gia in corso.')
         if (track.status !== 'READY') return failure(input.requestId, 'VISUAL_TRACK_NOT_READY', 'Il percorso deve essere sbloccato prima della generazione.')
+        if (pipeline === 'flux' && !track.evolutionTargetId) return failure(input.requestId, 'VISUAL_TRACK_STATE_CONFLICT', 'FLUX richiede un target anatomico.')
         const direction = track.evolutionTargetId
             ? resolveEvolutionDirection({ evolutionTargetId: track.evolutionTargetId, previousTransformations: source.previousTransformations, seed: parsed.request.idempotencyKey })
             : null
@@ -667,7 +709,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         const reservation = await input.repository.reserve({
             profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', visualTraitId: resolvedTrack.visualTraitId, intensity: 2, conceptMode: 'AI', imageProviderMode: 'REAL',
-            estimatedCostUsd: profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
+            estimatedCostUsd: pipeline === 'flux' ? input.policy.visualProgression.flux!.estimatedCostUsd! : profile?.estimatedCostUsd ?? input.policy.realImage.estimatedCostUsd ?? 0,
             dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
             requestFingerprint: fingerprint, ...realImageReservationLimits(input.policy),
             visualProgressTrackId: resolvedTrack.id, sourceVisualVersionId: source.currentVisualVersionId,
@@ -695,12 +737,13 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             const details = mapThrownError(error)
             return failure(input.requestId, details.code, details.message)
         }
-        if (!input.createRealImageProvider || !input.deferBackgroundTask) {
-            try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId, errorCode: 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', errorMessage: 'La generazione visuale non e disponibile.' }) } catch { /* preserve the safe track restore */ }
+        if (!input.deferBackgroundTask || (pipeline === 'legacy' && !input.createRealImageProvider) || (pipeline === 'flux' && (!input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider))) {
+            const code = pipeline === 'flux' ? 'FAL_FLUX_NOT_CONFIGURED' : 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED'
+            try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId, errorCode: code, errorMessage: 'La generazione visuale non e disponibile.' }) } catch { /* preserve the safe track restore */ }
             await restoreVisualTrackAfterFailure(input, track.id, running)
-            return failure(input.requestId, 'REAL_IMAGE_PROVIDER_NOT_CONFIGURED', 'La generazione visuale non e disponibile.')
+            return failure(input.requestId, code, 'La generazione visuale non e disponibile.')
         }
-        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, resolvedTrack.visualTraitId, resolvedTrack.evolutionTargetId ?? undefined, direction?.evolutionFunction, profile, input.policy.visualProgression.productionConceptCreativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE))
+        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, resolvedTrack.visualTraitId, resolvedTrack.evolutionTargetId ?? undefined, direction?.evolutionFunction, profile, input.policy.visualProgression.productionConceptCreativeProfile ?? DEFAULT_CONCEPT_CREATIVE_PROFILE, pipeline))
         return acceptedRealImage(input.requestId, running, 'CREATED')
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }

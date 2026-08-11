@@ -6,6 +6,7 @@ import type { PlayerCreatureRecord } from '../../lib/profile-api'
 import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
+import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
 
 import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
 import { ASSETS } from '../../ui/assets'
@@ -108,8 +109,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             if (!response.ok) throw new Error('Non e stato possibile scaricare il PNG raw.')
             setPostProcessingMessage('Caricamento del modello di scontorno ad alta qualita: il primo avvio puo richiedere piu tempo...')
             const transparentPng = await removeCreatureBackground(await response.blob())
-            const bytes = new Uint8Array(await transparentPng.arrayBuffer())
-            const displayAsset = await createCreatureDisplayAsset(transparentPng)
+            const normalizedPng = await normalizeCreatureMasterPng(transparentPng)
+            const bytes = new Uint8Array(await normalizedPng.arrayBuffer())
+            const displayAsset = await createCreatureDisplayAsset(normalizedPng)
             const displayBytes = new Uint8Array(await displayAsset.blob.arrayBuffer())
             const base64 = pngBytesToBase64(bytes)
             setPostProcessingMessage('Validazione del PNG trasparente...')

@@ -92,4 +92,21 @@ describe('creature transformation lab policy', () => {
         const policy = readCreatureTransformationLabPolicy(() => undefined)
         expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, winsRequired: 3 })
     })
+
+    it('keeps FLUX opt-in and reads its server-only pilot configuration', () => {
+        const defaultPolicy = readCreatureTransformationLabPolicy(() => undefined)
+        expect(defaultPolicy.visualProgression.productionPipeline).toBe('legacy')
+
+        const fluxPolicy = readCreatureTransformationLabPolicy((name) => ({
+            CREATURE_VISUAL_PRODUCTION_PIPELINE: 'flux', FAL_FLUX_API_KEY: 'server-only-fal-key',
+            FAL_FLUX_MODEL: 'configured-flux-edit-model', FAL_FLUX_TIMEOUT_MS: '45000',
+            FAL_FLUX_ESTIMATED_COST_USD: '0.0203', FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
+            OPENAI_API_KEY: 'server-only-concept-key', FLUX_MICRO_CONCEPT_MODEL: 'configured-micro-concept-model',
+        })[name])
+
+        expect(fluxPolicy.visualProgression).toMatchObject({
+            productionPipeline: 'flux',
+            flux: { model: 'configured-flux-edit-model', timeoutMs: 45000, estimatedCostUsd: 0.0203, maxEstimatedCostUsd: 0.03, microConceptModel: 'configured-micro-concept-model' },
+        })
+    })
 })

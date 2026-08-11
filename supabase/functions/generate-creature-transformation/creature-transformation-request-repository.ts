@@ -1,6 +1,6 @@
 import type { CreatureTransformationAssetReadiness } from '../../../shared/creature-transformations/api-contracts.ts'
 import type { TransformationCost, TransformationRequestStatus } from '../../../shared/creature-transformations/request-persistence.ts'
-import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
+import type { CreatureTransformationConceptSnapshot } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 export type CreatureTransformationRequestOperation = 'GENERATE_CONCEPT' | 'GENERATE_IMAGE' | 'GENERATE_UNLOCKED_TRANSFORMATION'
@@ -107,7 +107,7 @@ export type RequestTransitionData = TransformationCost & Readonly<{
     generationQuality?: 'low' | 'medium' | 'high'
     promptSha256?: string
     promptText?: string
-    conceptSnapshot?: CreatureTransformationConcept
+    conceptSnapshot?: CreatureTransformationConceptSnapshot
     errorCode?: string
     errorMessage?: string
 }>

@@ -1,4 +1,5 @@
 import type { CreatureTransformationConcept } from './concepts.ts'
+import type { FluxEvolutionSnapshot } from './flux-evolution/micro-concept.ts'
 import type { BodyArea } from './body-areas.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
 import type { MutationArchetype } from './mutation-archetypes.ts'
@@ -15,7 +16,11 @@ export type PreviousCreatureTransformationSummary = Readonly<{
     mutationArchetype?: MutationArchetype | null
     primaryBodyArea?: BodyArea | null
     supportingBodyAreas?: readonly BodyArea[]
+    /** Present on FLUX snapshots; legacy concepts intentionally omit it. */
+    mutationIdea?: string
 }>
+
+export type CreatureTransformationConceptSnapshot = CreatureTransformationConcept | FluxEvolutionSnapshot
 
 export type SelectableCreatureVisualVersion = Readonly<{
     id: string
@@ -37,7 +42,7 @@ export type CreatureVisualVersion = Readonly<{
     evolutionTargetId?: EvolutionTargetId | null
     evolutionFunction?: EvolutionFunctionId | null
     conceptName: string | null
-    conceptSnapshot: CreatureTransformationConcept | null
+    conceptSnapshot: CreatureTransformationConceptSnapshot | null
     promptTemplateVersion: string | null
     promptSha256: string | null
     assetSha256: string

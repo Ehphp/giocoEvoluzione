@@ -25,6 +25,8 @@ import {
     type ExperimentReviewRepositoryClient,
 } from './experiment-review-repository.ts'
 import { OpenAiCreatureImageProvider } from './openai-creature-image-provider.ts'
+import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
+import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
 
 declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void }
@@ -91,14 +93,14 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
         async listPreviousTransformations(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('creature_visual_versions')
-                .select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name')
+                .select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name, concept_snapshot')
                 .eq('creature_id', creatureId)
                 .not('visual_trait_id', 'is', null)
                 .in('status', ['ACTIVE', 'SUPERSEDED'])
-                .order('version_number', { ascending: true })
+                .order('version_number', { ascending: false })
                 .limit(8)
             if (error) throw error
-            return (data ?? []).flatMap((entry) => (
+            return [...(data ?? [])].reverse().flatMap((entry) => (
                 typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
                     ? [{
                         versionNumber: Number(entry.version_number),
@@ -109,6 +111,9 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
                         mutationArchetype: typeof entry.mutation_archetype === 'string' ? entry.mutation_archetype as import('../../../shared/creature-transformations/mutation-archetypes.ts').MutationArchetype : null,
                         primaryBodyArea: typeof entry.primary_body_area === 'string' ? entry.primary_body_area as import('../../../shared/creature-transformations/body-areas.ts').BodyArea : null,
                         supportingBodyAreas: Array.isArray(entry.supporting_body_areas) ? entry.supporting_body_areas.filter((area): area is import('../../../shared/creature-transformations/body-areas.ts').BodyArea => typeof area === 'string') : [],
+                        ...(entry.concept_snapshot && typeof entry.concept_snapshot === 'object' && (entry.concept_snapshot as { schemaVersion?: unknown }).schemaVersion === 'flux-micro-v1' && typeof (entry.concept_snapshot as { mutationIdea?: unknown }).mutationIdea === 'string'
+                            ? { mutationIdea: (entry.concept_snapshot as { mutationIdea: string }).mutationIdea }
+                            : {}),
                     }]
                     : []
             ))
@@ -189,6 +194,15 @@ Deno.serve(async (request) => {
         createRealImageProvider: (configuration) => new OpenAiCreatureImageProvider({
             apiKey: policy.realImage.apiKey!, model: configuration?.model ?? policy.realImage.model!, quality: configuration?.quality ?? policy.realImage.quality,
             timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: configuration?.estimatedCostUsd ?? policy.realImage.estimatedCostUsd!,
+        }),
+        createFluxMicroConceptGenerator: () => new FluxMicroConceptGenerator({
+            apiKey: policy.visualProgression.flux?.microConceptApiKey ?? '',
+            model: policy.visualProgression.flux?.microConceptModel ?? '',
+        }),
+        createFalFluxImageProvider: () => new FalFluxImageProvider({
+            apiKey: policy.visualProgression.flux?.apiKey ?? '', model: policy.visualProgression.flux?.model,
+            timeoutMs: policy.visualProgression.flux?.timeoutMs,
+            estimatedCostUsd: policy.visualProgression.flux?.estimatedCostUsd ?? undefined,
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         repository: requestRepository,

@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createValidConcept, TEST_CREATURE_IDENTITY } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import type { StoredVisualVersion, SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 import { orchestrateGenerateUnlockedTransformation, orchestrateGetCreatureVisualProgress, orchestrateGetCurrentCreatureVisual, orchestrateGetGameCreatureVisuals } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
+import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
+import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
 
 const OPEN_PROFILE = 'friend-profile'
 const PILOT_PROFILE = 'pilot-profile'
@@ -162,5 +164,58 @@ describe('visual progression access', () => {
         expect(persistence.get('profile-1', 'target-rejected-key')).toMatchObject({
             status: 'FAILED', errorCode: 'CONCEPT_REJECTED', evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: expect.any(String),
         })
+    })
+
+    it('routes an explicitly enabled FLUX pilot through the shared post-processing lifecycle without invoking legacy generation', async () => {
+        const fluxPolicy = readCreatureTransformationLabPolicy((name) => ({
+            CREATURE_VISUAL_PROGRESSION_ENABLED: 'true', CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
+            CREATURE_VISUAL_PRODUCTION_PIPELINE: 'flux', FAL_FLUX_API_KEY: 'fal-test-key', FAL_FLUX_ESTIMATED_COST_USD: '0.0203', FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
+            OPENAI_API_KEY: 'concept-test-key', FLUX_MICRO_CONCEPT_MODEL: 'concept-test-model',
+        })[name])
+        const trackId = '00000000-0000-4000-8000-000000000006'
+        const targetTrack = { id: trackId, creatureId: CREATURE_ID, visualTraitId: null, evolutionTargetId: 'FORELIMBS' as const, status: 'READY' as const, progress: 3, target: 3, readyAt: null, generatedRequestId: null, completedVersionId: null }
+        const markBackgroundRemovalPending = vi.fn(async () => ({ ...targetTrack, status: 'POST_PROCESSING' as const }))
+        const targetVisualRepository = {
+            async getTrack() { return targetTrack },
+            async resolveTrackTrait({ visualTraitId }: { visualTraitId: string }) { return { ...targetTrack, visualTraitId: visualTraitId as never } },
+            async startGeneration() { return { ...targetTrack, visualTraitId: 'LOCOMOTION_ADAPTATION' as const, status: 'GENERATING' as const } },
+            markBackgroundRemovalPending,
+            async completeGeneration() { return targetTrack },
+        } as unknown as SupabaseCreatureVisualProgressionRepository
+        class FluxValidator extends ImageValidator {
+            calls = 0
+            override async validate() {
+                this.calls += 1
+                return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: this.calls === 1 ? 1024 : 768, height: this.calls === 1 ? 1536 : 1152, colorType: 6, hasAlpha: this.calls === 1, sha256: this.calls === 1 ? 'a'.repeat(64) : 'b'.repeat(64), bytes: 256 }, warnings: [] }
+            }
+        }
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const storage = {
+            async readCanonicalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
+            async saveRawResult() { return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
+            async createRawResultObjectPath() { return 'experiments/raw/profile-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png' },
+        }
+        const legacyGenerator = vi.fn(() => { throw new Error('legacy concept generator must not run') })
+        const legacyProvider = vi.fn(() => { throw new Error('OpenAI image provider must not run') })
+
+        const result = await orchestrateGenerateUnlockedTransformation({
+            profileId: 'profile-1', canGenerateImages: true, requestId: 'flux-pilot',
+            body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: trackId, idempotencyKey: 'flux-pilot-key' },
+            policy: fluxPolicy,
+            resolver: { async resolve() { return { identity: { ...TEST_CREATURE_IDENTITY, baseCreatureKey: 'VERDANT_HATCHLING' }, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true, currentVisualVersionId: '00000000-0000-4000-8000-000000000005', currentVersionNumber: 1, previousTransformations: [] } } },
+            createGenerator: legacyGenerator, createRealImageProvider: legacyProvider,
+            createFluxMicroConceptGenerator: () => ({ async generate() { return { conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] } } } as never),
+            createFalFluxImageProvider: () => ({ async transform() { return { image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 } } } as never),
+            deferBackgroundTask: (task) => { tasks.push(task) }, repository: persistence.repository, visualRepository: targetVisualRepository,
+            storage: storage as never, reviewRepository: {} as never, validator: new FluxValidator(),
+        })
+
+        expect(result).toMatchObject({ success: true, accepted: true })
+        await tasks[0]
+        expect(legacyGenerator).not.toHaveBeenCalled()
+        expect(legacyProvider).not.toHaveBeenCalled()
+        expect(markBackgroundRemovalPending).toHaveBeenCalledOnce()
+        expect(persistence.get('profile-1', 'flux-pilot-key')).toMatchObject({ status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY', promptTemplateVersion: 'flux-micro-v1', resultWidth: 768, resultHeight: 1152 })
     })
 })

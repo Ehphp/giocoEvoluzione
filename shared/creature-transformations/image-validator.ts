@@ -46,7 +46,7 @@ export type ImageValidationResult =
 export type ImageValidationInput = Readonly<{
     bytes: Uint8Array
     mimeType: string
-    renderSpecification: CreatureRenderSpecification
+    renderSpecification: Pick<CreatureRenderSpecification, 'width' | 'height'>
     sourceSha256?: string
     isMock?: boolean
     minBytes?: number

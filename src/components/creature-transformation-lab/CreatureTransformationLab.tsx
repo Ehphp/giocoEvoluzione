@@ -18,7 +18,9 @@ import type { PlayerCreatureRecord } from '../../lib/profile-api'
 import {
     createConceptIdempotencyKey,
     createImageIdempotencyKey,
+    createVisualTransformationIdempotencyKey,
     CreatureTransformationApiError,
+    generateUnlockedCreatureTransformation,
     getCreatureTransformationRequestStatus,
     getLineageComparisonReviews,
     getCreatureTransformationLabUsage,
@@ -37,6 +39,7 @@ import { isCreatureTransformationBenchmarkVisible } from './lab-benchmark-flag'
 import { isRealImageExperimentVisible } from './lab-real-image-flag'
 import { ArrowRightIcon, BackIcon, CollectionIcon } from '../../ui/icons'
 import { isExpressiveConceptExperimentVisible } from './lab-expressive-concept-flag'
+import { isFluxPilotShortcutVisible } from './lab-flux-pilot-flag'
 
 import '../technical-screens.css'
 import './CreatureTransformationLab.css'
@@ -53,6 +56,16 @@ type LineageComparisonDraft = Readonly<{
     scores: Record<LineageReviewKey, number>
     preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
 }>
+type FluxPilotProgress = Readonly<{
+    track: Readonly<{
+        id: string
+        status: 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'
+        evolutionTargetId: EvolutionTargetId | null
+        progress: number
+        target: number
+    }> | null
+    lastFailure: { requestId: string; code: string; message: string } | null
+}>
 type CurrentPipelineLaunchOptions = Readonly<{
     creativeProfile?: ConceptCreativeProfileId
     comparisonKey?: string
@@ -62,6 +75,8 @@ const LINEAGE_REVIEW_KEYS: readonly LineageReviewKey[] = ['creativeSurprise', 't
 const REAL_IMAGE_FRONTEND_ENABLED = isRealImageExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED)
 const BENCHMARK_FRONTEND_ENABLED = isCreatureTransformationBenchmarkVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_BENCHMARK_ENABLED)
 const EXPRESSIVE_CONCEPT_FRONTEND_ENABLED = isExpressiveConceptExperimentVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED)
+const FLUX_PILOT_SHORTCUT_FRONTEND_ENABLED = isFluxPilotShortcutVisible(import.meta.env.VITE_CREATURE_TRANSFORMATION_FLUX_PILOT_ENABLED)
+    && import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
 const REAL_POLL_INTERVAL_MS = 2500
 const REAL_POLL_TIMEOUT_MS = 60000
 const COMPARISON_SEQUENCE_TIMEOUT_MS = 10 * 60 * 1000
@@ -164,6 +179,9 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
     const [calibrationExpressiveRequest, setCalibrationExpressiveRequest] = useState<TransformationRequestPersistence | null>(null)
     const [calibrationExpressiveStatus, setCalibrationExpressiveStatus] = useState<TransformationRequestStatusResponse | null>(null)
     const [isLaunchingCalibration, setIsLaunchingCalibration] = useState(false)
+    const [fluxPilotProgress, setFluxPilotProgress] = useState<FluxPilotProgress | null>(null)
+    const [isLaunchingFluxPilot, setIsLaunchingFluxPilot] = useState(false)
+    const [fluxPilotError, setFluxPilotError] = useState<string | null>(null)
     const realRequestIsRunning = Boolean(realRequestPersistence && !isTerminalRequestStatus(realStatus?.requestPersistence.status ?? realRequestPersistence.status) && !realPollingTimedOut)
     const lineageRequestIsRunning = Boolean(lineageRequest && !isTerminalRequestStatus(lineageStatus?.requestPersistence.status ?? lineageRequest.status))
     const calibrationControlRunning = Boolean(calibrationControlRequest && !isTerminalRequestStatus(calibrationControlStatus?.requestPersistence.status ?? calibrationControlRequest.status))
@@ -241,6 +259,23 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         })()
         return () => { cancelled = true }
     }, [creature.id])
+
+    const refreshFluxPilotProgress = useCallback(async () => {
+        const response = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as FluxPilotProgress
+        setFluxPilotProgress(response)
+    }, [creature.id])
+
+    useEffect(() => {
+        if (!FLUX_PILOT_SHORTCUT_FRONTEND_ENABLED) return
+        void refreshFluxPilotProgress().catch((nextError) => setFluxPilotError(nextError instanceof Error ? nextError.message : 'Impossibile leggere lo stato del percorso produttivo.'))
+    }, [refreshFluxPilotProgress])
+
+    useEffect(() => {
+        const status = fluxPilotProgress?.track?.status
+        if (!['GENERATING', 'POST_PROCESSING'].includes(status ?? '')) return undefined
+        const interval = window.setInterval(() => void refreshFluxPilotProgress().catch((nextError) => setFluxPilotError(nextError instanceof Error ? nextError.message : 'Impossibile aggiornare lo stato della pipeline FLUX.')), REAL_POLL_INTERVAL_MS)
+        return () => window.clearInterval(interval)
+    }, [fluxPilotProgress?.track?.status, refreshFluxPilotProgress])
 
     useEffect(() => { void refreshLabUsage() }, [])
     useEffect(() => { void refreshSavedLineageReviews().catch(() => { /* The visible archive state already contains the error. */ }) }, [refreshSavedLineageReviews])
@@ -582,6 +617,27 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
         }
     }
 
+    async function handleLaunchFluxPilot() {
+        const track = fluxPilotProgress?.track
+        if (!track || track.status !== 'READY' || isLaunchingFluxPilot) return
+        setIsLaunchingFluxPilot(true)
+        setFluxPilotError(null)
+        try {
+            await generateUnlockedCreatureTransformation({
+                operation: 'GENERATE_UNLOCKED_TRANSFORMATION',
+                creatureId: creature.id,
+                progressTrackId: track.id,
+                idempotencyKey: createVisualTransformationIdempotencyKey(),
+            })
+            await refreshFluxPilotProgress()
+            window.location.hash = '#creature-evolution'
+        } catch (nextError) {
+            setFluxPilotError(nextError instanceof Error ? nextError.message : 'La pipeline FLUX non e stata avviata.')
+        } finally {
+            setIsLaunchingFluxPilot(false)
+        }
+    }
+
     return (
         <section className="creature-transformation-lab" aria-labelledby="creature-transformation-lab-title">
             <header className="creature-transformation-lab__header">
@@ -633,6 +689,13 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                     <div><span className="eyebrow">CALIBRAZIONE A</span><h3>Controllo / espressiva</h3><p>Due pipeline A con stessa sorgente, target, trait e funzione. Cambia solo la policy creativa server-side.</p></div>
                     <p>Entrambe producono asset sperimentali non adottabili e consumano due generazioni REAL.</p>
                     <button type="button" className="primary-button" onClick={() => void handleGenerateConceptCalibration()} disabled={!realCostConfirmed || isBusy}>{isLaunchingCalibration ? 'Avvio calibrazione…' : 'Genera calibrazione A'}</button>
+                </section> : null}
+                {FLUX_PILOT_SHORTCUT_FRONTEND_ENABLED ? <section className="creature-transformation-lab__comparison-launch" aria-label="Scorciatoia pipeline FLUX produttiva">
+                    <div><span className="eyebrow">PILOT FLUX</span><h3>Avvia la pipeline produttiva</h3><p>Usa lo stesso percorso di evoluzione, con reservation, post-processing e adozione invariati.</p><p>{fluxPilotProgress?.track ? `Percorso: ${fluxPilotProgress.track.status} · ${fluxPilotProgress.track.progress}/${fluxPilotProgress.track.target}` : 'Nessun percorso visivo disponibile per questa creatura.'}</p></div>
+                    <p>Il server seleziona FLUX soltanto se <code>CREATURE_VISUAL_PRODUCTION_PIPELINE=flux</code>. Il percorso deve essere pronto.</p>
+                    <button type="button" className="primary-button" onClick={() => void handleLaunchFluxPilot()} disabled={isBusy || isLaunchingFluxPilot || fluxPilotProgress?.track?.status !== 'READY'}>{isLaunchingFluxPilot ? 'Avvio FLUX…' : 'Avvia test FLUX e apri evoluzione'}</button>
+                    {fluxPilotProgress?.lastFailure ? <p role="alert">{fluxPilotProgress.lastFailure.code}: {fluxPilotProgress.lastFailure.message}</p> : null}
+                    {fluxPilotError ? <p role="alert">{fluxPilotError}</p> : null}
                 </section> : null}
             </section>
 

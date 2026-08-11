@@ -32,6 +32,16 @@ export type RealImagePolicy = Readonly<{
     maxEstimatedCostUsd: number | null
 }>
 
+export type FluxProductionPolicy = Readonly<{
+    apiKey: string | null
+    model: string
+    timeoutMs: number
+    estimatedCostUsd: number | null
+    maxEstimatedCostUsd: number | null
+    microConceptApiKey: string | null
+    microConceptModel: string | null
+}>
+
 export type BenchmarkPolicy = Readonly<{
     allowedProfileIds: ReadonlySet<string>
     reviewerProfileIds: ReadonlySet<string>
@@ -64,6 +74,9 @@ export type CreatureTransformationLabPolicy = Readonly<{
         winsRequired: number
         productionGenerationProfileId: string | null
         productionConceptCreativeProfile?: ConceptCreativeProfileId
+        /** Legacy remains the safe default until the FLUX pilot is explicitly enabled. */
+        productionPipeline?: 'legacy' | 'flux'
+        flux?: FluxProductionPolicy
     }>
 }>
 
@@ -131,6 +144,16 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         productionConceptCreativeProfile: isConceptCreativeProfileId(readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE'))
             ? readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE')
             : DEFAULT_CONCEPT_CREATIVE_PROFILE,
+        productionPipeline: readEnvironment('CREATURE_VISUAL_PRODUCTION_PIPELINE')?.trim().toLowerCase() === 'flux' ? 'flux' as const : 'legacy' as const,
+        flux: Object.freeze({
+            apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
+            model: readEnvironment('FAL_FLUX_MODEL')?.trim() || 'fal-ai/flux-2-klein/9b/edit',
+            timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), 30_000, 1_000, 180_000),
+            estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
+            maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
+            microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
+            microConceptModel: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
+        }),
     })
 }
 
