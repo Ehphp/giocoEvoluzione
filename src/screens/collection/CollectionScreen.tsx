@@ -22,6 +22,8 @@ type CollectionScreenProps = {
     creature: PlayerCreatureRecord
     isOnline: boolean
     onBack: () => void
+    onOpenProfile: () => void
+    onOpenRanking: () => void
     onLogout: () => void
     visualUrl?: string | null
     visualVersionNumber?: number | null
@@ -80,6 +82,8 @@ export function CollectionScreen({
     creature,
     isOnline,
     onBack,
+    onOpenProfile,
+    onOpenRanking,
     onLogout,
     visualUrl,
     visualVersionNumber,
@@ -100,6 +104,8 @@ export function CollectionScreen({
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'battle') onBack()
+        if (tab === 'profile') onOpenProfile()
+        if (tab === 'ranking') onOpenRanking()
     }
 
     return (

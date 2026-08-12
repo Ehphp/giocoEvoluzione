@@ -773,6 +773,8 @@ function App() {
         creature={auth.creature}
         isOnline={isOnline}
         onBack={() => setCurrentScreen('home')}
+        onOpenProfile={() => setCurrentScreen('profile')}
+        onOpenRanking={() => setCurrentScreen('ranking')}
         onLogout={() => void handleLogout()}
         visualUrl={officialVisual?.signedUrl}
         visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}

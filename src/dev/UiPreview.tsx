@@ -92,6 +92,8 @@ function CollectionPreview() {
             creature={PREVIEW_CREATURE}
             isOnline
             onBack={noop}
+            onOpenProfile={noop}
+            onOpenRanking={noop}
             onLogout={noop}
             visualUrl={PREVIEW_VISUAL_HISTORY[8].signedUrl}
             visualVersionNumber={9}
