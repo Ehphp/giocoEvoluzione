@@ -10,11 +10,14 @@ import {
     type MatchRewardRecord,
     type PlayerCreatureRecord,
     type ProfileRecord,
+    mapCompetitiveLeaderboardEntry,
+    mapProfileRecord,
 } from './profile-api'
 
 const profile: ProfileRecord = {
     id: 'profile-1',
     nickname: 'Lince',
+    skill_rating: 1000,
     created_at: '2026-08-01T10:00:00.000Z',
     updated_at: '2026-08-01T10:00:00.000Z',
 }
@@ -40,6 +43,11 @@ const existingReward: MatchRewardRecord = {
 }
 
 describe('profile persistence mappings', () => {
+    it('maps the competitive rating and leaderboard payload independently from creature progression', () => {
+        expect(mapProfileRecord({ id: 'profile-1', nickname: 'Lince', skill_rating: 1042, created_at: '2026-01-01', updated_at: '2026-01-01' }).skill_rating).toBe(1042)
+        expect(mapCompetitiveLeaderboardEntry({ rank_position: 1, nickname: 'Lince', skill_rating: 1042 })).toEqual({ position: 1, nickname: 'Lince', skillRating: 1042 })
+    })
+
     it('has an idempotent bootstrap plan once profile and creature exist', () => {
         expect(getBootstrapPlan(null, null)).toEqual({ needsProfile: true, needsCreature: true })
         expect(getBootstrapPlan(profile, creature)).toEqual({ needsProfile: false, needsCreature: false })

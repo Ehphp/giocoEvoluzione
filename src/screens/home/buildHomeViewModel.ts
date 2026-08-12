@@ -116,7 +116,7 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             displayName: input.profile.nickname,
             accountLevel: input.creature.level,
             experience,
-            rankLabel: `Livello ${input.creature.level}`,
+            rankLabel: `Rating ${new Intl.NumberFormat('it-IT').format(input.profile.skill_rating)}`,
         },
         creature: {
             ...base.creature!,
@@ -129,10 +129,11 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             level: input.creature.level,
             experience,
         },
-        navigation: base.navigation.map((item) => item.id === 'profile' ? { ...item, available: true } : item),
+        navigation: base.navigation.map((item) => item.id === 'profile' || item.id === 'rankings' ? { ...item, available: true } : item),
         capabilities: {
             ...base.capabilities,
             profile: true,
+            rankings: true,
             rewards: true,
         },
     }

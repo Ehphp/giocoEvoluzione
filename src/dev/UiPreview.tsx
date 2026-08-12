@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { BattleScreen } from '../screens/battle/BattleScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
+import { LeaderboardScreen } from '../screens/ranking/LeaderboardScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { CreatureTransformationLab } from '../components/creature-transformation-lab/CreatureTransformationLab'
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
@@ -11,6 +12,7 @@ import {
     PREVIEW_CREATURE,
     PREVIEW_GENES,
     PREVIEW_HISTORY,
+    PREVIEW_LEADERBOARD,
     PREVIEW_PROFILE,
     PREVIEW_VISUAL_HISTORY,
     buildPreviewBattleViewModel,
@@ -33,10 +35,15 @@ function HomePreview() {
                         onJoinGame: noop,
                         onLeaveSession: noop,
                         onOpenProfile: noop,
+                        onOpenRanking: noop,
                         onLogout: noop,
                     }}
                 />
     )
+}
+
+function RankingPreview() {
+    return <LeaderboardScreen onBack={noop} onOpenProfile={noop} onLogout={noop} previewEntries={PREVIEW_LEADERBOARD} />
 }
 
 function BattlePreview() {
@@ -119,6 +126,10 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
 
     if (route === 'profile') {
         return <ProfilePreview />
+    }
+
+    if (route === 'ranking') {
+        return <RankingPreview />
     }
 
     if (route === 'evolution') {

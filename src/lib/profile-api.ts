@@ -5,8 +5,15 @@ import { requireSupabase } from './supabase'
 export type ProfileRecord = {
     id: string
     nickname: string
+    skill_rating: number
     created_at: string
     updated_at: string
+}
+
+export type CompetitiveLeaderboardEntry = {
+    position: number
+    nickname: string
+    skillRating: number
 }
 
 export type PlayerCreatureRecord = {
@@ -67,8 +74,17 @@ export function mapProfileRecord(data: Record<string, unknown>): ProfileRecord {
     return {
         id: String(data.id),
         nickname: String(data.nickname),
+        skill_rating: Number(data.skill_rating ?? 1000),
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
+    }
+}
+
+export function mapCompetitiveLeaderboardEntry(data: Record<string, unknown>): CompetitiveLeaderboardEntry {
+    return {
+        position: Number(data.rank_position),
+        nickname: String(data.nickname),
+        skillRating: Number(data.skill_rating),
     }
 }
 
@@ -235,6 +251,18 @@ export async function updateMyNickname(nickname: string): Promise<ProfileRecord>
     }
 
     return mapProfileRecord(data)
+}
+
+export async function fetchCompetitiveLeaderboard(limit = 50): Promise<CompetitiveLeaderboardEntry[]> {
+    const { data, error } = await requireSupabase().rpc('get_competitive_leaderboard', { p_limit: limit })
+
+    if (error) {
+        throw new Error(error.message)
+    }
+
+    return Array.isArray(data)
+        ? data.filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === 'object')).map(mapCompetitiveLeaderboardEntry)
+        : []
 }
 
 export async function fetchProfileMatchHistory(profileId: string, limit: number | null = 10): Promise<ProfileMatchHistoryItem[]> {

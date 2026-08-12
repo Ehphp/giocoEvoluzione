@@ -40,6 +40,7 @@ type ProfileScreenProps = {
 
 const OUTCOME_LABEL = { win: 'Vittoria', draw: 'Pareggio', loss: 'Sconfitta' } as const
 const OUTCOME_TONE = { win: 'good', draw: 'info', loss: 'bad' } as const
+const RATING_FORMATTER = new Intl.NumberFormat('it-IT')
 
 function formatDate(value: string) {
     const date = new Date(value)
@@ -155,6 +156,7 @@ export function ProfileScreen({
                         <h2>{creature.name ?? 'Creatura iniziale'}</h2>
                         <div className="profile-hero__chips">
                             <Chip tone="good" icon={<SparkIcon />}>Livello {creature.level}</Chip>
+                            <Chip tone="info">Rating {RATING_FORMATTER.format(profile.skill_rating)}</Chip>
                             <Chip tone="info" icon={<DnaIcon />}>
                                 {selectedVisual ? `v${selectedVisual.versionNumber} · ${selectedVisual.conceptName ?? 'Forma base'}` : `v${visualVersionNumber ?? 1} · ${visualTrait ?? 'Forma base'}`}
                             </Chip>

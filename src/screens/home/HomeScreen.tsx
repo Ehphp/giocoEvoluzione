@@ -95,6 +95,10 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
         if (tab === 'profile') {
             actions.onOpenProfile()
         }
+
+        if (tab === 'ranking') {
+            actions.onOpenRanking()
+        }
     }
 
     const dock = (

@@ -1,4 +1,4 @@
-import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../lib/profile-api'
+import type { CompetitiveLeaderboardEntry, PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../lib/profile-api'
 import type { GeneCardV2, GeneSelectionViewModelV2 } from '../components/game-v2/types'
 import { getEventAssetByArtKey, getGeneAssetByTrait } from '../components/game-v2/gameSelectionAssets'
 import { buildAuthenticatedHomeViewModel } from '../screens/home/buildHomeViewModel'
@@ -12,6 +12,7 @@ import type { HomeViewModel } from '../screens/home/types'
 export const PREVIEW_PROFILE: ProfileRecord = {
     id: 'preview-profile',
     nickname: 'Naturalista',
+    skill_rating: 1000,
     created_at: '2026-01-04T10:00:00.000Z',
     updated_at: '2026-08-01T10:00:00.000Z',
 }
@@ -35,6 +36,12 @@ export const PREVIEW_HISTORY: ProfileMatchHistoryItem[] = [
     { gameId: 'g-3', date: '2026-08-05T09:41:00.000Z', mode: 'PVP', opponentNickname: 'Micelio', outcome: 'draw', score: 4, opponentScore: 4, roomCode: 'B8XRM', status: 'FINISHED' },
     { gameId: 'g-4', date: '2026-08-03T17:15:00.000Z', mode: 'PVP', opponentNickname: 'Ombra', outcome: 'win', score: 6, opponentScore: 1, roomCode: 'PP31D', status: 'FINISHED' },
     { gameId: 'g-5', date: '2026-08-02T12:05:00.000Z', mode: 'VS_BOT', opponentNickname: 'Bot Difficile', outcome: 'win', score: 5, opponentScore: 4, roomCode: null, status: 'FINISHED' },
+]
+
+export const PREVIEW_LEADERBOARD: CompetitiveLeaderboardEntry[] = [
+    { position: 1, nickname: 'Aquila', skillRating: 1086 },
+    { position: 2, nickname: 'Naturalista', skillRating: 1000 },
+    { position: 3, nickname: 'Micelio', skillRating: 978 },
 ]
 
 export const PREVIEW_VISUAL_HISTORY = [

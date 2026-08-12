@@ -29,6 +29,7 @@ function createActions(): HomeActions {
         onJoinGame: vi.fn(),
         onLeaveSession: vi.fn(),
         onOpenProfile: vi.fn(),
+        onOpenRanking: vi.fn(),
         onLogout: vi.fn(),
     }
 }
@@ -94,6 +95,19 @@ describe('HomeScreen', () => {
         act(() => profileTab.click())
 
         expect(actions.onOpenProfile).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens the competitive leaderboard from the dock once the capability is available', () => {
+        const viewModel = createViewModel()
+        viewModel.capabilities = { ...viewModel.capabilities, rankings: true }
+        const actions = render(viewModel)
+
+        const rankingTab = [...container.querySelectorAll<HTMLButtonElement>('.ev-dock__item')][3]!
+
+        expect(rankingTab.disabled).toBe(false)
+        act(() => rankingTab.click())
+
+        expect(actions.onOpenRanking).toHaveBeenCalledTimes(1)
     })
 
     it('forwards guest form values and every existing game action', () => {
