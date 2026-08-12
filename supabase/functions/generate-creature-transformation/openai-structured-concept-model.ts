@@ -1,6 +1,7 @@
 import type { StructuredConceptModel, StructuredConceptModelInput } from '../../../shared/creature-transformations/concept-generator.ts'
 import { getEvolutionConstraints } from '../../../shared/creature-transformations/evolution-constraints.ts'
 import { DEFAULT_CONCEPT_CREATIVE_PROFILE } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
+import { MUTATION_AFFINITIES } from '../../../shared/creature-transformations/concepts.ts'
 
 type FetchLike = typeof fetch
 
@@ -91,6 +92,7 @@ function createInstructions(input: StructuredConceptModelInput): string {
         input.evolutionTarget
             ? `Always return colorEvolution. Allowed modes: ${constraints.colorEvolution.allowedModes.join(', ')}. PRESERVE uses intensity 0 with no added colours, effects or affected areas. Non-preserve modes use intensity ${input.intensity}, must affect only: ${constraints.allowedColorBodyAreas.join(', ')}${constraints.colorEvolution.requiresVisuallySignificantAreaForModes.length ? `, and must include one of the readable full-image areas: ${constraints.colorEvolution.visuallySignificantBodyAreas.join(', ')}` : ''}${constraints.colorEvolution.requiresSkinSurfaceForModes.length ? ', and must include SKIN_SURFACE' : ''}. Give a biological rationale tied to the requested trait and mutation material. Never list mutable colour or palette traits in identityToPreserve when colorEvolution is EXPAND or SHIFT.`
             : 'Do not return colorEvolution for this legacy trait-based concept; retain the established palette.',
+        `Always decide elementalAffinity: choose exactly one of ${MUTATION_AFFINITIES.join(', ')}. NONE is a real choice and requires expression to be an empty string. For every other affinity, expression must explain how it physically manifests through the requested primary mutation, rather than as a colour-only change. Do not transform unrelated body regions, change the selected target, trait, evolution function, or mutation archetype, and do not redesign the creature globally around the element.`,
         'Return all required fields and no additional fields. Do not include markdown or explanations.',
         correctionFeedback,
     ].join('\n')
@@ -129,7 +131,7 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
         additionalProperties: false,
         required: [
             'schemaVersion', 'visualTrait', ...(target ? ['evolutionTargetId', 'evolutionFunction'] : []), 'conceptName', 'evolutionaryFunction', 'primaryMutation',
-            'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
+            'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity', 'elementalAffinity',
             ...(target ? ['colorEvolution'] : []),
         ],
         properties: {
@@ -174,6 +176,14 @@ function createConceptJsonSchema(input: StructuredConceptModelInput): Record<str
             identityToPreserve: { type: 'array', items: { type: 'string' } },
             forbiddenChanges: { type: 'array', items: { type: 'string' } },
             intensity: { type: 'integer', enum: [input.intensity] },
+            elementalAffinity: {
+                type: 'object', additionalProperties: false,
+                required: ['type', 'expression'],
+                properties: {
+                    type: { type: 'string', enum: MUTATION_AFFINITIES },
+                    expression: { type: 'string' },
+                },
+            },
             ...colorEvolutionSchema,
         },
     }

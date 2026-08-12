@@ -31,12 +31,18 @@ describe('OpenAiStructuredConceptModel', () => {
         expect(requestBody).toContain('"type":"json_schema"')
         expect(requestBody).toContain('INVALID_INTENSITY: ripristina il valore richiesto')
         expect(requestBody).toContain('Do not return colorEvolution for this legacy trait-based concept')
+        expect(requestBody).toContain('Always decide elementalAffinity')
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.creatureId)
         expect(requestBody).not.toContain(TEST_CREATURE_IDENTITY.baseCreatureKey)
         expect(payload.text.format.schema.properties.schemaVersion).toEqual({ type: 'integer', enum: [1] })
         expect(payload.text.format.schema.properties.visualTrait).toEqual({ type: 'string', enum: [input.visualTrait.id] })
         expect(payload.text.format.schema.properties.intensity).toEqual({ type: 'integer', enum: [input.intensity] })
         expect(payload.text.format.schema.properties.colorEvolution).toBeUndefined()
+        const elementalAffinity = payload.text.format.schema.properties.elementalAffinity as { required: string[], properties: { type: { enum: string[] }, expression: { type: string } } }
+        expect(elementalAffinity.required).toEqual(['type', 'expression'])
+        expect(elementalAffinity.properties.type.enum).toContain('NONE')
+        expect(elementalAffinity.properties.type.enum).toContain('POISON')
+        expect(elementalAffinity.properties.expression).toEqual({ type: 'string' })
         expect(JSON.stringify(payload.text.format.schema)).not.toContain('"const"')
     })
 

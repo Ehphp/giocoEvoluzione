@@ -7,6 +7,19 @@ export type TransformationIntensity = 1 | 2 | 3
 
 export const TRANSFORMATION_INTENSITIES = Object.freeze([1, 2, 3] as const)
 
+export const MUTATION_AFFINITIES = Object.freeze([
+    'NONE', 'FIRE', 'WATER', 'EARTH', 'AIR', 'ELECTRIC', 'ICE', 'POISON', 'SHADOW', 'LIGHT',
+] as const)
+export type MutationAffinity = (typeof MUTATION_AFFINITIES)[number]
+
+/** A local extraordinary character expressed through the already selected anatomical mutation. */
+export type ElementalAffinity = Readonly<{
+    type: MutationAffinity
+    expression: string
+}>
+
+export const NO_ELEMENTAL_AFFINITY: ElementalAffinity = Object.freeze({ type: 'NONE', expression: '' })
+
 export const COLOR_EVOLUTION_MODES = Object.freeze(['PRESERVE', 'EXPAND', 'SHIFT'] as const)
 export type ColorEvolutionMode = (typeof COLOR_EVOLUTION_MODES)[number]
 
@@ -56,8 +69,14 @@ export type CreatureTransformationConcept = {
     intensity: TransformationIntensity
     /** Optional so persisted schema-v1 concepts keep their conservative palette behaviour. */
     colorEvolution?: ColorEvolution
+    /** Optional for backward compatibility; absent historical concepts resolve to NONE. */
+    elementalAffinity?: ElementalAffinity
 }
 
 export function resolveColorEvolution(concept: Pick<CreatureTransformationConcept, 'colorEvolution'>): ColorEvolution {
     return concept.colorEvolution ?? CONSERVATIVE_COLOR_EVOLUTION
+}
+
+export function resolveElementalAffinity(concept: Pick<CreatureTransformationConcept, 'elementalAffinity'>): ElementalAffinity {
+    return concept.elementalAffinity ?? NO_ELEMENTAL_AFFINITY
 }

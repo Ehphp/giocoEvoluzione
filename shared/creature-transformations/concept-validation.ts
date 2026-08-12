@@ -1,5 +1,5 @@
 import { BODY_AREAS, type BodyArea } from './body-areas.ts'
-import { COLOR_EVOLUTION_MODES, TRANSFORMATION_INTENSITIES, type ColorEvolution, type ColorEvolutionMode, type CreatureTransformationConcept, type TransformationIntensity } from './concepts.ts'
+import { COLOR_EVOLUTION_MODES, MUTATION_AFFINITIES, TRANSFORMATION_INTENSITIES, type ColorEvolution, type ColorEvolutionMode, type CreatureTransformationConcept, type ElementalAffinity, type MutationAffinity, type TransformationIntensity } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import { EVOLUTION_FUNCTION_IDS, type EvolutionFunctionId, type EvolutionTargetDefinition } from './evolution-targets.ts'
 import { getColorEvolutionConstraintViolations, getEvolutionConstraints, type EvolutionConstraints } from './evolution-constraints.ts'
@@ -38,6 +38,9 @@ export type ConceptProblemCode =
     | 'INVALID_COLOR_EVOLUTION_MODE'
     | 'COLOR_EVOLUTION_TOO_WEAK'
     | 'COLOR_EVOLUTION_INCOHERENT'
+    | 'INVALID_ELEMENTAL_AFFINITY'
+    | 'INVALID_ELEMENTAL_AFFINITY_EXPRESSION'
+    | 'ELEMENTAL_AFFINITY_OUTSIDE_MUTATION'
 
 export type ConceptProblem = {
     code: ConceptProblemCode
@@ -63,17 +66,30 @@ type UnknownRecord = Record<string, unknown>
 const CONCEPT_FIELDS = new Set([
     'schemaVersion', 'visualTrait', 'evolutionTargetId', 'evolutionFunction', 'conceptName', 'evolutionaryFunction', 'primaryMutation',
     'secondaryMutations', 'identityToPreserve', 'forbiddenChanges', 'intensity',
-    'colorEvolution',
+    'colorEvolution', 'elementalAffinity',
 ])
 const PRIMARY_MUTATION_FIELDS = new Set(['mutationArchetype', 'bodyAreas', 'supportingBodyAreas', 'morphology', 'material'])
 const COLOR_EVOLUTION_FIELDS = new Set([
     'mode', 'dominantColor', 'secondaryColors', 'accentColors', 'surfaceEffects', 'affectedBodyAreas', 'intensity', 'biologicalRationale',
 ])
 const COLOR_EVOLUTION_INTENSITIES = new Set([0, ...TRANSFORMATION_INTENSITIES])
+const ELEMENTAL_AFFINITY_FIELDS = new Set(['type', 'expression'])
 const TECHNICAL_INSTRUCTION_PATTERN = /\b(?:png|jpe?g|webp|canvas|alpha|trasparen\w*|sfondo|background|dimension\w*|pixel|risoluzione|resolution|posa|pose|path|url|1024|1536)\b/i
 const IDENTITY_BREAKING_PATTERN = /(?:nuova specie|cambio di specie|sostituzione del volto|anatomia umanoide|trasformazione totale|completamente diverso)/i
 const PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN = /(?:rimuov|elimin|cancell|sostituisc|remove|replace).*(?:mutazion|evoluzion|adaptation)/i
 const GLOBAL_MUTATION_PATTERN = /(?:intero corpo|corpo intero|globale|global|silhouette|proporzioni)/i
+const BODY_AREA_EXPRESSION_PATTERNS: Readonly<Record<BodyArea, RegExp>> = Object.freeze({
+    HEAD_SURFACE: /\b(?:testa|capo|head)\b/i,
+    EYE_REGION: /\b(?:occhi?|eye(?:s)?)\b/i,
+    FACE: /\b(?:viso|muso|faccia|face)\b/i,
+    NECK: /\b(?:collo|neck)\b/i,
+    BACK: /\b(?:dorso|schiena|back)\b/i,
+    CHEST: /\b(?:petto|torace|chest)\b/i,
+    FORELIMBS: /\b(?:zampe anteriori|arti anteriori|front limbs?)\b/i,
+    HIND_LIMBS: /\b(?:zampe posteriori|arti posteriori|rear limbs?|hind limbs?)\b/i,
+    TAIL: /\b(?:coda|tail)\b/i,
+    SKIN_SURFACE: /\b(?:pelle|cute|skin)\b/i,
+})
 
 function isRecord(value: unknown): value is UnknownRecord {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -136,6 +152,45 @@ function isEvolutionFunction(value: string): value is EvolutionFunctionId {
 
 function isColorEvolutionMode(value: string): value is ColorEvolutionMode {
     return COLOR_EVOLUTION_MODES.includes(value as ColorEvolutionMode)
+}
+
+function isMutationAffinity(value: string): value is MutationAffinity {
+    return MUTATION_AFFINITIES.includes(value as MutationAffinity)
+}
+
+function readElementalAffinity(candidate: UnknownRecord, problems: ConceptProblem[]): ElementalAffinity | undefined {
+    if (candidate.elementalAffinity === undefined) return undefined
+    if (!isRecord(candidate.elementalAffinity)) {
+        problems.push(makeProblem('INVALID_ELEMENTAL_AFFINITY', 'elementalAffinity deve essere un oggetto completo.', 'elementalAffinity'))
+        return undefined
+    }
+    const affinity = candidate.elementalAffinity
+    checkUnknownFields(affinity, ELEMENTAL_AFFINITY_FIELDS, 'elementalAffinity.', problems)
+    const type = readNonEmptyString(affinity, 'type', 'elementalAffinity.type', problems)
+    const expressionValue = affinity.expression
+    if (expressionValue === undefined) {
+        problems.push(makeProblem('MISSING_REQUIRED_FIELD', 'Il campo elementalAffinity.expression e obbligatorio.', 'elementalAffinity.expression'))
+        return undefined
+    }
+    if (typeof expressionValue !== 'string') {
+        problems.push(makeProblem('INVALID_FIELD_TYPE', 'Il campo elementalAffinity.expression deve essere una stringa.', 'elementalAffinity.expression'))
+        return undefined
+    }
+    const expression = expressionValue.trim()
+    if (type === null || !isMutationAffinity(type)) {
+        problems.push(makeProblem('INVALID_ELEMENTAL_AFFINITY', 'elementalAffinity.type deve appartenere al catalogo delle affinity.', 'elementalAffinity.type'))
+        return undefined
+    }
+    if ((type === 'NONE' && expression) || (type !== 'NONE' && !expression)) {
+        problems.push(makeProblem('INVALID_ELEMENTAL_AFFINITY_EXPRESSION', 'NONE richiede expression vuota; ogni altra affinity richiede una manifestazione fisica nella mutazione primaria.', 'elementalAffinity.expression'))
+        return undefined
+    }
+    return { type, expression }
+}
+
+function findUnrelatedElementalAffinityArea(expression: string, mutation: CreatureTransformationConcept['primaryMutation']): BodyArea | undefined {
+    const mutationAreas = new Set([...mutation.bodyAreas, ...(mutation.supportingBodyAreas ?? [])])
+    return BODY_AREAS.find((area) => !mutationAreas.has(area) && BODY_AREA_EXPRESSION_PATTERNS[area].test(expression))
 }
 
 function normalize(value: string): string {
@@ -260,6 +315,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
     const identityToPreserve = readStringArray(candidate, 'identityToPreserve', 'identityToPreserve', problems)
     const forbiddenChanges = readStringArray(candidate, 'forbiddenChanges', 'forbiddenChanges', problems)
     const colorEvolution = readColorEvolution(candidate, constraints, problems)
+    const elementalAffinity = readElementalAffinity(candidate, problems)
     if (constraints.colorEvolution.required && candidate.colorEvolution === undefined) {
         problems.push(makeProblem('MISSING_REQUIRED_FIELD', 'colorEvolution e obbligatorio per le evoluzioni anatomiche.', 'colorEvolution'))
     }
@@ -350,21 +406,28 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
         ...(secondaryMutations ?? []), ...(identityToPreserve ?? []), ...(forbiddenChanges ?? []),
         colorEvolution?.dominantColor ?? null, ...(colorEvolution?.secondaryColors ?? []), ...(colorEvolution?.accentColors ?? []),
         ...(colorEvolution?.surfaceEffects ?? []), colorEvolution?.biologicalRationale ?? null,
+        elementalAffinity?.expression ?? null,
     ].filter((value): value is string => value !== null)
     if (creativeText.some((value) => TECHNICAL_INSTRUCTION_PATTERN.test(value))) {
         problems.push(makeProblem('FORBIDDEN_TECHNICAL_INSTRUCTION', 'Il concept creativo non puo contenere istruzioni di formato, canvas o trasparenza.'))
     }
-    const positiveText = [conceptName, evolutionaryFunction, primaryMutation?.morphology ?? null, primaryMutation?.material ?? null, ...(secondaryMutations ?? [])]
+    const positiveText = [conceptName, evolutionaryFunction, primaryMutation?.morphology ?? null, primaryMutation?.material ?? null, ...(secondaryMutations ?? []), elementalAffinity?.expression ?? null]
         .filter((value): value is string => value !== null)
         .join(' ')
     if (IDENTITY_BREAKING_PATTERN.test(positiveText)) {
         problems.push(makeProblem('CONTRADICTORY_INSTRUCTIONS', 'La mutazione propone un cambiamento incompatibile con l identita della creatura.'))
     }
-    if (context.previousTransformations?.length && PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN.test([...positiveText, ...(forbiddenChanges ?? [])].join(' '))) {
+    if (context.previousTransformations?.length && PREVIOUS_TRANSFORMATION_REMOVAL_PATTERN.test([positiveText, ...(forbiddenChanges ?? [])].join(' '))) {
         problems.push(makeProblem('PREVIOUS_TRANSFORMATION_REMOVED', 'Il concept non puo dichiarare la rimozione o sostituzione di evoluzioni precedenti.'))
     }
     if (requestedTarget && GLOBAL_MUTATION_PATTERN.test(positiveText)) {
         problems.push(makeProblem('GLOBAL_MUTATION_NOT_ALLOWED', 'Una evoluzione anatomica non puo ridisegnare corpo intero, silhouette o proporzioni.', 'primaryMutation.morphology'))
+    }
+    if (elementalAffinity && elementalAffinity.type !== 'NONE' && primaryMutation) {
+        const unrelatedArea = findUnrelatedElementalAffinityArea(elementalAffinity.expression, primaryMutation)
+        if (unrelatedArea) {
+            problems.push(makeProblem('ELEMENTAL_AFFINITY_OUTSIDE_MUTATION', `L affinity deve manifestarsi nella mutazione primaria, non nell area estranea ${unrelatedArea}.`, 'elementalAffinity.expression'))
+        }
     }
     if (requestedTarget && typeof evolutionFunction === 'string' && primaryMutation && context.previousTransformations?.some((previous) => (
         previous.evolutionTargetId === requestedTarget.id
@@ -395,6 +458,7 @@ export function validateCreatureTransformationConcept(candidate: unknown, contex
             forbiddenChanges,
             intensity: context.requestedIntensity,
             ...(colorEvolution ? { colorEvolution } : {}),
+            ...(elementalAffinity ? { elementalAffinity } : {}),
         },
     }
 }

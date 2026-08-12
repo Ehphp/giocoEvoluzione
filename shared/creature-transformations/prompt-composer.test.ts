@@ -100,6 +100,25 @@ describe('composeCreatureTransformationPrompt', () => {
         expect(result.sections.technical).toContain('canvas margins')
     })
 
+    it('propagates a non-NONE elemental affinity through the current mutation without changing legacy prompts', () => {
+        const expression = 'I cuscinetti dorsali formano microghiandole velenifere tra le fibre elastiche.'
+        const affinityConcept: CreatureTransformationConcept = {
+            ...createValidConcept(),
+            elementalAffinity: {
+                type: 'POISON',
+                expression,
+            },
+        }
+
+        const affinityPrompt = compose(affinityConcept).sections.transformation
+        const legacyPrompt = compose(createValidConcept()).sections.transformation
+        expect(affinityPrompt).toContain('Elemental affinity: POISON')
+        expect(affinityPrompt).toContain(expression)
+        expect(affinityPrompt).toContain('must be expressed through the requested mutation')
+        expect(affinityPrompt).toContain('Do not transform unrelated body regions')
+        expect(legacyPrompt).not.toContain('Elemental affinity:')
+    })
+
     it('uses a solid cutout background without a generic transparent-background request', () => {
         const technical = compose(createValidConcept()).sections.technical
 

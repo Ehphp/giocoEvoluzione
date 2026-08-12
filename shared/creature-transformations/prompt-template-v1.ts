@@ -1,4 +1,4 @@
-import { resolveColorEvolution, type ColorEvolution, type CreatureTransformationConcept } from './concepts.ts'
+import { resolveColorEvolution, resolveElementalAffinity, type ColorEvolution, type CreatureTransformationConcept, type ElementalAffinity } from './concepts.ts'
 import type { CreatureSemanticIdentity } from './contracts.ts'
 import type { PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
 import { getEvolutionConstraints, type EvolutionConstraints } from './evolution-constraints.ts'
@@ -68,6 +68,11 @@ function colorEvolutionInstruction(colorEvolution: ColorEvolution, constraints: 
     ].join(' ')
 }
 
+function elementalAffinityInstruction(elementalAffinity: ElementalAffinity): string {
+    if (elementalAffinity.type === 'NONE') return ''
+    return `Elemental affinity: ${elementalAffinity.type}. Manifest it physically through the requested primary mutation: ${withTerminalPunctuation(elementalAffinity.expression)} The elemental affinity must be expressed through the requested mutation. Do not transform unrelated body regions and do not redesign the creature globally around the element.`
+}
+
 function backgroundInstruction(backgroundGenerationMode: BackgroundGenerationMode): string {
     if (backgroundGenerationMode === 'NATIVE_TRANSPARENCY') {
         return 'Use a transparent background. Do not render a checkerboard transparency pattern, scenery, floor, shadow, reflection, glow, aura, particles, smoke, fog, mist, vignette, or coloured rim lighting.'
@@ -78,6 +83,7 @@ function backgroundInstruction(backgroundGenerationMode: BackgroundGenerationMod
 export function composeCreatureTransformationPromptTemplateV1(input: PromptTemplateV1Input): CreaturePromptSections {
     const { concept, identity, renderSpecification, visualTrait, backgroundGenerationMode } = input
     const colorEvolution = resolveColorEvolution(concept)
+    const elementalAffinity = resolveElementalAffinity(concept)
     const constraints = getEvolutionConstraints({
         evolutionTarget: concept.evolutionTargetId ? EVOLUTION_TARGET_BY_ID[concept.evolutionTargetId] : undefined,
         visualTrait,
@@ -115,6 +121,7 @@ export function composeCreatureTransformationPromptTemplateV1(input: PromptTempl
                 : 'Secondary mutations: none.',
             sentence('Transformation intensity', INTENSITY_PROMPT_LABELS[concept.intensity]),
             colorEvolutionInstruction(colorEvolution, constraints),
+            elementalAffinityInstruction(elementalAffinity),
         ].filter(Boolean).join(' '),
         preservation: [
             listSentence('Preserve these concept commitments', preservedFeatures),

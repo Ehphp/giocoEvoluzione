@@ -262,6 +262,7 @@ export class MockCreatureConceptGenerator implements CreatureConceptGenerator {
             ],
             intensity: input.intensity,
             colorEvolution: createColorEvolution(input, variant, [...primaryBodyAreas, ...supportingBodyAreas]),
+            elementalAffinity: { type: 'NONE', expression: '' },
         }
     }
 }

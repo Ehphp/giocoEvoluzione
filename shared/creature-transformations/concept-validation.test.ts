@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { validateCreatureTransformationConcept } from './concept-validation.ts'
 import { createValidConcept, TEST_CREATURE_IDENTITY } from './concept-test-fixtures.ts'
+import { resolveElementalAffinity } from './concepts.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 import { EVOLUTION_TARGET_BY_ID } from './evolution-targets.ts'
 
@@ -22,6 +23,33 @@ describe('validateCreatureTransformationConcept', () => {
 
         expect(result.valid).toBe(true)
         if (result.valid) expect(result.concept).toEqual(createValidConcept())
+        expect(resolveElementalAffinity(createValidConcept())).toEqual({ type: 'NONE', expression: '' })
+    })
+
+    it('accepts NONE with an empty expression and a physical affinity expression without changing the resolved evolution direction', () => {
+        const none = { ...createValidConcept(), elementalAffinity: { type: 'NONE', expression: '' } }
+        const poison = {
+            ...createValidConcept(),
+            elementalAffinity: { type: 'POISON', expression: 'I cuscinetti dorsali sviluppano microghiandole velenifere tra le fibre elastiche.' },
+        }
+
+        expect(validateCreatureTransformationConcept(none, context)).toMatchObject({ valid: true })
+        const result = validateCreatureTransformationConcept(poison, context)
+        expect(result).toMatchObject({ valid: true })
+        if (result.valid) {
+            expect(result.concept.elementalAffinity).toEqual(poison.elementalAffinity)
+            expect(result.concept.visualTrait).toBe(createValidConcept().visualTrait)
+            expect(result.concept.primaryMutation).toEqual(createValidConcept().primaryMutation)
+            expect(result.concept.evolutionTargetId).toBeUndefined()
+            expect(result.concept.evolutionFunction).toBeUndefined()
+        }
+    })
+
+    it('rejects an unknown affinity, a non-empty NONE expression, and an affinity expression that changes another body region', () => {
+        expect(getProblemCodes({ ...createValidConcept(), elementalAffinity: { type: 'PLASMA', expression: 'Fessure energetiche nei cuscinetti dorsali.' } })).toContain('INVALID_ELEMENTAL_AFFINITY')
+        expect(getProblemCodes({ ...createValidConcept(), elementalAffinity: { type: 'NONE', expression: 'Nessuna manifestazione.' } })).toContain('INVALID_ELEMENTAL_AFFINITY_EXPRESSION')
+        expect(getProblemCodes({ ...createValidConcept(), elementalAffinity: { type: 'FIRE', expression: 'Gli occhi diventano incandescenti.' } })).toContain('ELEMENTAL_AFFINITY_OUTSIDE_MUTATION')
+        expect(getProblemCodes({ ...createValidConcept(), elementalAffinity: { type: 'FIRE', expression: 'La mutazione crea una nuova specie di fuoco.' } })).toContain('CONTRADICTORY_INSTRUCTIONS')
     })
 
     it('accepts an intentional, biologically motivated palette shift and rejects weak or incoherent requests', () => {
@@ -96,6 +124,7 @@ describe('validateCreatureTransformationConcept', () => {
         const targetConcept = {
             ...createValidConcept(), schemaVersion: 2, visualTrait: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL', evolutionFunction: 'BALANCE',
             primaryMutation: { ...createValidConcept().primaryMutation, mutationArchetype: 'BALANCE_TAIL', bodyAreas: ['TAIL'], supportingBodyAreas: ['SKIN_SURFACE'] },
+            elementalAffinity: { type: 'POISON', expression: 'Le spine della coda ospitano microghiandole velenifere nella loro struttura flessibile.' },
             colorEvolution: {
                 mode: 'SHIFT', dominantColor: 'deep teal', secondaryColors: ['sea green'], accentColors: ['soft silver'],
                 surfaceEffects: ['subtle scale iridescence'], affectedBodyAreas: ['TAIL', 'SKIN_SURFACE'], intensity: 2,
@@ -103,7 +132,22 @@ describe('validateCreatureTransformationConcept', () => {
             },
         }
 
-        expect(validateCreatureTransformationConcept(targetConcept, targetContext).valid).toBe(true)
+        const targetResult = validateCreatureTransformationConcept(targetConcept, targetContext)
+        expect(targetResult.valid).toBe(true)
+        if (targetResult.valid) {
+            expect(targetResult.concept.visualTrait).toBe('LOCOMOTION_ADAPTATION')
+            expect(targetResult.concept.evolutionTargetId).toBe('TAIL')
+            expect(targetResult.concept.evolutionFunction).toBe('BALANCE')
+            expect(targetResult.concept.primaryMutation.mutationArchetype).toBe('BALANCE_TAIL')
+            expect(targetResult.concept.elementalAffinity).toEqual(targetConcept.elementalAffinity)
+        }
+        expect(validateCreatureTransformationConcept({
+            ...targetConcept,
+            elementalAffinity: { type: 'SHADOW', expression: 'Sostituisce la mutazione evolutiva precedente con ombre viventi.' },
+        }, {
+            ...targetContext,
+            previousTransformations: [{ versionNumber: 1, conceptName: 'Coda iniziale', visualTraitId: 'LOCOMOTION_ADAPTATION' }],
+        })).toMatchObject({ valid: false, problems: expect.arrayContaining([expect.objectContaining({ code: 'PREVIOUS_TRANSFORMATION_REMOVED' })]) })
         expect(validateCreatureTransformationConcept({ ...targetConcept, colorEvolution: undefined }, targetContext)).toMatchObject({
             valid: false,
             problems: expect.arrayContaining([expect.objectContaining({ code: 'MISSING_REQUIRED_FIELD', path: 'colorEvolution' })]),
