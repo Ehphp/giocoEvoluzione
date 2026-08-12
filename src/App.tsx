@@ -13,6 +13,7 @@ import { BootScreen, MissingConfigScreen, MissingResultScreen, WaitingRoomScreen
 import { useGeneSelectionV2Controller } from './components/game-v2/controller/useGeneSelectionV2Controller'
 import { useGameCreatureVisualResource } from './components/game-v2/controller/useGameCreatureVisualResource'
 import { ProfileScreen } from './screens/profile/ProfileScreen'
+import { CollectionScreen } from './screens/collection/CollectionScreen'
 import { LeaderboardScreen } from './screens/ranking/LeaderboardScreen'
 import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
 import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
@@ -53,7 +54,7 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 }
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
-type CurrentScreen = 'home' | 'profile' | 'ranking' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
+type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
 
 const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
 const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
@@ -765,6 +766,23 @@ function App() {
     )
   }
 
+  if (!snapshot && currentScreen === 'collection' && auth.profile && auth.creature) {
+    return (
+      <CollectionScreen
+        profile={auth.profile}
+        creature={auth.creature}
+        isOnline={isOnline}
+        onBack={() => setCurrentScreen('home')}
+        onLogout={() => void handleLogout()}
+        visualUrl={officialVisual?.signedUrl}
+        visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
+        visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
+        visualHistory={visualProgress?.history}
+        currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
+      />
+    )
+  }
+
   if (!snapshot && currentScreen === 'ranking' && auth.profile) {
     return (
       <LeaderboardScreen
@@ -788,6 +806,7 @@ function App() {
           onJoinGame: () => void handleJoinGame(),
           onLeaveSession: handleLeaveSession,
           onOpenProfile: () => setCurrentScreen('profile'),
+          onOpenCollection: () => setCurrentScreen('collection'),
           onOpenRanking: () => setCurrentScreen('ranking'),
           onLogout: () => void handleLogout(),
         }}

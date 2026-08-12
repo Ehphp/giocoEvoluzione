@@ -96,6 +96,10 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
             actions.onOpenProfile()
         }
 
+        if (tab === 'collection') {
+            actions.onOpenCollection()
+        }
+
         if (tab === 'ranking') {
             actions.onOpenRanking()
         }

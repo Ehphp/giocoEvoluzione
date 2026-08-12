@@ -81,6 +81,7 @@ export type HomeActions = {
     onJoinGame: () => void
     onLeaveSession: () => void
     onOpenProfile: () => void
+    onOpenCollection: () => void
     onOpenRanking: () => void
     onLogout: () => void
 }

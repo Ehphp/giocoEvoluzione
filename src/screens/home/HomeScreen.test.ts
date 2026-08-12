@@ -29,6 +29,7 @@ function createActions(): HomeActions {
         onJoinGame: vi.fn(),
         onLeaveSession: vi.fn(),
         onOpenProfile: vi.fn(),
+        onOpenCollection: vi.fn(),
         onOpenRanking: vi.fn(),
         onLogout: vi.fn(),
     }

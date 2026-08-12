@@ -74,6 +74,15 @@ for (const deviceName of DEVICE_NAMES) {
       const cs = getComputedStyle(el)
       return /auto|scroll/.test(cs.overflowX + cs.overflowY)
     }
+    const isHorizontallyScrollable = (el) => /auto|scroll/.test(getComputedStyle(el).overflowX)
+    const hasHorizontalScroller = (el) => {
+      let ancestor = el.parentElement
+      while (ancestor && ancestor !== document.body) {
+        if (isHorizontallyScrollable(ancestor)) return true
+        ancestor = ancestor.parentElement
+      }
+      return false
+    }
     const clips = (el) => {
       const cs = getComputedStyle(el)
       return /hidden|clip|auto|scroll/.test(cs.overflowX) || /hidden|clip|auto|scroll/.test(cs.overflowY)
@@ -86,7 +95,9 @@ for (const deviceName of DEVICE_NAMES) {
       if (r.width === 0 || r.height === 0) continue
 
       // 1. Escapes the viewport horizontally.
-      if (r.left < -1 || r.right > vw + 1) {
+      // Items deliberately placed beyond the viewport inside a touch-scrollable horizontal track
+      // are valid: the collection lineage uses this exact pattern.
+      if (!hasHorizontalScroller(el) && (r.left < -1 || r.right > vw + 1)) {
         problems.push({ kind: 'viewport-x', el: label(el), detail: `${Math.round(r.left)}..${Math.round(r.right)} vs ${vw}` })
       }
 

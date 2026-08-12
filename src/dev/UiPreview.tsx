@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { BattleScreen } from '../screens/battle/BattleScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
+import { CollectionScreen } from '../screens/collection/CollectionScreen'
 import { LeaderboardScreen } from '../screens/ranking/LeaderboardScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { CreatureTransformationLab } from '../components/creature-transformation-lab/CreatureTransformationLab'
@@ -35,6 +36,7 @@ function HomePreview() {
                         onJoinGame: noop,
                         onLeaveSession: noop,
                         onOpenProfile: noop,
+                        onOpenCollection: noop,
                         onOpenRanking: noop,
                         onLogout: noop,
                     }}
@@ -83,6 +85,23 @@ function ProfilePreview() {
     )
 }
 
+function CollectionPreview() {
+    return (
+        <CollectionScreen
+            profile={PREVIEW_PROFILE}
+            creature={PREVIEW_CREATURE}
+            isOnline
+            onBack={noop}
+            onLogout={noop}
+            visualUrl={PREVIEW_VISUAL_HISTORY[8].signedUrl}
+            visualVersionNumber={9}
+            visualTrait="SENSES"
+            visualHistory={PREVIEW_VISUAL_HISTORY}
+            currentVisualVersionId="preview-visual-9"
+        />
+    )
+}
+
 function DraftPreview() {
     const [chosen, setChosen] = useState<string | null>(null)
 
@@ -126,6 +145,10 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
 
     if (route === 'profile') {
         return <ProfilePreview />
+    }
+
+    if (route === 'collection') {
+        return <CollectionPreview />
     }
 
     if (route === 'ranking') {

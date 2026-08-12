@@ -192,6 +192,11 @@
     --ev-scroll-max-tall: 560px;
     --ev-scroll-max-medium: 360px;
     --ev-scroll-max-compact: 260px;
+    --ev-collection-avatar-size: 52px;
+    --ev-collection-hero-art-width: 46%;
+    --ev-collection-timeline-art-size: 54px;
+    --ev-collection-hero-art-height: 176px;
+    --ev-collection-catalog-art-height: 148px;
 
     /* Motion. */
     --ev-ease: cubic-bezier(.22, .9, .28, 1);

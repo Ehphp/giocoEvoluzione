@@ -129,10 +129,11 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             level: input.creature.level,
             experience,
         },
-        navigation: base.navigation.map((item) => item.id === 'profile' || item.id === 'rankings' ? { ...item, available: true } : item),
+        navigation: base.navigation.map((item) => item.id === 'profile' || item.id === 'rankings' || item.id === 'collection' ? { ...item, available: true } : item),
         capabilities: {
             ...base.capabilities,
             profile: true,
+            collection: true,
             rankings: true,
             rewards: true,
         },
