@@ -45,7 +45,7 @@ function HomePreview() {
 }
 
 function RankingPreview() {
-    return <LeaderboardScreen onBack={noop} onOpenProfile={noop} onLogout={noop} previewEntries={PREVIEW_LEADERBOARD} />
+    return <LeaderboardScreen onBack={noop} onOpenCollection={noop} onOpenProfile={noop} onLogout={noop} previewEntries={PREVIEW_LEADERBOARD} />
 }
 
 function BattlePreview() {
@@ -71,6 +71,8 @@ function ProfilePreview() {
                     isLoadingHistory={false}
                     errorMessage={null}
                     onBack={noop}
+                    onOpenCollection={noop}
+                    onOpenRanking={noop}
                     onLogout={noop}
                     visualUrl={PREVIEW_VISUAL_HISTORY[2].signedUrl}
                     visualVersionNumber={3}

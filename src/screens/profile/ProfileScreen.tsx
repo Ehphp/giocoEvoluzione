@@ -26,6 +26,8 @@ type ProfileScreenProps = {
     isLoadingHistory: boolean
     errorMessage: string | null
     onBack: () => void
+    onOpenCollection: () => void
+    onOpenRanking: () => void
     onLogout: () => void
     visualUrl?: string | null
     visualVersionNumber?: number | null
@@ -64,6 +66,8 @@ export function ProfileScreen({
     isLoadingHistory,
     errorMessage,
     onBack,
+    onOpenCollection,
+    onOpenRanking,
     onLogout,
     visualUrl,
     visualVersionNumber,
@@ -113,12 +117,20 @@ export function ProfileScreen({
         if (tab === 'battle') {
             onBack()
         }
+
+        if (tab === 'collection') {
+            onOpenCollection()
+        }
+
+        if (tab === 'ranking') {
+            onOpenRanking()
+        }
     }
 
     const dock = (
         <Dock
             active="profile"
-            capabilities={{ profile: true }}
+            capabilities={{ collection: true, ranking: true, profile: true }}
             onNavigate={handleNavigate}
         />
     )

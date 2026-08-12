@@ -752,6 +752,8 @@ function App() {
         isLoadingHistory={isLoadingHistory}
         errorMessage={historyError}
         onBack={() => setCurrentScreen('home')}
+        onOpenCollection={() => setCurrentScreen('collection')}
+        onOpenRanking={() => setCurrentScreen('ranking')}
         onLogout={() => void handleLogout()}
         visualUrl={officialVisual?.signedUrl}
         visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
@@ -789,6 +791,7 @@ function App() {
     return (
       <LeaderboardScreen
         onBack={() => setCurrentScreen('home')}
+        onOpenCollection={() => setCurrentScreen('collection')}
         onOpenProfile={() => setCurrentScreen('profile')}
         onLogout={() => void handleLogout()}
       />

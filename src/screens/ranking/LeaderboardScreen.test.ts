@@ -23,6 +23,7 @@ describe('LeaderboardScreen', () => {
         act(() => {
             root.render(createElement(LeaderboardScreen, {
                 onBack: vi.fn(),
+                onOpenCollection: vi.fn(),
                 onOpenProfile: vi.fn(),
                 onLogout: vi.fn(),
                 previewEntries: [

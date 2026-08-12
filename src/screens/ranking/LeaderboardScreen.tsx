@@ -10,6 +10,7 @@ import './LeaderboardScreen.css'
 
 type LeaderboardScreenProps = {
     onBack: () => void
+    onOpenCollection: () => void
     onOpenProfile: () => void
     onLogout: () => void
     previewEntries?: CompetitiveLeaderboardEntry[]
@@ -17,7 +18,7 @@ type LeaderboardScreenProps = {
 
 const RATING_FORMATTER = new Intl.NumberFormat('it-IT')
 
-export function LeaderboardScreen({ onBack, onOpenProfile, onLogout, previewEntries }: LeaderboardScreenProps) {
+export function LeaderboardScreen({ onBack, onOpenCollection, onOpenProfile, onLogout, previewEntries }: LeaderboardScreenProps) {
     const [entries, setEntries] = useState<CompetitiveLeaderboardEntry[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -51,6 +52,7 @@ export function LeaderboardScreen({ onBack, onOpenProfile, onLogout, previewEntr
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'battle') onBack()
+        if (tab === 'collection') onOpenCollection()
         if (tab === 'profile') onOpenProfile()
     }
 
@@ -59,7 +61,7 @@ export function LeaderboardScreen({ onBack, onOpenProfile, onLogout, previewEntr
             sceneryUrl={ASSETS.scenery.forest}
             sceneryFallbackUrl={ASSETS.scenery.fallback}
             scroll
-            dock={<Dock active="ranking" capabilities={{ ranking: true, profile: true }} onNavigate={handleNavigate} />}
+            dock={<Dock active="ranking" capabilities={{ collection: true, ranking: true, profile: true }} onNavigate={handleNavigate} />}
         >
             <section className="leaderboard-screen" aria-labelledby="leaderboard-title">
                 <header className="leaderboard-topbar">
