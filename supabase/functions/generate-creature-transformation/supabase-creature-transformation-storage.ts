@@ -98,7 +98,8 @@ export class SupabaseCreatureTransformationStorageAdapter {
     async readExperimentalSource(resultPath: string): Promise<CanonicalCreatureSourceImage> {
         const isCurrentRawExperiment = /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
         const isLegacyExperiment = /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
-        if (!isCurrentRawExperiment && !isLegacyExperiment) {
+        const isFinalCandidate = /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
+        if (!isCurrentRawExperiment && !isLegacyExperiment && !isFinalCandidate) {
             throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente sperimentale non e valida.')
         }
         return this.readCanonicalSource(resultPath, false)

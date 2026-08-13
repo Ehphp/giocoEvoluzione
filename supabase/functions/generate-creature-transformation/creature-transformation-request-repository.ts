@@ -42,6 +42,7 @@ export type CreatureTransformationRequestRecord = Readonly<{
     actualCostUsd: number | null
     assetReadiness: CreatureTransformationAssetReadiness | null
     validationWarnings: string[]
+    conceptSnapshot: CreatureTransformationConceptSnapshot | null
     attemptCount: number
     errorCode: string | null
     errorMessage: string | null
@@ -214,6 +215,7 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         resultMimeType: readString(record, 'result_mime_type', true) as 'image/png' | null, resultWidth: readNumber(record, 'result_width', true), resultHeight: readNumber(record, 'result_height', true),
         generationLatencyMs: readNumber(record, 'generation_latency_ms', true), estimatedCostUsd: readNumber(record, 'estimated_cost_usd', true), actualCostUsd: readNumber(record, 'actual_cost_usd', true),
         assetReadiness: readString(record, 'asset_readiness', true) as CreatureTransformationAssetReadiness | null, validationWarnings: readWarnings(record),
+        conceptSnapshot: record.concept_snapshot && typeof record.concept_snapshot === 'object' ? record.concept_snapshot as CreatureTransformationConceptSnapshot : null,
         attemptCount: readNumber(record, 'attempt_count') ?? 0, errorCode: readString(record, 'error_code', true), errorMessage: readString(record, 'error_message', true),
         createdAt: readString(record, 'created_at')!, startedAt: readString(record, 'started_at', true), completedAt: readString(record, 'completed_at', true), updatedAt: readString(record, 'updated_at')!,
     }

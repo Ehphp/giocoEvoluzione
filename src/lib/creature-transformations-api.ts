@@ -9,6 +9,7 @@ import type {
     GenerateLineageFirstExperimentRequest,
     SubmitLineageComparisonReviewRequest,
     GenerateUnlockedTransformationRequest,
+    GenerateFluxEvolutionChainStepRequest,
     SelectCreatureVisualProgressTrackRequest,
     GetCreatureVisualProgressRequest,
     GetCurrentCreatureVisualRequest,
@@ -55,7 +56,7 @@ export class CreatureTransformationApiError extends Error {
     }
 }
 
-type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetGeneratedImageCatalogRequest | GetLineageComparisonReviewsRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+type CreatureTransformationFunctionRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetGeneratedImageCatalogRequest | GetLineageComparisonReviewsRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | GenerateFluxEvolutionChainStepRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
 
 export type CreatureTransformationFunctionInvoker = {
     invoke: (name: string, options: { body: CreatureTransformationFunctionRequest; headers?: Record<string, string> }) => Promise<{ data: unknown; error: unknown }>
@@ -249,6 +250,10 @@ export async function getGameCreatureVisuals(request: GetGameCreatureVisualsRequ
 }
 
 export async function generateUnlockedCreatureTransformation(request: GenerateUnlockedTransformationRequest, invoker?: CreatureTransformationFunctionInvoker) {
+    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, accepted: true }>>(request, invoker)
+}
+
+export async function generateFluxEvolutionChainStep(request: GenerateFluxEvolutionChainStepRequest, invoker?: CreatureTransformationFunctionInvoker) {
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { success: true, accepted: true }>>(request, invoker)
 }
 

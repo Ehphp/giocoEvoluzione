@@ -1,8 +1,8 @@
-import type { AnatomyContract } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
+import type { AnatomyContract, FluxCreativeMode } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
 import { parseFluxMicroConcept, type FluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
-import type { EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 type FetchLike = typeof fetch
 
@@ -25,18 +25,27 @@ export type FluxMicroConceptGeneratorOptions = Readonly<{
 export type GenerateFluxMicroConceptInput = Readonly<{
     identity: CreatureSemanticIdentity
     evolutionTargetId: EvolutionTargetId
+    evolutionFunction: EvolutionFunctionId
     anatomyContract: AnatomyContract
     previousTransformations: readonly PreviousCreatureTransformationSummary[]
+    /** BASELINE supports controlled prompt comparisons; production is expressive. */
+    creativeMode?: FluxCreativeMode
 }>
 
 function instructions(input: GenerateFluxMicroConceptInput): string {
+    const expressive = input.creativeMode !== 'BASELINE'
     const previous = input.previousTransformations.map((entry) => `${entry.evolutionTargetId ?? entry.visualTraitId}: ${entry.conceptName}${entry.mutationIdea ? ` — ${entry.mutationIdea}` : ''}`)
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
-        'Invent one local creature mutation that is original, playful, visually obvious and potentially strange.',
-        `Selected anatomical target: ${input.evolutionTargetId}. Apply the new mutation exclusively there.`,
+        expressive
+            ? 'Invent one local creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.'
+            : 'Invent one local creature mutation that is anatomically integrated and clearly readable at gameplay scale.',
+        `Selected anatomical target: ${input.evolutionTargetId}. Apply the new mutation exclusively there.${expressive ? ' Single-focus evolution is not necessarily small.' : ''}`,
+        `Functional direction: ${input.evolutionFunction}. Use it as inspiration for a coherent biological purpose, not as a limit on the concrete morphology.`,
+        ...(expressive ? ['Prefer a strong structural, material or silhouette change in the target over a merely decorative variation whenever that target permits it.'] : []),
         `Creature identity: ${input.identity.description}. Preserve: ${input.identity.identityFeatures.join('; ')}.`,
         `Hard anatomy contract: ${[...input.anatomyContract.invariants, ...input.anatomyContract.targetRules, ...input.anatomyContract.failureConditions].join(' ')}`,
+        ...(expressive ? [`Creative allowance for the selected target: ${input.anatomyContract.creativeAllowance}`] : []),
         previous.length
             ? `Adopted mutations to preserve and not repeat: ${previous.join('; ')}. If this target already evolved, develop what exists instead of replacing it.`
             : 'There are no adopted mutations yet.',

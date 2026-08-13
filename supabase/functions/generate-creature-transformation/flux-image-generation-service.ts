@@ -1,4 +1,5 @@
 import { buildAnatomyContract } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
+import type { FluxCreativeMode } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
 import { resolveCreatureBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import { composeFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import { createFluxEvolutionSnapshot, type FluxEvolutionSnapshot } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
@@ -9,6 +10,7 @@ import type { SupabaseCreatureTransformationStorageAdapter } from './supabase-cr
 import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 
 export const FLUX_RAW_RENDER_SPECIFICATION = Object.freeze({ width: 768, height: 1152 })
 
@@ -38,7 +40,7 @@ function failedResult(code: 'FLUX_SOURCE_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_INV
 export async function generateFluxImageForAuthenticatedProfile(input: {
     profileId: string
     requestId: string
-    request: GenerateUnlockedTransformationRequest
+    request: Pick<GenerateUnlockedTransformationRequest, 'creatureId' | 'idempotencyKey'>
     evolutionTargetId: EvolutionTargetId
     evolutionFunction: EvolutionFunctionId
     resolver: CreatureIdentityResolver
@@ -46,21 +48,45 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     microConceptGenerator: FluxMicroConceptGenerator
     provider: FalFluxImageProvider
     validator?: ImageValidator
+    creativeMode?: FluxCreativeMode
+    /** Lab chains may use a server-validated final experimental asset instead of the active visual. */
+    source?: { kind: 'EXPERIMENTAL' | 'VISUAL', path: string, isBaseVersion?: boolean }
+    /** Adds temporary Lab lineage without changing productive creature history. */
+    previousTransformations?: readonly PreviousCreatureTransformationSummary[]
 }): Promise<GeneratedFluxImage> {
     const validator = input.validator ?? new ImageValidator()
     const resolved = await input.resolver.resolve({ profileId: input.profileId, creatureId: input.request.creatureId })
     const bodyPlan = resolveCreatureBodyPlan(resolved.identity.baseCreatureKey)
     if (!bodyPlan) throw new FluxImageGenerationServiceError('FLUX_BODY_PLAN_UNSUPPORTED', 'La topologia anatomica della creatura non e configurata.')
     const anatomyContract = buildAnatomyContract(bodyPlan, input.evolutionTargetId)
+    const previousTransformations = input.previousTransformations ?? resolved.previousTransformations
     let microConcept
     try {
-        microConcept = await input.microConceptGenerator.generate({ identity: resolved.identity, evolutionTargetId: input.evolutionTargetId, anatomyContract, previousTransformations: resolved.previousTransformations })
+        microConcept = await input.microConceptGenerator.generate({
+            identity: resolved.identity,
+            evolutionTargetId: input.evolutionTargetId,
+            evolutionFunction: input.evolutionFunction,
+            anatomyContract,
+            previousTransformations,
+            ...(input.creativeMode ? { creativeMode: input.creativeMode } : {}),
+        })
     } catch (error) {
         if (error instanceof FluxMicroConceptGeneratorError) throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
         throw error
     }
-    const prompt = composeFluxEvolutionPrompt({ identity: resolved.identity, evolutionTargetId: input.evolutionTargetId, anatomyContract, microConcept, previousTransformations: resolved.previousTransformations })
-    const source = await input.storage.readCanonicalSource(resolved.sourceImagePath, resolved.sourceIsBaseVersion)
+    const prompt = composeFluxEvolutionPrompt({
+        identity: resolved.identity,
+        evolutionTargetId: input.evolutionTargetId,
+        anatomyContract,
+        microConcept,
+        previousTransformations,
+        ...(input.creativeMode ? { creativeMode: input.creativeMode } : {}),
+    })
+    const source = input.source?.kind === 'EXPERIMENTAL'
+        ? await input.storage.readExperimentalSource(input.source.path)
+        : input.source?.kind === 'VISUAL'
+            ? await input.storage.readVisualVersionSource(input.source.path, input.source.isBaseVersion ?? false)
+            : await input.storage.readCanonicalSource(resolved.sourceImagePath, resolved.sourceIsBaseVersion)
     const validSource = await validator.validate({ bytes: source.bytes, mimeType: source.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION })
     if (!validSource.valid) throw failedResult('FLUX_SOURCE_IMAGE_INVALID', 'La sorgente FLUX non ha superato i controlli tecnici.', validSource.problems)
     let generated

@@ -7,6 +7,7 @@ import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 const input = {
     identity: { creatureId: 'one', baseCreatureKey: 'VERDANT_HATCHLING', description: 'Piccolo drago verde.', identityFeatures: ['occhi ambrati'], mutableVisualFeatures: ['verde'], styleDefinition: '3D stilizzato' },
     evolutionTargetId: 'FORELIMBS' as const,
+    evolutionFunction: 'PROPULSION' as const,
     anatomyContract: buildAnatomyContract(CREATURE_BODY_PLAN_REGISTRY.VERDANT_HATCHLING!, 'FORELIMBS'),
     previousTransformations: [{ versionNumber: 2, visualTraitId: 'LOCOMOTION_ADAPTATION' as const, evolutionTargetId: 'TAIL' as const, conceptName: 'Timone foglia' }],
 }
@@ -20,6 +21,9 @@ describe('FluxMicroConceptGenerator', () => {
         const request = JSON.parse(String(fetchImplementation.mock.calls[0]![1].body))
         const prompt = request.input[0].content[0].text as string
         expect(prompt).toContain('FORELIMBS')
+        expect(prompt).toContain('Functional direction: PROPULSION')
+        expect(prompt).toContain('clearly readable at gameplay scale')
+        expect(prompt).toContain('not as a limit on the concrete morphology')
         expect(prompt).toContain('Timone foglia')
         expect(prompt).not.toContain('mutationArchetype')
         expect(prompt).not.toContain('colorEvolution')
@@ -34,5 +38,17 @@ describe('FluxMicroConceptGenerator', () => {
         const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation: retry })
         await expect(generator.generate(input)).rejects.toMatchObject({ code: 'FLUX_CONCEPT_RESPONSE_INVALID' })
         expect(retry).toHaveBeenCalledTimes(2)
+    })
+
+    it('can produce a baseline brief without weakening the hard anatomy contract', async () => {
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'], avoid: [] }) })))
+        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
+
+        await generator.generate({ ...input, creativeMode: 'BASELINE' })
+
+        const prompt = JSON.parse(String(fetchImplementation.mock.calls[0]![1].body)).input[0].content[0].text as string
+        expect(prompt).toContain('Keep exactly 2 forelimbs, 2 hind limbs and 4 total limbs.')
+        expect(prompt).not.toContain('Single-focus evolution is not necessarily small')
+        expect(prompt).not.toContain('Creative allowance for the selected target')
     })
 })

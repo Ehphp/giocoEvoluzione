@@ -139,6 +139,23 @@ export type GenerateUnlockedTransformationRequest = {
     idempotencyKey: string
 }
 
+/**
+ * Lab-only FLUX step. Sources are request/version IDs deliberately resolved by the
+ * server; storage paths and prompts never cross the public boundary.
+ */
+export type GenerateFluxEvolutionChainStepRequest = {
+    operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP'
+    creatureId: string
+    evolutionTargetId: EvolutionTargetId
+    /** Final, processed experimental output from the immediately preceding step. */
+    experimentalSourceRequestId?: string
+    /** Server-owned productive visual used only for the first step. */
+    sourceVisualVersionId?: string
+    /** Completed FLUX steps whose snapshots must be preserved by the next prompt. */
+    previousStepRequestIds: string[]
+    idempotencyKey: string
+}
+
 export type SubmitBackgroundRemovalCandidateRequest = {
     operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE'
     transformationRequestId: string
@@ -204,4 +221,4 @@ export type GetCreatureVisualProgressResponse = Readonly<{
 
 export type GetCurrentCreatureVisualResponse = CurrentCreatureVisualResponse
 
-export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetGeneratedImageCatalogRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetLineageComparisonReviewsRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest
+export type CreatureTransformationRequest = GenerateConceptRequest | GenerateImageRequest | GenerateCurrentPipelineExperimentRequest | GenerateLineageFirstExperimentRequest | GetTransformationRequestStatusRequest | GetCreatureTransformationLabUsageRequest | GetGeneratedImageCatalogRequest | SubmitExperimentReviewRequest | SubmitLineageComparisonReviewRequest | GetLineageComparisonReviewsRequest | GetBenchmarkResultsRequest | GenerateUnlockedTransformationRequest | GenerateFluxEvolutionChainStepRequest | SubmitBackgroundRemovalCandidateRequest | ListVisualBackgroundCleanupRequest | SubmitVisualBackgroundCleanupRequest | SelectCreatureVisualProgressTrackRequest | GetCreatureVisualProgressRequest | GetCurrentCreatureVisualRequest | GetGameCreatureVisualsRequest | AdoptCreatureTransformationRequest | RollbackCreatureVisualVersionRequest

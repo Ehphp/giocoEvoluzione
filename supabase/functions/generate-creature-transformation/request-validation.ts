@@ -1,6 +1,6 @@
 import type { CreatureTransformationConcept } from '../../../shared/creature-transformations/concepts.ts'
 import { validateExperimentReviewInput } from '../../../shared/creature-transformations/experiment-reviews.ts'
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest, GetBenchmarkResultsRequest, GetCreatureTransformationLabUsageRequest, GetGeneratedImageCatalogRequest, GetLineageComparisonReviewsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitLineageComparisonReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateConceptRequest, GenerateImageRequest, GenerateCurrentPipelineExperimentRequest, GenerateLineageFirstExperimentRequest, GenerateUnlockedTransformationRequest, GenerateFluxEvolutionChainStepRequest, GetBenchmarkResultsRequest, GetCreatureTransformationLabUsageRequest, GetGeneratedImageCatalogRequest, GetLineageComparisonReviewsRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitExperimentReviewRequest, SubmitLineageComparisonReviewRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { EVOLUTION_FUNCTION_IDS, EVOLUTION_TARGET_BY_ID, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
@@ -18,6 +18,7 @@ const LINEAGE_REVIEW_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'linea
 const LINEAGE_REVIEW_LIST_REQUEST_FIELDS = new Set(['operation'])
 const BENCHMARK_RESULTS_REQUEST_FIELDS = new Set(['operation'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
+const FLUX_CHAIN_STEP_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'previousStepRequestIds', 'idempotencyKey'])
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64', 'displayAssetWebpBase64'])
 const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
 const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64', 'displayAssetWebpBase64'])
@@ -287,6 +288,21 @@ export function parseGenerateUnlockedTransformationRequest(value: unknown): Pars
     return { valid: true, request: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: required.creatureId, progressTrackId, idempotencyKey: required.idempotencyKey } }
 }
 
+export function parseGenerateFluxEvolutionChainStepRequest(value: unknown): { valid: true, request: GenerateFluxEvolutionChainStepRequest } | Extract<ParsedCreatureTransformationRequest, { valid: false }> {
+    const body = asRecord(value)
+    const required = body ? readRequiredStrings(body) : null
+    const evolutionTargetId = typeof body?.evolutionTargetId === 'string' && EVOLUTION_TARGET_BY_ID[body.evolutionTargetId as EvolutionTargetId] ? body.evolutionTargetId as EvolutionTargetId : null
+    const previousStepRequestIds = Array.isArray(body?.previousStepRequestIds) && body.previousStepRequestIds.length <= 20 && body.previousStepRequestIds.every((id) => typeof id === 'string' && isUuid(id))
+        ? [...body.previousStepRequestIds] as string[]
+        : null
+    if (!body || !hasOnlyFields(body, FLUX_CHAIN_STEP_REQUEST_FIELDS) || body.operation !== 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP' || !required || !evolutionTargetId || !previousStepRequestIds) return { valid: false, code: 'INVALID_REQUEST', message: 'Lo step della catena FLUX non rispetta il contratto.' }
+    if (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId')) return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalSourceRequestId deve essere un UUID valido.' }
+    if (body.sourceVisualVersionId !== undefined && !readUuid(body, 'sourceVisualVersionId')) return { valid: false, code: 'INVALID_REQUEST', message: 'sourceVisualVersionId deve essere un UUID valido.' }
+    if (body.experimentalSourceRequestId !== undefined && body.sourceVisualVersionId !== undefined) return { valid: false, code: 'INVALID_REQUEST', message: 'Imposta una sola sorgente: sperimentale oppure produttiva.' }
+    if (new Set(previousStepRequestIds).size !== previousStepRequestIds.length) return { valid: false, code: 'INVALID_REQUEST', message: 'Lo storico della catena contiene duplicati.' }
+    return { valid: true, request: { operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: required.creatureId, evolutionTargetId, ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId } : {}), ...(typeof body.sourceVisualVersionId === 'string' ? { sourceVisualVersionId: body.sourceVisualVersionId } : {}), previousStepRequestIds, idempotencyKey: required.idempotencyKey } }
+}
+
 export function parseSubmitBackgroundRemovalCandidateRequest(value: unknown): ParsedVisualProgressRequest<SubmitBackgroundRemovalCandidateRequest> {
     const body = asRecord(value)
     const transformationRequestId = body ? readUuid(body, 'transformationRequestId') : null
@@ -368,6 +384,7 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'GET_LINEAGE_COMPARISON_REVIEWS') return parseGetLineageComparisonReviewsRequest(body)
     if (body.operation === 'GET_BENCHMARK_RESULTS') return parseGetBenchmarkResultsRequest(body)
     if (body.operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return parseGenerateUnlockedTransformationRequest(body)
+    if (body.operation === 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP') return parseGenerateFluxEvolutionChainStepRequest(body)
     if (body.operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return parseSubmitBackgroundRemovalCandidateRequest(body)
     if (body.operation === 'SELECT_VISUAL_PROGRESS_TRACK') return parseSelectCreatureVisualProgressTrackRequest(body)
     if (body.operation === 'GET_VISUAL_PROGRESS') return parseGetCreatureVisualProgressRequest(body)

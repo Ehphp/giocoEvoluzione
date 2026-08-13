@@ -26,7 +26,23 @@ describe('FLUX evolution domain', () => {
         expect(contract.target).toBe(target)
         expect(contract.invariants.length).toBeGreaterThan(0)
         expect(contract.targetRules.length).toBeGreaterThan(0)
+        expect(contract.creativeAllowance).toMatch(/Single-focus evolution, not necessarily small/)
         expect(contract.failureConditions.length).toBeGreaterThan(0)
+    })
+
+    it('allows a strong local torso silhouette while still rejecting global body-plan regressions', () => {
+        const contract = buildAnatomyContract(plan, 'TORSO_AND_BACK')
+
+        expect(contract.creativeAllowance).toMatch(/strong dorsal local silhouette change is desired/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/global body-plan or whole-creature silhouette replacement/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/unrelated new limb, tail, wing, head, face or eye/i)
+    })
+
+    it('keeps skin evolution structural-free even when its surface treatment is strong', () => {
+        const contract = buildAnatomyContract(plan, 'SKIN')
+
+        expect(contract.creativeAllowance).toMatch(/striking and clearly readable/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/New appendages, structural anatomy changes/i)
     })
 
     it('accepts only the small micro-concept schema', () => {
@@ -45,6 +61,28 @@ describe('FLUX evolution domain', () => {
         expect(prompt).toContain('Keep exactly 2 forelimbs, 2 hind limbs and 4 total limbs.')
         expect(prompt).toContain('Pale rematrici')
         expect(prompt).toContain('Timone foglia (coda larga)')
+        expect(prompt).toContain('Preserve overall recognisability and lineage, while allowing the evolved target region to significantly change morphology, local proportions, material and local silhouette.')
+        expect(prompt).toContain('Single-focus evolution, not necessarily small')
         expect(prompt).toMatch(/No gradient, glow, aura, halo, bloom, light spill/)
+        expect(prompt).not.toMatch(/Keep the body plan and recognisable silhouette stable.*strong local silhouette change is desired/i)
+    })
+
+    it('keeps a prompt-only baseline available for a controlled FLUX comparison', () => {
+        const input = {
+            identity: { creatureId: 'one', baseCreatureKey: 'VERDANT_HATCHLING', description: 'Piccolo drago verde.', identityFeatures: ['occhi ambrati'], mutableVisualFeatures: ['verde'], styleDefinition: '3D stilizzato' },
+            evolutionTargetId: 'TORSO_AND_BACK' as const,
+            anatomyContract: buildAnatomyContract(plan, 'TORSO_AND_BACK'),
+            microConcept: { conceptName: 'Scudi dorsali', mutationIdea: 'Placche ampie e pieghevoli sul dorso.', visualDetails: ['lamelle profonde'] },
+            previousTransformations: [],
+        }
+
+        const baseline = composeFluxEvolutionPrompt({ ...input, creativeMode: 'BASELINE' })
+        const expressive = composeFluxEvolutionPrompt({ ...input, creativeMode: 'EXPRESSIVE' })
+
+        expect(baseline).not.toContain('TARGET-SCOPED CREATIVE FREEDOM')
+        expect(expressive).toContain('TARGET-SCOPED CREATIVE FREEDOM')
+        expect(expressive).toContain('strong dorsal local silhouette change is desired')
+        expect(baseline).toContain('A global body-plan or whole-creature silhouette replacement')
+        expect(expressive).toContain('A global body-plan or whole-creature silhouette replacement')
     })
 })

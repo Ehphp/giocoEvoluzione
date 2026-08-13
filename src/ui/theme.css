@@ -197,6 +197,7 @@
     --ev-collection-timeline-art-size: 54px;
     --ev-collection-hero-art-height: 176px;
     --ev-collection-catalog-art-height: 148px;
+    --ev-z-overlay: 10;
 
     /* Motion. */
     --ev-ease: cubic-bezier(.22, .9, .28, 1);

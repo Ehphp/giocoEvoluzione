@@ -256,6 +256,13 @@ export type TransformationRequestStatusResponse = {
         evolutionaryFunction: string
         warnings: string[]
     }
+    /** Lab-only metadata for an isolated FLUX step. */
+    fluxSnapshot?: {
+        conceptName: string
+        mutationIdea: string
+        evolutionTargetId: string
+        evolutionFunction: string
+    }
 }
 
 export type CreatureTransformationLabUsageResponse = Readonly<{

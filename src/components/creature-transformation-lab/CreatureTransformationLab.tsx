@@ -40,6 +40,7 @@ import { isRealImageExperimentVisible } from './lab-real-image-flag'
 import { ArrowRightIcon, BackIcon, CollectionIcon } from '../../ui/icons'
 import { isExpressiveConceptExperimentVisible } from './lab-expressive-concept-flag'
 import { isFluxPilotShortcutVisible } from './lab-flux-pilot-flag'
+import { FluxEvolutionChainSimulator } from './FluxEvolutionChainSimulator'
 
 import '../technical-screens.css'
 import './CreatureTransformationLab.css'
@@ -672,6 +673,8 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 <dl><div><dt>Richieste laboratorio</dt><dd>{labUsage.requestCount} / {labUsage.requestLimit}</dd><small>{Math.max(0, labUsage.requestLimit - labUsage.requestCount)} disponibili</small></div><div><dt>Immagini REAL</dt><dd>{labUsage.realImageCount} / {labUsage.realImageLimit}</dd><small>{Math.max(0, labUsage.realImageLimit - labUsage.realImageCount)} disponibili</small></div><div><dt>REAL globali</dt><dd>{labUsage.globalRealImageCount} / {labUsage.globalRealImageLimit}</dd><small>{Math.max(0, labUsage.globalRealImageLimit - labUsage.globalRealImageCount)} disponibili</small></div><div><dt>Budget stimato</dt><dd>${labUsage.spentUsd.toFixed(2)} / ${labUsage.budgetUsd.toFixed(2)}</dd><small>${Math.max(0, labUsage.budgetUsd - labUsage.spentUsd).toFixed(2)} residui</small></div></dl>
                 <p>Il conteggio include anche le richieste fallite: è lo stesso criterio usato dal limite server-side.</p>
             </section> : null}
+
+            {FLUX_PILOT_SHORTCUT_FRONTEND_ENABLED ? <FluxEvolutionChainSimulator creatureId={creature.id} /> : null}
 
             <section className="creature-transformation-lab__shared-input" aria-label="Input condiviso A/B">
                 <header><span className="eyebrow">INPUT CONDIVISO</span><h2>Esperimento A/B</h2><p>Entrambe le pipeline partono dalla stessa visuale produttiva e dallo stesso target anatomico.</p></header>

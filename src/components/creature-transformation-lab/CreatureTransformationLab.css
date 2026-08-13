@@ -902,6 +902,108 @@
 /* Pipeline panels                                                             */
 /* -------------------------------------------------------------------------- */
 
+.flux-chain-simulator {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--ev-s-3);
+    padding: var(--ev-s-4);
+    border-radius: var(--ev-r-lg);
+    color: var(--ev-ink);
+    background: var(--ev-grad-cream);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.flux-chain-simulator > header,
+.flux-chain-simulator__setup,
+.flux-chain-simulator__actions {
+    display: grid;
+    gap: var(--ev-s-2);
+}
+
+.flux-chain-simulator__setup {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+}
+
+.flux-chain-simulator__setup label,
+.flux-chain-simulator__actions {
+    min-width: 0;
+}
+
+.flux-chain-simulator__actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding-top: var(--ev-s-2);
+    border-top: 2px solid var(--ev-stroke-ink);
+}
+
+.flux-chain-simulator__timeline {
+    display: flex;
+    gap: var(--ev-s-2);
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    list-style: none;
+}
+
+.flux-chain-simulator__timeline > li {
+    display: grid;
+    flex: 0 0 var(--ev-catalog-tile-min);
+    gap: var(--ev-s-1);
+    min-width: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-light);
+    border: 2px solid var(--ev-stroke-ink);
+}
+
+.flux-chain-simulator__timeline [data-state='completed'] { border-color: var(--ev-player-dark); }
+.flux-chain-simulator__timeline [data-state='failed'] { border-color: var(--ev-danger-dark); }
+.flux-chain-simulator__timeline [data-state='post-processing'],
+.flux-chain-simulator__timeline [data-state='generating'] { border-color: var(--ev-opponent-dark); }
+
+.flux-chain-simulator__timeline button {
+    display: grid;
+    place-items: center;
+    min-height: var(--ev-collection-avatar-size);
+    padding: var(--ev-s-1);
+    border-radius: var(--ev-r-sm);
+    color: var(--ev-ink);
+    background: var(--ev-cream-sunk);
+    border: 0;
+}
+
+.flux-chain-simulator__timeline img {
+    display: block;
+    width: 100%;
+    height: var(--ev-collection-catalog-art-height);
+    object-fit: contain;
+}
+
+.flux-chain-simulator__timeline small,
+.flux-chain-simulator__timeline em,
+.flux-chain-simulator__timeline p { overflow-wrap: anywhere; }
+.flux-chain-simulator__timeline em { color: var(--ev-ink-muted); font-size: var(--ev-fs-xs); }
+.flux-chain-simulator__timeline p { margin: 0; color: var(--ev-danger-dark); font-size: var(--ev-fs-xs); }
+
+.flux-chain-simulator__modal {
+    position: fixed;
+    z-index: var(--ev-z-overlay);
+    inset: 0;
+    display: grid;
+    place-items: center;
+    gap: var(--ev-s-3);
+    padding: var(--ev-s-4);
+    background: var(--ev-scrim-focus);
+}
+
+.flux-chain-simulator__modal img {
+    display: block;
+    max-width: min(100%, var(--ev-scroll-max-tall));
+    max-height: calc(100dvh - var(--ev-dock-height));
+    object-fit: contain;
+}
+
 /*
  * A carries far fewer controls than B, so both panels take their natural height rather than
  * matching: stretching either one only pads it with empty cream, and stretching the rows inside

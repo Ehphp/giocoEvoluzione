@@ -34,6 +34,7 @@ import { conceptPromptTemplateVersion, DEFAULT_CONCEPT_CREATIVE_PROFILE, type Co
 import type { TransformationCost, TransformationRequestIdempotencyStatus, TransformationRequestPersistence, TransformationRequestStatusPersistence } from '../../../shared/creature-transformations/request-persistence.ts'
 import { VISUAL_TRAIT_BY_ID } from '../../../shared/creature-transformations/visual-traits.ts'
 import { resolveEvolutionDirection, type EvolutionFunctionId, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { isFluxEvolutionSnapshot } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import { generateConceptForAuthenticatedProfile, type GeneratedConceptResponse } from './generation-service.ts'
 import { ImageGenerationServiceError, generateImageForAuthenticatedProfile, type GeneratedImageResponse } from './image-generation-service.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
@@ -41,7 +42,7 @@ import { OpenAiStructuredConceptModelError } from './openai-structured-concept-m
 import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 import { FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
-import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseAdoptCreatureTransformationRequest, parseGenerateConceptRequest, parseGenerateImageRequest, parseGenerateCurrentPipelineExperimentRequest, parseGenerateLineageFirstExperimentRequest, parseGenerateUnlockedTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGetBenchmarkResultsRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetLineageComparisonReviewsRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitExperimentReviewRequest, parseSubmitLineageComparisonReviewRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import { generateLineageFirstImage } from './lineage-first-image-service.ts'
 import {
     CreatureTransformationRequestRepositoryError,
@@ -782,7 +783,7 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
         return failure(input.requestId, details.code, details.message, details.problems)
     }
     if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
-    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY' || !record.visualProgressTrackId) {
+    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY') {
         return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La richiesta non e pronta per il PNG elaborato.')
     }
     const validation = await (input.validator ?? new ImageValidator()).validate({
@@ -1144,6 +1145,10 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
                 warnings: storedWarnings(record),
             },
         } : {}),
+        ...(isFluxEvolutionSnapshot(record.conceptSnapshot) ? { fluxSnapshot: {
+            conceptName: record.conceptSnapshot.conceptName, mutationIdea: record.conceptSnapshot.mutationIdea,
+            evolutionTargetId: record.conceptSnapshot.evolutionTargetId, evolutionFunction: record.conceptSnapshot.evolutionFunction,
+        } } : {}),
     }
     if (record.status !== 'SUCCEEDED') return response
     if (!record.resultPath || !record.resultSha256 || !record.resultMimeType || !record.resultWidth || !record.resultHeight) {
@@ -1160,6 +1165,90 @@ export async function orchestrateGetTransformationRequestStatus(input: GenerateI
         const details = mapThrownError(error)
         return { ...response, error: { code: details.code, message: details.message } }
     }
+}
+
+/**
+ * A single, observable FLUX job for the Lab chain simulator. It deliberately
+ * reserves an experimental request only: no visual track is opened or mutated.
+ */
+export async function orchestrateGenerateFluxEvolutionChainStep(input: GenerateImageEdgeOrchestrationInput): Promise<GenerateImageApiResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseGenerateFluxEvolutionChainStepRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    if (!input.policy.enabled || !input.policy.lineageExperimentAllowedProfileIds.has(input.profileId)) return failure(input.requestId, 'LINEAGE_EXPERIMENT_NOT_ALLOWED', 'Il profilo autenticato non e autorizzato al simulatore FLUX.')
+    const generationAccess = generationAccessFailure(input)
+    if (generationAccess) return failure(input.requestId, generationAccess.code, generationAccess.message)
+    const fluxAccess = productionFluxFailure(input.policy)
+    if (fluxAccess) return failure(input.requestId, fluxAccess.code, fluxAccess.message)
+    if (!input.deferBackgroundTask || !input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider) return failure(input.requestId, 'FAL_FLUX_NOT_CONFIGURED', 'La pipeline FLUX non e disponibile.')
+
+    const source = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
+    const historyRecords = await Promise.all(parsed.request.previousStepRequestIds.map((requestId) => input.repository.getById({ profileId: input.profileId!, requestId })))
+    if (historyRecords.some((record) => !record || record.creatureId !== parsed.request.creatureId || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'FINAL_ASSET' || !isFluxEvolutionSnapshot(record.conceptSnapshot))) {
+        return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'Lo storico FLUX temporaneo non e disponibile o non e finalizzato.')
+    }
+    const history = historyRecords.map((record, index) => {
+        const item = record!
+        const snapshot = item.conceptSnapshot!
+        return { versionNumber: source.currentVersionNumber + index + 1, visualTraitId: item.visualTraitId as GenerateConceptRequest['visualTraitId'], conceptName: snapshot.conceptName, evolutionTargetId: snapshot.evolutionTargetId, evolutionFunction: snapshot.evolutionFunction, mutationIdea: snapshot.mutationIdea }
+    })
+    const lastHistoryRequestId = parsed.request.previousStepRequestIds.at(-1)
+    if (parsed.request.experimentalSourceRequestId && parsed.request.experimentalSourceRequestId !== lastHistoryRequestId) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La sorgente deve essere l ultimo asset finale della catena.')
+    if (!parsed.request.experimentalSourceRequestId && parsed.request.previousStepRequestIds.length) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'Una catena con storico deve usare il suo ultimo asset finale come sorgente.')
+
+    let sourceInput: { kind: 'EXPERIMENTAL' | 'VISUAL', path: string, isBaseVersion?: boolean } | undefined
+    if (parsed.request.experimentalSourceRequestId) {
+        const experimental = historyRecords.at(-1)!
+        if (!experimental.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'L asset finale precedente non e recuperabile.')
+        sourceInput = { kind: 'EXPERIMENTAL', path: experimental.resultPath }
+    } else if (parsed.request.sourceVisualVersionId) {
+        const version = await input.visualRepository.getVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId, versionId: parsed.request.sourceVisualVersionId })
+        if (!version || version.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile.')
+        sourceInput = { kind: 'VISUAL', path: version.assetPath, isBaseVersion: version.visualTraitId === null }
+    }
+    const direction = resolveEvolutionDirection({ evolutionTargetId: parsed.request.evolutionTargetId, previousTransformations: [...source.previousTransformations, ...history], seed: parsed.request.idempotencyKey })
+    if (!direction) return failure(input.requestId, 'CONCEPT_REJECTED', 'Il target anatomico non ha una direzione FLUX generabile.')
+    let reservation: RequestReservationResult
+    try {
+        reservation = await input.repository.reserve({
+            profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
+            operation: 'GENERATE_UNLOCKED_TRANSFORMATION', imageProviderMode: 'REAL', visualTraitId: direction.visualTraitId,
+            intensity: 2, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction,
+            ...(parsed.request.sourceVisualVersionId ? { sourceVisualVersionId: parsed.request.sourceVisualVersionId } : {}),
+            estimatedCostUsd: input.policy.visualProgression.flux?.estimatedCostUsd ?? undefined,
+            dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
+            requestFingerprint: await requestFingerprint(parsed.request), ...realImageReservationLimits(input.policy),
+        })
+    } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
+    if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
+    if (reservation.outcome === 'EXISTING') {
+        if (reservation.record.status === 'SUCCEEDED') return recoverSucceededImage(input, reservation.record)
+        if (!isStale(reservation.record, input.policy.staleRequestSeconds)) return acceptedRealImage(input.requestId, reservation.record, 'EXISTING')
+        return existingStateFailure(input.requestId, reservation.record, input.policy)!
+    }
+    let running: CreatureTransformationRequestRecord
+    try { running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId }) } catch (error) { return markFailed(input.repository, input.requestId, input.profileId, reservation.record, 'CREATED', mapThrownError(error)) }
+    input.deferBackgroundTask((async () => {
+        try {
+            const generated = await generateFluxImageForAuthenticatedProfile({
+                profileId: input.profileId!, requestId: input.requestId, request: parsed.request, evolutionTargetId: parsed.request.evolutionTargetId,
+                evolutionFunction: direction.evolutionFunction, resolver: input.resolver, storage: input.storage,
+                microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(), previousTransformations: [...source.previousTransformations, ...history],
+                ...(sourceInput ? { source: sourceInput } : {}), ...(input.validator ? { validator: input.validator } : {}),
+            })
+            await input.repository.markSucceeded({ requestId: running.id, profileId: input.profileId!, data: {
+                provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
+                sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256, resultPath: await input.storage.createRawResultObjectPath(input.profileId!, parsed.request.idempotencyKey), resultMimeType: generated.result.mimeType,
+                resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY',
+                validationWarnings: generated.validation.warnings, estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.visualProgression.flux?.estimatedCostUsd ?? 0,
+                promptTemplateVersion: 'flux-micro-v1', promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
+            } })
+        } catch (error) {
+            const details = mapThrownError(error)
+            try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original failure */ }
+        }
+    })())
+    return acceptedRealImage(input.requestId, running, 'CREATED')
 }
 
 export async function orchestrateGetLineageComparisonReviews(input: GenerateImageEdgeOrchestrationInput): Promise<CreatureTransformationErrorResponse | GetLineageComparisonReviewsResponse> {
@@ -1342,6 +1431,7 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     if (operation === 'SUBMIT_LINEAGE_COMPARISON_REVIEW') return orchestrateSubmitLineageComparisonReview(input)
     if (operation === 'GET_LINEAGE_COMPARISON_REVIEWS') return orchestrateGetLineageComparisonReviews(input)
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
+    if (operation === 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP') return orchestrateGenerateFluxEvolutionChainStep(input)
     if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return orchestrateListVisualBackgroundCleanup(input)
     if (operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return orchestrateSubmitVisualBackgroundCleanup(input)

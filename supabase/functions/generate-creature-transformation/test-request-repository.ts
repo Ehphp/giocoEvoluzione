@@ -21,7 +21,7 @@ function recordFor(input: ReserveCreatureTransformationRequestInput, id: string,
         visualTraitId: input.visualTraitId ?? null, intensity: input.intensity ?? null, promptTemplateVersion: null, conceptSchemaVersion: null,
         sourceSha256: null, resultSha256: null, resultPath: null, resultMimeType: null, resultWidth: null, resultHeight: null,
         generationLatencyMs: null,
-        estimatedCostUsd: input.estimatedCostUsd ?? null, actualCostUsd: null, assetReadiness: null, validationWarnings: [], attemptCount: 0, errorCode: null, errorMessage: null,
+        estimatedCostUsd: input.estimatedCostUsd ?? null, actualCostUsd: null, assetReadiness: null, validationWarnings: [], conceptSnapshot: null, attemptCount: 0, errorCode: null, errorMessage: null,
         createdAt: now, startedAt: null, completedAt: null, updatedAt: now,
     }
 }
@@ -35,7 +35,7 @@ function applyTransition(record: CreatureTransformationRequestRecord, status: 'R
         sourceSha256: data.sourceSha256 ?? record.sourceSha256, resultSha256: data.resultSha256 ?? record.resultSha256, resultPath: data.resultPath ?? record.resultPath,
         resultMimeType: data.resultMimeType ?? record.resultMimeType, resultWidth: data.resultWidth ?? record.resultWidth, resultHeight: data.resultHeight ?? record.resultHeight,
         generationLatencyMs: data.generationLatencyMs ?? record.generationLatencyMs, estimatedCostUsd: data.estimatedCostUsd ?? record.estimatedCostUsd,
-        actualCostUsd: data.actualCostUsd ?? record.actualCostUsd, assetReadiness: data.assetReadiness ?? record.assetReadiness, validationWarnings: data.validationWarnings ?? record.validationWarnings, attemptCount: status === 'RUNNING' ? record.attemptCount + 1 : record.attemptCount,
+        actualCostUsd: data.actualCostUsd ?? record.actualCostUsd, assetReadiness: data.assetReadiness ?? record.assetReadiness, validationWarnings: data.validationWarnings ?? record.validationWarnings, conceptSnapshot: data.conceptSnapshot ?? record.conceptSnapshot, attemptCount: status === 'RUNNING' ? record.attemptCount + 1 : record.attemptCount,
         startedAt: status === 'RUNNING' ? now : record.startedAt, completedAt: status === 'SUCCEEDED' || status === 'FAILED' ? now : record.completedAt,
         errorCode: status === 'FAILED' ? data.errorCode ?? 'FAILED' : null, errorMessage: status === 'FAILED' ? data.errorMessage ?? 'failed' : null, updatedAt: now,
     }

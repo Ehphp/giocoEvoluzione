@@ -198,6 +198,7 @@ describe('visual progression access', () => {
         }
         const legacyGenerator = vi.fn(() => { throw new Error('legacy concept generator must not run') })
         const legacyProvider = vi.fn(() => { throw new Error('OpenAI image provider must not run') })
+        const generateFluxMicroConcept = vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
 
         const result = await orchestrateGenerateUnlockedTransformation({
             profileId: 'profile-1', canGenerateImages: true, requestId: 'flux-pilot',
@@ -205,7 +206,7 @@ describe('visual progression access', () => {
             policy: fluxPolicy,
             resolver: { async resolve() { return { identity: { ...TEST_CREATURE_IDENTITY, baseCreatureKey: 'VERDANT_HATCHLING' }, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true, currentVisualVersionId: '00000000-0000-4000-8000-000000000005', currentVersionNumber: 1, previousTransformations: [] } } },
             createGenerator: legacyGenerator, createRealImageProvider: legacyProvider,
-            createFluxMicroConceptGenerator: () => ({ async generate() { return { conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] } } } as never),
+            createFluxMicroConceptGenerator: () => ({ generate: generateFluxMicroConcept } as never),
             createFalFluxImageProvider: () => ({ async transform() { return { image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 } } } as never),
             deferBackgroundTask: (task) => { tasks.push(task) }, repository: persistence.repository, visualRepository: targetVisualRepository,
             storage: storage as never, reviewRepository: {} as never, validator: new FluxValidator(),
@@ -215,6 +216,7 @@ describe('visual progression access', () => {
         await tasks[0]
         expect(legacyGenerator).not.toHaveBeenCalled()
         expect(legacyProvider).not.toHaveBeenCalled()
+        expect(generateFluxMicroConcept).toHaveBeenCalledWith(expect.objectContaining({ evolutionTargetId: 'FORELIMBS', evolutionFunction: expect.any(String) }))
         expect(markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(persistence.get('profile-1', 'flux-pilot-key')).toMatchObject({ status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY', promptTemplateVersion: 'flux-micro-v1', resultWidth: 768, resultHeight: 1152 })
     })
