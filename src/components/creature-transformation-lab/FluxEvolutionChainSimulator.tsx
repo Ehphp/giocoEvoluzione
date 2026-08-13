@@ -41,6 +41,7 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
     const [sourceId, setSourceId] = useState<string | undefined>(undefined)
     const [largeImage, setLargeImage] = useState<{ url: string, label: string } | null>(null)
     const stoppedRef = useRef(false)
+    const postProcessingRequestIdRef = useRef<string | null>(null)
 
     useEffect(() => {
         setChain(readChain(creatureId))
@@ -83,7 +84,11 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
 
     const finishPostProcessing = useCallback(async (current: Chain, step: ChainStep) => {
         if (!step.requestId) return
-        updateStep(step.generation, { state: 'post-processing' })
+        // Updating the chain causes this effect to run again. Without a per-request
+        // guard, every render starts another expensive browser background-removal job.
+        if (postProcessingRequestIdRef.current === step.requestId) return
+        postProcessingRequestIdRef.current = step.requestId
+        if (step.state !== 'post-processing') updateStep(step.generation, { state: 'post-processing' })
         try {
             const raw = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: step.requestId })
             if (!raw.rawResult) throw new Error('Il risultato raw FLUX non e disponibile.')
@@ -103,6 +108,9 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
                 else void launch(next, nextIndex)
             }
         } catch (error) { updateStep(step.generation, { state: 'failed', error: error instanceof Error ? error.message : 'Post-processing non riuscito.' }, 'failed') }
+        finally {
+            if (postProcessingRequestIdRef.current === step.requestId) postProcessingRequestIdRef.current = null
+        }
     }, [launch, updateStep])
 
     useEffect(() => {
