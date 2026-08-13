@@ -674,7 +674,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 <p>Il conteggio include anche le richieste fallite: è lo stesso criterio usato dal limite server-side.</p>
             </section> : null}
 
-            {FLUX_PILOT_SHORTCUT_FRONTEND_ENABLED ? <FluxEvolutionChainSimulator creatureId={creature.id} /> : null}
+            <FluxEvolutionChainSimulator creatureId={creature.id} />
 
             <section className="creature-transformation-lab__shared-input" aria-label="Input condiviso A/B">
                 <header><span className="eyebrow">INPUT CONDIVISO</span><h2>Esperimento A/B</h2><p>Entrambe le pipeline partono dalla stessa visuale produttiva e dallo stesso target anatomico.</p></header>
