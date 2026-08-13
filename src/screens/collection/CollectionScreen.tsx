@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { getExperienceProgress } from '../../lib/progression'
 import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { ASSETS } from '../../ui/assets'
@@ -46,33 +48,62 @@ function FormArt({ form, className = '' }: { form: Pick<CollectionForm, 'image' 
     return <img className={className} src={form.image} alt={`Forma ${form.name}`} loading="lazy" />
 }
 
-function LineageTimeline({ forms }: { forms: ReadonlyArray<CollectionForm> }) {
+type FormSelectionProps = {
+    forms: ReadonlyArray<CollectionForm>
+    selectedFormId: string
+    onSelectForm: (formId: string) => void
+}
+
+function LineageTimeline({ forms, selectedFormId, onSelectForm }: FormSelectionProps) {
     return (
         <div className="collection-lineage" role="region" aria-label="Stirpe: scorri orizzontalmente per vedere le generazioni">
             <ol className="collection-lineage__track">
-                {forms.map((form) => (
-                    <li key={form.id} className={`collection-lineage__item ${form.isActive ? 'is-active' : ''}`}>
-                        <span className="collection-lineage__art"><FormArt form={form} /></span>
-                        <strong>GEN {form.generation - 1}</strong>
-                    </li>
-                ))}
+                {forms.map((form) => {
+                    const isSelected = form.id === selectedFormId
+
+                    return (
+                        <li key={form.id} className={`collection-lineage__item ${isSelected ? 'is-selected' : ''}`}>
+                            <button
+                                type="button"
+                                className="collection-lineage__button"
+                                aria-pressed={isSelected}
+                                aria-label={`Mostra Generazione ${form.generation - 1}: ${form.name}`}
+                                onClick={() => onSelectForm(form.id)}
+                            >
+                                <span className="collection-lineage__art"><FormArt form={form} /></span>
+                                <strong>GEN {form.generation - 1}</strong>
+                            </button>
+                        </li>
+                    )
+                })}
             </ol>
         </div>
     )
 }
 
-function FormCatalog({ forms }: { forms: ReadonlyArray<CollectionForm> }) {
+function FormCatalog({ forms, selectedFormId, onSelectForm }: FormSelectionProps) {
     return (
         <section className="collection-catalog" aria-label="Catalogo delle forme sbloccate">
-            {forms.map((form) => (
-                <article key={form.id} className={`collection-form ${form.isActive ? 'is-active' : ''}`} aria-current={form.isActive ? 'true' : undefined}>
-                    <h3>Generazione {form.generation - 1}</h3>
-                    <FormArt form={form} className="collection-form__art" />
-                    <div className="collection-form__types">
-                        {form.types.map((type) => <TypeChip key={type} type={type} />)}
-                    </div>
-                </article>
-            ))}
+            {forms.map((form) => {
+                const isSelected = form.id === selectedFormId
+
+                return (
+                    <button
+                        key={form.id}
+                        type="button"
+                        className={`collection-form ${isSelected ? 'is-selected' : ''}`}
+                        aria-pressed={isSelected}
+                        aria-label={`Mostra Generazione ${form.generation - 1}: ${form.name}`}
+                        onClick={() => onSelectForm(form.id)}
+                    >
+                        <h3>Generazione {form.generation - 1}</h3>
+                        <FormArt form={form} className="collection-form__art" />
+                        <div className="collection-form__types">
+                            {form.types.map((type) => <TypeChip key={type} type={type} />)}
+                        </div>
+                    </button>
+                )
+            })}
         </section>
     )
 }
@@ -101,6 +132,13 @@ export function CollectionScreen({
         visualHistory,
         currentVisualVersionId,
     })
+    const initialSelectedFormId = viewModel.evolutionForms.find((form) => form.isActive)?.id ?? viewModel.evolutionForms.at(-1)?.id ?? ''
+    const [selectedFormId, setSelectedFormId] = useState(initialSelectedFormId)
+    const selectedForm = viewModel.evolutionForms.find((form) => form.id === selectedFormId)
+        ?? viewModel.evolutionForms.find((form) => form.isActive)
+        ?? viewModel.evolutionForms.at(-1)
+
+    if (!selectedForm) return null
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'battle') onBack()
@@ -136,22 +174,22 @@ export function CollectionScreen({
 
                 <section className="collection-current" aria-labelledby="current-creature-title">
                     <div className="collection-current__copy">
-                        <span className="ev-eyebrow">Creatura attuale</span>
-                        <h2 id="current-creature-title">Generazione {viewModel.currentCreature.generation - 1}</h2>
-                        <p>{viewModel.currentCreature.description}</p>
+                        <span className="ev-eyebrow">{selectedForm.isActive ? 'Forma attuale' : 'Forma selezionata'}</span>
+                        <h2 id="current-creature-title">Generazione {selectedForm.generation - 1}</h2>
+                        <p>{selectedForm.name}</p>
                         <div className="collection-current__types">
-                            {viewModel.currentCreature.types.map((type) => <TypeChip key={type} type={type} />)}
+                            {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
                         </div>
                     </div>
-                    <FormArt form={{ image: viewModel.currentCreature.image, name: viewModel.currentCreature.name }} className="collection-current__art" />
+                    <FormArt form={selectedForm} className="collection-current__art" />
                 </section>
 
                 <section className="collection-lineage-section" aria-label="Stirpe">
                     <SectionLabel>Stirpe</SectionLabel>
-                    <LineageTimeline forms={viewModel.evolutionForms} />
+                    <LineageTimeline forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
                 </section>
 
-                <FormCatalog forms={viewModel.evolutionForms} />
+                <FormCatalog forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
             </main>
         </AppShell>
     )

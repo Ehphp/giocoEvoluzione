@@ -193,10 +193,12 @@
     --ev-scroll-max-medium: 360px;
     --ev-scroll-max-compact: 260px;
     --ev-collection-avatar-size: 52px;
-    --ev-collection-hero-art-width: 46%;
+    --ev-collection-hero-art-width: 56%;
     --ev-collection-timeline-art-size: 54px;
     --ev-collection-hero-art-height: 176px;
+    --ev-collection-hero-art-scale: 1.2;
     --ev-collection-catalog-art-height: 148px;
+    --ev-home-creature-subject-fill: 1.06;
     --ev-z-overlay: 10;
 
     /* Motion. */

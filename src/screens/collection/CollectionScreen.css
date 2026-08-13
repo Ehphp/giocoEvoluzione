@@ -95,7 +95,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--ev-collection-hero-art-width);
     align-items: center;
-    min-height: calc(var(--ev-collection-hero-art-height) + var(--ev-s-6));
+    min-height: calc(var(--ev-collection-hero-art-height) * var(--ev-collection-hero-art-scale) + var(--ev-s-6));
     padding: var(--ev-s-4);
     overflow: hidden;
     border: var(--ev-stroke-width) solid var(--ev-stroke-light);
@@ -135,7 +135,7 @@
 .collection-current__art {
     display: block;
     width: 100%;
-    height: var(--ev-collection-hero-art-height);
+    height: calc(var(--ev-collection-hero-art-height) * var(--ev-collection-hero-art-scale));
     object-fit: contain;
     object-position: center bottom;
     filter: drop-shadow(var(--ev-shadow-sm));
@@ -186,15 +186,22 @@
 
 .collection-lineage__item {
     position: relative;
-    display: grid;
-    justify-items: center;
-    gap: var(--ev-s-1);
     width: var(--ev-collection-timeline-art-size);
     flex: 0 0 var(--ev-collection-timeline-art-size);
     color: var(--ev-on-dark);
     font-family: var(--ev-font-display);
     font-size: var(--ev-fs-xs);
     text-shadow: var(--ev-shadow-text-on-scene);
+}
+
+.collection-lineage__button {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-1);
+    width: 100%;
+    padding: 0;
+    cursor: pointer;
+    text-align: center;
 }
 
 .collection-lineage__item:not(:last-child)::after {
@@ -229,12 +236,12 @@
     object-fit: contain;
 }
 
-.collection-lineage__item.is-active .collection-lineage__art {
+.collection-lineage__item.is-selected .collection-lineage__art {
     border-color: var(--ev-player-light);
     box-shadow: var(--ev-shadow-glow-player), var(--ev-lip-cream);
 }
 
-.collection-lineage__item.is-active {
+.collection-lineage__item.is-selected {
     color: var(--ev-player-light);
 }
 
@@ -251,12 +258,15 @@
     align-items: center;
     gap: var(--ev-s-2);
     min-width: 0;
+    width: 100%;
     padding: var(--ev-s-3);
     border: var(--ev-stroke-width) solid var(--ev-stroke-light);
     border-radius: var(--ev-r-lg);
     color: var(--ev-ink);
     background: var(--ev-grad-cream);
     box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
+    cursor: pointer;
+    text-align: inherit;
 }
 
 .collection-form h3 {
@@ -281,7 +291,7 @@
     max-width: 100%;
 }
 
-.collection-form.is-active {
+.collection-form.is-selected {
     border-color: var(--ev-player);
     box-shadow: var(--ev-shadow-glow-player), var(--ev-lip-cream);
 }

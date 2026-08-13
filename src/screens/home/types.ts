@@ -15,6 +15,14 @@ export type HomeCreatureImage = {
     offsetY?: number
 }
 
+export type HomeCreatureVisualVersion = {
+    id: string
+    generation: number
+    name: string
+    image: HomeCreatureImage
+    isCurrent: boolean
+}
+
 export type HomeViewModel = {
     mode: 'guest' | 'authenticated'
     player: {
@@ -28,6 +36,7 @@ export type HomeViewModel = {
         id?: string
         name: string
         image: HomeCreatureImage
+        visualVersions: ReadonlyArray<HomeCreatureVisualVersion>
         level?: number
         experience?: { current: number; required: number }
         evolution?: { current: number; total: number; label?: string }

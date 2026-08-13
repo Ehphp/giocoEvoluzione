@@ -68,6 +68,9 @@ export function buildPreviewHomeViewModel(): HomeViewModel {
         busyAction: null,
         profile: PREVIEW_PROFILE,
         creature: PREVIEW_CREATURE,
+        visualVersionNumber: 3,
+        visualHistory: PREVIEW_VISUAL_HISTORY,
+        currentVisualVersionId: 'preview-visual-3',
     })
 }
 

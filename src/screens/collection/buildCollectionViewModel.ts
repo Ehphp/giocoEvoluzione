@@ -1,4 +1,5 @@
 import { ASSETS } from '../../ui/assets'
+import { buildCreatureVisualVersions } from '../../components/creature-visual-progression/visualVersions'
 import type { CollectionForm, CollectionViewModel, CollectionViewModelInput } from './types'
 
 /* Elemental types are presentation placeholders until the profile API exposes them. */
@@ -16,20 +17,25 @@ export function buildCollectionViewModel({
 }: CollectionViewModelInput): CollectionViewModel {
     const activeGeneration = visualVersionNumber ?? 1
     const fallbackImage = visualUrl ?? ASSETS.creatures.player
-    const forms: CollectionForm[] = (visualHistory?.length ? visualHistory : [{
-        id: creature.id,
-        versionNumber: activeGeneration,
-        visualTraitId: visualTrait ?? null,
-        conceptName: null,
-        signedUrl: fallbackImage,
-    }]).map((entry) => ({
+    const forms: CollectionForm[] = buildCreatureVisualVersions({
+        history: visualHistory,
+        currentVersionId: currentVisualVersionId,
+        currentVersionNumber: activeGeneration,
+        fallback: {
+            id: currentVisualVersionId ?? creature.id,
+            versionNumber: activeGeneration,
+            visualTraitId: visualTrait ?? null,
+            conceptName: null,
+            signedUrl: fallbackImage,
+        },
+    }).map((entry) => ({
         id: entry.id,
         generation: entry.versionNumber,
-        name: entry.conceptName ?? (entry.versionNumber === 1 ? 'Forma iniziale' : 'Forma evoluta'),
+        name: entry.name,
         image: entry.signedUrl,
         types: PLACEHOLDER_TYPES,
         isUnlocked: true,
-        isActive: entry.id === currentVisualVersionId || entry.versionNumber === activeGeneration,
+        isActive: entry.isCurrent,
     }))
     const activeForm = forms.find((form) => form.isActive) ?? forms.at(-1)!
 

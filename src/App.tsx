@@ -445,9 +445,18 @@ function App() {
     }
 
     return auth.profile && auth.creature
-      ? buildAuthenticatedHomeViewModel({ ...input, profile: auth.profile, creature: auth.creature, officialVisualUrl: officialVisual?.signedUrl })
+      ? buildAuthenticatedHomeViewModel({
+        ...input,
+        profile: auth.profile,
+        creature: auth.creature,
+        officialVisualUrl: officialVisual?.signedUrl,
+        visualVersionNumber: visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber,
+        visualTrait: visualProgress?.currentVersion.visualTraitId ?? officialVisual?.visualTraitId ?? null,
+        visualHistory: visualProgress?.history,
+        currentVisualVersionId: visualProgress?.currentVersion.id ?? officialVisual?.versionId,
+      })
       : buildGuestHomeViewModel(input)
-  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, roomCode, statusMessage])
+  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, officialVisual?.versionId, officialVisual?.versionNumber, officialVisual?.visualTraitId, roomCode, statusMessage, visualProgress])
 
   async function startNewGame(mode: 'PVP' | 'VS_BOT', difficulty = botDifficulty) {
     if (!auth.profile || !auth.creature) {
