@@ -1214,7 +1214,6 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: GenerateI
             profileId: input.profileId, creatureId: parsed.request.creatureId, idempotencyKey: parsed.request.idempotencyKey,
             operation: 'GENERATE_UNLOCKED_TRANSFORMATION', imageProviderMode: 'REAL', visualTraitId: direction.visualTraitId,
             intensity: 2, evolutionTargetId: parsed.request.evolutionTargetId, evolutionFunction: direction.evolutionFunction,
-            ...(parsed.request.sourceVisualVersionId ? { sourceVisualVersionId: parsed.request.sourceVisualVersionId } : {}),
             estimatedCostUsd: input.policy.visualProgression.flux?.estimatedCostUsd ?? undefined,
             dailyRequestLimit: input.policy.dailyRequestLimit, dailyBudgetUsd: input.policy.dailyBudgetUsd,
             requestFingerprint: await requestFingerprint(parsed.request), ...realImageReservationLimits(input.policy),
