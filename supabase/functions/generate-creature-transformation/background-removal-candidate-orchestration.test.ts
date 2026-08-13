@@ -45,6 +45,16 @@ describe('browser background removal candidate gate', () => {
         expect(pending.requests.get(profileId, 'raw-key')).toMatchObject({ assetReadiness: 'FINAL_ASSET', resultSha256: 'b'.repeat(64) })
     })
 
+    it('returns the existing final asset when a duplicate candidate arrives after the first submission', async () => {
+        const pending = await pendingRequest()
+        const prepared = input(pending.transformationRequestId, pending.requests.repository, {
+            async validate() { return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true, transparentPixelRatio: 0.5, visiblePixelRatio: 0.5, sha256: 'b'.repeat(64), bytes: 32 }, warnings: [] } },
+        })
+        await expect(orchestrateSubmitBackgroundRemovalCandidate(prepared as never)).resolves.toMatchObject({ success: true })
+        await expect(orchestrateSubmitBackgroundRemovalCandidate(prepared as never)).resolves.toMatchObject({ success: true, requestPersistence: { idempotencyStatus: 'EXISTING' } })
+        expect(prepared.uploads).toHaveLength(1)
+    })
+
     it('accepts a FLUX raw PNG at 768 by 1152 before promoting the normalized master', async () => {
         const pending = await pendingRequest([768, 1152])
         const prepared = input(pending.transformationRequestId, pending.requests.repository, {

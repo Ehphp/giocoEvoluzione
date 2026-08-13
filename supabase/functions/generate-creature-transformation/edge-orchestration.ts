@@ -783,7 +783,23 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
         return failure(input.requestId, details.code, details.message, details.problems)
     }
     if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
-    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED' || record.assetReadiness !== 'EXPERIMENT_ONLY') {
+    if (record.operation !== 'GENERATE_UNLOCKED_TRANSFORMATION' || record.status !== 'SUCCEEDED') {
+        return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La richiesta non e pronta per il PNG elaborato.')
+    }
+    // The candidate submission can be retried when its first HTTP response was
+    // lost. Returning the already-final record also absorbs any duplicate from
+    // a browser render that began before the in-flight guard was introduced.
+    if (record.assetReadiness === 'FINAL_ASSET'
+        && record.resultSha256
+        && record.resultMimeType
+        && record.resultWidth
+        && record.resultHeight) {
+        return {
+            success: true, requestId: input.requestId, requestPersistence: toPersistence(record, 'EXISTING'),
+            candidate: { assetReadiness: 'FINAL_ASSET', sha256: record.resultSha256, mimeType: record.resultMimeType, width: record.resultWidth, height: record.resultHeight, warnings: storedWarnings(record) },
+        }
+    }
+    if (record.assetReadiness !== 'EXPERIMENT_ONLY') {
         return failure(input.requestId, 'REQUEST_STATE_CONFLICT', 'La richiesta non e pronta per il PNG elaborato.')
     }
     const validation = await (input.validator ?? new ImageValidator()).validate({
