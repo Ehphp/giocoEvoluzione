@@ -58,6 +58,12 @@ update public.creature_transformation_requests
 set evolution_target_id = public.map_legacy_evolution_target_id(evolution_target_id)
 where evolution_target_id is not null;
 
+-- This taxonomy correction changes immutable historical metadata, not a visual
+-- version's content or lineage. Keep the normal guard active everywhere else;
+-- PostgreSQL rolls this transactional DDL back if the migration cannot commit.
+alter table public.creature_visual_versions
+  disable trigger creature_visual_versions_immutable;
+
 update public.creature_visual_versions
 set concept_snapshot = jsonb_set(concept_snapshot, '{evolutionTargetId}', to_jsonb(public.map_legacy_evolution_target_id(concept_snapshot->>'evolutionTargetId')))
 where concept_snapshot is not null
@@ -68,6 +74,9 @@ where concept_snapshot is not null
 update public.creature_visual_versions
 set evolution_target_id = public.map_legacy_evolution_target_id(evolution_target_id)
 where evolution_target_id is not null;
+
+alter table public.creature_visual_versions
+  enable trigger creature_visual_versions_immutable;
 
 update public.creature_evolution_target_progress_events
 set evolution_target_id = public.map_legacy_evolution_target_id(evolution_target_id)

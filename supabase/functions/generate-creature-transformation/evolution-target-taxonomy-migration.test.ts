@@ -22,6 +22,7 @@ describe('evolution target taxonomy migration', () => {
         expect(migration).toMatch(/jsonb_set\(concept_snapshot, '\{evolutionTargetId\}'/)
         expect(migration).not.toMatch(/delete from public\.creature_visual_versions|delete from public\.creature_transformation_requests/)
         expect(migration).toMatch(/drop function public\.map_legacy_evolution_target_id/)
+        expect(migration).toMatch(/disable trigger creature_visual_versions_immutable[\s\S]*update public\.creature_visual_versions[\s\S]*enable trigger creature_visual_versions_immutable/i)
     })
 
     it('sums the banked wins when two legacy limb counters merge into one', () => {
