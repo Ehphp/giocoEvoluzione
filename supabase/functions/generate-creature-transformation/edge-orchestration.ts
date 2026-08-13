@@ -50,6 +50,7 @@ import {
     type CreatureTransformationRequestRepository,
     type RequestReservationResult,
 } from './creature-transformation-request-repository.ts'
+import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
 import {
     CreatureTransformationStorageError,
     type SupabaseCreatureTransformationStorageAdapter,
@@ -826,7 +827,19 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Generat
         }
     } catch (error) {
         const details = mapThrownError(error)
-        return failure(input.requestId, details.code, details.message, details.problems)
+        const databaseCode = error instanceof CreatureTransformationRequestRepositoryError
+            ? getSafeDatabaseLookupCode(error.cause)
+            : 'UNKNOWN'
+        console.error('Creature background-removal candidate finalization failed', {
+            requestId: input.requestId,
+            transformationRequestId: record.id,
+            code: details.code,
+            databaseCode,
+        })
+        const message = details.code === 'REQUEST_PERSISTENCE_FAILED'
+            ? `${details.message} Diagnostica database: ${databaseCode}.`
+            : details.message
+        return failure(input.requestId, details.code, message, details.problems)
     }
 }
 
