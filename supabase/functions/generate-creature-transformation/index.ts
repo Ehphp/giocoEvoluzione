@@ -1,16 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import {
-    AiCreatureConceptGenerator,
-    type CreatureConceptGenerator,
-    type CreatureTransformationErrorResponse,
-    type GenerateConceptRequest,
-    MockCreatureImageProvider,
-    MockCreatureConceptGenerator,
-} from '../../../shared/creature-transformations/index.ts'
+import type { CreatureTransformationErrorResponse } from '../../../shared/creature-transformations/api-contracts.ts'
+import { readBodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
-import { OpenAiStructuredConceptModel } from './openai-structured-concept-model.ts'
-import { getGenerateConceptFailureStatus, orchestrateCreatureTransformation } from './edge-orchestration.ts'
+import { getCreatureTransformationFailureStatus, orchestrateCreatureTransformation } from './edge-orchestration.ts'
 import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
 import {
     SupabaseCreatureTransformationStorageAdapter,
@@ -20,11 +15,6 @@ import {
     SupabaseCreatureTransformationRequestRepository,
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
-import {
-    SupabaseExperimentReviewRepository,
-    type ExperimentReviewRepositoryClient,
-} from './experiment-review-repository.ts'
-import { OpenAiCreatureImageProvider } from './openai-creature-image-provider.ts'
 import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
@@ -93,44 +83,29 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
         async listPreviousTransformations(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('creature_visual_versions')
-                .select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name, concept_snapshot')
+                .select('version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot')
                 .eq('creature_id', creatureId)
                 .not('visual_trait_id', 'is', null)
                 .in('status', ['ACTIVE', 'SUPERSEDED'])
                 .order('version_number', { ascending: false })
                 .limit(8)
             if (error) throw error
-            return [...(data ?? [])].reverse().flatMap((entry) => (
-                typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
-                    ? [{
-                        versionNumber: Number(entry.version_number),
-                        visualTraitId: entry.visual_trait_id as import('../../../shared/creature-transformations/visual-traits.ts').VisualTraitId,
-                        conceptName: entry.concept_name,
-                        evolutionTargetId: typeof entry.evolution_target_id === 'string' ? entry.evolution_target_id as import('../../../shared/creature-transformations/evolution-targets.ts').EvolutionTargetId : null,
-                        evolutionFunction: typeof entry.evolution_function === 'string' ? entry.evolution_function as import('../../../shared/creature-transformations/evolution-targets.ts').EvolutionFunctionId : null,
-                        mutationArchetype: typeof entry.mutation_archetype === 'string' ? entry.mutation_archetype as import('../../../shared/creature-transformations/mutation-archetypes.ts').MutationArchetype : null,
-                        primaryBodyArea: typeof entry.primary_body_area === 'string' ? entry.primary_body_area as import('../../../shared/creature-transformations/body-areas.ts').BodyArea : null,
-                        supportingBodyAreas: Array.isArray(entry.supporting_body_areas) ? entry.supporting_body_areas.filter((area): area is import('../../../shared/creature-transformations/body-areas.ts').BodyArea => typeof area === 'string') : [],
-                        ...(entry.concept_snapshot && typeof entry.concept_snapshot === 'object' && (entry.concept_snapshot as { schemaVersion?: unknown }).schemaVersion === 'flux-micro-v1' && typeof (entry.concept_snapshot as { mutationIdea?: unknown }).mutationIdea === 'string'
-                            ? { mutationIdea: (entry.concept_snapshot as { mutationIdea: string }).mutationIdea }
-                            : {}),
-                    }]
-                    : []
-            ))
+            return [...(data ?? [])].reverse().flatMap((entry) => {
+                if (typeof entry.visual_trait_id !== 'string' || typeof entry.concept_name !== 'string') return []
+                const snapshot = entry.concept_snapshot && typeof entry.concept_snapshot === 'object' ? entry.concept_snapshot as Record<string, unknown> : null
+                const bodyPlanMutationId = readBodyPlanMutationId(snapshot)
+                return [{
+                    versionNumber: Number(entry.version_number),
+                    visualTraitId: entry.visual_trait_id as VisualTraitId,
+                    conceptName: entry.concept_name,
+                    evolutionTargetId: typeof entry.evolution_target_id === 'string' ? entry.evolution_target_id as EvolutionTargetId : null,
+                    evolutionFunction: typeof entry.evolution_function === 'string' ? entry.evolution_function as EvolutionFunctionId : null,
+                    ...(snapshot && typeof snapshot.mutationIdea === 'string' ? { mutationIdea: snapshot.mutationIdea } : {}),
+                    ...(bodyPlanMutationId ? { bodyPlanMutationId } : {}),
+                }]
+            })
         },
     }
-}
-
-function createGenerator(conceptMode: GenerateConceptRequest['conceptMode']): CreatureConceptGenerator {
-    if (conceptMode === 'MOCK') return new MockCreatureConceptGenerator()
-
-    const apiKey = Deno.env.get('OPENAI_API_KEY') ?? ''
-    const model = Deno.env.get('OPENAI_CONCEPT_MODEL') ?? ''
-    const structuredModel = new OpenAiStructuredConceptModel({ apiKey, model })
-    return new AiCreatureConceptGenerator(structuredModel, {
-        generatorName: 'openai-structured-concept-generator',
-        modelName: model,
-    })
 }
 
 Deno.serve(async (request) => {
@@ -179,7 +154,6 @@ Deno.serve(async (request) => {
         { signedUrlTtlSeconds: policy.signedUrlTtlSeconds },
     )
     const requestRepository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
-    const reviewRepository = new SupabaseExperimentReviewRepository(supabaseAdmin as unknown as ExperimentReviewRepositoryClient)
     const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
     const result = await orchestrateCreatureTransformation({
         profileId: authData.user.id,
@@ -188,25 +162,18 @@ Deno.serve(async (request) => {
         body,
         policy,
         resolver,
-        createGenerator,
         storage,
-        createImageProvider: () => new MockCreatureImageProvider(),
-        createRealImageProvider: (configuration) => new OpenAiCreatureImageProvider({
-            apiKey: policy.realImage.apiKey!, model: configuration?.model ?? policy.realImage.model!, quality: configuration?.quality ?? policy.realImage.quality,
-            timeoutMs: policy.realImage.timeoutMs, estimatedCostUsd: configuration?.estimatedCostUsd ?? policy.realImage.estimatedCostUsd!,
-        }),
         createFluxMicroConceptGenerator: () => new FluxMicroConceptGenerator({
-            apiKey: policy.visualProgression.flux?.microConceptApiKey ?? '',
-            model: policy.visualProgression.flux?.microConceptModel ?? '',
+            apiKey: policy.flux.microConceptApiKey ?? '',
+            model: policy.flux.microConceptModel ?? '',
         }),
         createFalFluxImageProvider: () => new FalFluxImageProvider({
-            apiKey: policy.visualProgression.flux?.apiKey ?? '', model: policy.visualProgression.flux?.model,
-            timeoutMs: policy.visualProgression.flux?.timeoutMs,
-            estimatedCostUsd: policy.visualProgression.flux?.estimatedCostUsd ?? undefined,
+            apiKey: policy.flux.apiKey ?? '', model: policy.flux.model,
+            timeoutMs: policy.flux.timeoutMs,
+            estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         repository: requestRepository,
-        reviewRepository,
         visualRepository,
     })
     if (!result.success) {
@@ -217,13 +184,14 @@ Deno.serve(async (request) => {
             status: result.requestPersistence?.status,
             errorCode: result.code,
         })
-        return json(result, getGenerateConceptFailureStatus(result.code))
+        return json(result, getCreatureTransformationFailureStatus(result.code))
     }
+    const operation = body && typeof body === 'object' ? (body as { operation?: unknown }).operation : undefined
     if ('accepted' in result && result.accepted) {
-        console.info('Creature transformation real image accepted', {
+        console.info('Creature transformation generation accepted', {
             requestId,
             transformationRequestId: result.requestPersistence.transformationRequestId,
-            operation: 'GENERATE_IMAGE',
+            operation,
             status: result.requestPersistence.status,
         })
         return json(result, 202)
@@ -231,10 +199,10 @@ Deno.serve(async (request) => {
     console.info('Creature transformation request completed', {
         requestId,
         transformationRequestId: 'requestPersistence' in result ? result.requestPersistence.transformationRequestId : undefined,
-        operation: (body && typeof body === 'object' ? (body as { operation?: unknown }).operation : undefined),
+        operation,
         status: 'requestPersistence' in result ? result.requestPersistence.status : undefined,
-        ...('generation' in result ? {
-            provider: 'provider' in result.generation ? result.generation.provider : result.generation.generator,
+        ...('generation' in result && result.generation ? {
+            provider: result.generation.provider,
             model: result.generation.model,
             latencyMs: result.generation.latencyMs,
         } : {}),

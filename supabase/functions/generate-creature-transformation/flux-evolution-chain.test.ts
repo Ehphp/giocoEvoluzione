@@ -1,67 +1,153 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { TEST_CREATURE_IDENTITY } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { orchestrateGenerateFluxEvolutionChainStep } from './edge-orchestration.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
+import { createTestResolver, createTestStorage, FluxTestValidator } from './test-creature-fixtures.ts'
 
 const PROFILE_ID = 'profile-1'
 const CREATURE_ID = '00000000-0000-4000-8000-000000000001'
-const policy = readCreatureTransformationLabPolicy((name) => ({
-    CREATURE_TRANSFORMATION_LAB_ENABLED: 'true', CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS: PROFILE_ID,
-    FAL_FLUX_API_KEY: 'flux-key', FAL_FLUX_ESTIMATED_COST_USD: '0.02', FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
-    OPENAI_API_KEY: 'concept-key', FLUX_MICRO_CONCEPT_MODEL: 'concept-model', CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '1',
-})[name])
 
-class FluxValidator extends ImageValidator {
-    calls = 0
-    override async validate() {
-        this.calls += 1
-        return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: this.calls % 2 ? 1024 : 768, height: this.calls % 2 ? 1536 : 1152, colorType: 6, hasAlpha: true, sha256: `${this.calls}`.padStart(64, 'a'), bytes: 12 }, warnings: [] }
+const LAB_ENVIRONMENT: Record<string, string> = {
+    CREATURE_TRANSFORMATION_LAB_ENABLED: 'true',
+    CREATURE_TRANSFORMATION_LAB_PROFILE_IDS: PROFILE_ID,
+    FAL_FLUX_API_KEY: 'flux-key',
+    FAL_FLUX_ESTIMATED_COST_USD: '0.02',
+    FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
+    OPENAI_API_KEY: 'concept-key',
+    FLUX_MICRO_CONCEPT_MODEL: 'concept-model',
+    CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '1',
+}
+
+function policyWith(extra: Record<string, string> = {}) {
+    return readCreatureTransformationLabPolicy((name) => ({ ...LAB_ENVIRONMENT, ...extra })[name])
+}
+
+function createInput(options: {
+    repository: ReturnType<typeof createInMemoryRequestRepository>
+    tasks: Promise<void>[]
+    idempotencyKey: string
+    evolutionTargetId?: string
+    bodyPlanMutationId?: string
+    previousStepRequestIds?: string[]
+    storage?: Record<string, unknown>
+    policyOverrides?: Record<string, string>
+    generate?: ReturnType<typeof vi.fn>
+    transform?: ReturnType<typeof vi.fn>
+}) {
+    const previousStepRequestIds = options.previousStepRequestIds ?? []
+    const generate = options.generate ?? vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
+    const transform = options.transform ?? vi.fn(async () => ({ image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'flux-test', latencyMs: 1, estimatedCostUsd: 0.02 }))
+    return {
+        input: {
+            profileId: PROFILE_ID, canGenerateImages: true, requestId: `http-${options.idempotencyKey}`,
+            body: {
+                operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: CREATURE_ID,
+                evolutionTargetId: options.evolutionTargetId ?? 'LIMBS_AND_FEET',
+                ...(options.bodyPlanMutationId ? { bodyPlanMutationId: options.bodyPlanMutationId } : {}),
+                previousStepRequestIds,
+                ...(previousStepRequestIds.length ? { experimentalSourceRequestId: previousStepRequestIds.at(-1) } : {}),
+                idempotencyKey: options.idempotencyKey,
+            },
+            policy: policyWith(options.policyOverrides),
+            resolver: createTestResolver(),
+            repository: options.repository.repository,
+            storage: options.storage ?? createTestStorage(),
+            visualRepository: { async getVersion() { throw new Error('the chain must not touch productive visual versions') } },
+            createFluxMicroConceptGenerator: () => ({ generate }),
+            createFalFluxImageProvider: () => ({ transform }),
+            deferBackgroundTask: (task: Promise<void>) => { options.tasks.push(task) },
+            validator: new FluxTestValidator(),
+        },
+        generate,
+        transform,
     }
 }
 
-function createInput(repository: ReturnType<typeof createInMemoryRequestRepository>, tasks: Promise<void>[], storage: Record<string, unknown>, idempotencyKey: string, previousStepRequestIds: string[] = []) {
-    return {
-        profileId: PROFILE_ID, canGenerateImages: true, requestId: `http-${idempotencyKey}`,
-        body: { operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: CREATURE_ID, evolutionTargetId: 'FORELIMBS', previousStepRequestIds, ...(previousStepRequestIds.length ? { experimentalSourceRequestId: previousStepRequestIds.at(-1) } : {}), idempotencyKey },
-        policy, resolver: { async resolve() { return { identity: { ...TEST_CREATURE_IDENTITY, baseCreatureKey: 'VERDANT_HATCHLING' }, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true, currentVisualVersionId: '00000000-0000-4000-8000-000000000010', currentVersionNumber: 1, previousTransformations: [] } } },
-        repository: repository.repository, storage, visualRepository: { async getVersion() { throw new Error('the chain must not touch productive visual versions') } }, reviewRepository: {} as never,
-        createFluxMicroConceptGenerator: () => ({ async generate() { return { conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] } } } as never),
-        createFalFluxImageProvider: () => ({ async transform() { return { image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'flux-test', latencyMs: 1, estimatedCostUsd: 0.02 } } } as never),
-        deferBackgroundTask: (task: Promise<void>) => tasks.push(task), validator: new FluxValidator(),
-    } as never
+async function finalize(persistence: ReturnType<typeof createInMemoryRequestRepository>, requestId: string, path: string) {
+    await persistence.repository.finalizeBackgroundRemovalCandidate({
+        requestId, profileId: PROFILE_ID, candidatePath: path, candidateSha256: 'c'.repeat(64),
+        candidateMimeType: 'image/png', candidateWidth: 1024, candidateHeight: 1536, validationWarnings: [],
+    })
 }
 
 describe('FLUX evolution chain step', () => {
-    it('uses the final processed output of G1 as the only source of G2 without touching productive progression', async () => {
+    it('uses the final processed output of G1 as the only source of G2, and G1 as its target lineage', async () => {
         const persistence = createInMemoryRequestRepository()
         const tasks: Promise<void>[] = []
         const readExperimentalSource = vi.fn(async () => ({ bytes: createTestPng(), mimeType: 'image/png' as const }))
-        const storage = { async readCanonicalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } }, readExperimentalSource, async saveRawResult() { return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' } }, async createRawResultObjectPath() { return `experiments/raw/${PROFILE_ID}/${'a'.repeat(64)}.png` } }
-        const first = await orchestrateGenerateFluxEvolutionChainStep(createInput(persistence, tasks, storage, 'chain-1'))
-        expect(first).toMatchObject({ success: true, accepted: true })
-        await tasks[0]
-        const firstId = first.requestPersistence.transformationRequestId
-        await persistence.repository.finalizeBackgroundRemovalCandidate({ requestId: firstId, profileId: PROFILE_ID, candidatePath: `candidates/${PROFILE_ID}/${'b'.repeat(64)}.png`, candidateSha256: 'c'.repeat(64), candidateMimeType: 'image/png', candidateWidth: 1024, candidateHeight: 1536, validationWarnings: [] })
+        const storage = createTestStorage({ readExperimentalSource })
 
-        const second = await orchestrateGenerateFluxEvolutionChainStep(createInput(persistence, tasks, storage, 'chain-2', [firstId]))
+        const first = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-1', storage })
+        const firstResponse = await orchestrateGenerateFluxEvolutionChainStep(first.input as never)
+        expect(firstResponse).toMatchObject({ success: true, accepted: true })
+        await tasks[0]
+        const firstId = (firstResponse as { requestPersistence: { transformationRequestId: string } }).requestPersistence.transformationRequestId
+        const finalPath = `candidates/${PROFILE_ID}/${'b'.repeat(64)}.png`
+        await finalize(persistence, firstId, finalPath)
+
+        const second = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-2', previousStepRequestIds: [firstId], storage })
+        const secondResponse = await orchestrateGenerateFluxEvolutionChainStep(second.input as never)
         await tasks[1]
-        expect(second).toMatchObject({ success: true, accepted: true })
-        expect(readExperimentalSource).toHaveBeenCalledWith(`candidates/${PROFILE_ID}/${'b'.repeat(64)}.png`)
+
+        expect(secondResponse).toMatchObject({ success: true, accepted: true })
+        expect(readExperimentalSource).toHaveBeenCalledWith(finalPath)
         expect(persistence.get(PROFILE_ID, 'chain-2')).toMatchObject({ visualProgressTrackId: null, sourceVisualVersionId: null, assetReadiness: 'EXPERIMENT_ONLY' })
+        // The second step reads the first as adopted lineage of the same target.
+        const plan = second.generate.mock.calls[0]![0].plan
+        expect(plan.lineage.currentTargetState.map((entry: { conceptName: string }) => entry.conceptName)).toEqual(['Pale rematrici'])
+    })
+
+    it('runs a body-plan mutation through the same pipeline when the capability is enabled', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const context = createInput({
+            repository: persistence, tasks, idempotencyKey: 'chain-structural',
+            bodyPlanMutationId: 'ADD_LIMB_PAIR', policyOverrides: { CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true' },
+        })
+
+        await orchestrateGenerateFluxEvolutionChainStep(context.input as never)
+        await tasks[0]
+
+        const plan = context.generate.mock.calls[0]![0].plan
+        expect(plan).toMatchObject({ capability: 'BODY_PLAN_MUTATION', bodyPlanMutationId: 'ADD_LIMB_PAIR', resultBodyPlanId: 'SIX_LIMBED' })
+        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('Keep exactly 6 limbs')
+        expect(persistence.get(PROFILE_ID, 'chain-structural')?.conceptSnapshot).toMatchObject({ capability: 'BODY_PLAN_MUTATION', bodyPlanMutationId: 'ADD_LIMB_PAIR', resultBodyPlanId: 'SIX_LIMBED' })
+    })
+
+    it('refuses a body-plan mutation while the capability is disabled', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const context = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-denied', bodyPlanMutationId: 'ADD_LIMB_PAIR' })
+
+        await expect(orchestrateGenerateFluxEvolutionChainStep(context.input as never))
+            .resolves.toMatchObject({ success: false, code: 'BODY_PLAN_MUTATION_NOT_AUTHORIZED' })
+        expect(persistence.calls.reserve).toBe(0)
+        expect(tasks).toHaveLength(0)
+    })
+
+    it('keeps the Lab behind its own server-side allowlist', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const context = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-forbidden', policyOverrides: { CREATURE_TRANSFORMATION_LAB_PROFILE_IDS: 'another-profile' } })
+
+        await expect(orchestrateGenerateFluxEvolutionChainStep(context.input as never))
+            .resolves.toMatchObject({ success: false, code: 'LAB_NOT_ALLOWED' })
+        expect(persistence.calls.reserve).toBe(0)
     })
 
     it('records an intermediate provider failure and never queues a later step', async () => {
         const persistence = createInMemoryRequestRepository()
         const tasks: Promise<void>[] = []
-        const storage = { async readCanonicalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } } }
-        const input = createInput(persistence, tasks, storage, 'chain-failure')
-        input.createFalFluxImageProvider = () => ({ async transform() { throw new Error('provider down') } } as never)
-        await orchestrateGenerateFluxEvolutionChainStep(input)
+        const context = createInput({
+            repository: persistence, tasks, idempotencyKey: 'chain-failure',
+            transform: vi.fn(async () => { throw new Error('provider down') }),
+        })
+
+        await orchestrateGenerateFluxEvolutionChainStep(context.input as never)
         await tasks[0]
+
         expect(persistence.get(PROFILE_ID, 'chain-failure')).toMatchObject({ status: 'FAILED' })
         expect(tasks).toHaveLength(1)
     })

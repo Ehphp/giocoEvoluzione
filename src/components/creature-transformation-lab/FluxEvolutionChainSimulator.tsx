@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { EVOLUTION_TARGETS, type EvolutionTargetId } from '../../../shared/creature-transformations/index.ts'
+import {
+    BODY_PLANS,
+    BODY_PLAN_MUTATION_BY_ID,
+    DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS,
+    EVOLUTION_TARGET_BY_ID,
+    isBodyPlanId,
+    type BodyPlanMutationDefinition,
+    type BodyPlanMutationId,
+    type EvolutionTargetId,
+} from '../../../shared/creature-transformations/index.ts'
 import {
     createVisualTransformationIdempotencyKey,
     generateFluxEvolutionChainStep,
@@ -13,7 +22,7 @@ import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 
 type StepState = 'pending' | 'generating' | 'post-processing' | 'completed' | 'failed' | 'stopped'
-type ChainStep = { generation: number, targetId: EvolutionTargetId, state: StepState, requestId?: string, imageUrl?: string, conceptName?: string, evolutionFunction?: string, error?: string }
+type ChainStep = { generation: number, targetId: EvolutionTargetId, bodyPlanMutationId?: BodyPlanMutationId, state: StepState, requestId?: string, imageUrl?: string, conceptName?: string, evolutionFunction?: string, capability?: string, error?: string }
 type Chain = { version: 1, creatureId: string, total: number, sourceVisualVersionId?: string, status: 'setup' | 'generating' | 'completed' | 'failed' | 'stopped', steps: ChainStep[] }
 type SourceOption = { id: string | undefined, label: string, signedUrl?: string }
 
@@ -26,7 +35,10 @@ function encodePng(bytes: Uint8Array) {
     for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000))
     return btoa(binary)
 }
-function targetFor(index: number): EvolutionTargetId { return EVOLUTION_TARGETS[index % EVOLUTION_TARGETS.length]!.id }
+function targetFor(index: number, availableTargets: readonly EvolutionTargetId[]): EvolutionTargetId {
+    return availableTargets[index % availableTargets.length]!
+}
+function targetLabel(targetId: EvolutionTargetId): string { return EVOLUTION_TARGET_BY_ID[targetId]?.label ?? targetId }
 function readChain(creatureId: string): Chain | null {
     try {
         const parsed = JSON.parse(window.localStorage.getItem(storageKey(creatureId)) ?? 'null') as Chain | null
@@ -40,6 +52,10 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
     const [sources, setSources] = useState<SourceOption[]>([{ id: undefined, label: 'Visuale attiva corrente' }])
     const [sourceId, setSourceId] = useState<string | undefined>(undefined)
     const [largeImage, setLargeImage] = useState<{ url: string, label: string } | null>(null)
+    // Targets and structural mutations both come from the creature's canonical body plan.
+    const [availableTargets, setAvailableTargets] = useState<readonly EvolutionTargetId[]>(DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS)
+    const [structuralMutations, setStructuralMutations] = useState<readonly BodyPlanMutationDefinition[]>([])
+    const [structuralMutationId, setStructuralMutationId] = useState<BodyPlanMutationId | ''>('')
     const stoppedRef = useRef(false)
     const postProcessingRequestIdRef = useRef<string | null>(null)
 
@@ -52,6 +68,11 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
             const history = progress.history.map((entry) => ({ id: entry.id, label: entry.conceptName ? `v${entry.versionNumber} · ${entry.conceptName}` : `Visuale v${entry.versionNumber}`, signedUrl: entry.signedUrl }))
             setSources([current, ...history])
             setSourceId(current.id)
+            if (progress.bodyPlan?.availableEvolutionTargets.length) setAvailableTargets(progress.bodyPlan.availableEvolutionTargets)
+            const bodyPlanId = progress.bodyPlan?.id
+            setStructuralMutations(bodyPlanId && isBodyPlanId(bodyPlanId)
+                ? BODY_PLANS[bodyPlanId].structuralMutations.flatMap((transition) => BODY_PLAN_MUTATION_BY_ID[transition.mutationId] ? [BODY_PLAN_MUTATION_BY_ID[transition.mutationId]!] : [])
+                : [])
         }).catch(() => { /* The server still resolves its canonical source if the catalog is unavailable. */ })
     }, [creatureId])
 
@@ -75,6 +96,7 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
         try {
             const response = await generateFluxEvolutionChainStep({
                 operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId, evolutionTargetId: step.targetId,
+                ...(step.bodyPlanMutationId ? { bodyPlanMutationId: step.bodyPlanMutationId } : {}),
                 ...(index === 0 ? (current.sourceVisualVersionId ? { sourceVisualVersionId: current.sourceVisualVersionId } : {}) : { experimentalSourceRequestId: previousStepRequestIds.at(-1)! }),
                 previousStepRequestIds, idempotencyKey: createVisualTransformationIdempotencyKey(),
             })
@@ -101,7 +123,7 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
             const final = await getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: step.requestId })
             if (!final.result || final.result.assetReadiness !== 'FINAL_ASSET') throw new Error('L asset finale della catena non e disponibile.')
             const nextIndex = step.generation
-            const next = { ...current, steps: current.steps.map((entry) => entry.generation === step.generation ? { ...entry, state: 'completed' as const, imageUrl: final.result!.signedUrl, conceptName: final.fluxSnapshot?.conceptName, evolutionFunction: final.fluxSnapshot ? `${final.fluxSnapshot.evolutionFunction} · ${final.fluxSnapshot.mutationIdea}` : undefined } : entry) }
+            const next = { ...current, steps: current.steps.map((entry) => entry.generation === step.generation ? { ...entry, state: 'completed' as const, imageUrl: final.result!.signedUrl, conceptName: final.fluxSnapshot?.conceptName, evolutionFunction: final.fluxSnapshot ? `${final.fluxSnapshot.evolutionFunction} · ${final.fluxSnapshot.mutationIdea}` : undefined, capability: final.fluxSnapshot ? `${final.fluxSnapshot.capability}${final.fluxSnapshot.bodyPlanMutationId ? ` · ${final.fluxSnapshot.bodyPlanMutationId} → ${final.fluxSnapshot.resultBodyPlanId ?? ''}` : ''}` : undefined } : entry) }
             setChain(next)
             if (!stoppedRef.current) {
                 if (nextIndex >= next.steps.length) setChain({ ...next, status: 'completed' })
@@ -140,7 +162,14 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
     function start() {
         const total = Math.max(1, Math.min(MAX_STEPS, Math.round(count) || 10))
         stoppedRef.current = false
-        const next: Chain = { version: 1, creatureId, total, ...(sourceId ? { sourceVisualVersionId: sourceId } : {}), status: 'generating', steps: Array.from({ length: total }, (_, index) => ({ generation: index + 1, targetId: targetFor(index), state: 'pending' })) }
+        const structural = structuralMutationId ? BODY_PLAN_MUTATION_BY_ID[structuralMutationId] : null
+        const steps: ChainStep[] = Array.from({ length: total }, (_, index) => (
+            index === 0 && structural
+                // A structural step must run on the target the mutation belongs to.
+                ? { generation: 1, targetId: structural.evolutionTargetId, bodyPlanMutationId: structural.id, state: 'pending' as const }
+                : { generation: index + 1, targetId: targetFor(index, availableTargets), state: 'pending' as const }
+        ))
+        const next: Chain = { version: 1, creatureId, total, ...(sourceId ? { sourceVisualVersionId: sourceId } : {}), status: 'generating', steps }
         setChain(next); void launch(next, 0)
     }
     function retry() {
@@ -154,8 +183,8 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
 
     return <section className="flux-chain-simulator" aria-labelledby="flux-chain-simulator-title">
         <header><span className="eyebrow">EXPERIMENT / FLUX</span><h2 id="flux-chain-simulator-title">Evolution Chain Simulator</h2><p>Ogni step usa l’asset finale processato dello step precedente. Non apre track, non adotta visuali e non modifica la progressione.</p></header>
-        {canSetup ? <div className="flux-chain-simulator__setup"><label>Numero evoluzioni<input type="number" min="1" max={MAX_STEPS} value={count} onChange={(event) => setCount(Number(event.target.value))} /></label><label>Immagine iniziale<select value={sourceId ?? ''} onChange={(event) => setSourceId(event.target.value || undefined)}>{sources.map((source) => <option key={source.id ?? 'canonical'} value={source.id ?? ''}>{source.label}</option>)}</select></label><button type="button" className="primary-button" onClick={start}>Simula catena evolutiva</button></div> : null}
-        {chain ? <><div className="flux-chain-simulator__actions"><p role="status">Stato: {chain.status}{activeStep ? ` · G${activeStep.generation} ${activeStep.state}` : ''}</p>{chain.status === 'generating' ? <button type="button" onClick={() => { stoppedRef.current = true; setChain({ ...chain, status: 'stopped', steps: chain.steps.map((step) => step.state === 'pending' ? { ...step, state: 'stopped' } : step) }) }}>Stop simulation</button> : null}{chain.status === 'failed' ? <button type="button" onClick={retry}>Riprova step fallito</button> : null}</div><ol className="flux-chain-simulator__timeline"><li><span>BASE</span></li>{timeline.map((step) => <li key={step.generation} data-state={step.state}><button type="button" disabled={!step.imageUrl} onClick={() => step.imageUrl && setLargeImage({ url: step.imageUrl, label: `Generazione ${step.generation}` })}>{step.imageUrl ? <img src={step.imageUrl} alt={`Generazione ${step.generation}`} /> : <span aria-hidden="true">G{step.generation}</span>}<strong>G{step.generation}</strong></button><small>{EVOLUTION_TARGETS.find((target) => target.id === step.targetId)?.label} · {step.state}</small>{step.conceptName ? <em>{step.conceptName}</em> : null}{step.evolutionFunction ? <em>{step.evolutionFunction}</em> : null}{step.error ? <p role="alert">{step.error}</p> : null}</li>)}</ol></> : null}
+        {canSetup ? <div className="flux-chain-simulator__setup"><label>Numero evoluzioni<input type="number" min="1" max={MAX_STEPS} value={count} onChange={(event) => setCount(Number(event.target.value))} /></label><label>Immagine iniziale<select value={sourceId ?? ''} onChange={(event) => setSourceId(event.target.value || undefined)}>{sources.map((source) => <option key={source.id ?? 'canonical'} value={source.id ?? ''}>{source.label}</option>)}</select></label>{structuralMutations.length ? <label>Mutazione strutturale (G1)<select value={structuralMutationId} onChange={(event) => setStructuralMutationId(event.target.value as BodyPlanMutationId | '')}><option value="">Nessuna — solo mutazioni anatomiche</option>{structuralMutations.map((mutation) => <option key={mutation.id} value={mutation.id}>{mutation.label} · {mutation.id}</option>)}</select></label> : null}<button type="button" className="primary-button" onClick={start}>Simula catena evolutiva</button></div> : null}
+        {chain ? <><div className="flux-chain-simulator__actions"><p role="status">Stato: {chain.status}{activeStep ? ` · G${activeStep.generation} ${activeStep.state}` : ''}</p>{chain.status === 'generating' ? <button type="button" onClick={() => { stoppedRef.current = true; setChain({ ...chain, status: 'stopped', steps: chain.steps.map((step) => step.state === 'pending' ? { ...step, state: 'stopped' } : step) }) }}>Stop simulation</button> : null}{chain.status === 'failed' ? <button type="button" onClick={retry}>Riprova step fallito</button> : null}</div><ol className="flux-chain-simulator__timeline"><li><span>BASE</span></li>{timeline.map((step) => <li key={step.generation} data-state={step.state}><button type="button" disabled={!step.imageUrl} onClick={() => step.imageUrl && setLargeImage({ url: step.imageUrl, label: `Generazione ${step.generation}` })}>{step.imageUrl ? <img src={step.imageUrl} alt={`Generazione ${step.generation}`} /> : <span aria-hidden="true">G{step.generation}</span>}<strong>G{step.generation}</strong></button><small>{targetLabel(step.targetId)} · {step.state}</small>{step.conceptName ? <em>{step.conceptName}</em> : null}{step.evolutionFunction ? <em>{step.evolutionFunction}</em> : null}{step.capability ? <em>{step.capability}</em> : null}{step.error ? <p role="alert">{step.error}</p> : null}</li>)}</ol></> : null}
         {largeImage ? <div className="flux-chain-simulator__modal" role="dialog" aria-modal="true" aria-label={largeImage.label}><button type="button" onClick={() => setLargeImage(null)}>Chiudi</button><img src={largeImage.url} alt={largeImage.label} /></div> : null}
     </section>
 }

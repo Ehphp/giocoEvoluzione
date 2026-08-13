@@ -1,13 +1,14 @@
-import type { GenerateConceptRequest, GenerateImageRequest } from '../../../shared/creature-transformations/contracts.ts'
-import { parseCreatureImageGenerationProfiles, type CreatureImageGenerationProfiles } from '../../../shared/creature-transformations/image-generation-profiles.ts'
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
-import { DEFAULT_CONCEPT_CREATIVE_PROFILE, isConceptCreativeProfileId, type ConceptCreativeProfileId } from '../../../shared/creature-transformations/concept-creative-profiles.ts'
 
-type ConceptMode = GenerateConceptRequest['conceptMode']
-type ImageProviderMode = GenerateImageRequest['imageProviderMode']
+/**
+ * Server-side policy of the FLUX evolution pipeline.
+ *
+ * There is one production pipeline, so there is no pipeline switch here. What the policy still
+ * owns is access (who may spend money), the cost and quota envelope, and whether the structural
+ * `BODY_PLAN_MUTATION` capability may be used at all — off by default, so normal gameplay can
+ * never produce one.
+ */
 
-const CONCEPT_MODES = new Set<ConceptMode>(['MOCK', 'AI'])
-const IMAGE_PROVIDER_MODES = new Set<ImageProviderMode>(['MOCK'])
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 300
 const DEFAULT_DAILY_REQUEST_LIMIT = 10
 const DEFAULT_DAILY_BUDGET_USD = 0
@@ -16,23 +17,10 @@ const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
 const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
 const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
 const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
-const DEFAULT_REAL_IMAGE_TIMEOUT_MS = 120000
-const REAL_IMAGE_QUALITIES = new Set(['low', 'medium', 'high'])
+const DEFAULT_FLUX_MODEL = 'fal-ai/flux-2-klein/9b/edit'
+const DEFAULT_FLUX_TIMEOUT_MS = 30_000
 
-export type OpenAiImageQuality = 'low' | 'medium' | 'high'
-export type RealImagePolicy = Readonly<{
-    enabled: boolean
-    provider: 'OPENAI' | null
-    allowedProfileIds: ReadonlySet<string>
-    apiKey: string | null
-    model: string | null
-    quality: OpenAiImageQuality
-    timeoutMs: number
-    estimatedCostUsd: number | null
-    maxEstimatedCostUsd: number | null
-}>
-
-export type FluxProductionPolicy = Readonly<{
+export type FluxPipelinePolicy = Readonly<{
     apiKey: string | null
     model: string
     timeoutMs: number
@@ -42,16 +30,8 @@ export type FluxProductionPolicy = Readonly<{
     microConceptModel: string | null
 }>
 
-export type BenchmarkPolicy = Readonly<{
-    allowedProfileIds: ReadonlySet<string>
-    reviewerProfileIds: ReadonlySet<string>
-    generationProfiles: CreatureImageGenerationProfiles
-}>
-
 export type CreatureTransformationLabPolicy = Readonly<{
     enabled: boolean
-    allowedConceptModes: ReadonlySet<ConceptMode>
-    allowedImageProviderModes: ReadonlySet<ImageProviderMode>
     signedUrlTtlSeconds: number
     dailyRequestLimit: number
     dailyBudgetUsd: number
@@ -60,11 +40,13 @@ export type CreatureTransformationLabPolicy = Readonly<{
     globalDailyRealImageLimit: number
     globalConcurrentRealImageLimit: number
     realImageCooldownSeconds: number
-    realImage: RealImagePolicy
-    /** Separate server-side allowlist; a VITE flag is deliberately not sufficient. */
-    lineageExperimentAllowedProfileIds: ReadonlySet<string>
-    expressiveConceptExperimentEnabled?: boolean
-    benchmark: BenchmarkPolicy
+    /** Profiles allowed to spend on image generation, beside the `can_generate_images` flag. */
+    paidGenerationProfileIds: ReadonlySet<string>
+    /** Profiles allowed to reach the internal Lab operations. A VITE flag is never sufficient. */
+    labProfileIds: ReadonlySet<string>
+    flux: FluxPipelinePolicy
+    /** Structural topology changes. Disabled in production gameplay by default. */
+    bodyPlanMutation: Readonly<{ enabled: boolean }>
     visualProgression: Readonly<{
         enabled: boolean
         productionGenerationEnabled: boolean
@@ -72,11 +54,6 @@ export type CreatureTransformationLabPolicy = Readonly<{
         backgroundCleanupEnabled: boolean
         allowedProfileIds: ReadonlySet<string>
         winsRequired: number
-        productionGenerationProfileId: string | null
-        productionConceptCreativeProfile?: ConceptCreativeProfileId
-        /** Legacy remains the safe default until the FLUX pilot is explicitly enabled. */
-        productionPipeline?: 'legacy' | 'flux'
-        flux?: FluxProductionPolicy
     }>
 }>
 
@@ -104,35 +81,19 @@ function readProfileIdSet(value: string | undefined): ReadonlySet<string> {
     )
 }
 
-function readRealImagePolicy(readEnvironment: (name: string) => string | undefined): RealImagePolicy {
-    const provider = readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER')?.trim().toUpperCase()
-    const quality = readEnvironment('OPENAI_IMAGE_QUALITY')?.trim().toLowerCase()
-    const allowedProfileIds = readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS'))
-    const apiKey = readEnvironment('OPENAI_IMAGE_API_KEY')?.trim() || null
-    const model = readEnvironment('OPENAI_IMAGE_MODEL')?.trim() || null
+function readFluxPolicy(readEnvironment: (name: string) => string | undefined): FluxPipelinePolicy {
     return Object.freeze({
-        enabled: readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED') === 'true',
-        provider: provider === 'OPENAI' ? 'OPENAI' : null,
-        allowedProfileIds,
-        apiKey,
-        model,
-        quality: REAL_IMAGE_QUALITIES.has(quality ?? '') ? quality as OpenAiImageQuality : 'medium',
-        timeoutMs: readBoundedInteger(readEnvironment('OPENAI_IMAGE_TIMEOUT_MS'), DEFAULT_REAL_IMAGE_TIMEOUT_MS, 1000, 180000),
-        estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('OPENAI_IMAGE_ESTIMATED_COST_USD')),
-        maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD')),
-    })
-}
-
-function readBenchmarkPolicy(readEnvironment: (name: string) => string | undefined): BenchmarkPolicy {
-    return Object.freeze({
-        allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_BENCHMARK_PROFILE_IDS')),
-        reviewerProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_BENCHMARK_REVIEWER_PROFILE_IDS')),
-        generationProfiles: parseCreatureImageGenerationProfiles(readEnvironment('CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON')),
+        apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
+        model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FLUX_MODEL,
+        timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
+        estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
+        maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
+        microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
+        microConceptModel: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
     })
 }
 
 function readVisualProgressionPolicy(readEnvironment: (name: string) => string | undefined) {
-    const profileId = readEnvironment('CREATURE_VISUAL_PRODUCTION_GENERATION_PROFILE_ID')?.trim()
     return Object.freeze({
         enabled: readEnvironment('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true',
         productionGenerationEnabled: readEnvironment('CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED') === 'true',
@@ -140,52 +101,25 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         backgroundCleanupEnabled: readEnvironment('CREATURE_VISUAL_BACKGROUND_CLEANUP_ENABLED') === 'true',
         allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_VISUAL_PRODUCTION_PROFILE_IDS')),
         winsRequired: readCreatureVisualProgressionWinsRequired(readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED')),
-        productionGenerationProfileId: profileId && /^[a-z][a-z0-9-]{1,63}$/.test(profileId) ? profileId : null,
-        productionConceptCreativeProfile: isConceptCreativeProfileId(readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE'))
-            ? readEnvironment('CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE')
-            : DEFAULT_CONCEPT_CREATIVE_PROFILE,
-        productionPipeline: readEnvironment('CREATURE_VISUAL_PRODUCTION_PIPELINE')?.trim().toLowerCase() === 'flux' ? 'flux' as const : 'legacy' as const,
-        flux: Object.freeze({
-            apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
-            model: readEnvironment('FAL_FLUX_MODEL')?.trim() || 'fal-ai/flux-2-klein/9b/edit',
-            timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), 30_000, 1_000, 180_000),
-            estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
-            maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
-            microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
-            microConceptModel: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
-        }),
     })
 }
 
 export function readCreatureTransformationLabPolicy(readEnvironment: (name: string) => string | undefined): CreatureTransformationLabPolicy {
-    const enabled = readEnvironment('CREATURE_TRANSFORMATION_LAB_ENABLED') === 'true'
-    const allowedConceptModes = new Set<ConceptMode>()
-    const allowedImageProviderModes = new Set<ImageProviderMode>()
-    const configuredModes = readEnvironment('CREATURE_TRANSFORMATION_ALLOWED_CONCEPT_MODES') ?? ''
-    const configuredImageModes = readEnvironment('CREATURE_TRANSFORMATION_ALLOWED_IMAGE_PROVIDER_MODES') ?? ''
-
-    for (const mode of configuredModes.split(',')) {
-        const normalized = mode.trim().toUpperCase()
-        if (CONCEPT_MODES.has(normalized as ConceptMode)) {
-            allowedConceptModes.add(normalized as ConceptMode)
-        }
-    }
-
-    for (const mode of configuredImageModes.split(',')) {
-        const normalized = mode.trim().toUpperCase()
-        if (IMAGE_PROVIDER_MODES.has(normalized as ImageProviderMode)) {
-            allowedImageProviderModes.add(normalized as ImageProviderMode)
-        }
-    }
-
-    const signedUrlTtlSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'), DEFAULT_SIGNED_URL_TTL_SECONDS, 60, 3600)
-    const dailyRequestLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'), DEFAULT_DAILY_REQUEST_LIMIT, 1, 1000)
-    const dailyBudgetUsd = readBoundedUsd(readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'), DEFAULT_DAILY_BUDGET_USD, 10000)
-    const staleRequestSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS'), DEFAULT_STALE_REQUEST_SECONDS, 60, 86400)
-    const dailyRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_DAILY_REAL_IMAGE_LIMIT, 1, 1000)
-    const globalDailyRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT, 1, 1000)
-    const globalConcurrentRealImageLimit = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100)
-    const realImageCooldownSeconds = readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400)
-
-    return Object.freeze({ enabled, allowedConceptModes, allowedImageProviderModes, signedUrlTtlSeconds, dailyRequestLimit, dailyBudgetUsd, staleRequestSeconds, dailyRealImageLimit, globalDailyRealImageLimit, globalConcurrentRealImageLimit, realImageCooldownSeconds, realImage: readRealImagePolicy(readEnvironment), lineageExperimentAllowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')), expressiveConceptExperimentEnabled: readEnvironment('CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED') === 'true', benchmark: readBenchmarkPolicy(readEnvironment), visualProgression: readVisualProgressionPolicy(readEnvironment) })
+    return Object.freeze({
+        enabled: readEnvironment('CREATURE_TRANSFORMATION_LAB_ENABLED') === 'true',
+        signedUrlTtlSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'), DEFAULT_SIGNED_URL_TTL_SECONDS, 60, 3600),
+        dailyRequestLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'), DEFAULT_DAILY_REQUEST_LIMIT, 1, 1000),
+        dailyBudgetUsd: readBoundedUsd(readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'), DEFAULT_DAILY_BUDGET_USD, 10000),
+        staleRequestSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS'), DEFAULT_STALE_REQUEST_SECONDS, 60, 86400),
+        dailyRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_DAILY_REAL_IMAGE_LIMIT, 1, 1000),
+        globalDailyRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT, 1, 1000),
+        globalConcurrentRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100),
+        realImageCooldownSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400),
+        paidGenerationProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS')),
+        // The deployed variable is still the one that gated the internal experiments.
+        labProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LAB_PROFILE_IDS') ?? readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')),
+        flux: readFluxPolicy(readEnvironment),
+        bodyPlanMutation: Object.freeze({ enabled: readEnvironment('CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED') === 'true' }),
+        visualProgression: readVisualProgressionPolicy(readEnvironment),
+    })
 }

@@ -1,71 +1,20 @@
-import type { ConceptEvaluation } from './concept-evaluation.ts'
-import type { ConceptProblem } from './concept-validation.ts'
-import type { CreatureTransformationConcept } from './concepts.ts'
-import type { CreatureSemanticIdentity } from './contracts.ts'
+import type { EvolutionTargetId } from './evolution-targets.ts'
+import type { BodyPlanId } from './flux-evolution/body-plan-registry.ts'
+import type { BodyPlanMutationId, EvolutionCapability } from './flux-evolution/body-plan-mutations.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
-import type { ComposedCreatureTransformationPrompt } from './prompt-composer.ts'
 import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
-import type { CreatureTransformationBenchmarkCase } from './benchmark-plan.ts'
-import type { CreatureImageGenerationProfile } from './image-generation-profiles.ts'
-import type { CreatureTransformationBenchmarkMetrics, CreatureTransformationExperimentReview, ExperimentReviewClassification } from './experiment-reviews.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, SelectableCreatureVisualVersion } from './creature-visual-versions.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
 export type CreatureTransformationAssetReadiness = 'FINAL_ASSET' | 'EXPERIMENT_ONLY'
-
-export type GenerateConceptResponse = {
-    success: true
-    requestId: string
-    identity: CreatureSemanticIdentity
-    concept: CreatureTransformationConcept
-    evaluation: ConceptEvaluation
-    prompt: ComposedCreatureTransformationPrompt
-    generation: {
-        generator: string
-        model?: string
-        isMock: boolean
-        attempts: number
-        latencyMs: number
-    }
-    requestPersistence: TransformationRequestPersistence
-}
 
 export type CreatureTransformationErrorResponse = {
     success: false
     requestId: string
     code: string
     message: string
-    problems?: Array<ConceptProblem | ImageValidationProblem>
+    problems?: ImageValidationProblem[]
     requestPersistence?: TransformationRequestPersistence
-}
-
-export type GenerateConceptErrorResponse = CreatureTransformationErrorResponse
-export type GenerateConceptApiResponse = GenerateConceptResponse | GenerateConceptErrorResponse
-
-export type GenerateImageResponse = {
-    success: true
-    requestId: string
-    result: {
-        signedUrl: string
-        expiresAt: string
-        mimeType: 'image/png'
-        width: number
-        height: number
-        sha256: string
-        assetReadiness: CreatureTransformationAssetReadiness
-    }
-    generation: {
-        provider: string
-        model: string
-        isMock: boolean
-        providerRequestId?: string
-        latencyMs: number
-        estimatedCostUsd?: number
-    }
-    validation: {
-        warnings: string[]
-    }
-    requestPersistence: TransformationRequestPersistence
 }
 
 export type GenerateImageAcceptedResponse = {
@@ -110,74 +59,6 @@ export type SubmitVisualBackgroundCleanupResponse = {
     versionNumber: number
 }
 
-export type SubmitExperimentReviewResponse = {
-    success: true
-    requestId: string
-    review: CreatureTransformationExperimentReview
-    classification: ExperimentReviewClassification
-}
-export type SubmitLineageComparisonReviewResponse = { success: true, requestId: string }
-
-export type LineageComparisonReview = Readonly<{
-    profileId: string
-    creatureId: string
-    lineageRequestId: string
-    currentRequestId: string | null
-    scores: { creativeSurprise: 1 | 2 | 3 | 4 | 5, targetTransformationStrength: 1 | 2 | 3 | 4 | 5, creatureContinuity: 1 | 2 | 3 | 4 | 5, lineagePreservation: 1 | 2 | 3 | 4 | 5, nonTargetStability: 1 | 2 | 3 | 4 | 5 }
-    preferredResult: 'CURRENT' | 'LINEAGE_FIRST' | 'NONE'
-    createdAt: string
-    updatedAt: string
-}>
-
-export type GetLineageComparisonReviewsResponse = {
-    success: true
-    requestId: string
-    reviews: readonly LineageComparisonReview[]
-}
-
-export type BenchmarkResultEntry = Readonly<{
-    transformationRequestId: string
-    benchmarkCaseId: string
-    generationProfileId: string
-    conceptSeed: string
-    provider: string | null
-    model: string | null
-    quality: 'low' | 'medium' | 'high' | null
-    promptTemplateVersion: string | null
-    promptSha256: string | null
-    visualTraitId: string | null
-    intensity: number | null
-    status: 'RESERVED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'
-    assetReadiness: CreatureTransformationAssetReadiness | null
-    validationWarnings: string[]
-    generationLatencyMs: number | null
-    estimatedCostUsd: number | null
-    actualCostUsd: number | null
-    sourceSha256: string | null
-    resultSha256: string | null
-    result?: {
-        signedUrl: string
-        expiresAt: string
-        mimeType: 'image/png'
-        width: number
-        height: number
-    }
-    review: CreatureTransformationExperimentReview | null
-    classification: ExperimentReviewClassification
-}>
-
-export type GetBenchmarkResultsResponse = {
-    success: true
-    requestId: string
-    catalog: {
-        cases: readonly CreatureTransformationBenchmarkCase[]
-        profiles: readonly CreatureImageGenerationProfile[]
-        maxRealImageEstimatedCostUsd: number | null
-    }
-    entries: readonly BenchmarkResultEntry[]
-    metrics: CreatureTransformationBenchmarkMetrics
-}
-
 export type CreatureVisualProgressResponse = Readonly<{
     success: true
     requestId: string
@@ -186,6 +67,13 @@ export type CreatureVisualProgressResponse = Readonly<{
     lastFailure: { requestId: string; code: string; message: string } | null
     currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
     history: readonly SelectableCreatureVisualVersion[]
+    /** Canonical anatomical state and the targets it offers. */
+    bodyPlan: {
+        id: BodyPlanId
+        label: string
+        availableEvolutionTargets: readonly EvolutionTargetId[]
+        adoptedBodyPlanMutationIds: readonly BodyPlanMutationId[]
+    } | null
 }>
 
 export type CurrentCreatureVisualApiResponse = Readonly<{
@@ -205,6 +93,8 @@ export type AdoptCreatureTransformationResponse = Readonly<{
     success: true
     requestId: string
     version: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
+    /** The canonical body plan after adoption; a structural mutation changes it. */
+    bodyPlanId: BodyPlanId | null
 }>
 
 export type RollbackCreatureVisualVersionResponse = AdoptCreatureTransformationResponse
@@ -221,7 +111,7 @@ export type TransformationRequestStatusResponse = {
         estimatedCostUsd?: number
         actualCostUsd?: number
     }
-    /** Available only for experimental A/B requests owned by the authenticated profile. */
+    /** Available only for experimental Lab requests owned by the authenticated profile. */
     prompt?: {
         text: string
         sha256: string
@@ -256,12 +146,15 @@ export type TransformationRequestStatusResponse = {
         evolutionaryFunction: string
         warnings: string[]
     }
-    /** Lab-only metadata for an isolated FLUX step. */
+    /** Metadata of the FLUX evolution behind this request. */
     fluxSnapshot?: {
         conceptName: string
         mutationIdea: string
-        evolutionTargetId: string
+        evolutionTargetId: EvolutionTargetId
         evolutionFunction: string
+        capability: EvolutionCapability
+        bodyPlanMutationId?: BodyPlanMutationId
+        resultBodyPlanId?: BodyPlanId
     }
 }
 
@@ -290,7 +183,6 @@ export type GeneratedImageCatalogResponse = Readonly<{
         creatureId: string
         createdAt: string
         completedAt: string | null
-        imageProviderMode: 'MOCK' | 'REAL' | null
         provider: string | null
         model: string | null
         promptTemplateVersion: string | null
@@ -307,6 +199,18 @@ export type GeneratedImageCatalogResponse = Readonly<{
     }[]
 }>
 
-export type GenerateImageErrorResponse = CreatureTransformationErrorResponse
-export type GenerateImageApiResponse = GenerateImageResponse | GenerateImageAcceptedResponse | GenerateImageErrorResponse
-export type CreatureTransformationApiResponse = GenerateConceptApiResponse | GenerateImageApiResponse | TransformationRequestStatusResponse | CreatureTransformationLabUsageResponse | GeneratedImageCatalogResponse | SubmitBackgroundRemovalCandidateResponse | ListVisualBackgroundCleanupResponse | SubmitVisualBackgroundCleanupResponse | SubmitExperimentReviewResponse | SubmitLineageComparisonReviewResponse | GetLineageComparisonReviewsResponse | GetBenchmarkResultsResponse | CreatureVisualProgressResponse | CurrentCreatureVisualApiResponse | GameCreatureVisualsResponse | AdoptCreatureTransformationResponse | RollbackCreatureVisualVersionResponse
+export type GenerateImageApiResponse = GenerateImageAcceptedResponse | CreatureTransformationErrorResponse
+
+export type CreatureTransformationApiResponse =
+    | GenerateImageApiResponse
+    | TransformationRequestStatusResponse
+    | CreatureTransformationLabUsageResponse
+    | GeneratedImageCatalogResponse
+    | SubmitBackgroundRemovalCandidateResponse
+    | ListVisualBackgroundCleanupResponse
+    | SubmitVisualBackgroundCleanupResponse
+    | CreatureVisualProgressResponse
+    | CurrentCreatureVisualApiResponse
+    | GameCreatureVisualsResponse
+    | AdoptCreatureTransformationResponse
+    | RollbackCreatureVisualVersionResponse

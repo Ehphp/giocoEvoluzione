@@ -1,4 +1,5 @@
 import type { CreatureVisualVersion, PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
+import { readBodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { CreatureVisualProgressTrack } from '../../../shared/creature-transformations/visual-progression.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
@@ -92,9 +93,9 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
 export class SupabaseCreatureVisualProgressionRepository {
     constructor(private readonly client: CreatureVisualProgressionRepositoryClient) { }
 
-    async selectTrack(input: { profileId: string; creatureId: string; visualTraitId?: VisualTraitId; evolutionTargetId?: EvolutionTargetId; target: number }): Promise<CreatureVisualProgressTrack> {
+    async selectTrack(input: { profileId: string; creatureId: string; evolutionTargetId: EvolutionTargetId; target: number }): Promise<CreatureVisualProgressTrack> {
         return mapProgressTrack(await this.rpc('select_creature_visual_progress_track', {
-            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_visual_trait_id: input.visualTraitId ?? null, p_evolution_target_id: input.evolutionTargetId ?? null, p_target: input.target,
+            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_visual_trait_id: null, p_evolution_target_id: input.evolutionTargetId, p_target: input.target,
         }))
     }
 
@@ -150,14 +151,22 @@ export class SupabaseCreatureVisualProgressionRepository {
     }
 
     async listHistory(input: { profileId: string; creatureId: string }): Promise<PreviousCreatureTransformationSummary[]> {
-        const { data, error } = await this.client.from('creature_visual_versions').select('version_number, visual_trait_id, evolution_target_id, evolution_function, mutation_archetype, primary_body_area, supporting_body_areas, concept_name').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('version_number', { ascending: true }).limit(8)
+        const { data, error } = await this.client.from('creature_visual_versions').select('version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('version_number', { ascending: true }).limit(8)
         if (error) throw new CreatureVisualProgressionRepositoryError('CURRENT_VISUAL_UNAVAILABLE', 'Impossibile recuperare lo storico visuale.', { cause: error })
         const rows = Array.isArray(data) ? data : data ? [data] : []
         return rows.flatMap((row) => {
             const item = record(row)
-            return item && string(item.visual_trait_id) && string(item.concept_name)
-                ? [{ versionNumber: number(item.version_number), visualTraitId: string(item.visual_trait_id)! as VisualTraitId, conceptName: string(item.concept_name)!, evolutionTargetId: nullableString(item.evolution_target_id) as EvolutionTargetId | null, evolutionFunction: nullableString(item.evolution_function) as EvolutionFunctionId | null, mutationArchetype: nullableString(item.mutation_archetype) as PreviousCreatureTransformationSummary['mutationArchetype'], primaryBodyArea: nullableString(item.primary_body_area) as PreviousCreatureTransformationSummary['primaryBodyArea'], supportingBodyAreas: strings(item.supporting_body_areas) }]
-                : []
+            if (!item || !string(item.visual_trait_id) || !string(item.concept_name)) return []
+            const snapshot = record(item.concept_snapshot)
+            const bodyPlanMutationId = readBodyPlanMutationId(snapshot)
+            return [{
+                versionNumber: number(item.version_number), visualTraitId: string(item.visual_trait_id)! as VisualTraitId,
+                conceptName: string(item.concept_name)!,
+                evolutionTargetId: nullableString(item.evolution_target_id) as EvolutionTargetId | null,
+                evolutionFunction: nullableString(item.evolution_function) as EvolutionFunctionId | null,
+                ...(snapshot && typeof snapshot.mutationIdea === 'string' ? { mutationIdea: snapshot.mutationIdea } : {}),
+                ...(bodyPlanMutationId ? { bodyPlanMutationId } : {}),
+            }]
         })
     }
 

@@ -7,6 +7,8 @@ export const BODY_AREAS = Object.freeze([
     'CHEST',
     'FORELIMBS',
     'HIND_LIMBS',
+    'WINGS',
+    'TENTACLES',
     'TAIL',
     'SKIN_SURFACE',
 ] as const)

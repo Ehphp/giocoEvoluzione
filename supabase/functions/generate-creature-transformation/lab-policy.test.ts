@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 
 describe('creature transformation lab policy', () => {
-    it('is disabled by default and reads only explicitly allowed concept modes', () => {
+    it('is closed by default: no lab, no access lists, no configured FLUX pipeline', () => {
         const policy = readCreatureTransformationLabPolicy(() => undefined)
 
         expect(policy.enabled).toBe(false)
-        expect(policy.allowedConceptModes.size).toBe(0)
-        expect(policy.allowedImageProviderModes.size).toBe(0)
+        expect(policy.paidGenerationProfileIds.size).toBe(0)
+        expect(policy.labProfileIds.size).toBe(0)
         expect(policy.signedUrlTtlSeconds).toBe(300)
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
@@ -17,96 +17,83 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
-        expect(policy.lineageExperimentAllowedProfileIds.size).toBe(0)
-        expect(policy.expressiveConceptExperimentEnabled).toBe(false)
-        expect(policy.visualProgression.productionConceptCreativeProfile).toBe('CONSERVATIVE')
-        expect(policy.realImage).toMatchObject({ enabled: false, provider: null, apiKey: null, model: null, quality: 'medium', timeoutMs: 120000, estimatedCostUsd: null, maxEstimatedCostUsd: null })
+        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
+        expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, backgroundCleanupEnabled: false, winsRequired: 3 })
     })
 
-    it('parses the development policy without trusting client input', () => {
+    it('keeps the body-plan mutation capability disabled unless it is explicitly enabled', () => {
+        expect(readCreatureTransformationLabPolicy(() => undefined).bodyPlanMutation.enabled).toBe(false)
+        expect(readCreatureTransformationLabPolicy((name) => ({ CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'yes' })[name]).bodyPlanMutation.enabled).toBe(false)
+        expect(readCreatureTransformationLabPolicy((name) => ({ CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true' })[name]).bodyPlanMutation.enabled).toBe(true)
+    })
+
+    it('reads the server-only FLUX configuration and the access lists without trusting client input', () => {
         const policy = readCreatureTransformationLabPolicy((name) => ({
             CREATURE_TRANSFORMATION_LAB_ENABLED: 'true',
-            CREATURE_TRANSFORMATION_ALLOWED_CONCEPT_MODES: 'MOCK, AI, invalid',
-            CREATURE_TRANSFORMATION_ALLOWED_IMAGE_PROVIDER_MODES: 'MOCK, REAL, invalid',
             CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS: '180',
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '12',
             CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '3.25',
             CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS: '240',
-            CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT: '180',
-            CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT: '10',
-            CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT: '2',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS: '60',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED: 'true',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER: 'OPENAI',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1, profile-2',
-            CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS: 'profile-1',
-            CREATURE_TRANSFORMATION_EXPRESSIVE_CONCEPT_EXPERIMENT_ENABLED: 'true',
-            CREATURE_VISUAL_PRODUCTION_CONCEPT_CREATIVE_PROFILE: 'EXPRESSIVE',
-            OPENAI_IMAGE_API_KEY: 'server-only-test-key',
-            OPENAI_IMAGE_MODEL: 'configured-image-model',
-            OPENAI_IMAGE_QUALITY: 'high',
-            OPENAI_IMAGE_TIMEOUT_MS: '90000',
-            OPENAI_IMAGE_ESTIMATED_COST_USD: '0.12',
-            CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD: '0.25',
-            CREATURE_TRANSFORMATION_BENCHMARK_PROFILE_IDS: 'profile-1',
-            CREATURE_TRANSFORMATION_BENCHMARK_REVIEWER_PROFILE_IDS: 'profile-1',
-            CREATURE_TRANSFORMATION_IMAGE_GENERATION_PROFILES_JSON: '{"openai-medium-v1":{"provider":"OPENAI","model":"gpt-image-1.5","quality":"medium","promptTemplateVersion":"creature-transformation-v1","estimatedCostUsd":0.12,"enabled":true}}',
+            CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1, profile-2, not valid!',
+            CREATURE_TRANSFORMATION_LAB_PROFILE_IDS: 'profile-1',
+            FAL_FLUX_API_KEY: 'server-only-fal-key',
+            FAL_FLUX_MODEL: 'configured-flux-edit-model',
+            FAL_FLUX_TIMEOUT_MS: '45000',
+            FAL_FLUX_ESTIMATED_COST_USD: '0.0203',
+            FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
+            OPENAI_API_KEY: 'server-only-concept-key',
+            FLUX_MICRO_CONCEPT_MODEL: 'configured-micro-concept-model',
+            CREATURE_VISUAL_PROGRESSION_ENABLED: 'true',
+            CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
+            CREATURE_VISUAL_ADOPTION_ENABLED: 'true',
+            CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED: '4',
         })[name])
 
         expect(policy.enabled).toBe(true)
-        expect(policy.allowedConceptModes).toEqual(new Set(['MOCK', 'AI']))
-        expect(policy.allowedImageProviderModes).toEqual(new Set(['MOCK']))
         expect(policy.signedUrlTtlSeconds).toBe(180)
         expect(policy.dailyRequestLimit).toBe(12)
         expect(policy.dailyBudgetUsd).toBe(3.25)
         expect(policy.staleRequestSeconds).toBe(240)
-        expect(policy.dailyRealImageLimit).toBe(180)
-        expect(policy.globalDailyRealImageLimit).toBe(10)
-        expect(policy.globalConcurrentRealImageLimit).toBe(2)
-        expect(policy.realImageCooldownSeconds).toBe(60)
-        expect(policy.realImage).toMatchObject({ enabled: true, provider: 'OPENAI', allowedProfileIds: new Set(['profile-1', 'profile-2']), model: 'configured-image-model', quality: 'high', timeoutMs: 90000, estimatedCostUsd: 0.12, maxEstimatedCostUsd: 0.25 })
-        expect(policy.lineageExperimentAllowedProfileIds).toEqual(new Set(['profile-1']))
-        expect(policy.expressiveConceptExperimentEnabled).toBe(true)
-        expect(policy.visualProgression.productionConceptCreativeProfile).toBe('EXPRESSIVE')
-        expect(policy.benchmark.allowedProfileIds).toEqual(new Set(['profile-1']))
-        expect(policy.benchmark.reviewerProfileIds).toEqual(new Set(['profile-1']))
-        expect(policy.benchmark.generationProfiles.profiles.get('openai-medium-v1')?.model).toBe('gpt-image-1.5')
+        expect(policy.paidGenerationProfileIds).toEqual(new Set(['profile-1', 'profile-2']))
+        expect(policy.labProfileIds).toEqual(new Set(['profile-1']))
+        expect(policy.flux).toMatchObject({
+            apiKey: 'server-only-fal-key', model: 'configured-flux-edit-model', timeoutMs: 45000,
+            estimatedCostUsd: 0.0203, maxEstimatedCostUsd: 0.03, microConceptModel: 'configured-micro-concept-model',
+        })
+        expect(policy.visualProgression).toMatchObject({ enabled: true, productionGenerationEnabled: true, adoptionEnabled: true, winsRequired: 4 })
     })
 
-    it('uses bounded fail-safe defaults for invalid quote, budget and stale configuration', () => {
+    it('still honours the previously deployed lab allowlist variable', () => {
+        const policy = readCreatureTransformationLabPolicy((name) => ({ CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS: 'profile-9' })[name])
+
+        expect(policy.labProfileIds).toEqual(new Set(['profile-9']))
+    })
+
+    it('uses bounded fail-safe defaults for invalid quota, budget and cost configuration', () => {
         const policy = readCreatureTransformationLabPolicy((name) => ({
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '0',
             CREATURE_TRANSFORMATION_DAILY_BUDGET_USD: '-1',
             CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS: '999999',
-            OPENAI_IMAGE_TIMEOUT_MS: '999999',
-            OPENAI_IMAGE_ESTIMATED_COST_USD: '0',
+            FAL_FLUX_TIMEOUT_MS: '999999',
+            FAL_FLUX_ESTIMATED_COST_USD: '0',
         })[name])
 
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
-        expect(policy.realImage).toMatchObject({ timeoutMs: 120000, estimatedCostUsd: null })
+        expect(policy.flux).toMatchObject({ timeoutMs: 30_000, estimatedCostUsd: null })
     })
 
-    it('keeps visual progression disabled by default with one authoritative win target', () => {
-        const policy = readCreatureTransformationLabPolicy(() => undefined)
-        expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, winsRequired: 3 })
-    })
+    it('exposes no legacy pipeline switch, provider or benchmark configuration', () => {
+        const policy = readCreatureTransformationLabPolicy(() => 'true') as unknown as Record<string, unknown>
 
-    it('keeps FLUX opt-in and reads its server-only pilot configuration', () => {
-        const defaultPolicy = readCreatureTransformationLabPolicy(() => undefined)
-        expect(defaultPolicy.visualProgression.productionPipeline).toBe('legacy')
-
-        const fluxPolicy = readCreatureTransformationLabPolicy((name) => ({
-            CREATURE_VISUAL_PRODUCTION_PIPELINE: 'flux', FAL_FLUX_API_KEY: 'server-only-fal-key',
-            FAL_FLUX_MODEL: 'configured-flux-edit-model', FAL_FLUX_TIMEOUT_MS: '45000',
-            FAL_FLUX_ESTIMATED_COST_USD: '0.0203', FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
-            OPENAI_API_KEY: 'server-only-concept-key', FLUX_MICRO_CONCEPT_MODEL: 'configured-micro-concept-model',
-        })[name])
-
-        expect(fluxPolicy.visualProgression).toMatchObject({
-            productionPipeline: 'flux',
-            flux: { model: 'configured-flux-edit-model', timeoutMs: 45000, estimatedCostUsd: 0.0203, maxEstimatedCostUsd: 0.03, microConceptModel: 'configured-micro-concept-model' },
-        })
+        expect(policy).not.toHaveProperty('realImage')
+        expect(policy).not.toHaveProperty('benchmark')
+        expect(policy).not.toHaveProperty('allowedConceptModes')
+        expect(policy).not.toHaveProperty('allowedImageProviderModes')
+        expect(policy).not.toHaveProperty('expressiveConceptExperimentEnabled')
+        expect(policy).not.toHaveProperty('lineageExperimentAllowedProfileIds')
+        expect(policy.visualProgression).not.toHaveProperty('productionPipeline')
+        expect(policy.visualProgression).not.toHaveProperty('productionGenerationProfileId')
     })
 })

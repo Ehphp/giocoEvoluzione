@@ -11,8 +11,8 @@ import type {
 } from '../game/types'
 import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
 import { requireSupabase } from './supabase'
-import { isEvolutionTargetId, normalizeEvolutionDraftOptions } from '../../shared/creature-transformations/evolution-draft.ts'
-import type { EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
+import { normalizeEvolutionDraftOptions } from '../../shared/creature-transformations/evolution-draft.ts'
+import { isEvolutionTargetId, type EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
 
 export type GameRecord = {
     id: string
@@ -167,7 +167,29 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
     }
 }
 
+const reportedUnknownDraftOptions = new Set<string>()
+
+/**
+ * A persisted target id outside the current taxonomy means the database is behind the evolution
+ * target migration: the draft would silently stop being offered, so say it out loud once.
+ */
+function reportUnknownDraftOptions(value: unknown, normalized: readonly EvolutionTargetId[]): void {
+    if (!Array.isArray(value)) return
+    const unknown = value.filter((entry) => !isEvolutionTargetId(entry)).map((entry) => String(entry))
+    if (!unknown.length) return
+    const key = unknown.sort().join(',')
+    if (reportedUnknownDraftOptions.has(key)) return
+    reportedUnknownDraftOptions.add(key)
+    console.warn('Evolution draft options outside the current taxonomy were ignored. Apply the evolution target migration.', {
+        ignored: unknown,
+        offered: normalized,
+    })
+}
+
 export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
+    const evolutionDraftOptions = normalizeEvolutionDraftOptions(data.evolution_draft_options)
+    reportUnknownDraftOptions(data.evolution_draft_options, evolutionDraftOptions)
+
     return {
         id: String(data.id),
         game_id: String(data.game_id),
@@ -181,7 +203,7 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         creature_snapshot: data.creature_snapshot && typeof data.creature_snapshot === 'object'
             ? data.creature_snapshot as Record<string, unknown>
             : null,
-        evolution_draft_options: normalizeEvolutionDraftOptions(data.evolution_draft_options),
+        evolution_draft_options: evolutionDraftOptions,
         chosen_evolution_target_id: isEvolutionTargetId(data.chosen_evolution_target_id)
             ? data.chosen_evolution_target_id
             : null,

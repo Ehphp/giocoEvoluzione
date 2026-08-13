@@ -1,6 +1,8 @@
 import type { CreatureIdentityResolver, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
 import { CREATURE_IDENTITY_REGISTRY, type CreatureIdentityDefinition } from './identity-registry.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
+import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
+import type { BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
 
 export type StoredPlayerCreature = Readonly<{
     id: string
@@ -95,8 +97,14 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
         const previousTransformations = creature.currentVisualVersionId && this.repository.listPreviousTransformations
             ? await this.repository.listPreviousTransformations(creature.id)
             : []
+        // Adopted structural mutations, in adoption order, are what makes the canonical body
+        // plan of this individual differ from its starter topology.
+        const adoptedBodyPlanMutationIds = previousTransformations
+            .flatMap((entry): BodyPlanMutationId[] => (entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : []))
 
         return {
+            bodyPlan: resolveCanonicalBodyPlan({ baseCreatureKey: definition.baseCreatureKey, adoptedBodyPlanMutationIds }),
+            adoptedBodyPlanMutationIds,
             identity: {
                 creatureId: creature.id,
                 baseCreatureKey: definition.baseCreatureKey,

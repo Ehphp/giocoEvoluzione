@@ -195,16 +195,15 @@ API — stub `**/functions/v1/**` to reach their later states.
 
 ### Known pre-existing failures
 
-Ten tests across three files fail on a clean checkout. Confirm with `git stash` before assuming
+Three tests across two files fail on a clean checkout. Confirm with `git stash` before assuming
 your change caused one.
 
 - `supabase/functions/generate-creature-transformation/security-hardening.test.ts` fails on
   `expect(authProvider).not.toContain('.auth.signUp(')`. It lives in auth logic, not the UI.
   Leave it; do not "fix" it by editing the UI.
-- `CreatureTransformationLab.persistence.test.tsx` (7) and `CreatureTransformationLab.real.test.tsx`
-  (2) fail in their `button('Genera concept')` helper — the lab's single-pipeline flow was replaced
-  by the A/B workspace and that button no longer exists. The tests need rewriting against the
-  current flow, not the styling; a restyle cannot fix or break them.
+- `FluxEvolutionChainSimulator.test.tsx` (2) fails in its `window.localStorage.clear()` helper on
+  environments where the jsdom `localStorage` is unavailable (containers without
+  `--localstorage-file`). It is an environment limitation, not a component failure.
 
 ---
 

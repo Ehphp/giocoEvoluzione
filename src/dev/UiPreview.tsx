@@ -114,7 +114,7 @@ function DraftPreview() {
             <BattlePreview />
             {chosen ? null : (
                 <EvolutionDraftOverlay
-                    options={['TAIL', 'HEAD_AND_SENSES']}
+                    options={['TAIL', 'HEAD_AND_CROWN']}
                     creatureId={PREVIEW_CREATURE.id}
                     onChoose={async (targetId) => { setChosen(targetId) }}
                 />

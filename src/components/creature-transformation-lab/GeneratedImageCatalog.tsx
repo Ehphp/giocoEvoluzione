@@ -16,7 +16,7 @@ function formatDate(value: string | null): string {
 }
 
 function entryLabel(entry: CatalogEntry): string {
-    return `${entry.imageProviderMode ?? 'Immagine'} · ${formatDate(entry.completedAt ?? entry.createdAt)}`
+    return `${entry.provider ?? 'Immagine'} · ${formatDate(entry.completedAt ?? entry.createdAt)}`
 }
 
 export function GeneratedImageCatalog({ onClose }: GeneratedImageCatalogProps) {
@@ -70,7 +70,7 @@ export function GeneratedImageCatalog({ onClose }: GeneratedImageCatalogProps) {
                     onClick={() => setSelectedId(entry.transformationRequestId)}
                 >
                     <img src={entry.result.signedUrl} alt={`Risultato generato: ${entryLabel(entry)}`} />
-                    <span>{entry.imageProviderMode ?? 'Immagine'}</span>
+                    <span>{entry.provider ?? 'Immagine'}</span>
                     <small>{formatDate(entry.completedAt ?? entry.createdAt)}</small>
                 </button>)}
             </div>

@@ -1,8 +1,6 @@
-import type { CreatureTransformationConcept } from './concepts.ts'
+import type { BodyPlanMutationId } from './flux-evolution/body-plan-mutations.ts'
 import type { FluxEvolutionSnapshot } from './flux-evolution/micro-concept.ts'
-import type { BodyArea } from './body-areas.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
-import type { MutationArchetype } from './mutation-archetypes.ts'
 import type { VisualTraitId } from './visual-traits.ts'
 
 export type CreatureVisualVersionStatus = 'BASE' | 'ACTIVE' | 'SUPERSEDED' | 'REVOKED'
@@ -13,14 +11,19 @@ export type PreviousCreatureTransformationSummary = Readonly<{
     conceptName: string
     evolutionTargetId?: EvolutionTargetId | null
     evolutionFunction?: EvolutionFunctionId | null
-    mutationArchetype?: MutationArchetype | null
-    primaryBodyArea?: BodyArea | null
-    supportingBodyAreas?: readonly BodyArea[]
-    /** Present on FLUX snapshots; legacy concepts intentionally omit it. */
+    /** The idea the evolution actually realised, used to continue it instead of replacing it. */
     mutationIdea?: string
+    /** Set when this adopted version established a new canonical body plan. */
+    bodyPlanMutationId?: BodyPlanMutationId
 }>
 
-export type CreatureTransformationConceptSnapshot = CreatureTransformationConcept | FluxEvolutionSnapshot
+/**
+ * Snapshots persisted before the FLUX-only pipeline keep their original payload. They are read
+ * as opaque history: nothing in the runtime interprets them as generation instructions.
+ */
+export type LegacyCreatureConceptSnapshot = Readonly<Record<string, unknown>>
+
+export type CreatureTransformationConceptSnapshot = FluxEvolutionSnapshot | LegacyCreatureConceptSnapshot
 
 export type SelectableCreatureVisualVersion = Readonly<{
     id: string

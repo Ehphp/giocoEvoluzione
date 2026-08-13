@@ -1,79 +1,212 @@
-import type { EvolutionTargetId } from '../evolution-targets.ts'
-import type { CreatureBodyPlan } from './body-plan-registry.ts'
+import { EVOLUTION_TARGET_BY_ID, type EvolutionTargetId } from '../evolution-targets.ts'
+import { BODY_PLAN_MUTATION_BY_ID, type BodyPlanMutationDefinition, type BodyPlanMutationId, type EvolutionCapability } from './body-plan-mutations.ts'
+import { applyBodyPlanMutation, isEvolutionTargetAvailable, type BodyPlanId, type CreatureBodyPlan, type CreatureTopology } from './body-plan-registry.ts'
 
-export const FLUX_CREATIVE_MODES = Object.freeze(['BASELINE', 'EXPRESSIVE'] as const)
-export type FluxCreativeMode = (typeof FLUX_CREATIVE_MODES)[number]
-
+/**
+ * The anatomy contract is the deterministic half of a FLUX evolution: it states the topology
+ * that must survive, what the selected region is positively allowed to do, and the few things
+ * that make a result invalid. It prefers precise allowances over a cascade of disclaimers —
+ * a contract read as "make no visible change" produces exactly that.
+ */
 export type AnatomyContract = Readonly<{
     target: EvolutionTargetId
-    invariants: readonly string[]
-    targetRules: readonly string[]
-    /**
-     * Positive target-scoped freedom. This is deliberately kept beside the
-     * failure conditions so the image model does not read the contract as
-     * "make no visible change".
-     */
-    creativeAllowance: string
+    capability: EvolutionCapability
+    bodyPlanId: BodyPlanId
+    /** The body plan the result must show. For a structural mutation this is the new plan. */
+    resultBodyPlanId: BodyPlanId
+    topologyInvariants: readonly string[]
+    targetAllowances: readonly string[]
+    preservationRules: readonly string[]
+    /** Present only when a body-plan mutation is authorized. */
+    structuralChange?: string
+    bodyPlanMutationId?: BodyPlanMutationId
     failureConditions: readonly string[]
 }>
 
-function freeze(items: readonly string[]): readonly string[] {
-    return Object.freeze([...items])
-}
+export type AnatomyContractErrorCode = 'EVOLUTION_TARGET_NOT_AVAILABLE' | 'BODY_PLAN_MUTATION_NOT_AUTHORIZED'
 
-function limbInvariant(bodyPlan: CreatureBodyPlan): string {
-    const total = bodyPlan.forelimbs + bodyPlan.hindLimbs
-    return `Keep exactly ${bodyPlan.forelimbs} forelimbs, ${bodyPlan.hindLimbs} hind limbs and ${total} total limbs.`
-}
+export class AnatomyContractError extends Error {
+    readonly code: AnatomyContractErrorCode
 
-export function buildAnatomyContract(bodyPlan: CreatureBodyPlan, target: EvolutionTargetId): AnatomyContract {
-    const invariants = [
-        limbInvariant(bodyPlan),
-        `Keep exactly ${bodyPlan.tailCount} tail${bodyPlan.tailCount === 1 ? '' : 's'} and ${bodyPlan.wingCount} wing${bodyPlan.wingCount === 1 ? '' : 's'}.`,
-        `Keep the ${bodyPlan.bodyPlan} body plan.`,
-    ]
-    const commonFailures = [
-        'Do not add, duplicate, remove, split or relocate limbs, tails, wings, heads, faces or eyes.',
-        'Do not change non-target anatomy, pose, framing or composition.',
-    ]
-    const byTarget: Record<EvolutionTargetId, { rules: string[], creativeAllowance: string, failures: string[] }> = {
-        FORELIMBS: {
-            rules: ['Evolve only the existing forelimbs.', 'Keep original forelimb attachment points.', 'Keep hind limbs unchanged.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: substantially reshape the existing forelimbs through local volume, proportions, material, texture, membranes, ridges or other structures anchored to those limbs. A strong local silhouette change is desired.',
-            failures: ['Any added, removed, duplicated, split or relocated limb is invalid.'],
-        },
-        HIND_LIMBS: {
-            rules: ['Evolve only the existing hind limbs.', 'Keep original hind-limb attachment points.', 'Keep forelimbs unchanged.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: substantially reshape the existing hind limbs through local volume, proportions, material, texture, membranes, ridges or other structures anchored to those limbs. A strong local silhouette change is desired.',
-            failures: ['Any added, removed, duplicated, split or relocated limb is invalid.'],
-        },
-        TAIL: {
-            rules: ['Evolve only the existing tail or tails.', 'Keep every tail origin and attachment point unchanged.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: substantially reshape the existing tail through local volume, proportions, material, texture, fins, fans, ridges or other structures anchored to that tail. A strong local silhouette change is desired.',
-            failures: ['Any new, removed, duplicated, split or relocated tail is invalid.'],
-        },
-        HEAD_AND_SENSES: {
-            rules: ['Keep exactly one head, the recognisable face, identity eyes and main skull structure.', 'Limit the evolution to existing head and sensory features.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: substantially reshape target sensory structures through local material, texture, frills, filaments, crests or other features anchored to the existing head. Keep the recognisable face and identity eyes intact while making the local silhouette clearly evolved.',
-            failures: ['Extra heads, faces, eyes or appendages outside the existing head and sensory region are invalid.'],
-        },
-        TORSO_AND_BACK: {
-            rules: ['Evolve only the existing torso and back surface or structures.', 'Keep limb, tail, wing, head and face attachment points unchanged.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: substantially reshape the torso and back through local volume, proportions, material, texture, plates, membranes, ridges, frills or other structures anchored to the torso. A strong dorsal local silhouette change is desired.',
-            failures: ['A global body-plan or whole-creature silhouette replacement, or an unrelated new limb, tail, wing, head, face or eye is invalid.'],
-        },
-        SKIN: {
-            rules: ['Modify only surface, material, texture or pattern on existing anatomy.', 'Keep the body plan and recognisable silhouette stable.'],
-            creativeAllowance: 'Single-focus evolution, not necessarily small: make the skin material, texture, pattern and colour treatment striking and clearly readable across the selected surface, while keeping its structural anatomy and silhouette stable.',
-            failures: ['New appendages, structural anatomy changes or unnecessary silhouette changes are invalid.'],
-        },
+    constructor(code: AnatomyContractErrorCode, message: string) {
+        super(message)
+        this.name = 'AnatomyContractError'
+        this.code = code
     }
-    const selected = byTarget[target]
+}
+
+function freeze(items: readonly string[]): readonly string[] {
+    return Object.freeze(items.filter((item) => item.trim().length > 0))
+}
+
+function limbSentence(topology: CreatureTopology): string | null {
+    const limbs = topology.forelimbCount + topology.hindLimbCount
+    if (!limbs) return 'The creature has no limbs; it stays limbless.'
+    const pairs = limbs / 2
+    return Number.isInteger(pairs)
+        ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, at their current attachment points.`
+        : `Keep exactly ${limbs} limbs at their current attachment points.`
+}
+
+function countSentence(count: number, singular: string, plural: string): string | null {
+    return count > 0 ? `Keep exactly ${count} ${count === 1 ? singular : plural}.` : null
+}
+
+function absentSentence(topology: CreatureTopology): string | null {
+    const absent = [topology.wingCount === 0 ? 'wings' : null, topology.tentacleCount === 0 ? 'tentacles' : null, topology.tailCount === 0 ? 'a tail' : null]
+        .filter((entry): entry is string => entry !== null)
+    return absent.length ? `This creature has no ${absent.join(' and no ')}.` : null
+}
+
+function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
+    const topology = bodyPlan.topology
+    return [
+        `Keep exactly ${topology.headCount} head${topology.headCount === 1 ? '' : 's'} with the recognisable face of this individual.`,
+        limbSentence(topology),
+        countSentence(topology.wingCount, 'wing', 'wings'),
+        countSentence(topology.tentacleCount, 'tentacle', 'tentacles'),
+        countSentence(topology.tailCount, 'tail', 'tails'),
+        absentSentence(topology),
+        `Keep the ${bodyPlan.promptDescription}.`,
+    ].filter((entry): entry is string => entry !== null)
+}
+
+type TargetContract = Readonly<{ allowances: readonly string[], preservation: readonly string[], failures: readonly string[] }>
+
+const OTHER_REGIONS_STABLE = 'Every region outside the selected target keeps its current shape, proportions, material and colour treatment.'
+
+const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Object.freeze({
+    TAIL: {
+        allowances: [
+            'Reshape the existing tail freely: length, thickness, segmentation, tip, fins, fans, ridges, spikes and any structure anchored to that tail.',
+            'A strong change of the tail silhouette is wanted.',
+        ],
+        preservation: [OTHER_REGIONS_STABLE, 'The tail keeps its origin on the body.'],
+        failures: ['A second tail, a split tail or a tail growing from a different attachment point is invalid.'],
+    },
+    LIMBS_AND_FEET: {
+        allowances: [
+            'Treat all existing limbs as one system and evolve them together: length, mass, visible articulation, feet, toes, claws, pads, spurs, membranes and structures anchored to the limbs.',
+            'Strong changes of limb proportion, thickness and stance height are wanted.',
+        ],
+        preservation: [OTHER_REGIONS_STABLE, 'The limb count and every limb attachment point stay exactly as they are.'],
+        failures: ['Any added, removed, duplicated or relocated limb is invalid.'],
+    },
+    HEAD_AND_CROWN: {
+        allowances: [
+            'Develop the head crown and sensory apparatus: horns, antlers, antennae, crests, frills, ears, spurs, plates, whiskers and eye-region structures anchored to the existing skull.',
+            'The head silhouette may change strongly. Keep the face recognisable as the same individual — that means the same identity, not a pixel-identical head.',
+        ],
+        preservation: [OTHER_REGIONS_STABLE, 'One single head, one single face and the existing eye arrangement.'],
+        failures: ['A second head, a second face or extra eyes are invalid.'],
+    },
+    BODY_SHAPE: {
+        allowances: [
+            'Reshape the body itself: trunk length, overall volume, chest depth, back line, shoulder and hip mass, waist and general silhouette.',
+            'The creature may become clearly longer, shorter, heavier, leaner or differently balanced. This target is a change of body form, not an added plate or crest.',
+        ],
+        preservation: [
+            'Head, face, limb count, tail count and every attachment point stay as they are; limbs and tail simply follow the new body proportions.',
+            'The covering material and colour treatment stay as they are.',
+        ],
+        failures: [
+            'New limbs, new tails, new heads or new dorsal appendages are invalid on this target.',
+            'Adding plates, crests or spines instead of changing the body form is an invalid result for this target.',
+        ],
+    },
+    DORSAL_STRUCTURES: {
+        allowances: [
+            'Add or develop structures anchored to the back and spine: spines, crests, ridges, fins, plates, membranes, sails or humps, following the existing spine line.',
+            'These structures may be large and may change the upper silhouette strongly.',
+        ],
+        preservation: [
+            'Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.',
+        ],
+        failures: ['Dorsal structures may not become limbs, wings, tails or heads, and no other region may be reshaped to host them.'],
+    },
+    SKIN_AND_COVERING: {
+        allowances: [
+            'Rework the surface and covering over the existing anatomy: material, scale shape and grain, plating, fur, feathers, texture, pattern, colour treatment and translucency.',
+            'The treatment may be striking and clearly readable at gameplay scale.',
+        ],
+        preservation: ['The body plan, proportions and silhouette stay as they are; the covering follows the existing anatomy.'],
+        failures: ['New appendages or structural anatomy changes are invalid on this target.'],
+    },
+    WINGS: {
+        allowances: [
+            'Evolve the existing wings: span, membrane shape, spar structure, feathering, edge profile, folds and structures anchored to the wings.',
+            'A strong change of the wing silhouette is wanted.',
+        ],
+        preservation: [OTHER_REGIONS_STABLE, 'The wing count and wing attachment points stay exactly as they are.'],
+        failures: ['An added or removed wing pair is invalid.'],
+    },
+    TENTACLES: {
+        allowances: [
+            'Evolve the existing tentacles as one system: length, section, taper, suckers, barbs, terminal appendages and surface.',
+            'Strong changes of tentacle proportion are wanted.',
+        ],
+        preservation: [OTHER_REGIONS_STABLE, 'The tentacle count and their attachment ring stay exactly as they are.'],
+        failures: ['An added or removed tentacle is invalid.'],
+    },
+})
+
+const ANATOMICAL_FAILURES = Object.freeze([
+    'Adding, removing, duplicating or relocating heads, limbs, wings, tentacles or tails is invalid.',
+    'Only the selected target may carry the new mutation; another region receiving a new dominant mutation is invalid.',
+    'Changing pose, framing, camera distance or illustrated style is invalid.',
+])
+
+const STRUCTURAL_FAILURES = Object.freeze([
+    'Only the structural change described above may alter the topology; every other count and attachment point is preserved.',
+    'Changing pose, framing, camera distance or illustrated style is invalid.',
+])
+
+function resolveAuthorizedMutation(input: {
+    bodyPlan: CreatureBodyPlan
+    evolutionTargetId: EvolutionTargetId
+    capability: EvolutionCapability
+    bodyPlanMutationId?: BodyPlanMutationId
+}): BodyPlanMutationDefinition | null {
+    if (input.capability === 'ANATOMICAL_MUTATION') {
+        if (input.bodyPlanMutationId) {
+            throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'Una mutazione strutturale richiede la capability BODY_PLAN_MUTATION.')
+        }
+        return null
+    }
+    const mutation = input.bodyPlanMutationId ? BODY_PLAN_MUTATION_BY_ID[input.bodyPlanMutationId] : undefined
+    if (!mutation) throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'La capability BODY_PLAN_MUTATION richiede una mutazione strutturale del catalogo.')
+    if (mutation.evolutionTargetId !== input.evolutionTargetId) {
+        throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'La mutazione strutturale non appartiene al target selezionato.')
+    }
+    if (!applyBodyPlanMutation(input.bodyPlan, mutation.id)) {
+        throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'Il body-plan corrente non prevede questa mutazione strutturale.')
+    }
+    return mutation
+}
+
+export function buildAnatomyContract(input: {
+    bodyPlan: CreatureBodyPlan
+    evolutionTargetId: EvolutionTargetId
+    capability?: EvolutionCapability
+    bodyPlanMutationId?: BodyPlanMutationId
+}): AnatomyContract {
+    const capability: EvolutionCapability = input.capability ?? 'ANATOMICAL_MUTATION'
+    if (!isEvolutionTargetAvailable(input.bodyPlan, input.evolutionTargetId)) {
+        throw new AnatomyContractError('EVOLUTION_TARGET_NOT_AVAILABLE', 'Il target evolutivo non e disponibile per il body-plan corrente.')
+    }
+    const mutation = resolveAuthorizedMutation({ ...input, capability })
+    const resultBodyPlan = mutation ? applyBodyPlanMutation(input.bodyPlan, mutation.id)! : input.bodyPlan
+    const target = EVOLUTION_TARGET_BY_ID[input.evolutionTargetId]
+    const contract = TARGET_CONTRACTS[input.evolutionTargetId]
     return Object.freeze({
-        target,
-        invariants: freeze(invariants),
-        targetRules: freeze(selected.rules),
-        creativeAllowance: selected.creativeAllowance,
-        failureConditions: freeze([...commonFailures, ...selected.failures]),
+        target: input.evolutionTargetId,
+        capability,
+        bodyPlanId: input.bodyPlan.id,
+        resultBodyPlanId: resultBodyPlan.id,
+        topologyInvariants: freeze(topologyInvariants(resultBodyPlan)),
+        targetAllowances: freeze([`Work on ${target.promptRegion}.`, ...contract.allowances]),
+        preservationRules: freeze(mutation ? [OTHER_REGIONS_STABLE, ...mutation.structuralGuardrails] : contract.preservation),
+        ...(mutation ? { structuralChange: mutation.structuralChange, bodyPlanMutationId: mutation.id } : {}),
+        failureConditions: freeze(mutation ? STRUCTURAL_FAILURES : [...ANATOMICAL_FAILURES, ...contract.failures]),
     })
 }

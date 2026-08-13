@@ -1,34 +1,63 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildAnatomyContract } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
-import { CREATURE_BODY_PLAN_REGISTRY } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
-import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
+import { BODY_PLANS } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
+import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
+import { FluxMicroConceptGenerator, composeFluxMicroConceptInstructions } from './flux-micro-concept-generator.ts'
+import { TEST_CREATURE_IDENTITY } from './test-creature-fixtures.ts'
 
-const input = {
-    identity: { creatureId: 'one', baseCreatureKey: 'VERDANT_HATCHLING', description: 'Piccolo drago verde.', identityFeatures: ['occhi ambrati'], mutableVisualFeatures: ['verde'], styleDefinition: '3D stilizzato' },
-    evolutionTargetId: 'FORELIMBS' as const,
-    evolutionFunction: 'PROPULSION' as const,
-    anatomyContract: buildAnatomyContract(CREATURE_BODY_PLAN_REGISTRY.VERDANT_HATCHLING!, 'FORELIMBS'),
-    previousTransformations: [{ versionNumber: 2, visualTraitId: 'LOCOMOTION_ADAPTATION' as const, evolutionTargetId: 'TAIL' as const, conceptName: 'Timone foglia' }],
+const PREVIOUS = [
+    { versionNumber: 2, visualTraitId: 'LOCOMOTION_ADAPTATION' as const, evolutionTargetId: 'TAIL' as const, conceptName: 'Timone foglia', mutationIdea: 'coda larga' },
+    { versionNumber: 3, visualTraitId: 'ENERGY_REGULATION' as const, evolutionTargetId: 'SKIN_AND_COVERING' as const, conceptName: 'Pelle abissale', mutationIdea: 'pelle scura con venature luminose' },
+]
+
+function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET', structural = false) {
+    return buildFluxEvolutionPlan({
+        bodyPlan: BODY_PLANS.QUADRUPED,
+        evolutionTargetId,
+        previousTransformations: PREVIOUS,
+        seed: 'seed',
+        ...(structural ? { bodyPlanMutationEnabled: true, requestedBodyPlanMutationId: 'ADD_LIMB_PAIR' as const } : {}),
+    })
 }
 
-describe('FluxMicroConceptGenerator', () => {
-    it('uses strict structured output with target/history and no legacy concept contract', async () => {
-        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'], avoid: [] }) })))
-        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
+const input = { identity: TEST_CREATURE_IDENTITY, plan: planFor('SKIN_AND_COVERING') }
 
-        await expect(generator.generate(input)).resolves.toMatchObject({ conceptName: 'Pale rematrici' })
-        const request = JSON.parse(String(fetchImplementation.mock.calls[0]![1].body))
-        const prompt = request.input[0].content[0].text as string
-        expect(prompt).toContain('FORELIMBS')
-        expect(prompt).toContain('Functional direction: PROPULSION')
-        expect(prompt).toContain('clearly readable at gameplay scale')
-        expect(prompt).toContain('not as a limit on the concrete morphology')
+describe('FluxMicroConceptGenerator', () => {
+    it('briefs the model with target freedom, the anatomy contract and the target-aware lineage', () => {
+        const prompt = composeFluxMicroConceptInstructions(input)
+
+        expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
+        expect(prompt).toContain('TARGET FREEDOM')
+        expect(prompt).toContain('ANATOMY CONTRACT')
+        expect(prompt).toContain('CURRENT SOURCE IMAGE')
+        expect(prompt).toContain('CURRENT TARGET STATE')
+        expect(prompt).toContain('Pelle abissale')
+        expect(prompt).toMatch(/Develop it further/i)
+        expect(prompt).toContain('OTHER ESTABLISHED EVOLUTIONS')
         expect(prompt).toContain('Timone foglia')
+        expect(prompt).toMatch(/do not reinterpret it as the new mutation/i)
         expect(prompt).not.toContain('mutationArchetype')
         expect(prompt).not.toContain('colorEvolution')
-        expect(JSON.stringify(request)).toContain('additionalProperties')
+        expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION')
+    })
+
+    it('states the authorized structural change when the capability is used', () => {
+        const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('LIMBS_AND_FEET', true) })
+
+        expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
+        expect(prompt).toMatch(/one additional symmetrical pair of limbs/i)
+        expect(prompt).toContain('Keep exactly 6 limbs')
+    })
+
+    it('uses strict structured output and returns only the small micro-concept', async () => {
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Corteccia vitrea', mutationIdea: 'Placche vitree.', visualDetails: ['placche'], avoid: [] }) })))
+        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
+
+        await expect(generator.generate(input)).resolves.toMatchObject({ conceptName: 'Corteccia vitrea' })
+        const request = JSON.parse(String(fetchImplementation.mock.calls[0]![1].body))
+        expect(request.text.format.strict).toBe(true)
         expect(request.text.format.schema.required).toEqual(['conceptName', 'mutationIdea', 'visualDetails', 'avoid'])
+        expect(JSON.stringify(request)).toContain('additionalProperties')
     })
 
     it('retries one malformed schema response then rejects an invalid contract', async () => {
@@ -36,19 +65,8 @@ describe('FluxMicroConceptGenerator', () => {
             .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: '{bad json' })))
             .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: '', mutationIdea: 'idea', visualDetails: [] }) })))
         const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation: retry })
+
         await expect(generator.generate(input)).rejects.toMatchObject({ code: 'FLUX_CONCEPT_RESPONSE_INVALID' })
         expect(retry).toHaveBeenCalledTimes(2)
-    })
-
-    it('can produce a baseline brief without weakening the hard anatomy contract', async () => {
-        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'], avoid: [] }) })))
-        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
-
-        await generator.generate({ ...input, creativeMode: 'BASELINE' })
-
-        const prompt = JSON.parse(String(fetchImplementation.mock.calls[0]![1].body)).input[0].content[0].text as string
-        expect(prompt).toContain('Keep exactly 2 forelimbs, 2 hind limbs and 4 total limbs.')
-        expect(prompt).not.toContain('Single-focus evolution is not necessarily small')
-        expect(prompt).not.toContain('Creative allowance for the selected target')
     })
 })

@@ -18,7 +18,8 @@ import { ChevronIcon, DnaIcon, EvolutionTargetIcon, SparkIcon } from '../../ui/i
 import './CreatureVisualProgressionScreen.css'
 
 type Track = { id: string; status: 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'; visualTraitId: VisualTraitId | null; evolutionTargetId: EvolutionTargetId | null; progress: number; target: number; generatedRequestId: string | null }
-type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; lastFailure: { requestId: string; code: string; message: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }> }
+type CreatureBodyPlanSummary = { id: string; label: string; availableEvolutionTargets: readonly EvolutionTargetId[]; adoptedBodyPlanMutationIds: readonly string[] }
+type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; lastFailure: { requestId: string; code: string; message: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }>; bodyPlan: CreatureBodyPlanSummary | null }
 type Preview = { requestId: string; sourceUrl: string | null; resultUrl: string | null; sourceVersionId: string; conceptName: string; evolutionaryFunction: string; warnings: string[] }
 type ExperimentOnlyResult = { requestId: string; warnings: string[] }
 type Props = { creature: PlayerCreatureRecord; onBack: () => void; onVisualChanged: () => Promise<void> | void }
@@ -133,6 +134,11 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         if (progress?.track?.status === 'POST_PROCESSING' && requestId) void runBackgroundRemoval(requestId)
     }, [progress?.track?.generatedRequestId, progress?.track?.status, runBackgroundRemoval])
 
+    // Only the targets the creature's canonical body plan offers can be accumulated or spent.
+    const availableTargetProgress = useMemo(() => {
+        const available = progress?.bodyPlan?.availableEvolutionTargets
+        return available?.length ? (targetProgress ?? []).filter((entry) => available.includes(entry.evolutionTargetId)) : targetProgress ?? []
+    }, [progress?.bodyPlan, targetProgress])
     const currentTarget = useMemo(() => progress?.track?.evolutionTargetId ? targetLabel(progress.track.evolutionTargetId) : progress?.track?.visualTraitId ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
     async function generate() {
         if (!progress?.track) return
@@ -208,7 +214,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                             </Panel>
                         ) : (
                             <ul className="evolution-counters">
-                                {targetProgress.map((entry) => {
+                                {availableTargetProgress.map((entry) => {
                                     const ready = isEvolutionTargetReady(entry)
 
                                     return (

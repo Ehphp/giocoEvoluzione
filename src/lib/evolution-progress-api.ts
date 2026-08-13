@@ -1,5 +1,4 @@
-import { isEvolutionTargetId } from '../../shared/creature-transformations/evolution-draft.ts'
-import type { EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
+import { isEvolutionTargetId, type EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
 import { requireSupabase } from './supabase'
 
 /**

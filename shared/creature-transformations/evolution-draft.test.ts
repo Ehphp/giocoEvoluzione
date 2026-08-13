@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { EVOLUTION_TARGET_IDS } from './evolution-targets.ts'
 import {
+    DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS,
     DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED,
     EVOLUTION_DRAFT_OPTION_COUNT,
     awardedEvolutionTargetWin,
@@ -26,7 +26,7 @@ describe('evolution draft', () => {
 
             expect(options).toHaveLength(EVOLUTION_DRAFT_OPTION_COUNT)
             expect(new Set(options).size).toBe(EVOLUTION_DRAFT_OPTION_COUNT)
-            options.forEach((option) => expect(EVOLUTION_TARGET_IDS).toContain(option))
+            options.forEach((option) => expect(DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS).toContain(option))
         }
     })
 
@@ -38,14 +38,14 @@ describe('evolution draft', () => {
     })
 
     it('accepts a choice only among the options the player was offered', () => {
-        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN'], 'TAIL')).toBe(true)
-        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN'], 'FORELIMBS')).toBe(false)
-        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN'], 'NOT_A_TARGET')).toBe(false)
-        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN'], null)).toBe(false)
+        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN_AND_COVERING'], 'TAIL')).toBe(true)
+        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN_AND_COVERING'], 'LIMBS_AND_FEET')).toBe(false)
+        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN_AND_COVERING'], 'NOT_A_TARGET')).toBe(false)
+        expect(isChoosableEvolutionTarget(['TAIL', 'SKIN_AND_COVERING'], null)).toBe(false)
     })
 
     it('drops anything that is not a known target when reading persisted options', () => {
-        expect(normalizeEvolutionDraftOptions(['TAIL', 'nope', 42, 'SKIN'])).toEqual(['TAIL', 'SKIN'])
+        expect(normalizeEvolutionDraftOptions(['TAIL', 'nope', 42, 'SKIN_AND_COVERING'])).toEqual(['TAIL', 'SKIN_AND_COVERING'])
         expect(normalizeEvolutionDraftOptions(null)).toEqual([])
         expect(normalizeEvolutionDraftOptions('TAIL')).toEqual([])
     })
@@ -62,16 +62,24 @@ describe('evolution draft', () => {
         expect(isEvolutionTargetReady({ wins: 4, target: 3 })).toBe(true)
     })
 
-    it('reports every target, including those never accumulated on', () => {
+    it('reports every draftable target, including those never accumulated on', () => {
         const progress = completeEvolutionTargetProgress([{ evolutionTargetId: 'TAIL', wins: 2, target: 3 }])
 
-        expect(progress).toHaveLength(EVOLUTION_TARGET_IDS.length)
+        expect(progress).toHaveLength(DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS.length)
         expect(progress.find((entry) => entry.evolutionTargetId === 'TAIL')).toEqual({ evolutionTargetId: 'TAIL', wins: 2, target: 3 })
-        expect(progress.find((entry) => entry.evolutionTargetId === 'SKIN')).toEqual({
-            evolutionTargetId: 'SKIN',
+        expect(progress.find((entry) => entry.evolutionTargetId === 'SKIN_AND_COVERING')).toEqual({
+            evolutionTargetId: 'SKIN_AND_COVERING',
             wins: 0,
             target: DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED,
         })
+    })
+
+    it('draws only the targets the creature body plan offers', () => {
+        const serpentine = ['TAIL', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING'] as const
+        const options = drawEvolutionDraftOptions(sequence([.3, .8, .1, .6]), 2, serpentine)
+
+        expect(options).toHaveLength(2)
+        options.forEach((option) => expect(serpentine).toContain(option))
     })
 
     it('falls back to the default threshold for an unusable configured value', () => {

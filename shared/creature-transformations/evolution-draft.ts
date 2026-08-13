@@ -1,4 +1,5 @@
-import { EVOLUTION_TARGET_IDS, type EvolutionTargetId } from './evolution-targets.ts'
+import { isEvolutionTargetId, type EvolutionTargetId } from './evolution-targets.ts'
+import { BODY_PLANS } from './flux-evolution/body-plan-registry.ts'
 
 /**
  * Battle-start evolution draft.
@@ -7,12 +8,21 @@ import { EVOLUTION_TARGET_IDS, type EvolutionTargetId } from './evolution-target
  * the match credits a win to the chosen target's counter; losing or drawing credits nothing.
  * The draw and the choice are persisted server-side — the client never decides which counter
  * is credited.
+ *
+ * Which targets can be drawn comes from the creature's body plan, so a creature without limbs
+ * is never offered a limb evolution.
  */
 
 export const EVOLUTION_DRAFT_OPTION_COUNT = 2
 
 /** Wins needed on a single target before it can be spent on a transformation. */
 export const DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED = 3
+
+/**
+ * The targets of the starter body plan. The database draw uses the same list; a body plan with a
+ * different set is filtered server-side before a target can be selected or generated.
+ */
+export const DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS: readonly EvolutionTargetId[] = BODY_PLANS.QUADRUPED.evolutionTargets
 
 export type EvolutionDraft = Readonly<{
     options: readonly EvolutionTargetId[]
@@ -33,10 +43,6 @@ export function readEvolutionTargetWinsRequired(value: string | undefined): numb
         : DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED
 }
 
-export function isEvolutionTargetId(value: unknown): value is EvolutionTargetId {
-    return typeof value === 'string' && (EVOLUTION_TARGET_IDS as readonly string[]).includes(value)
-}
-
 /**
  * Draws the distinct targets offered at the start of a match.
  *
@@ -46,8 +52,9 @@ export function isEvolutionTargetId(value: unknown): value is EvolutionTargetId 
 export function drawEvolutionDraftOptions(
     random: () => number = Math.random,
     count = EVOLUTION_DRAFT_OPTION_COUNT,
+    availableTargets: readonly EvolutionTargetId[] = DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS,
 ): EvolutionTargetId[] {
-    const pool = [...EVOLUTION_TARGET_IDS]
+    const pool = [...availableTargets]
 
     for (let index = pool.length - 1; index > 0; index -= 1) {
         const swap = Math.floor(random() * (index + 1))
@@ -75,12 +82,13 @@ export function isEvolutionTargetReady(progress: Pick<EvolutionTargetProgress, '
     return progress.wins >= progress.target
 }
 
-/** Fills in the targets a creature has never accumulated on, so the UI always shows all six. */
+/** Fills in the targets a creature has never accumulated on, so the UI always shows all of them. */
 export function completeEvolutionTargetProgress(
     stored: readonly EvolutionTargetProgress[],
     winsRequired = DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED,
+    availableTargets: readonly EvolutionTargetId[] = DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS,
 ): EvolutionTargetProgress[] {
-    return EVOLUTION_TARGET_IDS.map((evolutionTargetId) => {
+    return availableTargets.map((evolutionTargetId) => {
         const entry = stored.find((candidate) => candidate.evolutionTargetId === evolutionTargetId)
 
         return entry ?? { evolutionTargetId, wins: 0, target: winsRequired }

@@ -1,12 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { createValidConcept, TEST_CREATURE_IDENTITY } from '../../../shared/creature-transformations/concept-test-fixtures.ts'
 import type { StoredVisualVersion, SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 import { orchestrateGenerateUnlockedTransformation, orchestrateGetCreatureVisualProgress, orchestrateGetCurrentCreatureVisual, orchestrateGetGameCreatureVisuals } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
-import { createInMemoryRequestRepository } from './test-request-repository.ts'
-import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
-import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
+import { createTestResolver } from './test-creature-fixtures.ts'
 
 const OPEN_PROFILE = 'friend-profile'
 const PILOT_PROFILE = 'pilot-profile'
@@ -34,14 +31,13 @@ function visualRepository(lastFailure: { requestId: string; code: string; messag
     return {
         async getTrack() {
             return lastFailure ? {
-                id: 'track-1', creatureId: CREATURE_ID, visualTraitId: 'IMPACT_ADAPTATION',
+                id: 'track-1', creatureId: CREATURE_ID, visualTraitId: null, evolutionTargetId: 'DORSAL_STRUCTURES',
                 status: 'READY', progress: 3, target: 3, readyAt: '2026-08-05T09:00:00.000Z',
                 generatedRequestId: null, completedVersionId: null,
             } : null
         },
         async getLatestExperiment() { return null },
         async getLatestFailure() { return lastFailure },
-        async listHistory() { return [] },
         async listVisualHistory({ profileId, creatureId }) { return [version(profileId, creatureId)] },
         async getCurrentVersion({ profileId, creatureId }) {
             return version(profileId, creatureId, profileId === PILOT_PROFILE ? 'IMPACT_ADAPTATION' : null)
@@ -67,6 +63,7 @@ function input(body: unknown) {
         requestId: 'request-1',
         body,
         policy,
+        resolver: createTestResolver(),
         visualRepository: visualRepository(),
         storage,
     }
@@ -75,7 +72,7 @@ function input(body: unknown) {
 describe('visual progression access', () => {
     it('allows every authenticated profile to read its visual progress and current visual', async () => {
         await expect(orchestrateGetCreatureVisualProgress(input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }) as never))
-            .resolves.toMatchObject({ success: true, currentVersion: { versionNumber: 1 } })
+            .resolves.toMatchObject({ success: true, currentVersion: { versionNumber: 1 }, bodyPlan: { id: 'QUADRUPED' } })
         await expect(orchestrateGetCurrentCreatureVisual(input({ operation: 'GET_CURRENT_VISUAL', creatureId: CREATURE_ID }) as never))
             .resolves.toMatchObject({ success: true, visual: { signedUrl: 'https://signed.example/verdant-hatchling-v1.png' } })
     })
@@ -98,7 +95,7 @@ describe('visual progression access', () => {
     })
 
     it('returns the latest failed generation for an otherwise ready track', async () => {
-        const failure = { requestId: 'failed-request', code: 'REAL_IMAGE_PROVIDER_FAILED', message: 'Il provider immagini non ha completato la richiesta.' }
+        const failure = { requestId: 'failed-request', code: 'FAL_FLUX_PROVIDER_ERROR', message: 'Il provider immagini non ha completato la richiesta.' }
         await expect(orchestrateGetCreatureVisualProgress({ ...input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }), visualRepository: visualRepository(failure) } as never))
             .resolves.toMatchObject({ success: true, lastFailure: failure })
     })
@@ -115,109 +112,14 @@ describe('visual progression access', () => {
         }) as never)).resolves.toMatchObject({ success: false, code: 'IMAGE_GENERATION_NOT_ALLOWED' })
     })
 
-    it('retains the resolved target direction when an unlocked concept is rejected', async () => {
-        const productionPolicy = readCreatureTransformationLabPolicy((name) => ({
-            CREATURE_VISUAL_PROGRESSION_ENABLED: 'true', CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_ENABLED: 'true', CREATURE_TRANSFORMATION_REAL_IMAGE_PROVIDER: 'OPENAI',
-            CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS: 'profile-1', OPENAI_IMAGE_API_KEY: 'test-key',
-            OPENAI_IMAGE_MODEL: 'test-model', OPENAI_IMAGE_ESTIMATED_COST_USD: '0.12', CREATURE_TRANSFORMATION_MAX_REAL_IMAGE_ESTIMATED_COST_USD: '1',
-        })[name])
-        const trackId = '00000000-0000-4000-8000-000000000004'
-        let resolvedVisualTraitId: string | null = null
-        const targetTrack = {
-            id: trackId, creatureId: CREATURE_ID, visualTraitId: null, evolutionTargetId: 'TORSO_AND_BACK' as const,
-            status: 'READY' as const, progress: 3, target: 3, readyAt: '2026-08-05T09:00:00.000Z', generatedRequestId: null, completedVersionId: null,
-        }
-        const targetVisualRepository = {
-            async getTrack() { return targetTrack },
-            async resolveTrackTrait({ visualTraitId }: { visualTraitId: string }) {
-                resolvedVisualTraitId = visualTraitId
-                return { ...targetTrack, visualTraitId: visualTraitId as typeof targetTrack.visualTraitId }
-            },
-            async startGeneration() { return { ...targetTrack, visualTraitId: resolvedVisualTraitId, status: 'GENERATING' as const } },
-            async completeGeneration() { return { ...targetTrack, visualTraitId: resolvedVisualTraitId } },
-        } as unknown as SupabaseCreatureVisualProgressionRepository
-        const persistence = createInMemoryRequestRepository()
-        const tasks: Promise<void>[] = []
-        const result = await orchestrateGenerateUnlockedTransformation({
-            profileId: 'profile-1', canGenerateImages: true, requestId: 'target-rejected',
-            body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: trackId, idempotencyKey: 'target-rejected-key' },
-            policy: productionPolicy,
-            resolver: {
-                async resolve() {
-                    return {
-                        identity: TEST_CREATURE_IDENTITY, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true,
-                        currentVisualVersionId: '00000000-0000-4000-8000-000000000005', currentVersionNumber: 1, previousTransformations: [],
-                    }
-                },
-            },
-            createGenerator: () => ({ metadata: { generator: 'invalid-target-concept', isMock: false }, async generateConcept() { return createValidConcept() } }),
-            createRealImageProvider: () => { throw new Error('the image provider must not run') },
-            deferBackgroundTask: (task) => { tasks.push(task) },
-            repository: persistence.repository, visualRepository: targetVisualRepository, storage: {} as never,
-            reviewRepository: {} as never,
-        } as never)
-
-        expect(result).toMatchObject({ success: true, accepted: true, requestPersistence: { status: 'RUNNING' } })
-        expect(tasks).toHaveLength(1)
-        await tasks[0]
-        expect(persistence.get('profile-1', 'target-rejected-key')).toMatchObject({
-            status: 'FAILED', errorCode: 'CONCEPT_REJECTED', evolutionTargetId: 'TORSO_AND_BACK', evolutionFunction: expect.any(String),
-        })
-    })
-
-    it('routes an explicitly enabled FLUX pilot through the shared post-processing lifecycle without invoking legacy generation', async () => {
-        const fluxPolicy = readCreatureTransformationLabPolicy((name) => ({
-            CREATURE_VISUAL_PROGRESSION_ENABLED: 'true', CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
-            CREATURE_VISUAL_PRODUCTION_PIPELINE: 'flux', FAL_FLUX_API_KEY: 'fal-test-key', FAL_FLUX_ESTIMATED_COST_USD: '0.0203', FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
-            OPENAI_API_KEY: 'concept-test-key', FLUX_MICRO_CONCEPT_MODEL: 'concept-test-model',
-        })[name])
-        const trackId = '00000000-0000-4000-8000-000000000006'
-        const targetTrack = { id: trackId, creatureId: CREATURE_ID, visualTraitId: null, evolutionTargetId: 'FORELIMBS' as const, status: 'READY' as const, progress: 3, target: 3, readyAt: null, generatedRequestId: null, completedVersionId: null }
-        const markBackgroundRemovalPending = vi.fn(async () => ({ ...targetTrack, status: 'POST_PROCESSING' as const }))
-        const targetVisualRepository = {
-            async getTrack() { return targetTrack },
-            async resolveTrackTrait({ visualTraitId }: { visualTraitId: string }) { return { ...targetTrack, visualTraitId: visualTraitId as never } },
-            async startGeneration() { return { ...targetTrack, visualTraitId: 'LOCOMOTION_ADAPTATION' as const, status: 'GENERATING' as const } },
-            markBackgroundRemovalPending,
-            async completeGeneration() { return targetTrack },
-        } as unknown as SupabaseCreatureVisualProgressionRepository
-        class FluxValidator extends ImageValidator {
-            calls = 0
-            override async validate() {
-                this.calls += 1
-                return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: this.calls === 1 ? 1024 : 768, height: this.calls === 1 ? 1536 : 1152, colorType: 6, hasAlpha: this.calls === 1, sha256: this.calls === 1 ? 'a'.repeat(64) : 'b'.repeat(64), bytes: 256 }, warnings: [] }
-            }
-        }
-        const persistence = createInMemoryRequestRepository()
-        const tasks: Promise<void>[] = []
-        const storage = {
-            async readCanonicalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
-            async saveRawResult() { return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
-            async createRawResultObjectPath() { return 'experiments/raw/profile-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png' },
-        }
-        const legacyGenerator = vi.fn(() => { throw new Error('legacy concept generator must not run') })
-        const legacyProvider = vi.fn(() => { throw new Error('OpenAI image provider must not run') })
-        const generateFluxMicroConcept = vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
-
-        const result = await orchestrateGenerateUnlockedTransformation({
-            profileId: 'profile-1', canGenerateImages: true, requestId: 'flux-pilot',
-            body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: trackId, idempotencyKey: 'flux-pilot-key' },
-            policy: fluxPolicy,
-            resolver: { async resolve() { return { identity: { ...TEST_CREATURE_IDENTITY, baseCreatureKey: 'VERDANT_HATCHLING' }, sourceImagePath: 'source.png', sourceSha256: 'a'.repeat(64), sourceIsBaseVersion: true, currentVisualVersionId: '00000000-0000-4000-8000-000000000005', currentVersionNumber: 1, previousTransformations: [] } } },
-            createGenerator: legacyGenerator, createRealImageProvider: legacyProvider,
-            createFluxMicroConceptGenerator: () => ({ generate: generateFluxMicroConcept } as never),
-            createFalFluxImageProvider: () => ({ async transform() { return { image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 } } } as never),
-            deferBackgroundTask: (task) => { tasks.push(task) }, repository: persistence.repository, visualRepository: targetVisualRepository,
-            storage: storage as never, reviewRepository: {} as never, validator: new FluxValidator(),
-        })
-
-        expect(result).toMatchObject({ success: true, accepted: true })
-        await tasks[0]
-        expect(legacyGenerator).not.toHaveBeenCalled()
-        expect(legacyProvider).not.toHaveBeenCalled()
-        expect(generateFluxMicroConcept).toHaveBeenCalledWith(expect.objectContaining({ evolutionTargetId: 'FORELIMBS', evolutionFunction: expect.any(String) }))
-        expect(markBackgroundRemovalPending).toHaveBeenCalledOnce()
-        expect(persistence.get('profile-1', 'flux-pilot-key')).toMatchObject({ status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY', promptTemplateVersion: 'flux-micro-v1', resultWidth: 768, resultHeight: 1152 })
+    it('refuses an unlocked generation while the FLUX pipeline is not configured', async () => {
+        await expect(orchestrateGenerateUnlockedTransformation({
+            ...input({
+                operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID,
+                progressTrackId: '00000000-0000-4000-8000-000000000004', idempotencyKey: 'unconfigured',
+            }),
+            profileId: PILOT_PROFILE,
+            canGenerateImages: true,
+        } as never)).resolves.toMatchObject({ success: false, code: 'FAL_FLUX_NOT_CONFIGURED' })
     })
 })

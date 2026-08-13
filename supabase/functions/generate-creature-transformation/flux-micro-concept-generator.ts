@@ -1,8 +1,8 @@
-import type { AnatomyContract, FluxCreativeMode } from '../../../shared/creature-transformations/flux-evolution/anatomy-contract.ts'
 import { parseFluxMicroConcept, type FluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import { describeCurrentTargetState, describeOtherEstablishedEvolutions } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
+import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
-import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
-import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 type FetchLike = typeof fetch
 
@@ -24,32 +24,29 @@ export type FluxMicroConceptGeneratorOptions = Readonly<{
 
 export type GenerateFluxMicroConceptInput = Readonly<{
     identity: CreatureSemanticIdentity
-    evolutionTargetId: EvolutionTargetId
-    evolutionFunction: EvolutionFunctionId
-    anatomyContract: AnatomyContract
-    previousTransformations: readonly PreviousCreatureTransformationSummary[]
-    /** BASELINE supports controlled prompt comparisons; production is expressive. */
-    creativeMode?: FluxCreativeMode
+    plan: FluxEvolutionPlan
 }>
 
-function instructions(input: GenerateFluxMicroConceptInput): string {
-    const expressive = input.creativeMode !== 'BASELINE'
-    const previous = input.previousTransformations.map((entry) => `${entry.evolutionTargetId ?? entry.visualTraitId}: ${entry.conceptName}${entry.mutationIdea ? ` — ${entry.mutationIdea}` : ''}`)
+export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConceptInput): string {
+    const plan = input.plan
+    const contract = plan.anatomyContract
+    const target = EVOLUTION_TARGET_BY_ID[plan.evolutionTargetId]
+    const structural = plan.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
-        expressive
-            ? 'Invent one local creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.'
-            : 'Invent one local creature mutation that is anatomically integrated and clearly readable at gameplay scale.',
-        `Selected anatomical target: ${input.evolutionTargetId}. Apply the new mutation exclusively there.${expressive ? ' Single-focus evolution is not necessarily small.' : ''}`,
-        `Functional direction: ${input.evolutionFunction}. Use it as inspiration for a coherent biological purpose, not as a limit on the concrete morphology.`,
-        ...(expressive ? ['Prefer a strong structural, material or silhouette change in the target over a merely decorative variation whenever that target permits it.'] : []),
-        `Creature identity: ${input.identity.description}. Preserve: ${input.identity.identityFeatures.join('; ')}.`,
-        `Hard anatomy contract: ${[...input.anatomyContract.invariants, ...input.anatomyContract.targetRules, ...input.anatomyContract.failureConditions].join(' ')}`,
-        ...(expressive ? [`Creative allowance for the selected target: ${input.anatomyContract.creativeAllowance}`] : []),
-        previous.length
-            ? `Adopted mutations to preserve and not repeat: ${previous.join('; ')}. If this target already evolved, develop what exists instead of replacing it.`
-            : 'There are no adopted mutations yet.',
-        'Do not write an image-generation prompt, technical instructions, body-area catalog, archetype, biological rationale, colour-evolution schema or extra fields.',
+        'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
+        `SELECTED TARGET: ${plan.evolutionTargetId} — ${target.promptRegion}. The new mutation lives exclusively there.`,
+        `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
+        `Functional direction: ${plan.evolutionFunction}. Use it as the biological purpose, not as a limit on the concrete morphology.`,
+        ...(structural
+            ? [`AUTHORIZED BODY-PLAN MUTATION: ${contract.structuralChange} Describe the mutation as this structural change actually realised on the creature.`]
+            : []),
+        `ANATOMY CONTRACT: ${contract.topologyInvariants.join(' ')}`,
+        `PRESERVE: ${contract.preservationRules.join(' ')}`,
+        `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
+        `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
+        `OTHER ESTABLISHED EVOLUTIONS: ${describeOtherEstablishedEvolutions(plan.lineage)}`,
+        'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a colour schema or extra fields.',
     ].join('\n')
 }
 
@@ -103,7 +100,7 @@ export class FluxMicroConceptGenerator {
                     body: JSON.stringify({
                         model: this.options.model,
                         store: false,
-                        input: [{ role: 'developer', content: [{ type: 'input_text', text: instructions(input) }] }],
+                        input: [{ role: 'developer', content: [{ type: 'input_text', text: composeFluxMicroConceptInstructions(input) }] }],
                         text: { format: { type: 'json_schema', name: 'flux_micro_concept', strict: true, schema: SCHEMA } },
                     }),
                     signal: controller.signal,

@@ -141,8 +141,8 @@ function TailIcon(props: IconProps) {
     )
 }
 
-/** Arti anteriori: a clawed forepaw. */
-function ForelimbsIcon(props: IconProps) {
+/** Arti e zampe: a clawed foot standing for the whole limb system. */
+function LimbsAndFeetIcon(props: IconProps) {
     return (
         <Svg {...props}>
             <path d="M4.6 12.6c0-3.4 3.3-5.8 7.4-5.8s7.4 2.4 7.4 5.8c0 4-3 7.2-7.4 7.2s-7.4-3.2-7.4-7.2Z" fill="currentColor" />
@@ -158,18 +158,8 @@ function ForelimbsIcon(props: IconProps) {
     )
 }
 
-/** Arti posteriori. */
-function HindLimbsIcon(props: IconProps) {
-    return (
-        <Svg {...props}>
-            <path d="M6 2.4c4 0 7 1.7 9 5 2 3.3 2.1 6.6.3 9.8l2.6 2.4c.9.8 1 2.1.2 3-.8.9-2.1.9-3 .1l-3.9-3.5c-1-.9-1.3-2.1-.9-3.4.6-2.1.3-3.9-1-5.4-1.3-1.5-3-2.3-5.2-2.3Z" fill="currentColor" />
-            <path d="M3.6 20.4c1.9.6 3.7.3 5.4-.9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" opacity=".5" />
-        </Svg>
-    )
-}
-
-/** Testa e sensi. */
-function HeadAndSensesIcon(props: IconProps) {
+/** Testa e corona: cranio con corna e creste. */
+function HeadAndCrownIcon(props: IconProps) {
     return (
         <Svg {...props}>
             <path d="M11.8 2.6c4.8 0 8.2 2.6 9.2 6.8.7 3-.3 5.6-2.8 7.7l.7 3.5c.2.8-.4 1.6-1.3 1.6H6.6c-2.3 0-3.8-1.4-4.2-3.8-.3-1.7-.5-3.2-.5-4.5 0-6.3 3.3-11.3 9.9-11.3Z" fill="currentColor" />
@@ -180,8 +170,8 @@ function HeadAndSensesIcon(props: IconProps) {
     )
 }
 
-/** Corpo e dorso. */
-function TorsoAndBackIcon(props: IconProps) {
+/** Strutture dorsali: dorso con spine e creste. */
+function DorsalStructuresIcon(props: IconProps) {
     return (
         <Svg {...props}>
             <path d="M3 15.6c0-4.8 3.6-8.2 9-8.2s9 3.4 9 8.2c0 3.6-2.5 5.9-6.3 5.9H9.3C5.5 21.5 3 19.2 3 15.6Z" fill="currentColor" />
@@ -191,8 +181,8 @@ function TorsoAndBackIcon(props: IconProps) {
     )
 }
 
-/** Pelle: overlapping scales, read through the gaps between them. */
-function SkinIcon(props: IconProps) {
+/** Pelle e rivestimento: overlapping scales, read through the gaps between them. */
+function SkinAndCoveringIcon(props: IconProps) {
     return (
         <Svg {...props}>
             <g fill="currentColor">
@@ -208,13 +198,50 @@ function SkinIcon(props: IconProps) {
     )
 }
 
+/** Forma del corpo: volume e proporzioni del tronco. */
+function BodyShapeIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M7.4 4.6c3.6-1.5 7.2-.4 9 2.6 1.9 3.1 1.3 6.9-1.4 9.3-2.7 2.4-6.6 2.7-9 .6-2.4-2.1-2.9-5.6-1.4-8.7.7-1.5 1.6-2.7 2.8-3.8Z" fill="currentColor" />
+            <path d="M2.4 3.2v3.4M2.4 20.8v-3.4M2.4 4.4h3.2M2.4 19.6h3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity=".55" />
+        </Svg>
+    )
+}
+
+/** Ali: membrana e nervature. */
+function WingsIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M12 4.2c2.6 3 5.6 4.6 9 4.8-1.2 5.2-4.4 8.4-9 9.6-4.6-1.2-7.8-4.4-9-9.6 3.4-.2 6.4-1.8 9-4.8Z" fill="currentColor" />
+            <path d="M12 6.6v11.2M8.4 8.8l2 7M15.6 8.8l-2 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity=".35" fill="none" />
+        </Svg>
+    )
+}
+
+/** Tentacoli: appendici avvolgenti con ventose. */
+function TentaclesIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M12 2.4c3.2 0 5.6 2.2 5.6 5.2 0 1.6-.6 2.8-1.6 4Z" fill="currentColor" />
+            <path d="M8.6 3.6c-2.4 1.2-3.6 3.2-3.6 6 0 3.4 1.8 6 4.4 8M12 4.2c0 4-.6 7.2-1.8 9.6-.9 1.9-.7 3.6.6 5.2M15.6 4.4c2.4 1.6 3.4 3.8 3 6.6-.4 2.6-1.8 4.8-4.2 6.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <g fill="currentColor" opacity=".45">
+                <circle cx="6.2" cy="14.4" r="1.1" />
+                <circle cx="11" cy="19.8" r="1.1" />
+                <circle cx="16.6" cy="15.6" r="1.1" />
+            </g>
+        </Svg>
+    )
+}
+
 const EVOLUTION_TARGET_ICONS: Record<EvolutionTargetId, (props: IconProps) => React.JSX.Element> = {
     TAIL: TailIcon,
-    FORELIMBS: ForelimbsIcon,
-    HIND_LIMBS: HindLimbsIcon,
-    HEAD_AND_SENSES: HeadAndSensesIcon,
-    TORSO_AND_BACK: TorsoAndBackIcon,
-    SKIN: SkinIcon,
+    LIMBS_AND_FEET: LimbsAndFeetIcon,
+    HEAD_AND_CROWN: HeadAndCrownIcon,
+    BODY_SHAPE: BodyShapeIcon,
+    DORSAL_STRUCTURES: DorsalStructuresIcon,
+    SKIN_AND_COVERING: SkinAndCoveringIcon,
+    WINGS: WingsIcon,
+    TENTACLES: TentaclesIcon,
 }
 
 /** Anatomical region glyph. Paints from `--gene-color*` when a `[data-gene]` ancestor sets them. */
