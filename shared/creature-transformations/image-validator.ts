@@ -16,6 +16,8 @@ export type ImageValidationProblemCode =
     | 'PNG_COLOR_TYPE_UNSUPPORTED'
     | 'PNG_ALPHA_REQUIRED'
     | 'PNG_ALPHA_COVERAGE_INVALID'
+    | 'FLUX_SUBJECT_CROPPED'
+    | 'PNG_FOREGROUND_DETECTION_FAILED'
     | 'RESULT_IMAGE_UNCHANGED'
     | 'SHA256_UNAVAILABLE'
 
@@ -35,9 +37,21 @@ export type ValidatedPngMetadata = {
     hasAlpha: boolean
     transparentPixelRatio?: number
     visiblePixelRatio?: number
+    foregroundBounds?: ForegroundBounds
     sha256: string
     bytes: number
 }
+
+export type ForegroundBounds = Readonly<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+    marginLeft: number
+    marginTop: number
+    marginRight: number
+    marginBottom: number
+}>
 
 export type ImageValidationResult =
     | { valid: true; metadata: ValidatedPngMetadata; warnings: ImageValidationWarningCode[] }
@@ -54,6 +68,8 @@ export type ImageValidationInput = Readonly<{
     requireAlpha?: boolean
     requireAlphaCoverage?: boolean
     requireTransparentEdges?: boolean
+    /** Reject an opaque FLUX render whose detected subject enters this canvas margin. */
+    requireSubjectMargin?: boolean | number
 }>
 
 function problem(code: ImageValidationProblemCode, message: string): ImageValidationProblem {
@@ -83,7 +99,9 @@ async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number;
     const stride = input.width * bytesPerPixel
     const compressedCopy = new Uint8Array(input.compressedIdat.length)
     compressedCopy.set(input.compressedIdat)
-    const decoded = new Uint8Array(await new Response(new Blob([compressedCopy.buffer]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())
+    const stream = new Response(compressedCopy).body
+    if (!stream) throw new Error('Lo stream PNG non e disponibile.')
+    const decoded = new Uint8Array(await new Response(stream.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())
     if (decoded.length !== input.height * (stride + 1)) throw new Error('La dimensione dei pixel PNG decompressi non e valida.')
 
     let offset = 0
@@ -143,6 +161,101 @@ async function alphaCoverage(input: { compressedIdat: Uint8Array; width: number;
     }
 }
 
+async function inflatePngIdat(compressedIdat: Uint8Array): Promise<Uint8Array> {
+    if (typeof DecompressionStream === 'undefined') throw new Error('DecompressionStream non disponibile.')
+    const copy = new Uint8Array(compressedIdat.length)
+    copy.set(compressedIdat)
+    const stream = new Response(copy).body
+    if (!stream) throw new Error('Lo stream PNG non e disponibile.')
+    return new Uint8Array(await new Response(stream.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())
+}
+
+function restorePngScanline(scanline: Uint8Array, previous: Uint8Array, filter: number, bytesPerPixel: number): void {
+    for (let index = 0; index < scanline.length; index += 1) {
+        const left = index >= bytesPerPixel ? scanline[index - bytesPerPixel] : 0
+        const above = previous[index]
+        const upperLeft = index >= bytesPerPixel ? previous[index - bytesPerPixel] : 0
+        if (filter === 1) scanline[index] = (scanline[index] + left) & 0xff
+        else if (filter === 2) scanline[index] = (scanline[index] + above) & 0xff
+        else if (filter === 3) scanline[index] = (scanline[index] + Math.floor((left + above) / 2)) & 0xff
+        else if (filter === 4) {
+            const p = left + above - upperLeft
+            const pa = Math.abs(p - left); const pb = Math.abs(p - above); const pc = Math.abs(p - upperLeft)
+            scanline[index] = (scanline[index] + (pa <= pb && pa <= pc ? left : pb <= pc ? above : upperLeft)) & 0xff
+        } else if (filter !== 0) throw new Error('Il filtro PNG non e supportato.')
+    }
+}
+
+function median(values: number[]): number {
+    values.sort((left, right) => left - right)
+    return values[Math.floor(values.length / 2)] ?? 0
+}
+
+/** FLUX raw renders have a flat background, so corner colour outliers form the subject mask. */
+async function foregroundBounds(input: { compressedIdat: Uint8Array; width: number; height: number; colorType: number; bitDepth: number; interlaceMethod: number }): Promise<ForegroundBounds> {
+    if (!([2, 6].includes(input.colorType)) || input.bitDepth !== 8 || input.interlaceMethod !== 0) throw new Error('Il RAW FLUX deve essere RGB/RGBA 8-bit non interlacciato per verificare il framing.')
+    const bytesPerPixel = input.colorType === 6 ? 4 : 3
+    const stride = input.width * bytesPerPixel
+    const decoded = await inflatePngIdat(input.compressedIdat)
+    if (decoded.length !== input.height * (stride + 1)) throw new Error('La dimensione dei pixel PNG decompressi non e valida.')
+    const rows: Uint8Array[] = []
+    let offset = 0
+    let previous = new Uint8Array(stride)
+    for (let y = 0; y < input.height; y += 1) {
+        const filter = decoded[offset++]!
+        const row = decoded.slice(offset, offset + stride)
+        offset += stride
+        restorePngScanline(row, previous, filter, bytesPerPixel)
+        rows.push(row)
+        previous = row
+    }
+
+    const patchWidth = Math.max(2, Math.floor(input.width * 0.04))
+    const patchHeight = Math.max(2, Math.floor(input.height * 0.04))
+    const red: number[] = []; const green: number[] = []; const blue: number[] = []
+    for (const yStart of [0, input.height - patchHeight]) for (const xStart of [0, input.width - patchWidth]) {
+        for (let y = yStart; y < yStart + patchHeight; y += 2) for (let x = xStart; x < xStart + patchWidth; x += 2) {
+            const pixel = x * bytesPerPixel; const row = rows[y]!
+            red.push(row[pixel]!); green.push(row[pixel + 1]!); blue.push(row[pixel + 2]!)
+        }
+    }
+    const background = [median(red), median(green), median(blue)]
+    const total = input.width * input.height
+    const foreground = new Uint8Array(total)
+    for (let y = 0; y < input.height; y += 1) for (let x = 0; x < input.width; x += 1) {
+        const pixel = x * bytesPerPixel; const row = rows[y]!
+        const alpha = input.colorType === 6 ? row[pixel + 3]! : 255
+        const distance = (row[pixel]! - background[0]!) ** 2 + (row[pixel + 1]! - background[1]!) ** 2 + (row[pixel + 2]! - background[2]!) ** 2
+        if (alpha >= 128 && distance >= 24 * 24) foreground[y * input.width + x] = 1
+    }
+
+    const queue = new Int32Array(total)
+    const minimumComponentPixels = Math.max(6, Math.ceil(total * 0.000005))
+    let left = input.width; let top = input.height; let right = -1; let bottom = -1
+    for (let start = 0; start < total; start += 1) {
+        if (!foreground[start]) continue
+        let head = 0; let tail = 0; let pixels = 0
+        let componentLeft = input.width; let componentTop = input.height; let componentRight = -1; let componentBottom = -1
+        foreground[start] = 0; queue[tail++] = start
+        while (head < tail) {
+            const current = queue[head++]!
+            const x = current % input.width; const y = Math.floor(current / input.width)
+            pixels += 1; componentLeft = Math.min(componentLeft, x); componentTop = Math.min(componentTop, y); componentRight = Math.max(componentRight, x); componentBottom = Math.max(componentBottom, y)
+            for (const next of [current - 1, current + 1, current - input.width, current + input.width]) {
+                if (next < 0 || next >= total) continue
+                const nextX = next % input.width
+                if (Math.abs(nextX - x) > 1 || !foreground[next]) continue
+                foreground[next] = 0; queue[tail++] = next
+            }
+        }
+        if (pixels >= minimumComponentPixels) {
+            left = Math.min(left, componentLeft); top = Math.min(top, componentTop); right = Math.max(right, componentRight); bottom = Math.max(bottom, componentBottom)
+        }
+    }
+    if (right < 0) throw new Error('Non e stato rilevato un soggetto distinto dallo sfondo RAW FLUX.')
+    return { left, top, right, bottom, marginLeft: left, marginTop: top, marginRight: input.width - 1 - right, marginBottom: input.height - 1 - bottom }
+}
+
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
     if (!globalThis.crypto?.subtle) throw new Error('Web Crypto SubtleCrypto non disponibile.')
     const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes.slice().buffer)
@@ -168,7 +281,7 @@ export class ImageValidator {
         if (problems.length) return { valid: false, problems }
 
         let offset = PNG_SIGNATURE.length
-        let ihdr: { width: number; height: number; bitDepth: number; colorType: number } | null = null
+        let ihdr: { width: number; height: number; bitDepth: number; colorType: number; interlaceMethod: number } | null = null
         let sawIdat = false
         let sawIend = false
         let sawTransparency = false
@@ -200,6 +313,7 @@ export class ImageValidator {
                     height: readUint32(input.bytes, dataStart + 4),
                     bitDepth: input.bytes[dataStart + 8],
                     colorType: input.bytes[dataStart + 9],
+                    interlaceMethod: input.bytes[dataStart + 12],
                 }
                 if (input.bytes[dataStart + 10] !== 0 || input.bytes[dataStart + 11] !== 0 || ![0, 1].includes(input.bytes[dataStart + 12])) {
                     structureInvalid = true
@@ -248,6 +362,24 @@ export class ImageValidator {
                 problems.push(problem('PNG_ALPHA_COVERAGE_INVALID', 'Non e stato possibile verificare la copertura alpha del PNG.'))
             }
         }
+        let detectedForeground: ForegroundBounds | null = null
+        if (input.requireSubjectMargin) {
+            try {
+                const length = idatParts.reduce((total, part) => total + part.length, 0)
+                const compressed = new Uint8Array(length)
+                let cursor = 0
+                for (const part of idatParts) { compressed.set(part, cursor); cursor += part.length }
+                detectedForeground = await foregroundBounds({ compressedIdat: compressed, width: ihdr!.width, height: ihdr!.height, colorType: ihdr!.colorType, bitDepth: ihdr!.bitDepth, interlaceMethod: ihdr!.interlaceMethod })
+                const requiredMargin = Math.ceil(Math.min(0.25, Math.max(0.01, typeof input.requireSubjectMargin === 'number' ? input.requireSubjectMargin : 0.06)) * Math.min(ihdr!.width, ihdr!.height))
+                const smallestMargin = Math.min(detectedForeground.marginLeft, detectedForeground.marginTop, detectedForeground.marginRight, detectedForeground.marginBottom)
+                if (smallestMargin < requiredMargin) {
+                    problems.push(problem('FLUX_SUBJECT_CROPPED', `Il soggetto RAW FLUX entra nella safety margin: bbox ${detectedForeground.left},${detectedForeground.top}-${detectedForeground.right},${detectedForeground.bottom}; margine minimo ${smallestMargin}px, richiesto ${requiredMargin}px.`))
+                }
+            } catch (error) {
+                const reason = error instanceof Error ? error.message : 'errore sconosciuto'
+                problems.push(problem('PNG_FOREGROUND_DETECTION_FAILED', `Non e stato possibile verificare il framing del soggetto RAW FLUX: ${reason}`))
+            }
+        }
         if (problems.length) return { valid: false, problems }
 
         let sha256: string
@@ -270,6 +402,7 @@ export class ImageValidator {
                 colorType: ihdr!.colorType,
                 hasAlpha,
                 ...(coverage ? { transparentPixelRatio: coverage.transparentPixelRatio, visiblePixelRatio: coverage.visiblePixelRatio } : {}),
+                ...(detectedForeground ? { foregroundBounds: detectedForeground } : {}),
                 sha256,
                 bytes: input.bytes.length,
             },

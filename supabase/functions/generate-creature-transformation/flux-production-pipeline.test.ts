@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
+import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
 import { orchestrateAdoptCreatureTransformation, orchestrateGenerateUnlockedTransformation, orchestrateSelectCreatureVisualProgressTrack } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
@@ -33,11 +34,27 @@ function readyTrack(evolutionTargetId: string) {
     }
 }
 
+class ScriptedCropValidator extends ImageValidator {
+    calls = 0
+    outputChecks = 0
+
+    constructor(private readonly validOnOutputCheck: number | null) { super() }
+
+    override async validate() {
+        this.calls += 1
+        if (this.calls === 1) return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true, sha256: 's'.repeat(64), bytes: 256 }, warnings: [] }
+        this.outputChecks += 1
+        if (this.validOnOutputCheck === this.outputChecks) return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 768, height: 1152, colorType: 2, hasAlpha: false, sha256: `${this.outputChecks}`.padStart(64, '0'), bytes: 256, foregroundBounds: { left: 60, top: 80, right: 700, bottom: 1060, marginLeft: 60, marginTop: 80, marginRight: 67, marginBottom: 91 } }, warnings: [] }
+        return { valid: false as const, problems: [{ code: 'FLUX_SUBJECT_CROPPED' as const, message: 'subject is too close to the edge' }] }
+    }
+}
+
 function createProductionInput(options: {
     evolutionTargetId?: string
     policyOverrides?: Record<string, string>
     source?: ReturnType<typeof createResolvedCreatureSource>
     idempotencyKey?: string
+    validator?: ImageValidator
 } = {}) {
     const persistence = createInMemoryRequestRepository()
     const tasks: Promise<void>[] = []
@@ -63,7 +80,7 @@ function createProductionInput(options: {
         createFluxMicroConceptGenerator: () => ({ generate }),
         createFalFluxImageProvider: () => ({ transform }),
         deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) },
-        validator: new FluxTestValidator(),
+        validator: options.validator ?? new FluxTestValidator(),
     }
     return { input, persistence, tasks, generate, transform, markBackgroundRemovalPending, completeGeneration }
 }
@@ -85,11 +102,36 @@ describe('FLUX production pipeline', () => {
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-micro-v2', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            promptTemplateVersion: 'flux-micro-v4', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
         })
+    })
+
+    it('retries a cropped FLUX result once with a wider framing prompt, then accepts the valid retry', async () => {
+        const validator = new ScriptedCropValidator(2)
+        const context = createProductionInput({ idempotencyKey: 'crop-retry', validator })
+
+        await orchestrateGenerateUnlockedTransformation(context.input as never)
+        await context.tasks[0]
+
+        expect(context.transform).toHaveBeenCalledTimes(2)
+        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
+        expect(validator.outputChecks).toBe(2)
+        expect(context.persistence.get(PROFILE_ID, 'crop-retry')).toMatchObject({ status: 'SUCCEEDED' })
+    })
+
+    it('fails closed when every permitted FLUX framing attempt is cropped', async () => {
+        const validator = new ScriptedCropValidator(null)
+        const context = createProductionInput({ idempotencyKey: 'crop-failure', validator })
+
+        await orchestrateGenerateUnlockedTransformation(context.input as never)
+        await context.tasks[0]
+
+        expect(context.transform).toHaveBeenCalledTimes(3)
+        expect(validator.outputChecks).toBe(3)
+        expect(context.persistence.get(PROFILE_ID, 'crop-failure')).toMatchObject({ status: 'FAILED', errorCode: 'FLUX_SUBJECT_CROPPED' })
     })
 
     it('cannot produce a body-plan mutation in normal gameplay', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createTestPng } from './image-test-fixtures.ts'
+import { createForegroundTestPng, createTestPng } from './image-test-fixtures.ts'
 import { ImageValidator } from './image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from './render-specifications.ts'
 
@@ -39,6 +39,21 @@ describe('ImageValidator', () => {
         const changed = source.slice()
         changed[48] = 42
         await expect(validate(changed, { sourceSha256: sourceResult.metadata.sha256, isMock: false })).resolves.toMatchObject({ valid: true, warnings: [] })
+    })
+
+    it('rejects a RAW FLUX subject that reaches the safety area and accepts a safely framed subject', async () => {
+        const renderSpecification = CURRENT_CREATURE_RENDER_SPECIFICATION
+        const cropped = await new ImageValidator().validate({
+            bytes: await createForegroundTestPng({ width: 1024, height: 1536, subject: { left: 0, top: 300, right: 700, bottom: 1200 } }),
+            mimeType: 'image/png', renderSpecification, requireAlpha: false, requireSubjectMargin: 0.1,
+        })
+        expect(cropped).toMatchObject({ valid: false, problems: [{ code: 'FLUX_SUBJECT_CROPPED' }] })
+
+        const safe = await new ImageValidator().validate({
+            bytes: await createForegroundTestPng({ width: 1024, height: 1536, subject: { left: 120, top: 120, right: 900, bottom: 1400 } }),
+            mimeType: 'image/png', renderSpecification, requireAlpha: false, requireSubjectMargin: 0.1,
+        })
+        expect(safe).toMatchObject({ valid: true, metadata: { foregroundBounds: { marginLeft: 120, marginTop: 120, marginRight: 123, marginBottom: 135 } } })
     })
 
 })

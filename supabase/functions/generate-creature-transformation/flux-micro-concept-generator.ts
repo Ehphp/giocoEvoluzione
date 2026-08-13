@@ -35,7 +35,7 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
-        `SELECTED TARGET: ${plan.evolutionTargetId} — ${target.promptRegion}. The new mutation lives exclusively there.`,
+        `SELECTED TARGET: ${plan.evolutionTargetId} — ${target.promptRegion}. Treat it as the primary evolutionary driver: make the primary mutation clearly readable there, then describe any coherent, subordinate secondary adaptations to connected anatomy, posture, proportions, surfaces or structures that make it more functional or visually integrated. Do not redesign unrelated regions.`,
         `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
         `Functional direction: ${plan.evolutionFunction}. Use it as the biological purpose, not as a limit on the concrete morphology.`,
         ...(structural

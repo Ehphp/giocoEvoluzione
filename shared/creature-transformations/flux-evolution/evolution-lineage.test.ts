@@ -75,10 +75,15 @@ describe('target-aware lineage', () => {
         expect(prompt.indexOf('CURRENT TARGET STATE')).toBeLessThan(prompt.indexOf('OTHER ESTABLISHED EVOLUTIONS'))
         expect(prompt.indexOf('OTHER ESTABLISHED EVOLUTIONS')).toBeLessThan(prompt.indexOf('NEW MUTATION'))
         expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
+        expect(prompt).toMatch(/primary evolutionary driver/i)
+        expect(prompt).toMatch(/secondary adaptations may extend to connected anatomy, posture, proportions, surfaces or structures/i)
+        expect(prompt).not.toMatch(/Only this target receives the new mutation/i)
         expect(prompt).toContain('Keep exactly 4 limbs, in 2 symmetrical pairs, at their current attachment points.')
         expect(prompt).toContain('Corteccia vitrea')
         expect(prompt).toContain('grandi occhi ambrati')
         expect(prompt).toMatch(/Flat uniform medium-gray background/)
+        expect(prompt).toContain('FRAMING IS STRICT: show the entire creature')
+        expect(prompt).toContain('at least 8-10% clear background margin on every side')
     })
 
     it('announces an authorized body-plan mutation in the prompt', () => {

@@ -27,6 +27,9 @@ describe('FluxMicroConceptGenerator', () => {
         const prompt = composeFluxMicroConceptInstructions(input)
 
         expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
+        expect(prompt).toMatch(/primary evolutionary driver/i)
+        expect(prompt).toMatch(/secondary adaptations to connected anatomy, posture, proportions, surfaces or structures/i)
+        expect(prompt).not.toMatch(/lives exclusively there/i)
         expect(prompt).toContain('TARGET FREEDOM')
         expect(prompt).toContain('ANATOMY CONTRACT')
         expect(prompt).toContain('CURRENT SOURCE IMAGE')

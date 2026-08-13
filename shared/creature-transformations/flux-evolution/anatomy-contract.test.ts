@@ -48,17 +48,27 @@ describe('anatomy contract', () => {
         expect(allowances).toMatch(/volume/i)
         expect(allowances).toMatch(/silhouette/i)
         expect(allowances).toMatch(/longer, shorter, heavier, leaner/i)
-        expect(allowances).not.toMatch(/add(ing)? plates/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/Plates, crests or spines may only be subordinate secondary adaptations/i)
         expect(contract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs, in 2 symmetrical pairs, at their current attachment points.')
-        expect(contract.failureConditions.join(' ')).toMatch(/New limbs, new tails, new heads or new dorsal appendages are invalid/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/New limbs, new tails or new heads are invalid/i)
     })
 
-    it('DORSAL_STRUCTURES allows dorsal structures while other regions stay as they are', () => {
+    it('allows related secondary adaptations while keeping the selected target primary', () => {
+        const contract = contractFor('TAIL')
+
+        expect(contract.preservationRules.join(' ')).toMatch(/primary evolutionary driver/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/secondary adaptations may extend to connected anatomy, posture, proportions, surfaces or structures/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/do not redesign unrelated regions/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/primary mutation must be clearly readable on the selected target/i)
+        expect(contract.failureConditions.join(' ')).not.toMatch(/Only the selected target may carry the new mutation/i)
+    })
+
+    it('DORSAL_STRUCTURES allows dorsal structures with related support changes', () => {
         const contract = contractFor('DORSAL_STRUCTURES')
 
         expect(contract.targetAllowances.join(' ')).toMatch(/spines, crests, ridges, fins, plates, membranes, sails or humps/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/Trunk volume and body proportions, head, face, limbs and tail keep their current shape/i)
-        expect(contract.failureConditions.join(' ')).toMatch(/no other region may be reshaped to host them/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/secondary adaptations may extend to connected anatomy/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/may not create a new dominant mutation elsewhere/i)
     })
 
     it('LIMBS_AND_FEET keeps the limb count in a normal mutation', () => {
