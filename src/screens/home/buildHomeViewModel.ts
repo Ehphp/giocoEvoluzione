@@ -2,6 +2,7 @@ import type { HomeBusyAction, HomeNotice, HomeViewModel } from './types'
 import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
 import { ASSETS } from '../../ui/assets'
+import { buildCreatureVisualVersions, type CreatureVisualVersionSource } from '../../components/creature-visual-progression/visualVersions'
 
 export type BuildGuestHomeViewModelInput = {
     nickname: string
@@ -58,6 +59,18 @@ export function buildGuestHomeViewModel({
                 alt: 'Creatura verde del giocatore',
                 scale: 1,
             },
+            visualVersions: [{
+                id: 'guest-creature',
+                generation: 1,
+                name: 'Forma iniziale',
+                image: {
+                    src: PLAYER_CREATURE_FALLBACK,
+                    fallbackSrc: PLAYER_CREATURE_FALLBACK,
+                    alt: 'Creatura verde del giocatore',
+                    scale: 1,
+                },
+                isCurrent: true,
+            }],
         },
         stage: {
             backgroundSrc: ASSETS.scenery.forest,
@@ -96,6 +109,10 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
     profile: ProfileRecord
     creature: PlayerCreatureRecord
     officialVisualUrl?: string | null
+    visualVersionNumber?: number | null
+    visualTrait?: string | null
+    visualHistory?: ReadonlyArray<CreatureVisualVersionSource>
+    currentVisualVersionId?: string | null
 }): HomeViewModel {
     const base = buildGuestHomeViewModel({
         nickname: input.profile.nickname,
@@ -108,6 +125,29 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
         busyAction: input.busyAction,
     })
     const experience = getExperienceProgress(input.creature.experience)
+    const visualVersions = buildCreatureVisualVersions({
+        history: input.visualHistory,
+        currentVersionId: input.currentVisualVersionId,
+        currentVersionNumber: input.visualVersionNumber,
+        fallback: {
+            id: input.currentVisualVersionId ?? input.creature.id,
+            versionNumber: input.visualVersionNumber ?? 1,
+            visualTraitId: input.visualTrait ?? null,
+            conceptName: null,
+            signedUrl: input.officialVisualUrl ?? PLAYER_CREATURE_FALLBACK,
+        },
+    }).map((version) => ({
+        id: version.id,
+        generation: version.versionNumber,
+        name: version.name,
+        image: {
+            src: version.signedUrl,
+            fallbackSrc: PLAYER_CREATURE_FALLBACK,
+            alt: `${input.creature.name ?? 'La tua creatura'}, Generazione ${version.versionNumber - 1}`,
+        },
+        isCurrent: version.isCurrent,
+    }))
+    const currentVisual = visualVersions.find((version) => version.isCurrent) ?? visualVersions.at(-1)!
 
     return {
         ...base,
@@ -120,10 +160,8 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
         },
         creature: {
             ...base.creature!,
-            image: {
-                ...base.creature!.image,
-                src: input.officialVisualUrl ?? base.creature!.image.src,
-            },
+            image: currentVisual.image,
+            visualVersions,
             id: input.creature.id,
             name: input.creature.name ?? 'Creatura iniziale',
             level: input.creature.level,

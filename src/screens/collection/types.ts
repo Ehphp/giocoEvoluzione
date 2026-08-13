@@ -1,4 +1,5 @@
 import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
+import type { CreatureVisualVersionSource } from '../../components/creature-visual-progression/visualVersions'
 
 export type CollectionForm = {
     id: string
@@ -33,12 +34,6 @@ export type CollectionViewModelInput = {
     visualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
-    visualHistory?: ReadonlyArray<{
-        id: string
-        versionNumber: number
-        visualTraitId: string | null
-        conceptName: string | null
-        signedUrl: string
-    }>
+    visualHistory?: ReadonlyArray<CreatureVisualVersionSource>
     currentVisualVersionId?: string | null
 }

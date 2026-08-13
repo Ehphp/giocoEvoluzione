@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, IconButton, Notice, Pill, ProgressBar } from '../../ui/components'
@@ -81,6 +81,13 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
+    const creatureCarouselRef = useRef<HTMLDivElement>(null)
+    const dragStartRef = useRef<{ x: number; scrollLeft: number } | null>(null)
+    const visualVersions = viewModel.creature?.visualVersions ?? []
+    const currentVisualId = visualVersions.find((version) => version.isCurrent)?.id ?? visualVersions.at(-1)?.id ?? ''
+    const currentVisualIndex = visualVersions.findIndex((version) => version.id === currentVisualId)
+    const visualVersionKey = visualVersions.map((version) => version.id).join(',')
+    const [selectedVisualId, setSelectedVisualId] = useState(currentVisualId)
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
 
@@ -88,8 +95,42 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
         setBackgroundSource(viewModel.stage.backgroundSrc)
     }, [viewModel.stage.backgroundSrc])
 
+    useEffect(() => {
+        setSelectedVisualId(currentVisualId)
+        const carousel = creatureCarouselRef.current
+
+        if (carousel && currentVisualIndex >= 0) {
+            carousel.scrollLeft = currentVisualIndex * Math.max(carousel.clientWidth, 1)
+        }
+    }, [currentVisualId, currentVisualIndex, visualVersionKey])
+
     const displayName = viewModel.player.displayName ?? 'Allenatore locale'
     const experience = viewModel.player.experience
+    const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
+        ?? visualVersions.find((version) => version.isCurrent)
+        ?? visualVersions.at(-1)
+
+    function selectVisualAt(index: number) {
+        const version = visualVersions[index]
+        const carousel = creatureCarouselRef.current
+
+        if (!version || !carousel) return
+
+        carousel.scrollLeft = index * Math.max(carousel.clientWidth, 1)
+        setSelectedVisualId(version.id)
+    }
+
+    function handleCreatureScroll() {
+        const carousel = creatureCarouselRef.current
+
+        if (!carousel || visualVersions.length < 2) return
+
+        const index = Math.max(0, Math.min(
+            visualVersions.length - 1,
+            Math.round(carousel.scrollLeft / Math.max(carousel.clientWidth, 1)),
+        ))
+        setSelectedVisualId(visualVersions[index]!.id)
+    }
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'profile') {
@@ -174,13 +215,70 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                           */}
                         <div className="home-stage__art">
                             <span className="home-stage__halo" aria-hidden="true" />
-                            <CreatureArt image={viewModel.creature.image} />
+                            <div
+                                ref={creatureCarouselRef}
+                                className="home-stage__carousel"
+                                role="region"
+                                aria-label="Forme sbloccate della creatura"
+                                tabIndex={visualVersions.length > 1 ? 0 : -1}
+                                onScroll={handleCreatureScroll}
+                                onKeyDown={(event) => {
+                                    const selectedIndex = visualVersions.findIndex((version) => version.id === selectedVisual?.id)
+
+                                    if (event.key === 'ArrowLeft') {
+                                        event.preventDefault()
+                                        selectVisualAt(Math.max(0, selectedIndex - 1))
+                                    }
+
+                                    if (event.key === 'ArrowRight') {
+                                        event.preventDefault()
+                                        selectVisualAt(Math.min(visualVersions.length - 1, selectedIndex + 1))
+                                    }
+                                }}
+                                onPointerDown={(event) => {
+                                    if (event.pointerType !== 'mouse') return
+                                    dragStartRef.current = { x: event.clientX, scrollLeft: event.currentTarget.scrollLeft }
+                                    event.currentTarget.setPointerCapture(event.pointerId)
+                                }}
+                                onPointerMove={(event) => {
+                                    const dragStart = dragStartRef.current
+
+                                    if (!dragStart || event.pointerType !== 'mouse') return
+                                    event.currentTarget.scrollLeft = dragStart.scrollLeft - (event.clientX - dragStart.x)
+                                }}
+                                onPointerUp={(event) => {
+                                    dragStartRef.current = null
+                                    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                        event.currentTarget.releasePointerCapture(event.pointerId)
+                                    }
+                                }}
+                                onPointerCancel={() => { dragStartRef.current = null }}
+                                data-testid="home-creature-carousel"
+                            >
+                                {visualVersions.map((version) => (
+                                    <div
+                                        key={version.id}
+                                        className="home-stage__slide"
+                                        aria-hidden={version.id !== selectedVisual?.id}
+                                        data-testid={`home-creature-form-${version.id}`}
+                                    >
+                                        <CreatureArt image={version.image} />
+                                    </div>
+                                ))}
+                            </div>
+                            {visualVersions.length > 1 ? (
+                                <span className="home-stage__position" role="status" aria-live="polite" aria-label={`Forma ${visualVersions.findIndex((version) => version.id === selectedVisual?.id) + 1} di ${visualVersions.length}`}>
+                                    {visualVersions.map((version) => <i key={version.id} className={version.id === selectedVisual?.id ? 'is-current' : ''} />)}
+                                </span>
+                            ) : null}
                         </div>
                         <div className="home-stage__plaque">
-                            <span className="ev-eyebrow ev-eyebrow--light">La tua creatura</span>
+                            <span className="ev-eyebrow ev-eyebrow--light">{selectedVisual?.isCurrent ? 'La tua creatura' : 'Forma visualizzata'}</span>
                             <strong className="ev-truncate">{viewModel.creature.name}</strong>
                             <span className="home-stage__meta">
-                                {viewModel.creature.level ? `Livello ${viewModel.creature.level}` : 'Forma iniziale'}
+                                {selectedVisual
+                                    ? `Generazione ${selectedVisual.generation - 1}${viewModel.creature.level ? ` · Livello ${viewModel.creature.level}` : ''}`
+                                    : viewModel.creature.level ? `Livello ${viewModel.creature.level}` : 'Forma iniziale'}
                                 {viewModel.creature.evolution
                                     ? ` · ${viewModel.creature.evolution.label ?? `Evoluzione ${viewModel.creature.evolution.current}/${viewModel.creature.evolution.total}`}`
                                     : ''}

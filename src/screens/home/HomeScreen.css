@@ -122,9 +122,51 @@
  */
 .home-stage__art {
     position: relative;
-    container-type: size;
     width: 100%;
     min-height: 0;
+}
+
+.home-stage__carousel {
+    position: relative;
+    display: flex;
+    box-sizing: content-box;
+    width: 100%;
+    height: 100%;
+    margin-block: calc(var(--ev-s-3) * -1);
+    padding-block: var(--ev-s-3);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    touch-action: pan-x;
+}
+
+.home-stage__carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.home-stage__carousel:focus-visible {
+    outline-color: var(--ev-player-light);
+}
+
+.home-stage__slide {
+    position: relative;
+    container-type: size;
+    width: 100%;
+    min-width: 100%;
+    height: 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+}
+
+@media (pointer: fine) {
+    .home-stage__carousel {
+        cursor: grab;
+    }
+
+    .home-stage__carousel:active {
+        cursor: grabbing;
+    }
 }
 
 .home-stage__halo {
@@ -138,6 +180,33 @@
     border-radius: 50%;
     background: radial-gradient(circle, rgba(190, 255, 160, .3) 0%, rgba(120, 220, 200, .16) 42%, transparent 68%);
     pointer-events: none;
+}
+
+.home-stage__position {
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    left: 50%;
+    display: flex;
+    gap: var(--ev-s-1);
+    translate: -50% 0;
+    pointer-events: none;
+}
+
+.home-stage__position i {
+    display: block;
+    width: var(--ev-s-1);
+    height: var(--ev-s-1);
+    border-radius: var(--ev-r-pill);
+    background: var(--ev-on-dark-muted);
+    box-shadow: var(--ev-shadow-text-on-scene);
+    opacity: .55;
+}
+
+.home-stage__position i.is-current {
+    width: var(--ev-s-3);
+    background: var(--ev-player-light);
+    opacity: 1;
 }
 
 /**
@@ -182,7 +251,8 @@
  * *centre* be parked on the box centre without knowing any of these sizes in pixels.
  */
 .home-stage__creature--fitted {
-    --home-subject-fill: .94;
+    /* The creature gains room from the elastic art stage, not from a crop or a CSS zoom. */
+    --home-subject-fill: var(--ev-home-creature-subject-fill);
     inset: auto;
     left: 50%;
     top: 50%;

@@ -35,6 +35,39 @@ function createActions(): HomeActions {
     }
 }
 
+function createVisualLineageViewModel(): HomeViewModel {
+    const viewModel = createViewModel()
+    const creature = viewModel.creature!
+
+    viewModel.creature = {
+        ...creature,
+        name: 'Verdante',
+        image: {
+            src: '/assets/form-3.png',
+            fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
+            alt: 'Verdante, Generazione 2',
+        },
+        visualVersions: [
+            {
+                id: 'form-1',
+                generation: 1,
+                name: 'Forma base',
+                image: { src: '/assets/form-1.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png', alt: 'Verdante, Generazione 0' },
+                isCurrent: false,
+            },
+            {
+                id: 'form-3',
+                generation: 3,
+                name: 'Arti slanciati',
+                image: { src: '/assets/form-3.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png', alt: 'Verdante, Generazione 2' },
+                isCurrent: true,
+            },
+        ],
+    }
+
+    return viewModel
+}
+
 describe('HomeScreen', () => {
     let container: HTMLDivElement
     let root: Root
@@ -222,6 +255,17 @@ describe('HomeScreen', () => {
                 fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
                 alt: 'Verdante',
             },
+            visualVersions: [{
+                id: 'form-1',
+                generation: 1,
+                name: 'Forma iniziale',
+                image: {
+                    src: '/assets/missing-creature.png',
+                    fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
+                    alt: 'Verdante',
+                },
+                isCurrent: true,
+            }],
         }
 
         render(viewModel)
@@ -236,6 +280,31 @@ describe('HomeScreen', () => {
         act(() => creatureImage.dispatchEvent(new Event('error')))
 
         expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
+    })
+
+    it('starts the Home carousel on the current, most recent unlocked form', () => {
+        render(createVisualLineageViewModel())
+
+        expect(container.querySelector('[data-testid="home-creature-form-form-3"]')?.getAttribute('aria-hidden')).toBe('false')
+        expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('true')
+        expect(container.querySelector('.home-stage__plaque')?.textContent).toContain('Generazione 2')
+    })
+
+    it('updates the Home preview through scroll snap without changing the active creature', () => {
+        const viewModel = createVisualLineageViewModel()
+        const actions = render(viewModel)
+        const carousel = container.querySelector<HTMLDivElement>('[data-testid="home-creature-carousel"]')!
+
+        Object.defineProperty(carousel, 'clientWidth', { configurable: true, value: 300 })
+        act(() => {
+            carousel.scrollLeft = 0
+            carousel.dispatchEvent(new Event('scroll', { bubbles: true }))
+        })
+
+        expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('false')
+        expect(container.querySelector('.home-stage__plaque')?.textContent).toContain('Generazione 0')
+        expect(viewModel.creature?.visualVersions.find((version) => version.isCurrent)?.id).toBe('form-3')
+        expect(Object.values(actions).every((action) => !vi.isMockFunction(action) || action.mock.calls.length === 0)).toBe(true)
     })
 
     it('closes the play dialog with Escape', () => {
