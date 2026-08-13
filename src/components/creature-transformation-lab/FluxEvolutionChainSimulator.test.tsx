@@ -28,6 +28,7 @@ describe('FluxEvolutionChainSimulator', () => {
         await act(async () => { root.render(createElement(FluxEvolutionChainSimulator, { creatureId: 'creature-1' })) })
         await act(async () => { [...container.querySelectorAll('button')].find((button) => button.textContent === 'Simula catena evolutiva')!.click() })
         expect(mocks.generate).toHaveBeenCalledTimes(1)
+        expect(mocks.generate).toHaveBeenCalledWith(expect.not.objectContaining({ sourceVisualVersionId: expect.anything() }))
         await act(async () => { [...container.querySelectorAll('button')].find((button) => button.textContent === 'Stop simulation')!.click() })
         expect(container.textContent).toContain('Stato: stopped')
         expect(JSON.parse(window.localStorage.getItem('flux-evolution-chain-simulator:creature-1')!).steps.slice(1).every((step: { state: string }) => step.state === 'stopped')).toBe(true)

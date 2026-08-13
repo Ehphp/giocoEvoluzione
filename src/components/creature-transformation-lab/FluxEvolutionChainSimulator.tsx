@@ -45,7 +45,9 @@ export function FluxEvolutionChainSimulator({ creatureId }: { creatureId: string
     useEffect(() => {
         setChain(readChain(creatureId))
         void getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId }).then((progress) => {
-            const current = { id: progress.currentVersion.id, label: `Visuale attiva · v${progress.currentVersion.versionNumber}` }
+            // The canonical current form may be a BASE version, which is not a selectable
+            // ACTIVE visual-version source. Omitting its ID makes the server resolve it safely.
+            const current = { id: undefined, label: `Visuale attiva · v${progress.currentVersion.versionNumber}` }
             const history = progress.history.map((entry) => ({ id: entry.id, label: entry.conceptName ? `v${entry.versionNumber} · ${entry.conceptName}` : `Visuale v${entry.versionNumber}`, signedUrl: entry.signedUrl }))
             setSources([current, ...history])
             setSourceId(current.id)
