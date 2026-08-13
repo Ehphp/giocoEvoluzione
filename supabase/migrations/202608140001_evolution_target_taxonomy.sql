@@ -84,7 +84,7 @@ where evolution_target_id is not null;
 
 -- Two legacy limb counters become one: the banked wins are summed so no progress is lost.
 create temporary table legacy_evolution_target_progress_merge on commit drop as
-select min(id) as keep_id,
+select (array_agg(id order by id))[1] as keep_id,
        creature_id,
        public.map_legacy_evolution_target_id(evolution_target_id) as new_target,
        sum(wins) as merged_wins,

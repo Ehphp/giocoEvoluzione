@@ -26,6 +26,7 @@ describe('evolution target taxonomy migration', () => {
     })
 
     it('sums the banked wins when two legacy limb counters merge into one', () => {
+        expect(migration).toMatch(/array_agg\(id order by id\)\)\[1\] as keep_id/)
         expect(migration).toMatch(/sum\(wins\) as merged_wins/)
         expect(migration).toMatch(/delete from public\.creature_evolution_target_progress\s+where id not in \(select keep_id/)
     })
