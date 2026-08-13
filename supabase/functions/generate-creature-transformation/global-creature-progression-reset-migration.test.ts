@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(resolve('supabase/migrations/202608130002_admin_global_creature_progression_reset.sql'), 'utf8')
 const verification = readFileSync(resolve('supabase/verification/verify_global_creature_progression_reset.sql'), 'utf8')
+const fluxFinalizerFix = readFileSync(resolve('supabase/migrations/202608130003_fix_lab_flux_background_removal_rpc_signature.sql'), 'utf8')
 
 describe('administrative global creature progression reset migration', () => {
     it('resets only creature progression and serializes concurrent workflow writes', () => {
@@ -26,5 +27,12 @@ describe('administrative global creature progression reset migration', () => {
         expect(verification).toContain("'creatures_without_exactly_one_active_version'")
         expect(verification).toContain("'open_transformation_requests'")
         expect(verification).toContain("'public.competitive_rating_events'")
+    })
+
+    it('replaces the display-asset RPC signature instead of leaving the legacy track-only overload callable', () => {
+        expect(fluxFinalizerFix).toMatch(/drop function if exists public\.finalize_creature_background_removal_candidate\([\s\S]*integer, integer\n?\);/i)
+        expect(fluxFinalizerFix).toContain('p_display_asset_path text default null')
+        expect(fluxFinalizerFix).toContain('if v_request.visual_progress_track_id is not null then')
+        expect(fluxFinalizerFix).toContain("notify pgrst, 'reload schema'")
     })
 })
