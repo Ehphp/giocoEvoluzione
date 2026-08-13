@@ -180,6 +180,7 @@ alter table public.competitive_rating_events enable row level security;
 revoke all on table public.competitive_rating_events from public, anon, authenticated;
 grant select on table public.competitive_rating_events to authenticated;
 
+drop policy if exists "competitive rating events own read" on public.competitive_rating_events;
 create policy "competitive rating events own read"
 on public.competitive_rating_events
 for select to authenticated
