@@ -52,12 +52,6 @@ function countSentence(count: number, singular: string, plural: string): string 
     return count > 0 ? `Keep exactly ${count} ${count === 1 ? singular : plural}.` : null
 }
 
-function absentSentence(topology: CreatureTopology): string | null {
-    const absent = [topology.wingCount === 0 ? 'wings' : null, topology.tentacleCount === 0 ? 'tentacles' : null, topology.tailCount === 0 ? 'a tail' : null]
-        .filter((entry): entry is string => entry !== null)
-    return absent.length ? `This creature has no ${absent.join(' and no ')}.` : null
-}
-
 function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
     const topology = bodyPlan.topology
     return [
@@ -66,7 +60,6 @@ function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
         countSentence(topology.wingCount, 'wing', 'wings'),
         countSentence(topology.tentacleCount, 'tentacle', 'tentacles'),
         countSentence(topology.tailCount, 'tail', 'tails'),
-        absentSentence(topology),
         `Keep the ${bodyPlan.promptDescription}.`,
     ].filter((entry): entry is string => entry !== null)
 }
@@ -119,9 +112,7 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Add or develop structures anchored to the back and spine: spines, crests, ridges, fins, plates, membranes, sails or humps, following the existing spine line.',
             'These structures may be large and may change the upper silhouette strongly.',
         ],
-        preservation: [
-            `${RELATED_SECONDARY_ADAPTATIONS} Keep the head, face, limbs and tail recognisable as the same individual.`,
-        ],
+        preservation: [RELATED_SECONDARY_ADAPTATIONS],
         failures: ['Dorsal structures may not become limbs, wings, tails or heads, and related secondary adaptations may not create a new dominant mutation elsewhere.'],
     },
     SKIN_AND_COVERING: {

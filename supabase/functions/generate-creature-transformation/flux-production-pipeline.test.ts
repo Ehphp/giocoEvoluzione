@@ -98,7 +98,10 @@ describe('FLUX production pipeline', () => {
         expect(plan).toMatchObject({ evolutionTargetId: 'LIMBS_AND_FEET', capability: 'ANATOMICAL_MUTATION', bodyPlanId: 'QUADRUPED', resultBodyPlanId: 'QUADRUPED' })
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs')
         expect(context.transform).toHaveBeenCalledOnce()
-        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        expect(prompt).not.toContain('This creature has no wings and no tentacles.')
+        expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',

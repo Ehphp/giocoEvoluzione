@@ -24,10 +24,10 @@ describe('SupabaseCreatureIdentityResolver', () => {
         expect(result.identity).toMatchObject({
             creatureId: 'creature-1',
             baseCreatureKey: 'VERDANT_HATCHLING',
-            description: 'Piccolo drago verde con grandi occhi ambrati, corpo tozzo e cresta di spine fogliari.',
+            description: 'A stylized fantasy creature with a distinctive, recognizable visual identity.',
         })
-        expect(result.identity.identityFeatures).toEqual(['grandi occhi ambrati', 'corpo squamoso e tozzo', 'cresta dorsale di spine fogliari'])
-        expect(result.identity.mutableVisualFeatures).toEqual(['corpo verde', 'palette verde lime'])
+        expect(result.identity.identityFeatures).toEqual(['distinctive individual identity'])
+        expect(result.identity.mutableVisualFeatures).toEqual(['visual characteristics'])
         expect(result.sourceImagePath).toBe('verdant-hatchling-v1.png')
     })
 

@@ -19,9 +19,9 @@ export const CREATURE_IDENTITY_REGISTRY: Readonly<Record<string, CreatureIdentit
     VERDANT_HATCHLING: defineIdentity({
         baseCreatureKey: 'VERDANT_HATCHLING',
         sourceImagePath: 'verdant-hatchling-v1.png',
-        description: 'Piccolo drago  con grandi occhi, cresta caratteristica sopra il viso.',
-        identityFeatures: ['grandi occhi ', 'viso simpatico '],
-        mutableVisualFeatures: ['corpo '],
-        styleDefinition: 'Illustrazione 3D stilizzata e luminosa, con materiali morbidi o squamosi.',
+        description: 'A stylized fantasy creature with a distinctive, recognizable visual identity.',
+        identityFeatures: ['distinctive individual identity'],
+        mutableVisualFeatures: ['visual characteristics'],
+        styleDefinition: 'A polished, stylized 3D creature illustration.',
     }),
 })

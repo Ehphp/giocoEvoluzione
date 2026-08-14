@@ -100,6 +100,9 @@ describe('FLUX evolution chain step', () => {
         expect(secondResponse).toMatchObject({ success: true, accepted: true })
         expect(readExperimentalSource).toHaveBeenCalledWith(finalPath)
         expect(persistence.get(PROFILE_ID, 'chain-2')).toMatchObject({ visualProgressTrackId: null, sourceVisualVersionId: null, assetReadiness: 'EXPERIMENT_ONLY' })
+        const prompt = String(second.transform.mock.calls[0]![0].prompt)
+        expect(prompt).not.toContain('This creature has no wings and no tentacles.')
+        expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
         expect(plan.lineage.currentTargetState.map((entry: { conceptName: string }) => entry.conceptName)).toEqual(['Pale rematrici'])
