@@ -8,6 +8,7 @@ export type ProfileRecord = {
     skill_rating: number
     created_at: string
     updated_at: string
+    active_lineage_id?: string | null
 }
 
 export type CompetitiveLeaderboardEntry = {
@@ -19,6 +20,7 @@ export type CompetitiveLeaderboardEntry = {
 export type PlayerCreatureRecord = {
     id: string
     profile_id: string
+    lineage_id: string
     base_creature_key: string
     name: string | null
     level: number
@@ -27,6 +29,17 @@ export type PlayerCreatureRecord = {
     current_visual_version_id?: string | null
     created_at: string
     updated_at: string
+}
+
+/** Stable identity of an independently evolving creature family. */
+export type CreatureLineageRecord = {
+    id: string
+    profile_id: string
+    name: string | null
+    base_creature_key: string
+    created_at: string
+    updated_at: string
+    creature: PlayerCreatureRecord
 }
 
 export type MatchRewardRecord = {
@@ -77,6 +90,19 @@ export function mapProfileRecord(data: Record<string, unknown>): ProfileRecord {
         skill_rating: Number(data.skill_rating ?? 1000),
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
+        active_lineage_id: typeof data.active_lineage_id === 'string' ? data.active_lineage_id : null,
+    }
+}
+
+export function mapCreatureLineageRecord(data: Record<string, unknown>, creature: PlayerCreatureRecord): CreatureLineageRecord {
+    return {
+        id: String(data.id),
+        profile_id: String(data.profile_id),
+        name: typeof data.name === 'string' ? data.name : null,
+        base_creature_key: String(data.base_creature_key),
+        created_at: String(data.created_at),
+        updated_at: String(data.updated_at),
+        creature,
     }
 }
 
@@ -92,6 +118,7 @@ export function mapPlayerCreatureRecord(data: Record<string, unknown>): PlayerCr
     return {
         id: String(data.id),
         profile_id: String(data.profile_id),
+        lineage_id: String(data.lineage_id),
         base_creature_key: String(data.base_creature_key),
         name: typeof data.name === 'string' ? data.name : null,
         level: Number(data.level),
@@ -208,11 +235,12 @@ export async function bootstrapMyProfile() {
     }
 }
 
-export async function loadMyProfile(): Promise<{ profile: ProfileRecord; creature: PlayerCreatureRecord }> {
+export async function loadMyProfile(): Promise<{ profile: ProfileRecord; creature: PlayerCreatureRecord; activeLineage: CreatureLineageRecord; lineages: CreatureLineageRecord[] }> {
     const supabase = requireSupabase()
-    const [{ data: profileData, error: profileError }, { data: creatureData, error: creatureError }] = await Promise.all([
+    const [{ data: profileData, error: profileError }, { data: lineageData, error: lineageError }, { data: creatureData, error: creatureError }] = await Promise.all([
         supabase.from('profiles').select('*').maybeSingle(),
-        supabase.from('player_creatures').select('*').maybeSingle(),
+        supabase.from('creature_lineages').select('*').order('created_at', { ascending: true }),
+        supabase.from('player_creatures').select('*').order('created_at', { ascending: true }),
     ])
 
     if (profileError) {
@@ -223,14 +251,38 @@ export async function loadMyProfile(): Promise<{ profile: ProfileRecord; creatur
         throw new Error(creatureError.message)
     }
 
-    if (!profileData || !creatureData) {
-        throw new Error('Profilo o creatura non inizializzati.')
+    if (lineageError) {
+        throw new Error(lineageError.message)
+    }
+
+    if (!profileData || !creatureData || !lineageData) {
+        throw new Error('Profilo o stirpe non inizializzati.')
+    }
+
+    const profile = mapProfileRecord(profileData)
+    const creatures = (creatureData ?? []).map(mapPlayerCreatureRecord)
+    const creaturesByLineage = new Map(creatures.map((creature) => [creature.lineage_id, creature]))
+    const lineages = (lineageData ?? []).flatMap((lineage) => {
+        const creature = creaturesByLineage.get(typeof lineage.id === 'string' ? lineage.id : '')
+        return creature ? [mapCreatureLineageRecord(lineage, creature)] : []
+    })
+    const activeLineage = lineages.find((lineage) => lineage.id === profile.active_lineage_id) ?? null
+
+    if (!activeLineage) {
+        throw new Error('La stirpe attiva non Ã¨ disponibile.')
     }
 
     return {
-        profile: mapProfileRecord(profileData),
-        creature: mapPlayerCreatureRecord(creatureData),
+        profile,
+        creature: activeLineage.creature,
+        activeLineage,
+        lineages,
     }
+}
+
+export async function setMyActiveCreatureLineage(lineageId: string): Promise<void> {
+    const { error } = await requireSupabase().rpc('set_my_active_creature_lineage', { p_lineage_id: lineageId })
+    if (error) throw new Error(error.message)
 }
 
 export async function updateMyNickname(nickname: string): Promise<ProfileRecord> {

@@ -25,6 +25,7 @@ const profile: ProfileRecord = {
 const creature: PlayerCreatureRecord = {
     id: 'creature-1',
     profile_id: profile.id,
+    lineage_id: 'lineage-1',
     base_creature_key: 'VERDANT_HATCHLING',
     name: null,
     level: 1,

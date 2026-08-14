@@ -607,7 +607,13 @@
 
 .flux-chain-simulator__timeline > li {
     display: grid;
-    flex: 0 0 var(--ev-catalog-tile-min);
+    /*
+     * A generation carries a name plus up to three explanatory fields.  The
+     * catalog tile size is right for a thumbnail, but turns this information
+     * into a wall of one-word lines.  Keep each step at a readable measure and
+     * let the timeline provide its intended horizontal scroll.
+     */
+    flex: 0 0 var(--ev-scroll-max-compact);
     gap: var(--ev-s-1);
     min-width: 0;
     padding: var(--ev-s-2);
@@ -642,8 +648,11 @@
 .flux-chain-simulator__timeline small,
 .flux-chain-simulator__timeline em,
 .flux-chain-simulator__timeline p { overflow-wrap: anywhere; }
-.flux-chain-simulator__timeline em { color: var(--ev-ink-muted); font-size: var(--ev-fs-xs); }
-.flux-chain-simulator__timeline p { margin: 0; color: var(--ev-danger-dark); font-size: var(--ev-fs-xs); }
+.flux-chain-simulator__timeline small,
+.flux-chain-simulator__timeline em,
+.flux-chain-simulator__timeline p { font-size: var(--ev-fs-sm); line-height: 1.45; }
+.flux-chain-simulator__timeline em { color: var(--ev-ink-muted); }
+.flux-chain-simulator__timeline p { margin: 0; color: var(--ev-danger-dark); }
 
 .flux-chain-simulator__modal {
     position: fixed;

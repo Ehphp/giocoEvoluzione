@@ -71,9 +71,11 @@ function getInitialScreen(): CurrentScreen {
 
 type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null }
 type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
+type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNumber: number; visualTrait: string | null; currentVisualVersionId: string; visualHistory: VisualProgressSummary['history'] }>
 
 function App() {
   const auth = useAuth()
+  const activeCreature = auth.activeLineage?.creature ?? null
   const authStatus = auth.status
   const profileId = auth.profile?.id
   const profileNickname = auth.profile?.nickname
@@ -95,6 +97,7 @@ function App() {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine)
   const [officialVisual, setOfficialVisual] = useState<OfficialVisual | null>(null)
   const [visualProgress, setVisualProgress] = useState<VisualProgressSummary | null>(null)
+  const [lineageVisuals, setLineageVisuals] = useState<LineageVisualSummary>({})
   const snapshotSyncRef = useRef<GameSnapshotSync | null>(null)
   const recoverRestoredRoundRef = useRef(false)
   const { resource: gameVisualResource } = useGameCreatureVisualResource({
@@ -199,7 +202,7 @@ function App() {
   }, [profileNickname])
 
   useEffect(() => {
-    if (!isCreatureVisualProgressionEnabled || !auth.profile || !auth.creature) {
+    if (!isCreatureVisualProgressionEnabled || !auth.profile || !activeCreature) {
       setOfficialVisual(null)
       setVisualProgress(null)
       return
@@ -209,8 +212,8 @@ function App() {
     const load = async () => {
       try {
         const [visual, progression] = await Promise.all([
-          getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: auth.creature!.id }),
-          getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: auth.creature!.id }),
+          getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: activeCreature.id }),
+          getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: activeCreature.id }),
         ])
         if (!active) return
         setOfficialVisual(visual.visual)
@@ -224,7 +227,33 @@ function App() {
     }
     void load()
     return () => { active = false; if (refreshTimer) window.clearTimeout(refreshTimer) }
-  }, [auth.creature, auth.profile])
+  }, [activeCreature, auth.profile])
+
+  useEffect(() => {
+    if (!isCreatureVisualProgressionEnabled || !auth.lineages.length) {
+      setLineageVisuals({})
+      return
+    }
+    let active = true
+    void Promise.all(auth.lineages.map(async (lineage) => {
+      const [visual, progression] = await Promise.all([
+        getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: lineage.creature.id }),
+        getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: lineage.creature.id }),
+      ])
+      return [lineage.id, {
+        visualUrl: visual.visual.signedUrl,
+        visualVersionNumber: progression.currentVersion.versionNumber,
+        visualTrait: progression.currentVersion.visualTraitId,
+        currentVisualVersionId: progression.currentVersion.id,
+        visualHistory: progression.history,
+      }] as const
+    })).then((entries) => {
+      if (active) setLineageVisuals(Object.fromEntries(entries))
+    }).catch(() => {
+      if (active) setLineageVisuals({})
+    })
+    return () => { active = false }
+  }, [auth.lineages])
 
   useEffect(() => {
     if (currentScreen !== 'profile' || !profileId) {
@@ -444,11 +473,11 @@ function App() {
       busyAction,
     }
 
-    return auth.profile && auth.creature
+    return auth.profile && activeCreature
       ? buildAuthenticatedHomeViewModel({
         ...input,
         profile: auth.profile,
-        creature: auth.creature,
+        creature: activeCreature,
         officialVisualUrl: officialVisual?.signedUrl,
         visualVersionNumber: visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber,
         visualTrait: visualProgress?.currentVersion.visualTraitId ?? officialVisual?.visualTraitId ?? null,
@@ -456,10 +485,10 @@ function App() {
         currentVisualVersionId: visualProgress?.currentVersion.id ?? officialVisual?.versionId,
       })
       : buildGuestHomeViewModel(input)
-  }, [auth.creature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, officialVisual?.versionId, officialVisual?.versionNumber, officialVisual?.visualTraitId, roomCode, statusMessage, visualProgress])
+  }, [activeCreature, auth.profile, botDifficulty, busyAction, errorMessage, isBusy, isOnline, nickname, officialVisual?.signedUrl, officialVisual?.versionId, officialVisual?.versionNumber, officialVisual?.visualTraitId, roomCode, statusMessage, visualProgress])
 
   async function startNewGame(mode: 'PVP' | 'VS_BOT', difficulty = botDifficulty) {
-    if (!auth.profile || !auth.creature) {
+    if (!auth.profile || !activeCreature) {
       setErrorMessage('Accedi e attendi l’inizializzazione del profilo prima di giocare.')
 
       return
@@ -476,12 +505,13 @@ function App() {
         nickname: auth.profile.nickname,
         playerId,
         profileId: auth.profile.id,
-        creatureId: auth.creature.id,
+        creatureId: activeCreature.id,
         creatureSnapshot: {
-          id: auth.creature.id,
-          baseCreatureKey: auth.creature.base_creature_key,
-          name: auth.creature.name,
-          level: auth.creature.level,
+          id: activeCreature.id,
+          lineageId: activeCreature.lineage_id,
+          baseCreatureKey: activeCreature.base_creature_key,
+          name: activeCreature.name,
+          level: activeCreature.level,
         },
       }
       const created = mode === 'VS_BOT'
@@ -516,7 +546,7 @@ function App() {
   }
 
   async function handleJoinGame() {
-    if (!auth.profile || !auth.creature) {
+    if (!auth.profile || !activeCreature) {
       setErrorMessage('Accedi e attendi l’inizializzazione del profilo prima di entrare in una stanza.')
 
       return
@@ -540,12 +570,13 @@ function App() {
         nickname: auth.profile.nickname,
         playerId,
         profileId: auth.profile.id,
-        creatureId: auth.creature.id,
+        creatureId: activeCreature.id,
         creatureSnapshot: {
-          id: auth.creature.id,
-          baseCreatureKey: auth.creature.base_creature_key,
-          name: auth.creature.name,
-          level: auth.creature.level,
+          id: activeCreature.id,
+          lineageId: activeCreature.lineage_id,
+          baseCreatureKey: activeCreature.base_creature_key,
+          name: activeCreature.name,
+          level: activeCreature.level,
         },
       })
       if (!joined.me) throw new Error('Impossibile identificare il partecipante della partita.')
@@ -672,11 +703,11 @@ function App() {
   }
 
   async function handleSelectVisualVersion(targetVersionId: string) {
-    if (!auth.creature || !visualProgress) return
-    await rollbackCreatureVisualVersion({ operation: 'ROLLBACK_CREATURE_VISUAL_VERSION', creatureId: auth.creature.id, targetVersionId, expectedCurrentVisualVersionId: visualProgress.currentVersion.id })
+    if (!activeCreature || !visualProgress) return
+    await rollbackCreatureVisualVersion({ operation: 'ROLLBACK_CREATURE_VISUAL_VERSION', creatureId: activeCreature.id, targetVersionId, expectedCurrentVisualVersionId: visualProgress.currentVersion.id })
     const [visual, progression] = await Promise.all([
-      getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: auth.creature.id }),
-      getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: auth.creature.id }),
+      getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: activeCreature.id }),
+      getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: activeCreature.id }),
     ])
     setOfficialVisual(visual.visual)
     setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history })
@@ -719,7 +750,7 @@ function App() {
     return <MissingConfigScreen />
   }
 
-  if (!snapshot && (auth.status !== 'ready' || !auth.profile || !auth.creature)) {
+  if (!snapshot && (auth.status !== 'ready' || !auth.profile || !activeCreature)) {
     return (
       <AuthScreen
         initialError={auth.error}
@@ -729,14 +760,14 @@ function App() {
     )
   }
 
-  if (!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && auth.creature) {
-    return <CreatureTransformationLab creature={auth.creature} onBack={handleLeaveCreatureTransformationLab} />
+  if (!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && activeCreature) {
+    return <CreatureTransformationLab creature={activeCreature} onBack={handleLeaveCreatureTransformationLab} />
   }
 
-  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && auth.creature) {
+  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && activeCreature) {
     return (
       <CreatureVisualProgressionScreen
-        creature={auth.creature}
+        creature={activeCreature}
         onBack={handleLeaveCreatureEvolution}
         onVisualChanged={handleVisualChanged}
       />
@@ -752,11 +783,11 @@ function App() {
     )
   }
 
-  if (!snapshot && currentScreen === 'profile' && auth.profile && auth.creature) {
+  if (!snapshot && currentScreen === 'profile' && auth.profile && activeCreature) {
     return (
       <ProfileScreen
         profile={auth.profile}
-        creature={auth.creature}
+        creature={activeCreature}
         history={history}
         isLoadingHistory={isLoadingHistory}
         errorMessage={historyError}
@@ -777,11 +808,11 @@ function App() {
     )
   }
 
-  if (!snapshot && currentScreen === 'collection' && auth.profile && auth.creature) {
+  if (!snapshot && currentScreen === 'collection' && auth.profile && activeCreature) {
     return (
       <CollectionScreen
         profile={auth.profile}
-        creature={auth.creature}
+        creature={activeCreature}
         isOnline={isOnline}
         onBack={() => setCurrentScreen('home')}
         onOpenProfile={() => setCurrentScreen('profile')}
@@ -792,6 +823,10 @@ function App() {
         visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
         visualHistory={visualProgress?.history}
         currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
+        lineages={auth.lineages}
+        activeLineageId={auth.activeLineage?.id}
+        lineageVisuals={lineageVisuals}
+        onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
       />
     )
   }
@@ -872,7 +907,7 @@ function App() {
         isBusy={isBusy}
         errorMessage={errorMessage}
         reward={matchReward}
-        creature={auth.creature}
+        creature={activeCreature}
       />
     )
   }

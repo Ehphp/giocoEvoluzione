@@ -4,6 +4,8 @@ import type { Session, User } from '@supabase/supabase-js'
 import {
     bootstrapMyProfile,
     loadMyProfile,
+    setMyActiveCreatureLineage,
+    type CreatureLineageRecord,
     type PlayerCreatureRecord,
     type ProfileRecord,
     updateMyNickname,
@@ -40,12 +42,16 @@ type AuthContextValue = {
     session: Session | null
     user: User | null
     profile: ProfileRecord | null
+    lineages: CreatureLineageRecord[]
+    activeLineage: CreatureLineageRecord | null
+    /** @deprecated Use activeLineage.creature; retained for presentation compatibility. */
     creature: PlayerCreatureRecord | null
     error: string | null
     signUp: (input: { username: string; password: string }) => Promise<{ requiresEmailConfirmation: boolean }>
     signIn: (input: { username: string; password: string }) => Promise<void>
     signOut: () => Promise<void>
     refreshProfile: () => Promise<void>
+    setActiveLineage: (lineageId: string) => Promise<void>
     updateNickname: (nickname: string) => Promise<void>
 }
 
@@ -55,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<AuthenticationStatus>(hasSupabaseConfig ? 'loading' : 'unauthenticated')
     const [session, setSession] = useState<Session | null>(null)
     const [profile, setProfile] = useState<ProfileRecord | null>(null)
+    const [lineages, setLineages] = useState<CreatureLineageRecord[]>([])
+    const [activeLineage, setActiveLineageState] = useState<CreatureLineageRecord | null>(null)
     const [creature, setCreature] = useState<PlayerCreatureRecord | null>(null)
     const [error, setError] = useState<string | null>(null)
     const requestVersion = useRef(0)
@@ -66,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!nextSession) {
             setProfile(null)
+            setLineages([])
+            setActiveLineageState(null)
             setCreature(null)
             setError(null)
             setStatus('unauthenticated')
@@ -84,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setProfile(account.profile)
+            setLineages(account.lineages)
+            setActiveLineageState(account.activeLineage)
             setCreature(account.creature)
             setStatus('ready')
         } catch (nextError) {
@@ -92,6 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setProfile(null)
+            setLineages([])
+            setActiveLineageState(null)
             setCreature(null)
             setError(nextError instanceof Error ? nextError.message : 'Impossibile inizializzare il profilo.')
             setStatus('error')
@@ -179,19 +193,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(updatedProfile)
     }, [])
 
+    const setActiveLineage = useCallback(async (lineageId: string) => {
+        await setMyActiveCreatureLineage(lineageId)
+        await refreshProfile()
+    }, [refreshProfile])
+
     const value = useMemo<AuthContextValue>(() => ({
         status,
         session,
         user: session?.user ?? null,
         profile,
+        lineages,
+        activeLineage,
         creature,
         error,
         signUp,
         signIn,
         signOut,
         refreshProfile,
+        setActiveLineage,
         updateNickname,
-    }), [creature, error, profile, refreshProfile, session, signIn, signOut, signUp, status, updateNickname])
+    }), [activeLineage, creature, error, lineages, profile, refreshProfile, session, setActiveLineage, signIn, signOut, signUp, status, updateNickname])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

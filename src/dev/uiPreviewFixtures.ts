@@ -20,6 +20,7 @@ export const PREVIEW_PROFILE: ProfileRecord = {
 export const PREVIEW_CREATURE: PlayerCreatureRecord = {
     id: 'preview-creature',
     profile_id: 'preview-profile',
+    lineage_id: 'preview-lineage',
     base_creature_key: 'verdant-hatchling',
     name: 'Verdello',
     level: 4,

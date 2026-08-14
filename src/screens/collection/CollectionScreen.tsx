@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { getExperienceProgress } from '../../lib/progression'
-import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
+import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { ASSETS } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Chip, IconButton, Pill, ProgressBar, SectionLabel } from '../../ui/components'
+import { AppShell, Avatar, Button, Chip, IconButton, Pill, ProgressBar, SectionLabel } from '../../ui/components'
 import { ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
 import { buildCollectionViewModel } from './buildCollectionViewModel'
 import type { CollectionForm } from './types'
@@ -32,6 +32,16 @@ type CollectionScreenProps = {
     visualTrait?: string | null
     visualHistory?: ReadonlyArray<VisualHistoryEntry>
     currentVisualVersionId?: string | null
+    lineages?: ReadonlyArray<CreatureLineageRecord>
+    activeLineageId?: string | null
+    onSetActiveLineage?: (lineageId: string) => void
+    lineageVisuals?: Readonly<Record<string, {
+        visualUrl?: string | null
+        visualVersionNumber?: number | null
+        visualTrait?: string | null
+        visualHistory?: ReadonlyArray<VisualHistoryEntry>
+        currentVisualVersionId?: string | null
+    }>>
 }
 
 function TypeChip({ type }: { type: CollectionForm['types'][number] }) {
@@ -121,19 +131,41 @@ export function CollectionScreen({
     visualTrait,
     visualHistory,
     currentVisualVersionId,
+    lineages,
+    activeLineageId,
+    onSetActiveLineage,
+    lineageVisuals,
 }: CollectionScreenProps) {
+    const availableLineages = useMemo(() => lineages?.length ? lineages : [{
+        id: creature.lineage_id,
+        profile_id: creature.profile_id,
+        name: creature.name,
+        base_creature_key: creature.base_creature_key,
+        created_at: creature.created_at,
+        updated_at: creature.updated_at,
+        creature,
+    }], [creature, lineages])
+    const resolvedActiveLineageId = activeLineageId ?? availableLineages[0]!.id
+    const [selectedLineageId, setSelectedLineageId] = useState(resolvedActiveLineageId)
+    const selectedLineage = availableLineages.find((lineage) => lineage.id === selectedLineageId) ?? availableLineages[0]!
+    const selectedVisual = lineageVisuals?.[selectedLineage.id]
+    const selectedCreature = selectedLineage.creature
     const viewModel = buildCollectionViewModel({
         profile,
-        creature,
-        experience: getExperienceProgress(creature.experience),
-        visualUrl,
-        visualVersionNumber,
-        visualTrait,
-        visualHistory,
-        currentVisualVersionId,
+        creature: selectedCreature,
+        experience: getExperienceProgress(selectedCreature.experience),
+        visualUrl: selectedVisual?.visualUrl ?? (selectedLineage.id === resolvedActiveLineageId ? visualUrl : null),
+        visualVersionNumber: selectedVisual?.visualVersionNumber ?? (selectedLineage.id === resolvedActiveLineageId ? visualVersionNumber : null),
+        visualTrait: selectedVisual?.visualTrait ?? (selectedLineage.id === resolvedActiveLineageId ? visualTrait : null),
+        visualHistory: selectedVisual?.visualHistory ?? (selectedLineage.id === resolvedActiveLineageId ? visualHistory : undefined),
+        currentVisualVersionId: selectedVisual?.currentVisualVersionId ?? (selectedLineage.id === resolvedActiveLineageId ? currentVisualVersionId : null),
     })
-    const initialSelectedFormId = viewModel.evolutionForms.find((form) => form.isActive)?.id ?? viewModel.evolutionForms.at(-1)?.id ?? ''
+    const activeFormId = viewModel.evolutionForms.find((form) => form.isActive)?.id ?? viewModel.evolutionForms.at(-1)?.id ?? ''
+    const initialSelectedFormId = activeFormId
     const [selectedFormId, setSelectedFormId] = useState(initialSelectedFormId)
+    useEffect(() => {
+        setSelectedFormId(activeFormId)
+    }, [activeFormId, selectedLineage.id])
     const selectedForm = viewModel.evolutionForms.find((form) => form.id === selectedFormId)
         ?? viewModel.evolutionForms.find((form) => form.isActive)
         ?? viewModel.evolutionForms.at(-1)
@@ -172,6 +204,22 @@ export function CollectionScreen({
                     <p>{viewModel.evolutionForms.length} forme scoperte · Generazione {viewModel.currentCreature.generation - 1}</p>
                 </header>
 
+                <section className="collection-lineage-section" aria-label="Stirpi">
+                    <SectionLabel>Stirpi</SectionLabel>
+                    <div className="collection-lineages" role="tablist" aria-label="Seleziona una stirpe">
+                        {availableLineages.map((lineage) => {
+                            const isSelected = lineage.id === selectedLineage.id
+                            const isActive = lineage.id === resolvedActiveLineageId
+                            return (
+                                <button key={lineage.id} type="button" className={`collection-lineages__button ${isSelected ? 'is-selected' : ''}`} role="tab" aria-selected={isSelected} onClick={() => setSelectedLineageId(lineage.id)}>
+                                    <span className="ev-truncate">{lineage.name ?? lineage.creature.name ?? 'Stirpe senza nome'}</span>
+                                    {isActive ? <small>Attiva</small> : null}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </section>
+
                 <section className="collection-current" aria-labelledby="current-creature-title">
                     <div className="collection-current__copy">
                         <span className="ev-eyebrow">{selectedForm.isActive ? 'Forma attuale' : 'Forma selezionata'}</span>
@@ -180,12 +228,13 @@ export function CollectionScreen({
                         <div className="collection-current__types">
                             {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
                         </div>
+                        {selectedLineage.id !== resolvedActiveLineageId && onSetActiveLineage ? <Button tone="gold" onClick={() => onSetActiveLineage(selectedLineage.id)}>Usa questa stirpe</Button> : null}
                     </div>
                     <FormArt form={selectedForm} className="collection-current__art" />
                 </section>
 
                 <section className="collection-lineage-section" aria-label="Stirpe">
-                    <SectionLabel>Stirpe</SectionLabel>
+                    <SectionLabel>Linea evolutiva</SectionLabel>
                     <LineageTimeline forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
                 </section>
 
