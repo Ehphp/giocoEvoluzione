@@ -42,6 +42,8 @@ describe('minimal Flux lineage', () => {
         expect(context.currentTargetState?.conceptName).toBe('Timone foglia')
         expect(describeCurrentTargetState(context)).toContain('minimal semantic continuity')
         expect(describeCurrentTargetState(context)).toContain('source image remains the complete visual state')
+        expect(describeCurrentTargetState(context)).toContain('new, substantial, independently readable morphological mutation')
+        expect(describeCurrentTargetState(context)).toContain('do not merely enlarge, decorate, refine or recolour it')
         expect(describeCurrentTargetState(context)).not.toContain('Coda vela')
         expect(describeCurrentTargetState(context)).not.toContain('Vele nervate')
     })

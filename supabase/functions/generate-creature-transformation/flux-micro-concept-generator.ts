@@ -88,6 +88,9 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
     const contract = plan.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[plan.evolutionTargetId]
     const structural = plan.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
+    const mutableAppearance = input.identity.mutableVisualFeatures.length
+        ? input.identity.mutableVisualFeatures.join('; ')
+        : 'current surface appearance and coloration'
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
@@ -102,11 +105,12 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         `ANATOMY CONTRACT: ${contract.topologyInvariants.join(' ')}`,
         `PRESERVE: ${contract.preservationRules.join(' ')}`,
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
+        `MUTABLE APPEARANCE: ${mutableAppearance}. These are not identity invariants. A visible colour treatment is optional: use it only as a biologically motivated, target-linked secondary adaptation. When warranted, state its location and biological role as part of mutationIdea or visualDetails; otherwise preserve the current coloration.`,
         `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
         ...(retryForNovelty && plan.noveltyReferences.length
             ? [`NOVELTY RETRY: a recent local mutation of this same target was too similar: ${describeNoveltyReferences(plan.noveltyReferences)}. Choose a genuinely different morphological direction for this target (different form, material, arrangement or growth pattern), while keeping the mutation local and respecting the same anatomy contract.`]
             : []),
-        'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a colour schema or extra fields.',
+        'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a separate colour schema or extra fields.',
     ].join('\n')
 }
 

@@ -29,6 +29,9 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
     const contract = input.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[contract.target]
     const structural = contract.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
+    const mutableAppearance = input.identity.mutableVisualFeatures.length
+        ? input.identity.mutableVisualFeatures.join('; ')
+        : 'current surface appearance and coloration'
     return [
         'CURRENT SOURCE IMAGE',
         'Edit the supplied source image. This is the same creature and the same individual. Preserve pose, viewpoint, composition and illustrated style as closely as possible. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.',
@@ -47,6 +50,8 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         describeCurrentTargetState(input.lineage),
         'NEW MUTATION',
         `${input.microConcept.conceptName}: ${input.microConcept.mutationIdea}. Visual details: ${input.microConcept.visualDetails.join('; ')}.${describeAvoid(input.microConcept.avoid)}`,
+        'MUTABLE APPEARANCE',
+        `${mutableAppearance} are not identity invariants. Preserve the current coloration unless the NEW MUTATION expressly declares a biologically motivated, target-linked colour treatment; when declared, make it clearly visible only on the selected target or directly connected surface.`,
         'BIOLOGICAL PRIOR',
         'Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures should look grown from the creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless explicitly required by the concept. Carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates are valid when grown as part of the creature.',
         'PRESERVE',

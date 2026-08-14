@@ -61,6 +61,8 @@ describe('anatomy contract', () => {
         expect(contract.preservationRules.join(' ')).toMatch(/only when they are necessary consequences/i)
         expect(contract.preservationRules.join(' ')).toMatch(/If the primary mutation works on its own, change only the selected target/i)
         expect(contract.preservationRules.join(' ')).toMatch(/no gratuitous changes outside the selected target/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/visible colour treatment is allowed only when it is a biologically motivated, target-linked secondary adaptation/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/never as an unrelated whole-body recolour/i)
         expect(contract.failureConditions.join(' ')).toMatch(/primary mutation must be clearly readable on the selected target/i)
         expect(contract.failureConditions.join(' ')).toMatch(/gratuitous redesign outside the selected target is invalid/i)
         expect(contract.failureConditions.join(' ')).not.toMatch(/Only the selected target may carry the new mutation/i)

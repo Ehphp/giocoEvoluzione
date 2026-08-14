@@ -24,5 +24,8 @@ describe('composeFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/grown from the creature itself/i)
         expect(prompt).toMatch(/Avoid manufactured, mechanical, metallic, technological or worn structures/i)
         expect(prompt).toMatch(/Carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates are valid/i)
+        expect(prompt).toContain('MUTABLE APPEARANCE')
+        expect(prompt).toMatch(/current surface appearance and coloration are not identity invariants/i)
+        expect(prompt).toMatch(/unless the NEW MUTATION expressly declares a biologically motivated, target-linked colour treatment/i)
     })
 })

@@ -74,6 +74,6 @@ export function describeCurrentTargetState(context: EvolutionLineageContext): st
     }
     return [
         `This target already carries: ${describeEntry(context.currentTargetState)}.`,
-        'This is minimal semantic continuity only; the supplied source image remains the complete visual state. Develop this target further without resetting it to the base form.',
+        'This is minimal semantic continuity only; the supplied source image remains the complete visual state. Keep the evolved state as a substrate and introduce a new, substantial, independently readable morphological mutation on this target. Do not reset or erase the established adaptation, but do not merely enlarge, decorate, refine or recolour it.',
     ].join(' ')
 }
