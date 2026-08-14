@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
+import { createResolvedCreatureSource } from './test-creature-fixtures.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { orchestrateGenerateFluxEvolutionChainStep } from './edge-orchestration.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
@@ -31,6 +32,8 @@ function createInput(options: {
     evolutionTargetId?: string
     bodyPlanMutationId?: string
     previousStepRequestIds?: string[]
+    sourceVisualVersionId?: string
+    source?: ReturnType<typeof createResolvedCreatureSource>
     storage?: Record<string, unknown>
     policyOverrides?: Record<string, string>
     generate?: ReturnType<typeof vi.fn>
@@ -47,14 +50,17 @@ function createInput(options: {
                 evolutionTargetId: options.evolutionTargetId ?? 'LIMBS_AND_FEET',
                 ...(options.bodyPlanMutationId ? { bodyPlanMutationId: options.bodyPlanMutationId } : {}),
                 previousStepRequestIds,
+                ...(options.sourceVisualVersionId ? { sourceVisualVersionId: options.sourceVisualVersionId } : {}),
                 ...(previousStepRequestIds.length ? { experimentalSourceRequestId: previousStepRequestIds.at(-1) } : {}),
                 idempotencyKey: options.idempotencyKey,
             },
             policy: policyWith(options.policyOverrides),
-            resolver: createTestResolver(),
+            resolver: createTestResolver(options.source),
             repository: options.repository.repository,
             storage: options.storage ?? createTestStorage(),
-            visualRepository: { async getVersion() { throw new Error('the chain must not touch productive visual versions') } },
+            visualRepository: options.sourceVisualVersionId
+                ? { async getVersion() { return { id: options.sourceVisualVersionId, creatureId: CREATURE_ID, versionNumber: 1, previousVersionId: null, visualTraitId: null, conceptName: null, conceptSnapshot: null, promptTemplateVersion: null, promptSha256: null, assetPath: 'selected-v1.png', assetSha256: 'b'.repeat(64), mimeType: 'image/png', width: 1024, height: 1536, hasAlpha: true, status: 'SUPERSEDED', adoptedAt: null, profileId: PROFILE_ID } } }
+                : { async getVersion() { throw new Error('the chain must not touch productive visual versions') } },
             createFluxMicroConceptGenerator: () => ({ generate }),
             createFalFluxImageProvider: () => ({ transform }),
             deferBackgroundTask: (task: Promise<void>) => { options.tasks.push(task) },
@@ -97,6 +103,33 @@ describe('FLUX evolution chain step', () => {
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
         expect(plan.lineage.currentTargetState.map((entry: { conceptName: string }) => entry.conceptName)).toEqual(['Pale rematrici'])
+    })
+
+    it('builds G1 from the selected visual version history instead of later adopted evolutions', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const source = createResolvedCreatureSource({
+            currentVersionNumber: 4,
+            previousTransformations: [
+                { versionNumber: 2, visualTraitId: 'SENSORY_EXPANSION', evolutionTargetId: 'HEAD_AND_CROWN', conceptName: 'Corona percettiva' },
+                { versionNumber: 3, visualTraitId: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL', conceptName: 'Coda pinna' },
+                { versionNumber: 4, visualTraitId: 'IMPACT_ADAPTATION', evolutionTargetId: 'DORSAL_STRUCTURES', conceptName: 'Placche dorsali', bodyPlanMutationId: 'ADD_LIMB_PAIR' },
+            ],
+        })
+        const context = createInput({ repository: persistence, tasks, idempotencyKey: 'selected-v1', sourceVisualVersionId: '00000000-0000-4000-8000-000000000004', source })
+
+        await orchestrateGenerateFluxEvolutionChainStep(context.input as never)
+        await tasks[0]
+
+        const plan = context.generate.mock.calls[0]![0].plan
+        expect(plan.lineage.currentTargetState).toEqual([])
+        expect(plan.lineage.otherEstablishedEvolutions).toEqual([])
+        expect(plan.bodyPlanId).toBe('QUADRUPED')
+        expect(context.transform.mock.calls[0]![0].prompt).toContain('This target carries no adopted evolution yet')
+        expect(context.transform.mock.calls[0]![0].prompt).not.toContain('Corona percettiva')
+        expect(context.transform.mock.calls[0]![0].prompt).not.toContain('Coda pinna')
+        expect(context.transform.mock.calls[0]![0].prompt).not.toContain('Placche dorsali')
+        expect(context.transform.mock.calls[0]![0].prompt).toContain('Keep the four-legged quadrupedal body plan')
     })
 
     it('runs a body-plan mutation through the same pipeline when the capability is enabled', async () => {

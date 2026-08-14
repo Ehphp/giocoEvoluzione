@@ -484,6 +484,18 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
 
     try {
         const source = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
+        const selectedSourceVersion = parsed.request.sourceVisualVersionId
+            ? await input.visualRepository.getVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId, versionId: parsed.request.sourceVisualVersionId })
+            : null
+        if (parsed.request.sourceVisualVersionId && (!selectedSourceVersion || selectedSourceVersion.status === 'REVOKED')) {
+            return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile.')
+        }
+        // A Lab chain must describe the selected source's history, never transformations that
+        // happened after it. This also makes structural topology match the selected visual.
+        const sourceVersionNumber = selectedSourceVersion?.versionNumber ?? source.currentVersionNumber
+        const sourceHistory = selectedSourceVersion
+            ? source.previousTransformations.filter((entry) => entry.versionNumber <= sourceVersionNumber)
+            : source.previousTransformations
         const historyRecords = await Promise.all(parsed.request.previousStepRequestIds.map((requestId) => input.repository.getById({ profileId: input.profileId!, requestId })))
         const finalizedSteps = historyRecords.flatMap((record) => (
             record && record.creatureId === parsed.request.creatureId && record.status === 'SUCCEEDED' && record.assetReadiness === 'FINAL_ASSET' && isFluxEvolutionSnapshot(record.conceptSnapshot)
@@ -496,7 +508,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
         // A chain step reads its own steps as adopted lineage, so the Lab reproduces exactly what
         // production would see after those generations had been adopted.
         const chainHistory: PreviousCreatureTransformationSummary[] = finalizedSteps.map(({ record, snapshot }, index) => ({
-            versionNumber: source.currentVersionNumber + index + 1,
+            versionNumber: sourceVersionNumber + index + 1,
             visualTraitId: record.visualTraitId as VisualTraitId,
             conceptName: snapshot.conceptName,
             evolutionTargetId: snapshot.evolutionTargetId,
@@ -504,7 +516,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
             mutationIdea: snapshot.mutationIdea,
             ...(readFluxSnapshotCapability(snapshot) === 'BODY_PLAN_MUTATION' && snapshot.bodyPlanMutationId ? { bodyPlanMutationId: snapshot.bodyPlanMutationId } : {}),
         }))
-        const previousTransformations = [...source.previousTransformations, ...chainHistory]
+        const previousTransformations = [...sourceHistory, ...chainHistory]
         const adoptedBodyPlanMutationIds = previousTransformations.flatMap((entry) => entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : [])
         const bodyPlan = resolveCanonicalBodyPlan({ baseCreatureKey: source.identity.baseCreatureKey, adoptedBodyPlanMutationIds })
         if (!bodyPlan) return failure(input.requestId, 'FLUX_BODY_PLAN_UNSUPPORTED', 'La topologia anatomica della creatura non e configurata.')
@@ -520,10 +532,8 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
             const experimental = finalizedSteps.at(-1)!.record
             if (!experimental.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'L asset finale precedente non e recuperabile.')
             stepSource = { kind: 'EXPERIMENTAL', path: experimental.resultPath }
-        } else if (parsed.request.sourceVisualVersionId) {
-            const version = await input.visualRepository.getVersion({ profileId: input.profileId, creatureId: parsed.request.creatureId, versionId: parsed.request.sourceVisualVersionId })
-            if (!version || version.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale produttiva selezionata non e disponibile.')
-            stepSource = { kind: 'VISUAL', path: version.assetPath, isBaseVersion: version.visualTraitId === null }
+        } else if (selectedSourceVersion) {
+            stepSource = { kind: 'VISUAL', path: selectedSourceVersion.assetPath, isBaseVersion: selectedSourceVersion.visualTraitId === null }
         }
 
         const plan = buildFluxEvolutionPlan({
