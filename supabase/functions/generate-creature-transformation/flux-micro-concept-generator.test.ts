@@ -50,6 +50,21 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION')
     })
 
+    it('treats DEFENSE as a purpose and asks for grown biological anatomy', () => {
+        const basePlan = planFor('TAIL')
+        const prompt = composeFluxMicroConceptInstructions({
+            identity: TEST_CREATURE_IDENTITY,
+            plan: { ...basePlan, evolutionFunction: 'DEFENSE', visualTraitId: 'ANATOMICAL_EVOLUTION' },
+        })
+
+        expect(prompt).toContain('Functional direction: DEFENSE. Use it as the biological purpose')
+        expect(prompt).toContain('BIOLOGICAL PRIOR')
+        expect(prompt).toMatch(/naturally grown animal anatomy and biological tissues/i)
+        expect(prompt).toMatch(/Avoid manufactured, mechanical, metallic, technological or worn structures/i)
+        expect(prompt).toMatch(/carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid/i)
+        expect(prompt).not.toContain('IMPACT_ADAPTATION')
+    })
+
     it('states the authorized structural change when the capability is used', () => {
         const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('LIMBS_AND_FEET', true) })
 

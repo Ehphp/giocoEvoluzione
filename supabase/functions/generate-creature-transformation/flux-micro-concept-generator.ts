@@ -51,6 +51,7 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
         'TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.',
         `Functional direction: ${plan.evolutionFunction}. Use it as the biological purpose, not as a limit on the concrete morphology.`,
+        'BIOLOGICAL PRIOR: Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures must look grown from this creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless the concept explicitly requires them. Biological carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid.',
         ...(structural
             ? [`AUTHORIZED BODY-PLAN MUTATION: ${contract.structuralChange} Describe the mutation as this structural change actually realised on the creature.`]
             : []),

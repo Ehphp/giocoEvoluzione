@@ -39,22 +39,30 @@ export const EVOLUTION_FUNCTION_IDS = Object.freeze([
     'PERCEPTION',
     'THERMOREGULATION',
     'ENERGY_STORAGE',
-    'IMPACT_ABSORPTION',
     'AQUATIC_ADAPTATION',
 ] as const)
 
 export type EvolutionFunctionId = (typeof EVOLUTION_FUNCTION_IDS)[number]
 
+/** Kept solely to read historical requests and lineage without rewriting them. */
+export const DEPRECATED_EVOLUTION_FUNCTION_IDS = Object.freeze(['IMPACT_ABSORPTION'] as const)
+
+export type PersistedEvolutionFunctionId = EvolutionFunctionId | (typeof DEPRECATED_EVOLUTION_FUNCTION_IDS)[number]
+
+/**
+ * New FLUX directions deliberately use one neutral persistence trait. A function says why an
+ * evolution happens; it must not preselect a morphology before the Concept sees the target and
+ * lineage. Older visual-trait ids remain valid historical metadata.
+ */
 export const EVOLUTION_FUNCTION_VISUAL_TRAITS: Readonly<Record<EvolutionFunctionId, readonly VisualTraitId[]>> = Object.freeze({
-    BALANCE: Object.freeze(['LOCOMOTION_ADAPTATION'] as const),
-    PROPULSION: Object.freeze(['LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'] as const),
-    GRIP: Object.freeze(['LOCOMOTION_ADAPTATION'] as const),
-    DEFENSE: Object.freeze(['IMPACT_ADAPTATION'] as const),
-    PERCEPTION: Object.freeze(['SENSORY_EXPANSION'] as const),
-    THERMOREGULATION: Object.freeze(['ENERGY_REGULATION'] as const),
-    ENERGY_STORAGE: Object.freeze(['ENERGY_REGULATION'] as const),
-    IMPACT_ABSORPTION: Object.freeze(['IMPACT_ADAPTATION'] as const),
-    AQUATIC_ADAPTATION: Object.freeze(['AQUATIC_MORPHOLOGY'] as const),
+    BALANCE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    PROPULSION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    GRIP: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    DEFENSE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    PERCEPTION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    THERMOREGULATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    ENERGY_STORAGE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    AQUATIC_ADAPTATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
 })
 
 export type EvolutionTargetDefinition = Readonly<{
@@ -71,7 +79,7 @@ export type EvolutionTargetDefinition = Readonly<{
 
 export type EvolutionTargetHistoryEntry = Readonly<{
     evolutionTargetId?: EvolutionTargetId | null
-    evolutionFunction?: EvolutionFunctionId | null
+    evolutionFunction?: PersistedEvolutionFunctionId | null
     visualTraitId: VisualTraitId
 }>
 
@@ -98,7 +106,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing tail',
         primaryBodyAreas: ['TAIL'],
         supportingBodyAreas: ['BACK', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
     }),
     defineTarget({
         id: 'LIMBS_AND_FEET',
@@ -108,7 +116,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing limbs and feet, treated as one system',
         primaryBodyAreas: ['FORELIMBS', 'HIND_LIMBS'],
         supportingBodyAreas: ['CHEST', 'BACK', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['LOCOMOTION_ADAPTATION', 'IMPACT_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'LOCOMOTION_ADAPTATION', 'IMPACT_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
     }),
     defineTarget({
         id: 'HEAD_AND_CROWN',
@@ -118,7 +126,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing head, its crown and its sensory structures',
         primaryBodyAreas: ['HEAD_SURFACE', 'EYE_REGION', 'FACE'],
         supportingBodyAreas: ['NECK', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['SENSORY_EXPANSION'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'SENSORY_EXPANSION'],
     }),
     defineTarget({
         id: 'BODY_SHAPE',
@@ -128,7 +136,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the overall body shape: trunk length, volume, chest, back line and mass distribution',
         primaryBodyAreas: ['CHEST', 'BACK'],
         supportingBodyAreas: ['NECK', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['IMPACT_ADAPTATION', 'ENERGY_REGULATION'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'IMPACT_ADAPTATION', 'ENERGY_REGULATION'],
     }),
     defineTarget({
         id: 'DORSAL_STRUCTURES',
@@ -138,7 +146,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'structures anchored to the back and spine',
         primaryBodyAreas: ['BACK'],
         supportingBodyAreas: ['NECK', 'TAIL', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['IMPACT_ADAPTATION', 'ENERGY_REGULATION'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'IMPACT_ADAPTATION', 'ENERGY_REGULATION'],
     }),
     defineTarget({
         id: 'SKIN_AND_COVERING',
@@ -148,7 +156,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the skin and body covering across the existing anatomy',
         primaryBodyAreas: ['SKIN_SURFACE'],
         supportingBodyAreas: ['TAIL', 'FORELIMBS', 'HIND_LIMBS', 'NECK', 'BACK', 'CHEST'],
-        compatibleVisualTraits: ['IMPACT_ADAPTATION', 'LOCOMOTION_ADAPTATION', 'SENSORY_EXPANSION', 'ENERGY_REGULATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'IMPACT_ADAPTATION', 'LOCOMOTION_ADAPTATION', 'SENSORY_EXPANSION', 'ENERGY_REGULATION', 'AQUATIC_MORPHOLOGY'],
     }),
     defineTarget({
         id: 'WINGS',
@@ -158,7 +166,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing wings',
         primaryBodyAreas: ['WINGS'],
         supportingBodyAreas: ['BACK', 'CHEST', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['LOCOMOTION_ADAPTATION', 'IMPACT_ADAPTATION'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'LOCOMOTION_ADAPTATION', 'IMPACT_ADAPTATION'],
     }),
     defineTarget({
         id: 'TENTACLES',
@@ -168,7 +176,7 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing tentacles, treated as one system',
         primaryBodyAreas: ['TENTACLES'],
         supportingBodyAreas: ['CHEST', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'LOCOMOTION_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
     }),
 ] as const)
 

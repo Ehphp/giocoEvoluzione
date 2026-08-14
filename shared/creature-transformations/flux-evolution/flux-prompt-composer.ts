@@ -51,6 +51,8 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         describeUnclassifiedLegacyEvolutions(input.lineage),
         'NEW MUTATION',
         `${input.microConcept.conceptName}: ${input.microConcept.mutationIdea}. Visual details: ${input.microConcept.visualDetails.join('; ')}.${describeAvoid(input.microConcept.avoid)}`,
+        'BIOLOGICAL PRIOR',
+        'Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures should look grown from the creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless explicitly required by the concept. Carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates are valid when grown as part of the creature.',
         'PRESERVE',
         join(contract.preservationRules),
         `Preserve the identity of this individual: ${input.identity.identityFeatures.join('; ')}. ${input.identity.description}`,

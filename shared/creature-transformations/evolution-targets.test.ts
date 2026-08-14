@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+    DEPRECATED_EVOLUTION_FUNCTION_IDS,
+    EVOLUTION_FUNCTION_VISUAL_TRAITS,
     EVOLUTION_TARGETS,
     EVOLUTION_TARGET_BY_ID,
     EVOLUTION_TARGET_IDS,
@@ -60,6 +62,20 @@ describe('evolution target taxonomy', () => {
         })!
 
         expect(`${second.visualTraitId}:${second.evolutionFunction}`).not.toBe(`${first.visualTraitId}:${first.evolutionFunction}`)
+    })
+
+    it('keeps DEFENSE abstract instead of resolving it as impact adaptation', () => {
+        expect(DEPRECATED_EVOLUTION_FUNCTION_IDS).toContain('IMPACT_ABSORPTION')
+        expect(EVOLUTION_FUNCTION_VISUAL_TRAITS.DEFENSE).toEqual(['ANATOMICAL_EVOLUTION'])
+        expect(isGeneratableEvolutionDirection({
+            evolutionTargetId: 'TAIL',
+            evolutionFunction: 'DEFENSE',
+            visualTraitId: 'ANATOMICAL_EVOLUTION',
+        })).toBe(true)
+
+        const defenseDirection = Array.from({ length: 64 }, (_, index) => resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed: `defense-${index}` }))
+            .find((direction) => direction?.evolutionFunction === 'DEFENSE')
+        expect(defenseDirection).toEqual({ evolutionFunction: 'DEFENSE', visualTraitId: 'ANATOMICAL_EVOLUTION' })
     })
 
     it('recognises only catalogued target ids', () => {

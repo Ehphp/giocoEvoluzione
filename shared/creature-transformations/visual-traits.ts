@@ -1,11 +1,12 @@
 import type { BodyArea } from './body-areas.ts'
 
 /**
- * Functional families a mutation can belong to. They label the biological purpose of an
- * evolution for the domain and for adoption metadata; the concrete morphology is decided by the
- * micro-concept and by the anatomy contract of the selected target.
+ * Persistence labels for an evolution. The neutral label is used for new FLUX generations;
+ * the older functional labels remain only for historical adoption metadata. Concrete morphology
+ * is decided by the micro-concept and by the anatomy contract of the selected target.
  */
 export const VISUAL_TRAIT_IDS = Object.freeze([
+    'ANATOMICAL_EVOLUTION',
     'IMPACT_ADAPTATION',
     'LOCOMOTION_ADAPTATION',
     'SENSORY_EXPANSION',
@@ -30,6 +31,12 @@ function defineVisualTrait(definition: VisualTraitDefinition): VisualTraitDefini
 }
 
 export const VISUAL_TRAITS = Object.freeze([
+    defineVisualTrait({
+        id: 'ANATOMICAL_EVOLUTION',
+        displayName: 'Evoluzione anatomica',
+        description: 'Etichetta neutra per una mutazione scelta dal Concept in base alla funzione e al target.',
+        allowedBodyAreas: ['HEAD_SURFACE', 'EYE_REGION', 'FACE', 'NECK', 'BACK', 'CHEST', 'FORELIMBS', 'HIND_LIMBS', 'WINGS', 'TENTACLES', 'TAIL', 'SKIN_SURFACE'],
+    }),
     defineVisualTrait({
         id: 'IMPACT_ADAPTATION',
         displayName: 'Adattamento all’impatto',
