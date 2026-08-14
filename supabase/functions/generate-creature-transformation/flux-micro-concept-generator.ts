@@ -1,5 +1,5 @@
 import { parseFluxMicroConcept, type FluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
-import { describeCurrentTargetState, describeOtherEstablishedEvolutions } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
+import { describeCurrentTargetState, describeOtherEstablishedEvolutions, describeUnclassifiedLegacyEvolutions } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
 import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
@@ -27,6 +27,18 @@ export type GenerateFluxMicroConceptInput = Readonly<{
     plan: FluxEvolutionPlan
 }>
 
+const INDEPENDENT_APPENDAGE_PATTERN = /\b(?:independently rooted|independent(?:ly)?(?: rooted)?\s+(?:anatomical\s+)?appendages?|new\s+(?:anatomical\s+)?roots?|separate\s+(?:anatomical\s+)?appendages?)\b|\b(?:appendici\s+indipendenti|nuov[ea]\s+radici\s+anatomiche)\b/i
+const ADDED_TOPOLOGY_PATTERN = /\b(?:additional|extra|new|second|multiple|several|independent|separate)\s+(?:tails?|tentacles?|limbs?|wings?|heads?|appendages?)\b|\b(?:code?|tentacol[ioe]|arti|zampe|ali|teste|appendici)\s+(?:aggiunt[ei]|extra|nuov[ei]|separat[ei]|indipendenti)\b/i
+const TAIL_SPLIT_PATTERN = /\b(?:split|forked|bifurcated|branched)\s+tail\b|\btail\s+(?:splits?|forks?|bifurcates?|branches?)\b|\b(?:coda\s+(?:biforcat[ae]|divis[ae]|ramificat[ae])|(?:coda\s+)?(?:biforcat[ae]|divis[ae]|ramificat[ae])\s+in\s+(?:due|pi[ùu])\s+code?)\b|\b(?:tentacle|tentacolo)\b/i
+
+/** Rejects model concepts that would contradict a normal target's fixed topology. */
+export function isTopologicallyCompatibleFluxMicroConcept(concept: FluxMicroConcept, plan: FluxEvolutionPlan): boolean {
+    if (plan.capability !== 'ANATOMICAL_MUTATION') return true
+    const text = [concept.conceptName, concept.mutationIdea, ...concept.visualDetails].join(' ')
+    if (INDEPENDENT_APPENDAGE_PATTERN.test(text) || ADDED_TOPOLOGY_PATTERN.test(text)) return false
+    return plan.evolutionTargetId !== 'TAIL' || !TAIL_SPLIT_PATTERN.test(text)
+}
+
 export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConceptInput): string {
     const plan = input.plan
     const contract = plan.anatomyContract
@@ -37,6 +49,7 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
         `SELECTED TARGET: ${plan.evolutionTargetId} — ${target.promptRegion}. Treat it as the primary evolutionary target and default to a local mutation. If the mutation works on its own, describe only that target. Preserve all unrelated anatomy by default. Introduce a secondary adaptation only when it is a necessary consequence of the primary mutation for biomechanical support, anatomical continuity, posture rebalancing, structural integration or tightly linked visual propagation. A secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation; never add one by default or redesign unrelated anatomy.`,
         `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
+        'TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.',
         `Functional direction: ${plan.evolutionFunction}. Use it as the biological purpose, not as a limit on the concrete morphology.`,
         ...(structural
             ? [`AUTHORIZED BODY-PLAN MUTATION: ${contract.structuralChange} Describe the mutation as this structural change actually realised on the creature.`]
@@ -46,6 +59,7 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
         `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
         `OTHER ESTABLISHED EVOLUTIONS: ${describeOtherEstablishedEvolutions(plan.lineage)}`,
+        `LEGACY EVOLUTIONS WITH UNKNOWN TARGET: ${describeUnclassifiedLegacyEvolutions(plan.lineage)}`,
         'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a colour schema or extra fields.',
     ].join('\n')
 }
@@ -109,7 +123,7 @@ export class FluxMicroConceptGenerator {
                 const output = extractOutputText(await response.json())
                 let concept: FluxMicroConcept | null = null
                 try { concept = output ? parseFluxMicroConcept(JSON.parse(output)) : null } catch { /* retry a malformed schema response once */ }
-                if (concept) return concept
+                if (concept && isTopologicallyCompatibleFluxMicroConcept(concept, input.plan)) return concept
                 if (attempt === 0) continue
                 throw new FluxMicroConceptGeneratorError('FLUX_CONCEPT_RESPONSE_INVALID', 'Il micro-concept FLUX non rispetta il contratto.')
             } catch (error) {

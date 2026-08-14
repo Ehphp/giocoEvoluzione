@@ -10,7 +10,7 @@ const PREVIOUS = [
     { versionNumber: 3, visualTraitId: 'ENERGY_REGULATION' as const, evolutionTargetId: 'SKIN_AND_COVERING' as const, conceptName: 'Pelle abissale', mutationIdea: 'pelle scura con venature luminose' },
 ]
 
-function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET', structural = false) {
+function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET' | 'TAIL', structural = false) {
     return buildFluxEvolutionPlan({
         bodyPlan: BODY_PLANS.QUADRUPED,
         evolutionTargetId,
@@ -34,6 +34,9 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).toMatch(/never add one by default/i)
         expect(prompt).not.toMatch(/lives exclusively there/i)
         expect(prompt).toContain('TARGET FREEDOM')
+        expect(prompt).toContain('TOPOLOGY: For a normal anatomical mutation')
+        expect(prompt).toMatch(/Structures integrated into and anchored to the selected target are allowed/i)
+        expect(prompt).toMatch(/do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads/i)
         expect(prompt).toContain('ANATOMY CONTRACT')
         expect(prompt).toContain('CURRENT SOURCE IMAGE')
         expect(prompt).toContain('CURRENT TARGET STATE')
@@ -64,6 +67,16 @@ describe('FluxMicroConceptGenerator', () => {
         expect(request.text.format.strict).toBe(true)
         expect(request.text.format.schema.required).toEqual(['conceptName', 'mutationIdea', 'visualDetails', 'avoid'])
         expect(JSON.stringify(request)).toContain('additionalProperties')
+    })
+
+    it('retries a topologically incompatible normal TAIL concept before accepting a continuous tail', async () => {
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Ventaglio abissale', mutationIdea: 'La coda si divide in sei appendici indipendenti simili a tentacoli.', visualDetails: ['code aggiuntive'], avoid: [] }) })))
+            .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify({ conceptName: 'Ventaglio abissale', mutationIdea: 'La coda esistente sviluppa lobi fogliari articolati lungo la sua struttura continua.', visualDetails: ['lobi ancorati alla coda'], avoid: [] }) })))
+        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
+
+        await expect(generator.generate({ identity: TEST_CREATURE_IDENTITY, plan: planFor('TAIL') })).resolves.toMatchObject({ conceptName: 'Ventaglio abissale' })
+        expect(fetchImplementation).toHaveBeenCalledTimes(2)
     })
 
     it('retries one malformed schema response then rejects an invalid contract', async () => {

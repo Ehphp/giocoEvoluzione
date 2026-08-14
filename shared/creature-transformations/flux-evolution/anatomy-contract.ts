@@ -153,13 +153,13 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
 const ANATOMICAL_FAILURES = Object.freeze([
     'Adding, removing, duplicating or relocating heads, limbs, wings, tentacles or tails is invalid.',
     'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default. Secondary adaptations are valid only when they are necessary consequences of that mutation, and must remain subordinate; a new dominant mutation or gratuitous redesign outside the selected target is invalid.',
-    'Changing pose, framing, camera distance or illustrated style is invalid.',
+    'Changing pose, viewpoint, composition or illustrated style is invalid unless a minimal reframing or subject-scale adjustment is necessary to keep the complete creature and mutated target fully visible with comfortable canvas margin.',
 ])
 
 const STRUCTURAL_FAILURES = Object.freeze([
     'Only the structural change described above may alter the topology; every other count and attachment point is preserved.',
     'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default; any secondary adaptation must be a necessary, subordinate consequence of it.',
-    'Changing pose, framing, camera distance or illustrated style is invalid.',
+    'Changing pose, viewpoint, composition or illustrated style is invalid unless a minimal reframing or subject-scale adjustment is necessary to keep the complete creature and mutated target fully visible with comfortable canvas margin.',
 ])
 
 function resolveAuthorizedMutation(input: {

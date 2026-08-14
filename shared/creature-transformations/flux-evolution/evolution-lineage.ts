@@ -23,8 +23,10 @@ export type EvolutionLineageContext = Readonly<{
     family: EvolutionTargetFamily
     /** Adopted evolutions of the same target or anatomical family, oldest first. */
     currentTargetState: readonly EvolutionLineageEntry[]
-    /** Everything else already established on this individual. */
+    /** Adopted evolutions with a known, different anatomical family. */
     otherEstablishedEvolutions: readonly EvolutionLineageEntry[]
+    /** Legacy entries without target metadata; never silently treated as target lineage. */
+    unclassifiedLegacyEvolutions: readonly EvolutionLineageEntry[]
 }>
 
 function toEntry(summary: PreviousCreatureTransformationSummary): EvolutionLineageEntry {
@@ -44,11 +46,13 @@ export function buildEvolutionLineageContext(input: {
     const family = evolutionTargetFamily(input.evolutionTargetId)
     const entries = [...input.previousTransformations].map(toEntry).sort((left, right) => left.versionNumber - right.versionNumber)
     const sameFamily = entries.filter((entry) => entry.evolutionTargetId !== null && evolutionTargetFamily(entry.evolutionTargetId) === family)
+    const unclassifiedLegacyEvolutions = entries.filter((entry) => entry.evolutionTargetId === null)
     return Object.freeze({
         evolutionTargetId: input.evolutionTargetId,
         family,
         currentTargetState: Object.freeze(sameFamily),
-        otherEstablishedEvolutions: Object.freeze(entries.filter((entry) => !sameFamily.includes(entry))),
+        otherEstablishedEvolutions: Object.freeze(entries.filter((entry) => entry.evolutionTargetId !== null && !sameFamily.includes(entry))),
+        unclassifiedLegacyEvolutions: Object.freeze(unclassifiedLegacyEvolutions),
     })
 }
 
@@ -72,5 +76,13 @@ export function describeOtherEstablishedEvolutions(context: EvolutionLineageCont
     return [
         `Already established elsewhere on this individual: ${context.otherEstablishedEvolutions.map(describeEntry).join('; ')}.`,
         'This lineage is already visible in the source image: preserve it, do not recreate it, do not develop it and do not reinterpret it as the new mutation.',
+    ].join(' ')
+}
+
+export function describeUnclassifiedLegacyEvolutions(context: EvolutionLineageContext): string {
+    if (!context.unclassifiedLegacyEvolutions.length) return 'No legacy evolution with an unknown target exists on this creature.'
+    return [
+        `Legacy evolutions with unknown anatomical target: ${context.unclassifiedLegacyEvolutions.map(describeEntry).join('; ')}.`,
+        'Their region cannot be classified safely. Preserve what is visible in the source image; do not develop or reinterpret them as the new mutation.',
     ].join(' ')
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PreviousCreatureTransformationSummary } from '../creature-visual-versions.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS } from './body-plan-registry.ts'
-import { buildEvolutionLineageContext, describeCurrentTargetState, describeOtherEstablishedEvolutions } from './evolution-lineage.ts'
+import { buildEvolutionLineageContext, describeCurrentTargetState, describeOtherEstablishedEvolutions, describeUnclassifiedLegacyEvolutions } from './evolution-lineage.ts'
 import { composeFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 
 const IDENTITY = {
@@ -22,6 +22,10 @@ const SKIN_EVOLUTION: PreviousCreatureTransformationSummary = {
 const TAIL_EVOLUTION: PreviousCreatureTransformationSummary = {
     versionNumber: 3, visualTraitId: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL',
     conceptName: 'Timone foglia', mutationIdea: 'coda larga e appiattita',
+}
+const EARLIER_TAIL_EVOLUTION: PreviousCreatureTransformationSummary = {
+    versionNumber: 1, visualTraitId: 'LOCOMOTION_ADAPTATION', evolutionTargetId: 'TAIL',
+    conceptName: 'Coda vela', mutationIdea: 'coda con pinna larga',
 }
 
 describe('target-aware lineage', () => {
@@ -62,6 +66,26 @@ describe('target-aware lineage', () => {
         expect(context.otherEstablishedEvolutions.map((entry) => entry.conceptName)).toEqual(['Pelle abissale'])
     })
 
+    it('keeps every TAIL evolution in target lineage, never in other established evolutions', () => {
+        const context = buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: [SKIN_EVOLUTION, TAIL_EVOLUTION, EARLIER_TAIL_EVOLUTION] })
+
+        expect(context.currentTargetState.map((entry) => entry.conceptName)).toEqual(['Coda vela', 'Timone foglia'])
+        expect(context.otherEstablishedEvolutions.map((entry) => entry.conceptName)).toEqual(['Pelle abissale'])
+        expect(describeCurrentTargetState(context)).toContain('Coda vela')
+        expect(describeCurrentTargetState(context)).toContain('Timone foglia')
+        expect(describeOtherEstablishedEvolutions(context)).not.toContain('Timone foglia')
+    })
+
+    it('keeps legacy evolutions with no target metadata out of both anatomical lineage sections', () => {
+        const legacy: PreviousCreatureTransformationSummary = { versionNumber: 1, visualTraitId: 'IMPACT_ADAPTATION', evolutionTargetId: null, conceptName: 'Forma storica' }
+        const context = buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: [legacy, TAIL_EVOLUTION, SKIN_EVOLUTION] })
+
+        expect(context.currentTargetState.map((entry) => entry.conceptName)).toEqual(['Timone foglia'])
+        expect(context.otherEstablishedEvolutions.map((entry) => entry.conceptName)).toEqual(['Pelle abissale'])
+        expect(context.unclassifiedLegacyEvolutions.map((entry) => entry.conceptName)).toEqual(['Forma storica'])
+        expect(describeUnclassifiedLegacyEvolutions(context)).toMatch(/cannot be classified safely/i)
+    })
+
     it('composes the prompt with the four lineage sections in order', () => {
         const lineage = buildEvolutionLineageContext({ evolutionTargetId: 'SKIN_AND_COVERING', previousTransformations: [SKIN_EVOLUTION, TAIL_EVOLUTION] })
         const prompt = composeFluxEvolutionPrompt({
@@ -73,7 +97,8 @@ describe('target-aware lineage', () => {
 
         expect(prompt.indexOf('CURRENT SOURCE IMAGE')).toBeLessThan(prompt.indexOf('CURRENT TARGET STATE'))
         expect(prompt.indexOf('CURRENT TARGET STATE')).toBeLessThan(prompt.indexOf('OTHER ESTABLISHED EVOLUTIONS'))
-        expect(prompt.indexOf('OTHER ESTABLISHED EVOLUTIONS')).toBeLessThan(prompt.indexOf('NEW MUTATION'))
+        expect(prompt.indexOf('OTHER ESTABLISHED EVOLUTIONS')).toBeLessThan(prompt.indexOf('LEGACY EVOLUTIONS WITH UNKNOWN TARGET'))
+        expect(prompt.indexOf('LEGACY EVOLUTIONS WITH UNKNOWN TARGET')).toBeLessThan(prompt.indexOf('NEW MUTATION'))
         expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
         expect(prompt).toMatch(/primary evolutionary target/i)
         expect(prompt).toMatch(/Default to a local mutation/i)
@@ -85,8 +110,26 @@ describe('target-aware lineage', () => {
         expect(prompt).toContain('Corteccia vitrea')
         expect(prompt).toContain('grandi occhi ambrati')
         expect(prompt).toMatch(/Flat uniform medium-gray background/)
+        expect(prompt).toMatch(/Surface-visible bioluminescent markings or coloration.*are allowed/i)
+        expect(prompt).toMatch(/No external glow, aura, halo, bloom, light spill/i)
+        expect(prompt).toMatch(/Structures integrated into and anchored to the selected target are allowed/i)
+        expect(prompt).toMatch(/independently rooted anatomical appendages/i)
+        expect(prompt).toMatch(/minimal reframing or subject-scale adjustment is authorized/i)
         expect(prompt).toContain('FRAMING IS STRICT: show the entire creature')
         expect(prompt).toContain('at least 8-10% clear background margin on every side')
+    })
+
+    it('normalizes a vague avoid instruction without forbidding structures anchored to the target', () => {
+        const prompt = composeFluxEvolutionPrompt({
+            identity: IDENTITY,
+            anatomyContract: buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' }),
+            microConcept: { conceptName: 'Coda vela', mutationIdea: 'La coda sviluppa lobi fogliari.', visualDetails: ['lobi ancorati alla coda'], avoid: ['avoid additional structures'] },
+            lineage: buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: [] }),
+        })
+
+        expect(prompt).toContain('Structures integrated into and anchored to the selected target are allowed.')
+        expect(prompt).toContain('Avoid: independently rooted anatomical appendages or unrelated body structures outside the selected target.')
+        expect(prompt).not.toContain('Avoid: avoid additional structures.')
     })
 
     it('announces an authorized body-plan mutation in the prompt', () => {
