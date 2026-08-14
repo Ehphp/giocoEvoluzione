@@ -73,7 +73,7 @@ function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
 
 type TargetContract = Readonly<{ allowances: readonly string[], preservation: readonly string[], failures: readonly string[] }>
 
-const RELATED_SECONDARY_ADAPTATIONS = 'The selected target is the primary evolutionary driver. Closely related secondary adaptations may extend to connected anatomy, posture, proportions, surfaces or structures only when they make the primary mutation more functional or visually integrated; keep them subordinate and do not redesign unrelated regions.'
+const RELATED_SECONDARY_ADAPTATIONS = 'The selected target is the primary evolutionary target. Preserve all unrelated anatomy by default. Introduce secondary adaptations only when they are necessary consequences of the primary mutation: biomechanical support, anatomical continuity, posture rebalancing, structural integration or tightly linked visual propagation. If the primary mutation works on its own, change only the selected target. Any secondary adaptation must stay subordinate, less visually prominent and clearly derived from the primary mutation; no gratuitous changes outside the selected target to the head, limbs, torso, posture, colour, silhouette or body plan.'
 
 const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Object.freeze({
     TAIL: {
@@ -106,12 +106,12 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'The creature may become clearly longer, shorter, heavier, leaner or differently balanced. This target is a change of body form, not an added plate or crest.',
         ],
         preservation: [
-            'Head, face, limb count, tail count and every attachment point stay as they are; limbs and tail simply follow the new body proportions.',
-            'Keep the existing covering material and colour treatment recognisable; only related secondary surface adaptations may support the body transformation.',
+            `${RELATED_SECONDARY_ADAPTATIONS} Head, face, limb count, tail count and every attachment point stay as they are; limbs and tail only follow the new body proportions when necessary.`,
+            'Keep the existing covering material and colour treatment recognisable unless a secondary surface adaptation is necessary to integrate the body transformation.',
         ],
         failures: [
             'New limbs, new tails or new heads are invalid on this target.',
-            'Plates, crests or spines may only be subordinate secondary adaptations; they cannot replace the primary body-form mutation or become a new dominant mutation.',
+            'Plates, crests or spines may only be necessary, subordinate secondary adaptations; they cannot replace the primary body-form mutation or become a new dominant mutation.',
         ],
     },
     DORSAL_STRUCTURES: {
@@ -152,12 +152,13 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
 
 const ANATOMICAL_FAILURES = Object.freeze([
     'Adding, removing, duplicating or relocating heads, limbs, wings, tentacles or tails is invalid.',
-    'The primary mutation must be clearly readable on the selected target. Secondary adaptations are valid only when functionally or visually connected to it; a new dominant mutation on an unrelated region is invalid.',
+    'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default. Secondary adaptations are valid only when they are necessary consequences of that mutation, and must remain subordinate; a new dominant mutation or gratuitous redesign outside the selected target is invalid.',
     'Changing pose, framing, camera distance or illustrated style is invalid.',
 ])
 
 const STRUCTURAL_FAILURES = Object.freeze([
     'Only the structural change described above may alter the topology; every other count and attachment point is preserved.',
+    'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default; any secondary adaptation must be a necessary, subordinate consequence of it.',
     'Changing pose, framing, camera distance or illustrated style is invalid.',
 ])
 

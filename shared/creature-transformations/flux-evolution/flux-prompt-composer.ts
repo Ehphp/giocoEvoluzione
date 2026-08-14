@@ -29,7 +29,7 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         ...(input.framingAttempt && input.framingAttempt > 0 ? [`RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1}): make the creature visibly smaller in frame. Use a wider camera and extra clear background on every side; full body and every appendage must remain inside the canvas.`] : []),
         'ANATOMY CONTRACT',
         join(contract.topologyInvariants),
-        `SELECTED TARGET: ${contract.target} — ${target.promptRegion}. This is the primary evolutionary driver: make the primary mutation clearly readable there. Coherent, subordinate secondary adaptations may extend to connected anatomy, posture, proportions, surfaces or structures only when they functionally or visually integrate that primary mutation. Do not redesign unrelated regions.`,
+        `SELECTED TARGET: ${contract.target} — ${target.promptRegion}. This is the primary evolutionary target: make the primary mutation clearly readable there. Default to a local mutation. Preserve all unrelated anatomy by default. Introduce secondary adaptations only when they are necessary consequences of the primary mutation for biomechanical support, anatomical continuity, posture rebalancing, structural integration or tightly linked visual propagation. If none is necessary, modify only this target. Any secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation; do not redesign unrelated anatomy.`,
         'TARGET FREEDOM',
         join(contract.targetAllowances),
         ...(structural ? ['AUTHORIZED BODY-PLAN MUTATION', contract.structuralChange!] : []),
