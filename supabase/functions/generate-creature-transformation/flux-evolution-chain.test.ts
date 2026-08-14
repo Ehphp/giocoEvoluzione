@@ -105,7 +105,7 @@ describe('FLUX evolution chain step', () => {
         expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
-        expect(plan.lineage.currentTargetState.map((entry: { conceptName: string }) => entry.conceptName)).toEqual(['Pale rematrici'])
+        expect(plan.lineage.currentTargetState?.conceptName).toBe('Pale rematrici')
     })
 
     it('builds G1 from the selected visual version history instead of later adopted evolutions', async () => {
@@ -125,8 +125,7 @@ describe('FLUX evolution chain step', () => {
         await tasks[0]
 
         const plan = context.generate.mock.calls[0]![0].plan
-        expect(plan.lineage.currentTargetState).toEqual([])
-        expect(plan.lineage.otherEstablishedEvolutions).toEqual([])
+        expect(plan.lineage.currentTargetState).toBeNull()
         expect(plan.bodyPlanId).toBe('QUADRUPED')
         expect(context.transform.mock.calls[0]![0].prompt).toContain('This target carries no adopted evolution yet')
         expect(context.transform.mock.calls[0]![0].prompt).not.toContain('Corona percettiva')

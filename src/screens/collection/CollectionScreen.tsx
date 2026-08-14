@@ -36,6 +36,8 @@ type CollectionScreenProps = {
     activeLineageId?: string | null
     onCreateLineage?: () => Promise<string>
     onSetActiveLineage?: (lineageId: string) => void
+    /** Opens visual evolution for this exact lineage; it never implies a global active-lineage change. */
+    onOpenEvolution?: (lineageId: string) => void
     lineageVisuals?: Readonly<Record<string, {
         visualUrl?: string | null
         visualVersionNumber?: number | null
@@ -136,6 +138,7 @@ export function CollectionScreen({
     activeLineageId,
     onCreateLineage,
     onSetActiveLineage,
+    onOpenEvolution,
     lineageVisuals,
 }: CollectionScreenProps) {
     const availableLineages = useMemo(() => lineages?.length ? lineages : [{
@@ -250,6 +253,7 @@ export function CollectionScreen({
                         <div className="collection-current__types">
                             {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
                         </div>
+                        {onOpenEvolution ? <Button tone="evolve" onClick={() => onOpenEvolution(selectedLineage.id)}>Evolvi questa stirpe</Button> : null}
                         {selectedLineage.id !== resolvedActiveLineageId && onSetActiveLineage ? <Button tone="gold" onClick={() => onSetActiveLineage(selectedLineage.id)}>Usa questa stirpe</Button> : null}
                     </div>
                     <FormArt form={selectedForm} className="collection-current__art" />

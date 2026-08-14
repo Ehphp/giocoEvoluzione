@@ -120,7 +120,7 @@ describe('flux evolution plan', () => {
         expect(plan.bodyPlanId).toBe('SIX_LIMBED')
         expect(plan.capability).toBe('ANATOMICAL_MUTATION')
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 6 limbs, in 3 symmetrical pairs')
-        expect(plan.lineage.currentTargetState.map((entry) => entry.conceptName)).toEqual(['Arti mediani'])
+        expect(plan.lineage.currentTargetState?.conceptName).toBe('Arti mediani')
     })
 
     it('refuses a target the body plan does not offer', () => {

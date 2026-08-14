@@ -1,7 +1,7 @@
 import type { CreatureSemanticIdentity } from '../contracts.ts'
 import { EVOLUTION_TARGET_BY_ID } from '../evolution-targets.ts'
 import type { AnatomyContract } from './anatomy-contract.ts'
-import { describeCurrentTargetState, describeOtherEstablishedEvolutions, describeUnclassifiedLegacyEvolutions, type EvolutionLineageContext } from './evolution-lineage.ts'
+import { describeCurrentTargetState, type EvolutionLineageContext } from './evolution-lineage.ts'
 import type { FluxMicroConcept } from './micro-concept.ts'
 
 export type ComposeFluxPromptInput = Readonly<{
@@ -45,10 +45,6 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         ...(structural ? ['AUTHORIZED BODY-PLAN MUTATION', contract.structuralChange!] : []),
         'CURRENT TARGET STATE',
         describeCurrentTargetState(input.lineage),
-        'OTHER ESTABLISHED EVOLUTIONS',
-        describeOtherEstablishedEvolutions(input.lineage),
-        'LEGACY EVOLUTIONS WITH UNKNOWN TARGET',
-        describeUnclassifiedLegacyEvolutions(input.lineage),
         'NEW MUTATION',
         `${input.microConcept.conceptName}: ${input.microConcept.mutationIdea}. Visual details: ${input.microConcept.visualDetails.join('; ')}.${describeAvoid(input.microConcept.avoid)}`,
         'BIOLOGICAL PRIOR',

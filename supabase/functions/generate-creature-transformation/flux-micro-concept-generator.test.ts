@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { BODY_PLANS } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
-import { FluxMicroConceptGenerator, composeFluxMicroConceptInstructions } from './flux-micro-concept-generator.ts'
+import { FluxMicroConceptGenerator, composeFluxMicroConceptInstructions, isNovelFluxMicroConcept, isTopologicallyCompatibleFluxMicroConcept } from './flux-micro-concept-generator.ts'
 import { TEST_CREATURE_IDENTITY } from './test-creature-fixtures.ts'
 
 const PREVIOUS = [
@@ -23,7 +23,7 @@ function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET' | 'TA
 const input = { identity: TEST_CREATURE_IDENTITY, plan: planFor('SKIN_AND_COVERING') }
 
 describe('FluxMicroConceptGenerator', () => {
-    it('briefs the model with target freedom, the anatomy contract and the target-aware lineage', () => {
+    it('briefs the model with target freedom, the anatomy contract and minimal target continuity', () => {
         const prompt = composeFluxMicroConceptInstructions(input)
 
         expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
@@ -41,10 +41,10 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).toContain('CURRENT SOURCE IMAGE')
         expect(prompt).toContain('CURRENT TARGET STATE')
         expect(prompt).toContain('Pelle abissale')
-        expect(prompt).toMatch(/Develop it further/i)
-        expect(prompt).toContain('OTHER ESTABLISHED EVOLUTIONS')
-        expect(prompt).toContain('Timone foglia')
-        expect(prompt).toMatch(/do not reinterpret it as the new mutation/i)
+        expect(prompt).toMatch(/Develop this target further/i)
+        expect(prompt).not.toContain('OTHER ESTABLISHED EVOLUTIONS')
+        expect(prompt).not.toContain('Timone foglia')
+        expect(prompt).not.toContain('LEGACY EVOLUTIONS WITH UNKNOWN TARGET')
         expect(prompt).not.toContain('mutationArchetype')
         expect(prompt).not.toContain('colorEvolution')
         expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION')
@@ -102,5 +102,46 @@ describe('FluxMicroConceptGenerator', () => {
 
         await expect(generator.generate(input)).rejects.toMatchObject({ code: 'FLUX_CONCEPT_RESPONSE_INVALID' })
         expect(retry).toHaveBeenCalledTimes(2)
+    })
+
+    it('rejects a repeated local concept and retries with a different morphological direction', async () => {
+        const repeated = { conceptName: 'Pelle abissale', mutationIdea: 'pelle scura con venature luminose', visualDetails: ['venature luminose'], avoid: [] }
+        const distinct = { conceptName: 'Corteccia vitrea', mutationIdea: 'La pelle sviluppa placche traslucide sovrapposte.', visualDetails: ['placche traslucide'], avoid: [] }
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify(repeated) })))
+            .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify(distinct) })))
+        const generator = new FluxMicroConceptGenerator({ apiKey: 'test-key', model: 'test-model', fetchImplementation })
+
+        await expect(generator.generate(input)).resolves.toMatchObject({ conceptName: 'Corteccia vitrea' })
+        expect(fetchImplementation).toHaveBeenCalledTimes(2)
+        const retryRequest = JSON.parse(String(fetchImplementation.mock.calls[1]![1].body))
+        expect(JSON.stringify(retryRequest)).toContain('NOVELTY RETRY')
+    })
+
+    it('accepts different local mutations on the same target without requiring a multi-target change', () => {
+        const plan = planFor('TAIL')
+        const localTailMutation = {
+            conceptName: 'Coda a clava',
+            mutationIdea: 'La coda sviluppa vertebre compattate e una massa terminale di cheratina.',
+            visualDetails: ['massa terminale ancorata alla coda'],
+            avoid: [],
+        }
+
+        expect(plan.noveltyReferences).toHaveLength(1)
+        expect(isNovelFluxMicroConcept(localTailMutation, plan)).toBe(true)
+        expect(isTopologicallyCompatibleFluxMicroConcept(localTailMutation, plan)).toBe(true)
+    })
+
+    it('scopes novelty to the selected target rather than forcing mutations across targets', () => {
+        const plan = planFor('TAIL')
+        const tailOnlyMutation = {
+            conceptName: 'Coda a frusta',
+            mutationIdea: 'La coda esistente forma anelli elastici di cheratina lungo la sua struttura continua.',
+            visualDetails: ['anelli integrati nella coda'],
+            avoid: [],
+        }
+
+        expect(isNovelFluxMicroConcept(tailOnlyMutation, plan)).toBe(true)
+        expect(tailOnlyMutation.mutationIdea).not.toMatch(/ali|zampe|pelle|head/i)
     })
 })

@@ -88,7 +88,6 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
                 .not('visual_trait_id', 'is', null)
                 .in('status', ['ACTIVE', 'SUPERSEDED'])
                 .order('version_number', { ascending: false })
-                .limit(8)
             if (error) throw error
             return [...(data ?? [])].reverse().flatMap((entry) => {
                 if (typeof entry.visual_trait_id !== 'string' || typeof entry.concept_name !== 'string') return []

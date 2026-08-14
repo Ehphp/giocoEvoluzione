@@ -118,7 +118,9 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
             sourceIsBaseVersion: currentVisualVersion?.isBaseVersion ?? true,
             currentVisualVersionId: currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
             currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,
-            previousTransformations: previousTransformations.slice(0, 8),
+            // The full adopted history is needed to reconstruct permanent body-plan mutations.
+            // Prompt lineage itself is bounded separately by the evolution planner.
+            previousTransformations,
         }
     }
 }

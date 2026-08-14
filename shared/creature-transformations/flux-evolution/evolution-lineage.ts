@@ -3,12 +3,11 @@ import { EVOLUTION_TARGET_BY_ID, evolutionTargetFamily, isEvolutionTargetId, typ
 import type { BodyPlanMutationId } from './body-plan-mutations.ts'
 
 /**
- * Target-aware lineage.
+ * Minimal Flux lineage: source image = visual state; lineage = semantic/topological continuity.
  *
- * The source image is the primary visual truth; the history must never become a second,
- * competing description of the creature. So adopted evolutions are split in two: the state of
- * the anatomy being evolved now — which the new mutation has to continue — and the rest of the
- * lineage, which is already visible in the source and only has to survive untouched.
+ * The source image is the primary visual truth; history must never become a competing visual
+ * specification. The prompt receives only the latest semantic state of the exact target when a
+ * continuation needs it. Permanent topology is supplied separately by the anatomy contract.
  */
 export type EvolutionLineageEntry = Readonly<{
     versionNumber: number
@@ -21,12 +20,8 @@ export type EvolutionLineageEntry = Readonly<{
 export type EvolutionLineageContext = Readonly<{
     evolutionTargetId: EvolutionTargetId
     family: EvolutionTargetFamily
-    /** Adopted evolutions of the same target or anatomical family, oldest first. */
-    currentTargetState: readonly EvolutionLineageEntry[]
-    /** Adopted evolutions with a known, different anatomical family. */
-    otherEstablishedEvolutions: readonly EvolutionLineageEntry[]
-    /** Legacy entries without target metadata; never silently treated as target lineage. */
-    unclassifiedLegacyEvolutions: readonly EvolutionLineageEntry[]
+    /** Latest adopted semantic state of this exact target, if a continuation needs it. */
+    currentTargetState: EvolutionLineageEntry | null
 }>
 
 function toEntry(summary: PreviousCreatureTransformationSummary): EvolutionLineageEntry {
@@ -45,44 +40,40 @@ export function buildEvolutionLineageContext(input: {
 }): EvolutionLineageContext {
     const family = evolutionTargetFamily(input.evolutionTargetId)
     const entries = [...input.previousTransformations].map(toEntry).sort((left, right) => left.versionNumber - right.versionNumber)
-    const sameFamily = entries.filter((entry) => entry.evolutionTargetId !== null && evolutionTargetFamily(entry.evolutionTargetId) === family)
-    const unclassifiedLegacyEvolutions = entries.filter((entry) => entry.evolutionTargetId === null)
-    return Object.freeze({
-        evolutionTargetId: input.evolutionTargetId,
-        family,
-        currentTargetState: Object.freeze(sameFamily),
-        otherEstablishedEvolutions: Object.freeze(entries.filter((entry) => entry.evolutionTargetId !== null && !sameFamily.includes(entry))),
-        unclassifiedLegacyEvolutions: Object.freeze(unclassifiedLegacyEvolutions),
-    })
+    const latestTargetState = entries.filter((entry) => entry.evolutionTargetId === input.evolutionTargetId).at(-1) ?? null
+    return Object.freeze({ evolutionTargetId: input.evolutionTargetId, family, currentTargetState: latestTargetState })
+}
+
+/**
+ * Bounded history used only to reject a repeated micro-concept. It remains outside prompt
+ * lineage, so visual preservation can never become cumulative.
+ */
+export function recentTargetMutationReferences(input: {
+    evolutionTargetId: EvolutionTargetId
+    previousTransformations: readonly PreviousCreatureTransformationSummary[]
+    limit?: number
+}): readonly EvolutionLineageEntry[] {
+    const limit = input.limit ?? 3
+    return Object.freeze(
+        input.previousTransformations
+            .map(toEntry)
+            .filter((entry) => entry.evolutionTargetId === input.evolutionTargetId)
+            .sort((left, right) => right.versionNumber - left.versionNumber)
+            .slice(0, limit),
+    )
 }
 
 function describeEntry(entry: EvolutionLineageEntry): string {
     const region = entry.evolutionTargetId ? EVOLUTION_TARGET_BY_ID[entry.evolutionTargetId].promptRegion : 'earlier evolution'
-    return `v${entry.versionNumber} · ${region}: ${entry.conceptName}${entry.mutationIdea ? ` (${entry.mutationIdea})` : ''}`
+    return `v${entry.versionNumber} - ${region}: ${entry.conceptName}${entry.mutationIdea ? ` (${entry.mutationIdea})` : ''}`
 }
 
 export function describeCurrentTargetState(context: EvolutionLineageContext): string {
-    if (!context.currentTargetState.length) {
+    if (!context.currentTargetState) {
         return 'This target carries no adopted evolution yet: the new mutation is its first one, starting from the anatomy visible in the source image.'
     }
     return [
-        `This target already carries: ${context.currentTargetState.map(describeEntry).join('; ')}.`,
-        'That is the current state of this anatomy in the source image. Develop it further and build on it. Do not replace it, do not reset it to the base form and do not describe it again as if it were new.',
-    ].join(' ')
-}
-
-export function describeOtherEstablishedEvolutions(context: EvolutionLineageContext): string {
-    if (!context.otherEstablishedEvolutions.length) return 'No other adopted evolution exists on this creature yet.'
-    return [
-        `Already established elsewhere on this individual: ${context.otherEstablishedEvolutions.map(describeEntry).join('; ')}.`,
-        'This lineage is already visible in the source image: preserve it, do not recreate it, do not develop it and do not reinterpret it as the new mutation.',
-    ].join(' ')
-}
-
-export function describeUnclassifiedLegacyEvolutions(context: EvolutionLineageContext): string {
-    if (!context.unclassifiedLegacyEvolutions.length) return 'No legacy evolution with an unknown target exists on this creature.'
-    return [
-        `Legacy evolutions with unknown anatomical target: ${context.unclassifiedLegacyEvolutions.map(describeEntry).join('; ')}.`,
-        'Their region cannot be classified safely. Preserve what is visible in the source image; do not develop or reinterpret them as the new mutation.',
+        `This target already carries: ${describeEntry(context.currentTargetState)}.`,
+        'This is minimal semantic continuity only; the supplied source image remains the complete visual state. Develop this target further without resetting it to the base form.',
     ].join(' ')
 }

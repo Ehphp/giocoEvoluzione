@@ -1,5 +1,5 @@
 import { parseFluxMicroConcept, type FluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
-import { describeCurrentTargetState, describeOtherEstablishedEvolutions, describeUnclassifiedLegacyEvolutions } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
+import { describeCurrentTargetState, type EvolutionLineageEntry } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
 import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
@@ -39,7 +39,51 @@ export function isTopologicallyCompatibleFluxMicroConcept(concept: FluxMicroConc
     return plan.evolutionTargetId !== 'TAIL' || !TAIL_SPLIT_PATTERN.test(text)
 }
 
-export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConceptInput): string {
+const NOVELTY_STOP_WORDS = new Set([
+    'the', 'and', 'with', 'from', 'this', 'that', 'into', 'for', 'its', 'new', 'existing', 'creature', 'mutation', 'evolution',
+    'la', 'il', 'lo', 'le', 'gli', 'un', 'una', 'con', 'del', 'della', 'delle', 'nel', 'nella', 'che', 'come', 'per', 'sulla', 'sulle',
+    'target', 'body', 'anatomy', 'anatomical', 'coda', 'tail', 'pelle', 'skin', 'testa', 'head', 'arti', 'limbs', 'wings', 'ali',
+])
+
+function normaliseWords(value: string): Set<string> {
+    return new Set(value
+        .toLocaleLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .split(/[^a-z0-9]+/)
+        .filter((word) => word.length > 2 && !NOVELTY_STOP_WORDS.has(word)))
+}
+
+function normalisePhrase(value: string): string {
+    return [...normaliseWords(value)].sort().join(' ')
+}
+
+function referenceText(reference: EvolutionLineageEntry): string {
+    return `${reference.conceptName} ${reference.mutationIdea ?? ''}`
+}
+
+/** Cheap deterministic guard for repeated morphology on the selected target only. */
+export function isNovelFluxMicroConcept(concept: FluxMicroConcept, plan: FluxEvolutionPlan): boolean {
+    const candidateText = `${concept.conceptName} ${concept.mutationIdea} ${concept.visualDetails.join(' ')}`
+    const candidateWords = normaliseWords(candidateText)
+    if (!candidateWords.size) return true
+    return !plan.noveltyReferences.some((reference) => {
+        const referenceWords = normaliseWords(referenceText(reference))
+        const shared = [...candidateWords].filter((word) => referenceWords.has(word)).length
+        const candidateMutation = normalisePhrase(concept.mutationIdea)
+        const referenceMutation = normalisePhrase(reference.mutationIdea ?? '')
+        if (candidateMutation && referenceMutation && candidateMutation === referenceMutation) return true
+        return shared >= 2
+            && shared / candidateWords.size >= 0.67
+            && shared / Math.max(referenceWords.size, 1) >= 0.67
+    })
+}
+
+function describeNoveltyReferences(references: readonly EvolutionLineageEntry[]): string {
+    return references.map((reference) => `${reference.conceptName}${reference.mutationIdea ? ` (${reference.mutationIdea})` : ''}`).join('; ')
+}
+
+export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConceptInput, retryForNovelty = false): string {
     const plan = input.plan
     const contract = plan.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[plan.evolutionTargetId]
@@ -59,8 +103,9 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         `PRESERVE: ${contract.preservationRules.join(' ')}`,
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
         `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
-        `OTHER ESTABLISHED EVOLUTIONS: ${describeOtherEstablishedEvolutions(plan.lineage)}`,
-        `LEGACY EVOLUTIONS WITH UNKNOWN TARGET: ${describeUnclassifiedLegacyEvolutions(plan.lineage)}`,
+        ...(retryForNovelty && plan.noveltyReferences.length
+            ? [`NOVELTY RETRY: a recent local mutation of this same target was too similar: ${describeNoveltyReferences(plan.noveltyReferences)}. Choose a genuinely different morphological direction for this target (different form, material, arrangement or growth pattern), while keeping the mutation local and respecting the same anatomy contract.`]
+            : []),
         'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a colour schema or extra fields.',
     ].join('\n')
 }
@@ -105,6 +150,7 @@ export class FluxMicroConceptGenerator {
     }
 
     async generate(input: GenerateFluxMicroConceptInput): Promise<FluxMicroConcept> {
+        let retryForNovelty = false
         for (let attempt = 0; attempt < 2; attempt += 1) {
             const controller = new AbortController()
             const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
@@ -115,7 +161,7 @@ export class FluxMicroConceptGenerator {
                     body: JSON.stringify({
                         model: this.options.model,
                         store: false,
-                        input: [{ role: 'developer', content: [{ type: 'input_text', text: composeFluxMicroConceptInstructions(input) }] }],
+                        input: [{ role: 'developer', content: [{ type: 'input_text', text: composeFluxMicroConceptInstructions(input, retryForNovelty) }] }],
                         text: { format: { type: 'json_schema', name: 'flux_micro_concept', strict: true, schema: SCHEMA } },
                     }),
                     signal: controller.signal,
@@ -124,7 +170,9 @@ export class FluxMicroConceptGenerator {
                 const output = extractOutputText(await response.json())
                 let concept: FluxMicroConcept | null = null
                 try { concept = output ? parseFluxMicroConcept(JSON.parse(output)) : null } catch { /* retry a malformed schema response once */ }
-                if (concept && isTopologicallyCompatibleFluxMicroConcept(concept, input.plan)) return concept
+                const isNovel = concept ? isNovelFluxMicroConcept(concept, input.plan) : false
+                if (concept && isTopologicallyCompatibleFluxMicroConcept(concept, input.plan) && isNovel) return concept
+                retryForNovelty ||= Boolean(concept && !isNovel)
                 if (attempt === 0) continue
                 throw new FluxMicroConceptGeneratorError('FLUX_CONCEPT_RESPONSE_INVALID', 'Il micro-concept FLUX non rispetta il contratto.')
             } catch (error) {

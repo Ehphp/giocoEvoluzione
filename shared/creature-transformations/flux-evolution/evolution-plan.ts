@@ -4,7 +4,7 @@ import type { VisualTraitId } from '../visual-traits.ts'
 import { AnatomyContractError, buildAnatomyContract, type AnatomyContract } from './anatomy-contract.ts'
 import type { BodyPlanMutationId, EvolutionCapability } from './body-plan-mutations.ts'
 import { applyBodyPlanMutation, bodyPlanStructuralMutations, isEvolutionTargetAvailable, type BodyPlanId, type CreatureBodyPlan } from './body-plan-registry.ts'
-import { buildEvolutionLineageContext, type EvolutionLineageContext } from './evolution-lineage.ts'
+import { buildEvolutionLineageContext, recentTargetMutationReferences, type EvolutionLineageContext, type EvolutionLineageEntry } from './evolution-lineage.ts'
 
 /**
  * Everything a FLUX generation needs, derived server-side from the canonical body plan, the
@@ -22,6 +22,8 @@ export type FluxEvolutionPlan = Readonly<{
     resultBodyPlanId: BodyPlanId
     anatomyContract: AnatomyContract
     lineage: EvolutionLineageContext
+    /** Bounded history used exclusively by micro-concept novelty validation, never by the prompt. */
+    noveltyReferences: readonly EvolutionLineageEntry[]
 }>
 
 export type EvolutionPlanErrorCode =
@@ -122,5 +124,6 @@ export function buildFluxEvolutionPlan(input: {
         resultBodyPlanId: resultBodyPlan.id,
         anatomyContract,
         lineage: buildEvolutionLineageContext({ evolutionTargetId: input.evolutionTargetId, previousTransformations: input.previousTransformations }),
+        noveltyReferences: recentTargetMutationReferences({ evolutionTargetId: input.evolutionTargetId, previousTransformations: input.previousTransformations }),
     })
 }

@@ -62,9 +62,24 @@ const isVisualBackgroundCleanupEnabled = import.meta.env.VITE_CREATURE_VISUAL_BA
 const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
 const VISUAL_BACKGROUND_CLEANUP_HASH = '#visual-background-cleanup'
 
+type EvolutionRouteTarget = Readonly<{ lineageId: string; creatureId: string }>
+
+function evolutionTargetFromHash(): EvolutionRouteTarget | null {
+  if (!window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) return null
+  const query = window.location.hash.slice(CREATURE_VISUAL_PROGRESSION_HASH.length)
+  const params = new URLSearchParams(query.startsWith('?') ? query.slice(1) : '')
+  const lineageId = params.get('lineageId')?.trim()
+  const creatureId = params.get('creatureId')?.trim()
+  return lineageId && creatureId ? { lineageId, creatureId } : null
+}
+
+function creatureEvolutionHash(target: EvolutionRouteTarget): string {
+  return `${CREATURE_VISUAL_PROGRESSION_HASH}?${new URLSearchParams(target).toString()}`
+}
+
 function getInitialScreen(): CurrentScreen {
   if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) return 'creature-transformation-lab'
-  if (isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH) return 'creature-evolution'
+  if (isCreatureVisualProgressionEnabled && window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) return 'creature-evolution'
   if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) return 'visual-background-cleanup'
   return 'home'
 }
@@ -76,6 +91,10 @@ type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNum
 function App() {
   const auth = useAuth()
   const activeCreature = auth.activeLineage?.creature ?? null
+  const [evolutionTarget, setEvolutionTarget] = useState<EvolutionRouteTarget | null>(evolutionTargetFromHash)
+  const evolutionCreature = evolutionTarget === null
+    ? activeCreature
+    : auth.lineages.find((lineage) => lineage.id === evolutionTarget.lineageId && lineage.creature.id === evolutionTarget.creatureId)?.creature ?? null
   const authStatus = auth.status
   const profileId = auth.profile?.id
   const profileNickname = auth.profile?.nickname
@@ -672,9 +691,10 @@ function App() {
   }
 
   function handleLeaveCreatureEvolution() {
-    if (window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH) {
+    if (window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
     }
+    setEvolutionTarget(null)
     setCurrentScreen('home')
   }
 
@@ -685,9 +705,16 @@ function App() {
     setCurrentScreen('profile')
   }
 
-  function handleOpenCreatureEvolution() {
+  function handleOpenCreatureEvolution(lineageId: string) {
     if (!isCreatureVisualProgressionEnabled) return
-    window.location.hash = CREATURE_VISUAL_PROGRESSION_HASH
+    const target = auth.lineages.find((lineage) => lineage.id === lineageId)
+    if (!target) {
+      setErrorMessage('La stirpe selezionata non e piu disponibile.')
+      return
+    }
+    const evolutionTarget = { lineageId: target.id, creatureId: target.creature.id }
+    setEvolutionTarget(evolutionTarget)
+    window.location.hash = creatureEvolutionHash(evolutionTarget)
     setCurrentScreen('creature-evolution')
   }
 
@@ -764,10 +791,10 @@ function App() {
     return <CreatureTransformationLab creature={activeCreature} onBack={handleLeaveCreatureTransformationLab} />
   }
 
-  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && activeCreature) {
+  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && evolutionCreature) {
     return (
       <CreatureVisualProgressionScreen
-        creature={activeCreature}
+        creature={evolutionCreature}
         onBack={handleLeaveCreatureEvolution}
         onVisualChanged={handleVisualChanged}
       />
@@ -802,7 +829,7 @@ function App() {
         visualHistory={visualProgress?.history}
         currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
         onSelectVisualVersion={isCreatureVisualProgressionEnabled && visualProgress ? handleSelectVisualVersion : undefined}
-        onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
+        onOpenEvolution={isCreatureVisualProgressionEnabled && auth.activeLineage ? () => handleOpenCreatureEvolution(auth.activeLineage!.id) : undefined}
         onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
       />
     )
@@ -828,6 +855,7 @@ function App() {
         lineageVisuals={lineageVisuals}
         onCreateLineage={() => auth.createLineage()}
         onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
+        onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
       />
     )
   }

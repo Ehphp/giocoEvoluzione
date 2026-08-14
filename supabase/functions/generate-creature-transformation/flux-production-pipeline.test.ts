@@ -105,7 +105,7 @@ describe('FLUX production pipeline', () => {
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-micro-v4', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            promptTemplateVersion: 'flux-micro-v5', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
@@ -181,7 +181,7 @@ describe('FLUX production pipeline', () => {
         const plan = context.generate.mock.calls[0]![0].plan
         expect(plan.bodyPlanId).toBe('SIX_LIMBED')
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 6 limbs, in 3 symmetrical pairs')
-        expect(plan.lineage.currentTargetState.map((entry: { conceptName: string }) => entry.conceptName)).toEqual(['Arti mediani'])
+        expect(plan.lineage.currentTargetState?.conceptName).toBe('Arti mediani')
     })
 
     it('refuses to generate a target the canonical body plan does not offer', async () => {
@@ -245,6 +245,56 @@ describe('FLUX production pipeline', () => {
         } as never)
 
         expect(response).toMatchObject({ success: true, bodyPlanId: 'SIX_LIMBED' })
+    })
+
+    it('keeps generation and adoption scoped to lineage B while lineage A exists on the same profile', async () => {
+        const creatureB = '00000000-0000-4000-8000-000000000002'
+        const trackB = '00000000-0000-4000-8000-000000000007'
+        const sourceB = createResolvedCreatureSource({ currentVisualVersionId: '00000000-0000-4000-8000-000000000012' })
+        const context = createProductionInput({ idempotencyKey: 'lineage-b-only', source: sourceB })
+        const generatedTrack = { ...readyTrack('TAIL'), id: trackB, creatureId: creatureB }
+        const getTrack = vi.fn(async ({ creatureId }: { creatureId: string }) => {
+            expect(creatureId).toBe(creatureB)
+            return generatedTrack
+        })
+        const resolveTrackTrait = vi.fn(async ({ creatureId, visualTraitId }: { creatureId: string, visualTraitId: string }) => {
+            expect(creatureId).toBe(creatureB)
+            return { ...generatedTrack, visualTraitId }
+        })
+        const startGeneration = vi.fn(async ({ creatureId }: { creatureId: string }) => {
+            expect(creatureId).toBe(creatureB)
+            return { ...generatedTrack, visualTraitId: 'LOCOMOTION_ADAPTATION', status: 'GENERATING' as const }
+        })
+        const markBackgroundRemovalPending = vi.fn(async ({ profileId, requestId }: { profileId: string, requestId: string }) => ({ ...generatedTrack, status: 'POST_PROCESSING' as const, profileId, requestId }))
+        const resolve = vi.fn(async ({ creatureId }: { creatureId: string }) => {
+            expect(creatureId).toBe(creatureB)
+            return sourceB
+        })
+        context.input = {
+            ...context.input,
+            body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: creatureB, progressTrackId: trackB, idempotencyKey: 'lineage-b-only' },
+            resolver: { resolve },
+            visualRepository: { getTrack, resolveTrackTrait, startGeneration, markBackgroundRemovalPending, completeGeneration: vi.fn(async () => generatedTrack) },
+        }
+
+        await expect(orchestrateGenerateUnlockedTransformation(context.input as never)).resolves.toMatchObject({ success: true, accepted: true })
+        await context.tasks[0]
+        expect(context.persistence.get(PROFILE_ID, 'lineage-b-only')).toMatchObject({ creatureId: creatureB, sourceVisualVersionId: sourceB.currentVisualVersionId })
+        expect(getTrack).toHaveBeenCalledOnce()
+        expect(resolveTrackTrait).toHaveBeenCalledOnce()
+        expect(startGeneration).toHaveBeenCalledOnce()
+
+        const adopt = vi.fn(async ({ creatureId }: { creatureId: string }) => {
+            expect(creatureId).toBe(creatureB)
+            return { id: '00000000-0000-4000-8000-000000000031', versionNumber: 2, visualTraitId: 'LOCOMOTION_ADAPTATION', conceptName: 'Coda a frusta' }
+        })
+        await expect(orchestrateAdoptCreatureTransformation({
+            profileId: PROFILE_ID, requestId: 'adopt-b', policy: policyWith(),
+            body: { operation: 'ADOPT_CREATURE_TRANSFORMATION', creatureId: creatureB, progressTrackId: trackB, transformationRequestId: context.persistence.get(PROFILE_ID, 'lineage-b-only')!.id, expectedCurrentVisualVersionId: sourceB.currentVisualVersionId },
+            resolver: { resolve }, visualRepository: { adopt }, storage: {},
+        } as never)).resolves.toMatchObject({ success: true, version: { conceptName: 'Coda a frusta' } })
+        expect(adopt).toHaveBeenCalledOnce()
+        expect(resolve).toHaveBeenCalledTimes(2)
     })
 
     it('requires the paid-generation entitlement before any FLUX request is reserved', async () => {

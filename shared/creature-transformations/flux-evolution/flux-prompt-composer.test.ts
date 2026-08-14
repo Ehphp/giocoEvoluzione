@@ -17,7 +17,7 @@ describe('composeFluxEvolutionPrompt', () => {
                 mutationIdea: 'La coda esistente sviluppa spine di cheratina e una punta più elastica.',
                 visualDetails: ['spine cresciute dalla coda', 'tessuto elastico'],
             },
-            lineage: { evolutionTargetId: 'TAIL', family: 'TAIL', currentTargetState: [], otherEstablishedEvolutions: [], unclassifiedLegacyEvolutions: [] },
+            lineage: { evolutionTargetId: 'TAIL', family: 'TAIL', currentTargetState: null },
         })
 
         expect(prompt).toContain('BIOLOGICAL PRIOR')
