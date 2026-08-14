@@ -285,6 +285,19 @@ export async function setMyActiveCreatureLineage(lineageId: string): Promise<voi
     if (error) throw new Error(error.message)
 }
 
+/** Creates an independent lineage from the standard starting creature. */
+export async function createMyCreatureLineage(): Promise<PlayerCreatureRecord> {
+    const { data, error } = await requireSupabase().rpc('create_my_creature_lineage', {
+        p_base_creature_key: 'VERDANT_HATCHLING',
+        p_name: null,
+    })
+
+    if (error) throw new Error(error.message)
+    if (!data || typeof data !== 'object') throw new Error('La nuova stirpe non e stata creata.')
+
+    return mapPlayerCreatureRecord(data as Record<string, unknown>)
+}
+
 export async function updateMyNickname(nickname: string): Promise<ProfileRecord> {
     const value = nickname.trim()
 

@@ -168,12 +168,33 @@
     margin: 0;
 }
 
+.collection-lineage-section__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ev-s-2);
+}
+
+.collection-create-lineage {
+    flex: 0 0 auto;
+}
+
+.collection-create-lineage svg {
+    font-size: var(--ev-fs-lg);
+}
+
 .collection-lineages {
     display: flex;
     gap: var(--ev-s-2);
     overflow-x: auto;
     padding: var(--ev-s-1) var(--ev-s-2);
     overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.collection-lineages::-webkit-scrollbar,
+.collection-lineage::-webkit-scrollbar {
+    display: none;
 }
 
 .collection-lineages__button {
@@ -208,7 +229,7 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
+    scrollbar-width: none;
 }
 
 .collection-lineage__track {

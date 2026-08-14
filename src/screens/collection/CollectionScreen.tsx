@@ -4,8 +4,8 @@ import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { ASSETS } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, Chip, IconButton, Pill, ProgressBar, SectionLabel } from '../../ui/components'
-import { ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
+import { AppShell, Avatar, Button, Chip, IconButton, Notice, Pill, ProgressBar, SectionLabel } from '../../ui/components'
+import { AddIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
 import { buildCollectionViewModel } from './buildCollectionViewModel'
 import type { CollectionForm } from './types'
 
@@ -34,6 +34,7 @@ type CollectionScreenProps = {
     currentVisualVersionId?: string | null
     lineages?: ReadonlyArray<CreatureLineageRecord>
     activeLineageId?: string | null
+    onCreateLineage?: () => Promise<string>
     onSetActiveLineage?: (lineageId: string) => void
     lineageVisuals?: Readonly<Record<string, {
         visualUrl?: string | null
@@ -133,6 +134,7 @@ export function CollectionScreen({
     currentVisualVersionId,
     lineages,
     activeLineageId,
+    onCreateLineage,
     onSetActiveLineage,
     lineageVisuals,
 }: CollectionScreenProps) {
@@ -147,6 +149,8 @@ export function CollectionScreen({
     }], [creature, lineages])
     const resolvedActiveLineageId = activeLineageId ?? availableLineages[0]!.id
     const [selectedLineageId, setSelectedLineageId] = useState(resolvedActiveLineageId)
+    const [isCreatingLineage, setIsCreatingLineage] = useState(false)
+    const [lineageCreationError, setLineageCreationError] = useState<string | null>(null)
     const selectedLineage = availableLineages.find((lineage) => lineage.id === selectedLineageId) ?? availableLineages[0]!
     const selectedVisual = lineageVisuals?.[selectedLineage.id]
     const selectedCreature = selectedLineage.creature
@@ -178,6 +182,20 @@ export function CollectionScreen({
         if (tab === 'ranking') onOpenRanking()
     }
 
+    async function handleCreateLineage() {
+        if (!onCreateLineage || isCreatingLineage) return
+
+        setIsCreatingLineage(true)
+        setLineageCreationError(null)
+        try {
+            setSelectedLineageId(await onCreateLineage())
+        } catch (error) {
+            setLineageCreationError(error instanceof Error ? error.message : 'Impossibile creare la nuova stirpe.')
+        } finally {
+            setIsCreatingLineage(false)
+        }
+    }
+
     return (
         <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} dock={
             <Dock active="collection" capabilities={{ collection: true, profile: true, ranking: true }} onNavigate={handleNavigate} />
@@ -205,7 +223,10 @@ export function CollectionScreen({
                 </header>
 
                 <section className="collection-lineage-section" aria-label="Stirpi">
-                    <SectionLabel>Stirpi</SectionLabel>
+                    <div className="collection-lineage-section__heading">
+                        <SectionLabel>Stirpi</SectionLabel>
+                        {onCreateLineage ? <Button tone="evolve" size="sm" className="collection-create-lineage" disabled={isCreatingLineage} onClick={() => void handleCreateLineage()}><AddIcon />{isCreatingLineage ? 'Creazione...' : 'Nuova stirpe'}</Button> : null}
+                    </div>
                     <div className="collection-lineages" role="tablist" aria-label="Seleziona una stirpe">
                         {availableLineages.map((lineage) => {
                             const isSelected = lineage.id === selectedLineage.id
@@ -218,6 +239,7 @@ export function CollectionScreen({
                             )
                         })}
                     </div>
+                    {lineageCreationError ? <Notice tone="error">{lineageCreationError}</Notice> : null}
                 </section>
 
                 <section className="collection-current" aria-labelledby="current-creature-title">

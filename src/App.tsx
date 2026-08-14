@@ -826,6 +826,7 @@ function App() {
         lineages={auth.lineages}
         activeLineageId={auth.activeLineage?.id}
         lineageVisuals={lineageVisuals}
+        onCreateLineage={() => auth.createLineage()}
         onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
       />
     )

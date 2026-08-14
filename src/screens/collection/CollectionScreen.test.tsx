@@ -120,4 +120,20 @@ describe('CollectionScreen', () => {
         expect(container.textContent).toContain('Usa questa stirpe')
         expect(onSetActiveLineage).not.toHaveBeenCalled()
     })
+
+    it('offers a control to create a fresh lineage', () => {
+        const onCreateLineage = vi.fn().mockResolvedValue('lineage-2')
+        act(() => {
+            root.render(createElement(CollectionScreen, {
+                profile: { id: 'profile-1', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature-1', profile_id: 'profile-1', lineage_id: 'lineage-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                isOnline: true, onBack: vi.fn(), onOpenProfile: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(), onCreateLineage,
+            }))
+        })
+
+        const action = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Nuova stirpe'))
+        expect(action).toBeDefined()
+        act(() => action?.click())
+        expect(onCreateLineage).toHaveBeenCalledTimes(1)
+    })
 })

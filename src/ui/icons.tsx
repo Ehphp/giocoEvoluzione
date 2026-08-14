@@ -10,6 +10,7 @@ import {
     Dna,
     Info,
     Lock,
+    Plus,
     Flame,
     Leaf,
     LogOut,
@@ -279,3 +280,4 @@ export const ArrowRightIcon = ArrowRight
 export const NatureIcon = Leaf
 export const VenomIcon = Skull
 export const FireIcon = Flame
+export const AddIcon = Plus
