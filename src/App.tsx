@@ -868,6 +868,7 @@ function App() {
         activeLineageId={auth.activeLineage?.id}
         lineageVisuals={lineageVisuals}
         onCreateLineage={() => auth.createLineage()}
+        onDeleteLineage={(lineageId) => auth.deleteLineage(lineageId)}
         onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
         onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
       />
