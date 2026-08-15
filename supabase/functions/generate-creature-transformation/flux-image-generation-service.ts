@@ -60,7 +60,7 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     validator?: ImageValidator
 }): Promise<GeneratedFluxImage> {
     const validator = input.validator ?? new ImageValidator()
-    const promptTemplateVersion = input.promptTemplateVersion ?? FLUX_PROMPT_TEMPLATE_VERSION
+    const promptTemplateVersion = input.promptTemplateVersion ?? FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
     let microConcept
     try {
         microConcept = await input.microConceptGenerator.generate({ identity: input.identity, plan: input.plan })

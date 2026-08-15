@@ -99,44 +99,39 @@ describe('FLUX production pipeline', () => {
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs')
         expect(context.transform).toHaveBeenCalledOnce()
         const prompt = String(context.transform.mock.calls[0]![0].prompt)
-        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
-        expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
-        expect(prompt).toMatch(/NEW MUTATION takes precedence over preserving local geometry/i)
-        expect(prompt).toMatch(/local means a circumscribed anatomical origin, not a small, conservative or surface-level edit/i)
-        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
-        expect(prompt).toMatch(/Keep exactly 4 limbs[\s\S]*same anatomical roots and body regions/i)
-        expect(prompt).toMatch(/slight posture or stance rebalancing, secondary proportion adjustment/i)
-        expect(prompt).not.toContain('This creature has no wings and no tentacles.')
-        expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
+        expect(prompt).toBe([
+            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            'EVOLUTION:',
+            'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
+        ].join('\n\n'))
+        expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-micro-v6', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            promptTemplateVersion: 'flux-minimal-v1', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
         })
     })
 
-    it('uses flux-minimal-v1 for a normal gameplay evolution when selected by server policy', async () => {
+    it('uses flux-micro-v6 for normal gameplay only when selected by server policy', async () => {
         const context = createProductionInput({
-            idempotencyKey: 'production-minimal',
-            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-minimal-v1' },
+            idempotencyKey: 'production-full',
+            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v6' },
         })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
         await context.tasks[0]
 
-        const expectedPrompt = [
-            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
-            'EVOLUTION:',
-            'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
-        ].join('\n\n')
         expect(context.generate).toHaveBeenCalledOnce()
         expect(context.transform).toHaveBeenCalledOnce()
-        expect(context.transform.mock.calls[0]![0].prompt).toBe(expectedPrompt)
-        expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: null,
+        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
+        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
+        expect(context.persistence.get(PROFILE_ID, 'production-full')).toMatchObject({
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v6', promptText: null,
         })
     })
 
@@ -148,7 +143,8 @@ describe('FLUX production pipeline', () => {
         await context.tasks[0]
 
         expect(context.transform).toHaveBeenCalledTimes(2)
-        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
+        expect(context.transform.mock.calls[1]![0].prompt).toBe(context.transform.mock.calls[0]![0].prompt)
+        expect(String(context.transform.mock.calls[1]![0].prompt)).not.toContain('RETRY FRAMING OVERRIDE')
         expect(validator.outputChecks).toBe(2)
         expect(context.persistence.get(PROFILE_ID, 'crop-retry')).toMatchObject({ status: 'SUCCEEDED' })
     })
@@ -179,7 +175,7 @@ describe('FLUX production pipeline', () => {
     })
 
     it('uses the same pipeline for a structural mutation once the policy enables the capability', async () => {
-        const context = createProductionInput({ policyOverrides: { CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true' }, idempotencyKey: 'structural-key' })
+        const context = createProductionInput({ policyOverrides: { CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true', FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v6' }, idempotencyKey: 'structural-key' })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
         await context.tasks[0]

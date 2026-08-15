@@ -17,7 +17,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
-        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
+        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-minimal-v1', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
         expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, backgroundCleanupEnabled: false, winsRequired: 3 })
     })
 
@@ -70,6 +70,12 @@ describe('creature transformation lab policy', () => {
         expect(policy.labProfileIds).toEqual(new Set(['profile-9']))
     })
 
+    it('uses the full prompt only when explicitly selected by server policy', () => {
+        const policy = readCreatureTransformationLabPolicy((name) => ({ FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v6' })[name])
+
+        expect(policy.flux.promptTemplateVersion).toBe('flux-micro-v6')
+    })
+
     it('uses bounded fail-safe defaults for invalid quota, budget and cost configuration', () => {
         const policy = readCreatureTransformationLabPolicy((name) => ({
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '0',
@@ -82,7 +88,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
-        expect(policy.flux).toMatchObject({ timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null })
+        expect(policy.flux).toMatchObject({ timeoutMs: 30_000, promptTemplateVersion: 'flux-minimal-v1', estimatedCostUsd: null })
     })
 
     it('exposes no legacy pipeline switch, provider or benchmark configuration', () => {
