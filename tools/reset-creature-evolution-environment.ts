@@ -73,7 +73,29 @@ export function requireSupabaseUrl(value: string | undefined): string {
 
 export function requireServiceRoleKey(value: string | undefined): string {
     if (!value) throw new Error('SUPABASE_SERVICE_ROLE_KEY deve essere impostata esclusivamente nell ambiente locale o CI protetto.')
-    return value
+    const key = value.trim()
+    if (key.startsWith('sb_publishable_')) {
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY contiene una chiave sb_publishable_. Per questo reset usa una Secret key sb_secret_ dal progetto corretto, non una Publishable key.')
+    }
+    return key
+}
+
+function isModernSecretKey(key: string) {
+    return key.startsWith('sb_secret_')
+}
+
+/**
+ * `sb_secret_` keys are opaque API keys, not JWTs. supabase-js still gives
+ * Storage its generic authenticated fetch, which adds the key as Bearer too;
+ * strip only that fallback so Storage receives the required `apikey` header.
+ */
+export function serviceRoleFetch(serviceRoleKey: string, baseFetch: typeof fetch = globalThis.fetch): typeof fetch {
+    if (!isModernSecretKey(serviceRoleKey)) return baseFetch
+    return (input, init) => {
+        const headers = new Headers(init?.headers)
+        headers.delete('authorization')
+        return baseFetch(input, { ...init, headers })
+    }
 }
 
 function joinStoragePath(parent: string, child: string) {
@@ -224,7 +246,10 @@ export async function main(argumentsList = process.argv.slice(2), environment = 
     parseResetArguments(argumentsList)
     const supabaseUrl = requireSupabaseUrl(environment.SUPABASE_URL)
     const serviceRoleKey = requireServiceRoleKey(environment.SUPABASE_SERVICE_ROLE_KEY)
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+        global: { fetch: serviceRoleFetch(serviceRoleKey) },
+    })
     printReport(await resetCreatureEvolutionEnvironment(supabase))
 }
 

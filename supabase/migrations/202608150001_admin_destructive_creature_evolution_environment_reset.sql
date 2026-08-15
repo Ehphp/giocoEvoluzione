@@ -290,15 +290,15 @@ begin
   where visual_progress_track_id is not null
      or source_visual_version_id is not null;
 
-  delete from public.creature_transformation_experiment_reviews;
-  delete from public.creature_transformation_lineage_comparison_reviews;
-  delete from public.creature_visual_progress_events;
-  delete from public.creature_evolution_target_progress_events;
-  delete from public.creature_evolution_target_progress;
-  delete from public.creature_visual_version_rollbacks;
-  delete from public.creature_visual_progress_tracks;
-  delete from public.creature_visual_versions;
-  delete from public.creature_transformation_requests;
+  delete from public.creature_transformation_experiment_reviews where id is not null;
+  delete from public.creature_transformation_lineage_comparison_reviews where id is not null;
+  delete from public.creature_visual_progress_events where id is not null;
+  delete from public.creature_evolution_target_progress_events where id is not null;
+  delete from public.creature_evolution_target_progress where id is not null;
+  delete from public.creature_visual_version_rollbacks where id is not null;
+  delete from public.creature_visual_progress_tracks where id is not null;
+  delete from public.creature_visual_versions where id is not null;
+  delete from public.creature_transformation_requests where id is not null;
 
   -- Draft options and selected targets are evolution state on otherwise
   -- preserved game-player rows, so clear them rather than deleting games.

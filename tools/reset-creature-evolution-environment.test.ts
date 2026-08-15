@@ -3,7 +3,9 @@ import {
     emptyExperimentBucket,
     listAllStorageObjectPaths,
     parseResetArguments,
+    requireServiceRoleKey,
     resetCreatureEvolutionEnvironment,
+    serviceRoleFetch,
     type StorageBucketClient,
 } from './reset-creature-evolution-environment.ts'
 
@@ -58,6 +60,26 @@ describe('reset-creature-evolution-environment', () => {
         expect(() => parseResetArguments([])).toThrow('confirm-destructive-reset')
         expect(() => parseResetArguments(['--confirm-destructive-reset', '--other'])).toThrow('confirm-destructive-reset')
         expect(() => parseResetArguments(['--confirm-destructive-reset'])).not.toThrow()
+    })
+
+    it('rejects a publishable key before any destructive request', () => {
+        expect(() => requireServiceRoleKey('sb_publishable_not-an-admin-key')).toThrow('sb_publishable_')
+        expect(requireServiceRoleKey('  sb_secret_admin-key  ')).toBe('sb_secret_admin-key')
+    })
+
+    it('sends modern sb_secret keys to Storage as apikey only, never as a JWT bearer', async () => {
+        let receivedHeaders: Headers | null = null
+        const baseFetch: typeof fetch = async (_input, init) => {
+            receivedHeaders = new Headers(init?.headers)
+            return new Response(null, { status: 200 })
+        }
+        const fetchForSecret = serviceRoleFetch('sb_secret_test', baseFetch)
+        await fetchForSecret('https://example.test/storage/v1', {
+            headers: { apikey: 'sb_secret_test', Authorization: 'Bearer sb_secret_test' },
+        })
+
+        expect(receivedHeaders?.get('apikey')).toBe('sb_secret_test')
+        expect(receivedHeaders?.has('authorization')).toBe(false)
     })
 
     it('lists nested storage folders across pages and removes every physical object', async () => {
