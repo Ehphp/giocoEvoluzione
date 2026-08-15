@@ -81,7 +81,7 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     let cropRetryCount = 0
     for (let attempt = 0; attempt <= FLUX_MAX_CROP_RETRIES; attempt += 1) {
         prompt = promptTemplateVersion === FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
-            ? composeMinimalFluxEvolutionPrompt(microConcept)
+            ? composeMinimalFluxEvolutionPrompt(microConcept, attempt)
             : composeFluxEvolutionPrompt({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
         console.info('flux.crop_validation.attempt', { requestId: input.requestId, attempt: attempt + 1, maxAttempts: FLUX_MAX_CROP_RETRIES + 1 })
         try {

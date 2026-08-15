@@ -101,6 +101,7 @@ describe('FLUX production pipeline', () => {
         const prompt = String(context.transform.mock.calls[0]![0].prompt)
         expect(prompt).toBe([
             'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            "Keep the source image's visual style. Show the complete creature fully inside the canvas, sized to leave at least 10% clear background margin on every side.",
             'EVOLUTION:',
             'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
         ].join('\n\n'))
@@ -143,8 +144,9 @@ describe('FLUX production pipeline', () => {
         await context.tasks[0]
 
         expect(context.transform).toHaveBeenCalledTimes(2)
-        expect(context.transform.mock.calls[1]![0].prompt).toBe(context.transform.mock.calls[0]![0].prompt)
-        expect(String(context.transform.mock.calls[1]![0].prompt)).not.toContain('RETRY FRAMING OVERRIDE')
+        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('at least 10% clear background margin')
+        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('at least 15% clear background margin')
+        expect(context.transform.mock.calls[1]![0].prompt).not.toBe(context.transform.mock.calls[0]![0].prompt)
         expect(validator.outputChecks).toBe(2)
         expect(context.persistence.get(PROFILE_ID, 'crop-retry')).toMatchObject({ status: 'SUCCEEDED' })
     })

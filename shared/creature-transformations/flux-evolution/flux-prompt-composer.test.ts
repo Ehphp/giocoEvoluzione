@@ -108,7 +108,7 @@ describe('composeFluxEvolutionPrompt', () => {
 })
 
 describe('composeMinimalFluxEvolutionPrompt', () => {
-    it('contains only the identity sentence and the generated micro-concept', () => {
+    it('contains only identity, compact presentation guidance and the generated micro-concept', () => {
         const prompt = composeMinimalFluxEvolutionPrompt({
             conceptName: 'Coda sentinella',
             mutationIdea: 'La coda sviluppa una punta elastica sensibile alle vibrazioni.',
@@ -118,9 +118,22 @@ describe('composeMinimalFluxEvolutionPrompt', () => {
 
         expect(prompt).toBe([
             'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            "Keep the source image's visual style. Show the complete creature fully inside the canvas, sized to leave at least 10% clear background margin on every side.",
             'EVOLUTION:',
             'Coda sentinella: La coda sviluppa una punta elastica sensibile alle vibrazioni.\nVisual details: spine di cheratina; membrana flessibile',
         ].join('\n\n'))
         expect(prompt).not.toMatch(/ANATOMY CONTRACT|HARD INVARIANTS|PRESERVE|FAILURE CONDITIONS|TARGET FREEDOM|CURRENT TARGET STATE|OTHER ESTABLISHED EVOLUTIONS|STRICT FRAMING|BODY-PLAN|viewpoint|composition|extra limbs/i)
+    })
+
+    it('asks for progressively more margin on crop retries without adding other constraints', () => {
+        const concept = {
+            conceptName: 'Coda sentinella',
+            mutationIdea: 'La coda sviluppa una punta elastica.',
+            visualDetails: ['membrana flessibile'],
+        }
+
+        expect(composeMinimalFluxEvolutionPrompt(concept, 1)).toContain('at least 15% clear background margin')
+        expect(composeMinimalFluxEvolutionPrompt(concept, 2)).toContain('at least 20% clear background margin')
+        expect(composeMinimalFluxEvolutionPrompt(concept, 2)).not.toMatch(/ANATOMY CONTRACT|PRESERVE|FAILURE CONDITIONS|CURRENT TARGET STATE/i)
     })
 })

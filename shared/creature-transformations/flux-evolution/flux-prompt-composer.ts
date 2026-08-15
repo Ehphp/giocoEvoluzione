@@ -25,9 +25,11 @@ function describeAvoid(avoid: readonly string[] | undefined): string {
     return ` Avoid: ${precise.join('; ')}.`
 }
 
-export function composeMinimalFluxEvolutionPrompt(microConcept: FluxMicroConcept): string {
+export function composeMinimalFluxEvolutionPrompt(microConcept: FluxMicroConcept, framingAttempt = 0): string {
+    const marginPercent = 10 + framingAttempt * 5
     return [
         'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+        `Keep the source image's visual style. Show the complete creature fully inside the canvas, sized to leave at least ${marginPercent}% clear background margin on every side.`,
         'EVOLUTION:',
         `${microConcept.conceptName}: ${microConcept.mutationIdea}\nVisual details: ${microConcept.visualDetails.join('; ')}`,
     ].join('\n\n')

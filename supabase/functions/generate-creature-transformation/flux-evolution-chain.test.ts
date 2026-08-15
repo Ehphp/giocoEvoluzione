@@ -139,6 +139,7 @@ describe('FLUX evolution chain step', () => {
 
         const expectedPrompt = [
             'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            "Keep the source image's visual style. Show the complete creature fully inside the canvas, sized to leave at least 10% clear background margin on every side.",
             'EVOLUTION:',
             'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
         ].join('\n\n')
