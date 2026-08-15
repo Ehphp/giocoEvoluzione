@@ -251,91 +251,91 @@ export function CollectionScreen({
 
     return (
         <>
-        <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} dock={
-            <Dock active="collection" capabilities={{ collection: true, profile: true, ranking: true }} onNavigate={handleNavigate} />
-        } scroll>
-            <main className="collection-screen" aria-labelledby="collection-title">
-                <header className="collection-topbar">
-                    <div className="collection-identity">
-                        <Avatar name={viewModel.player.name} className="collection-identity__avatar" />
-                        <div className="collection-identity__copy">
-                            <strong className="ev-truncate">{viewModel.player.name}</strong>
-                            <span>LIVELLO {viewModel.player.level}</span>
-                            <ProgressBar current={viewModel.player.experience.current} total={viewModel.player.experience.required} label="Esperienza del giocatore" />
+            <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} dock={
+                <Dock active="collection" capabilities={{ collection: true, profile: true, ranking: true }} onNavigate={handleNavigate} />
+            } scroll>
+                <main className="collection-screen" aria-labelledby="collection-title">
+                    <header className="collection-topbar">
+                        <div className="collection-identity">
+                            <Avatar name={viewModel.player.name} className="collection-identity__avatar" />
+                            <div className="collection-identity__copy">
+                                <strong className="ev-truncate">{viewModel.player.name}</strong>
+                                <span>LIVELLO {viewModel.player.level}</span>
+                                <ProgressBar current={viewModel.player.experience.current} total={viewModel.player.experience.required} label="Esperienza del giocatore" />
+                            </div>
                         </div>
-                    </div>
-                    <img className="collection-logo" src={ASSETS.branding.logo} alt="Evori" />
-                    <div className="collection-topbar__actions">
-                        <Pill className={isOnline ? 'is-online' : 'is-offline'}>{isOnline ? 'Online' : 'Offline'}</Pill>
-                        <IconButton label="Esci dall account" variant="danger" onClick={onLogout}><ExitIcon /></IconButton>
-                    </div>
-                </header>
-
-                <header className="collection-heading">
-                    <h1 id="collection-title">Collezione</h1>
-                    <p>{viewModel.evolutionForms.length} forme scoperte · Generazione {viewModel.currentCreature.generation - 1}</p>
-                </header>
-
-                <section className="collection-lineage-section" aria-label="Stirpi">
-                    <div className="collection-lineage-section__heading">
-                        <SectionLabel>Stirpi</SectionLabel>
-                        {onCreateLineage ? <Button tone="evolve" size="sm" className="collection-create-lineage" disabled={isCreatingLineage} onClick={() => void handleCreateLineage()}><AddIcon />{isCreatingLineage ? 'Creazione...' : 'Nuova stirpe'}</Button> : null}
-                    </div>
-                    <div className="collection-lineages" role="tablist" aria-label="Seleziona una stirpe">
-                        {availableLineages.map((lineage) => {
-                            const isSelected = lineage.id === selectedLineage.id
-                            const isActive = lineage.id === resolvedActiveLineageId
-                            const lineageName = lineage.name ?? lineage.creature.name ?? 'Stirpe senza nome'
-                            const canDelete = Boolean(onDeleteLineage && availableLineages.length > 1)
-                            return (
-                                <div key={lineage.id} className={`collection-lineages__item ${canDelete ? 'has-delete' : ''}`} role="presentation">
-                                    <button type="button" className={`collection-lineages__button ${isSelected ? 'is-selected' : ''}`} role="tab" aria-selected={isSelected} onClick={() => setSelectedLineageId(lineage.id)}>
-                                        <span className="ev-truncate" title={lineageName}>{lineageName}</span>
-                                        {isActive ? <small>Attiva</small> : null}
-                                    </button>
-                                    {canDelete ? (
-                                        <IconButton
-                                            label={`Elimina ${lineageName}`}
-                                            variant="cream"
-                                            className="collection-lineages__delete"
-                                            onClick={() => {
-                                                setLineageDeletionError(null)
-                                                setLineagePendingDeletion(lineage)
-                                            }}
-                                        >
-                                            <CloseIcon />
-                                        </IconButton>
-                                    ) : null}
-                                </div>
-                            )
-                        })}
-                    </div>
-                    {lineageCreationError ? <Notice tone="error">{lineageCreationError}</Notice> : null}
-                </section>
-
-                <section className="collection-current" aria-labelledby="current-creature-title">
-                    <div className="collection-current__copy">
-                        <span className="ev-eyebrow">{selectedForm.isActive ? 'Forma attuale' : 'Forma selezionata'}</span>
-                        <h2 id="current-creature-title">Generazione {selectedForm.generation - 1}</h2>
-                        <p>{selectedForm.name}</p>
-                        <div className="collection-current__types">
-                            {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
+                        <img className="collection-logo" src={ASSETS.branding.logo} alt="Evori" />
+                        <div className="collection-topbar__actions">
+                            <Pill className={isOnline ? 'is-online' : 'is-offline'}>{isOnline ? 'Online' : 'Offline'}</Pill>
+                            <IconButton label="Esci dall account" variant="danger" onClick={onLogout}><ExitIcon /></IconButton>
                         </div>
-                        {onOpenEvolution ? <Button tone="evolve" onClick={() => onOpenEvolution(selectedLineage.id)}>Evolvi questa stirpe</Button> : null}
-                        {selectedLineage.id !== resolvedActiveLineageId && onSetActiveLineage ? <Button tone="gold" onClick={() => onSetActiveLineage(selectedLineage.id)}>Usa questa stirpe</Button> : null}
-                    </div>
-                    <FormArt form={selectedForm} className="collection-current__art" />
-                </section>
+                    </header>
 
-                <section className="collection-lineage-section" aria-label="Stirpe">
-                    <SectionLabel>Linea evolutiva</SectionLabel>
-                    <LineageTimeline forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
-                </section>
+                    <header className="collection-heading">
+                        <h1 id="collection-title">Collezione</h1>
+                        <p>{viewModel.evolutionForms.length} forme scoperte · Generazione {viewModel.currentCreature.generation - 1}</p>
+                    </header>
 
-                <FormCatalog forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
-            </main>
-        </AppShell>
-        {deleteConfirmation}
+                    <section className="collection-lineage-section" aria-label="Stirpi">
+                        <div className="collection-lineage-section__heading">
+                            <SectionLabel>Stirpi</SectionLabel>
+                            {onCreateLineage ? <Button tone="evolve" size="sm" className="collection-create-lineage" disabled={isCreatingLineage} onClick={() => void handleCreateLineage()}><AddIcon />{isCreatingLineage ? 'Creazione...' : 'Nuova stirpe'}</Button> : null}
+                        </div>
+                        <div className="collection-lineages" role="tablist" aria-label="Seleziona una stirpe">
+                            {availableLineages.map((lineage) => {
+                                const isSelected = lineage.id === selectedLineage.id
+                                const isActive = lineage.id === resolvedActiveLineageId
+                                const lineageName = lineage.name ?? lineage.creature.name ?? 'Stirpe senza nome'
+                                const canDelete = Boolean(onDeleteLineage && availableLineages.length > 1)
+                                return (
+                                    <div key={lineage.id} className={`collection-lineages__item ${canDelete ? 'has-delete' : ''}`} role="presentation">
+                                        <button type="button" className={`collection-lineages__button ${isSelected ? 'is-selected' : ''}`} role="tab" aria-selected={isSelected} onClick={() => setSelectedLineageId(lineage.id)}>
+                                            <span className="ev-truncate" title={lineageName}>{lineageName}</span>
+                                            {isActive ? <small>Attiva</small> : null}
+                                        </button>
+                                        {canDelete ? (
+                                            <IconButton
+                                                label={`Elimina ${lineageName}`}
+                                                variant="cream"
+                                                className="collection-lineages__delete"
+                                                onClick={() => {
+                                                    setLineageDeletionError(null)
+                                                    setLineagePendingDeletion(lineage)
+                                                }}
+                                            >
+                                                <CloseIcon />
+                                            </IconButton>
+                                        ) : null}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        {lineageCreationError ? <Notice tone="error">{lineageCreationError}</Notice> : null}
+                    </section>
+
+                    <section className="collection-current" aria-labelledby="current-creature-title">
+                        <div className="collection-current__copy">
+                            <span className="ev-eyebrow">{selectedForm.isActive ? 'Forma attuale' : 'Forma selezionata'}</span>
+                            <h2 id="current-creature-title">Generazione {selectedForm.generation - 1}</h2>
+                            <p>{selectedForm.name}</p>
+                            <div className="collection-current__types">
+                                {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
+                            </div>
+                            {onOpenEvolution ? <Button tone="evolve" onClick={() => onOpenEvolution(selectedLineage.id)}>Evolvi questa stirpe</Button> : null}
+                            {selectedLineage.id !== resolvedActiveLineageId && onSetActiveLineage ? <Button tone="gold" onClick={() => onSetActiveLineage(selectedLineage.id)}>Usa questa stirpe</Button> : null}
+                        </div>
+                        <FormArt form={selectedForm} className="collection-current__art" />
+                    </section>
+
+                    <section className="collection-lineage-section" aria-label="Stirpe">
+                        <SectionLabel>Linea evolutiva</SectionLabel>
+                        <LineageTimeline forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
+                    </section>
+
+                    <FormCatalog forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
+                </main>
+            </AppShell>
+            {deleteConfirmation}
         </>
     )
 }
