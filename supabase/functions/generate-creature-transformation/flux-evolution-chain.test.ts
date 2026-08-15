@@ -32,7 +32,7 @@ function createInput(options: {
     idempotencyKey: string
     evolutionTargetId?: string
     bodyPlanMutationId?: string
-    promptTemplateVersion?: 'flux-minimal-v1'
+    promptTemplateVersion?: 'flux-micro-v6' | 'flux-minimal-v1'
     previousStepRequestIds?: string[]
     sourceVisualVersionId?: string
     source?: ReturnType<typeof createResolvedCreatureSource>
@@ -88,7 +88,7 @@ describe('FLUX evolution chain step', () => {
         const readExperimentalSource = vi.fn(async () => ({ bytes: createTestPng(), mimeType: 'image/png' as const }))
         const storage = createTestStorage({ readExperimentalSource })
 
-        const first = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-1', storage })
+        const first = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-1', promptTemplateVersion: 'flux-micro-v6', storage })
         const firstResponse = await orchestrateGenerateFluxEvolutionChainStep(first.input as never)
         expect(firstResponse).toMatchObject({ success: true, accepted: true })
         await tasks[0]
@@ -96,7 +96,7 @@ describe('FLUX evolution chain step', () => {
         const finalPath = `candidates/${PROFILE_ID}/${'b'.repeat(64)}.png`
         await finalize(persistence, firstId, finalPath)
 
-        const second = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-2', previousStepRequestIds: [firstId], storage })
+        const second = createInput({ repository: persistence, tasks, idempotencyKey: 'chain-2', promptTemplateVersion: 'flux-micro-v6', previousStepRequestIds: [firstId], storage })
         const secondResponse = await orchestrateGenerateFluxEvolutionChainStep(second.input as never)
         await tasks[1]
 
@@ -122,7 +122,7 @@ describe('FLUX evolution chain step', () => {
         expect(persistence.get(PROFILE_ID, 'chain-2')?.promptTemplateVersion).toBe('flux-micro-v6')
     })
 
-    it('changes only the final provider prompt in flux-minimal-v1 mode', async () => {
+    it('defaults the chain to the minimal final provider prompt', async () => {
         const persistence = createInMemoryRequestRepository()
         const tasks: Promise<void>[] = []
         const sourcePng = createTestPng()
@@ -131,7 +131,6 @@ describe('FLUX evolution chain step', () => {
             repository: persistence,
             tasks,
             idempotencyKey: 'chain-minimal',
-            promptTemplateVersion: 'flux-minimal-v1',
             storage: createTestStorage({ readCanonicalSource }),
         })
 
@@ -166,7 +165,7 @@ describe('FLUX evolution chain step', () => {
                 { versionNumber: 4, visualTraitId: 'IMPACT_ADAPTATION', evolutionTargetId: 'DORSAL_STRUCTURES', conceptName: 'Placche dorsali', bodyPlanMutationId: 'ADD_LIMB_PAIR' },
             ],
         })
-        const context = createInput({ repository: persistence, tasks, idempotencyKey: 'selected-v1', sourceVisualVersionId: '00000000-0000-4000-8000-000000000004', source })
+        const context = createInput({ repository: persistence, tasks, idempotencyKey: 'selected-v1', promptTemplateVersion: 'flux-micro-v6', sourceVisualVersionId: '00000000-0000-4000-8000-000000000004', source })
 
         await orchestrateGenerateFluxEvolutionChainStep(context.input as never)
         await tasks[0]
@@ -186,6 +185,7 @@ describe('FLUX evolution chain step', () => {
         const tasks: Promise<void>[] = []
         const context = createInput({
             repository: persistence, tasks, idempotencyKey: 'chain-structural',
+            promptTemplateVersion: 'flux-micro-v6',
             bodyPlanMutationId: 'ADD_LIMB_PAIR', policyOverrides: { CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true' },
         })
 

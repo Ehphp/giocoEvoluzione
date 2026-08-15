@@ -32,22 +32,22 @@ describe('FluxEvolutionChainSimulator', () => {
         await act(async () => { [...container.querySelectorAll('button')].find((button) => button.textContent === 'Simula catena evolutiva')!.click() })
         expect(mocks.generate).toHaveBeenCalledTimes(1)
         expect(mocks.generate).toHaveBeenCalledWith(expect.not.objectContaining({ sourceVisualVersionId: expect.anything() }))
-        expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ promptTemplateVersion: 'flux-micro-v6' }))
+        expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ promptTemplateVersion: 'flux-minimal-v1' }))
         await act(async () => { [...container.querySelectorAll('button')].find((button) => button.textContent === 'Stop simulation')!.click() })
         expect(container.textContent).toContain('Stato: stopped')
         expect(JSON.parse(window.localStorage.getItem('flux-evolution-chain-simulator:creature-1')!).steps.slice(1).every((step: { state: string }) => step.state === 'stopped')).toBe(true)
         await act(async () => root.unmount())
     })
 
-    it('applies flux-minimal-v1 to every request started by a minimal-prompt chain', async () => {
+    it('can explicitly opt into flux-micro-v6 for full-prompt comparisons', async () => {
         const root = createRoot(container)
         await act(async () => { root.render(createElement(FluxEvolutionChainSimulator, { creatureId: 'creature-1' })) })
         await act(async () => { (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click() })
         await act(async () => { [...container.querySelectorAll('button')].find((button) => button.textContent === 'Simula catena evolutiva')!.click() })
 
-        expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ promptTemplateVersion: 'flux-minimal-v1' }))
-        expect(container.textContent).toContain('flux-minimal-v1')
-        expect(JSON.parse(window.localStorage.getItem('flux-evolution-chain-simulator:creature-1')!).promptTemplateVersion).toBe('flux-minimal-v1')
+        expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ promptTemplateVersion: 'flux-micro-v6' }))
+        expect(container.textContent).toContain('flux-micro-v6')
+        expect(JSON.parse(window.localStorage.getItem('flux-evolution-chain-simulator:creature-1')!).promptTemplateVersion).toBe('flux-micro-v6')
         await act(async () => root.unmount())
     })
 

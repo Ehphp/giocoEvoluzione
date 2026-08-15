@@ -26,7 +26,7 @@ import type { PreviousCreatureTransformationSummary } from '../../../shared/crea
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
-import { FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
+import { FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION, FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
 import { parseAdoptCreatureTransformationRequest, parseGenerateUnlockedTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import {
     CreatureTransformationRequestRepositoryError,
@@ -572,7 +572,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
                     profileId: input.profileId!, requestId: input.requestId, request: parsed.request,
                     identity: source.identity, plan, source: stepSource, storage: input.storage,
                     microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(),
-                    promptTemplateVersion: parsed.request.promptTemplateVersion ?? input.policy.flux.promptTemplateVersion,
+                    promptTemplateVersion: parsed.request.promptTemplateVersion ?? FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION,
                     ...(input.validator ? { validator: input.validator } : {}),
                 })
                 await input.repository.markSucceeded({
