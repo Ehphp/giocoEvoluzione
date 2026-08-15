@@ -25,22 +25,22 @@ const asyncNoop = async () => undefined
 
 function HomePreview() {
     return (
-                <HomeScreen
-                    viewModel={buildPreviewHomeViewModel()}
-                    actions={{
-                        onNicknameChange: noop,
-                        onRoomCodeChange: noop,
-                        onBotDifficultyChange: noop,
-                        onCreateGame: noop,
-                        onCreateBotGame: noop,
-                        onJoinGame: noop,
-                        onLeaveSession: noop,
-                        onOpenProfile: noop,
-                        onOpenCollection: noop,
-                        onOpenRanking: noop,
-                        onLogout: noop,
-                    }}
-                />
+        <HomeScreen
+            viewModel={buildPreviewHomeViewModel()}
+            actions={{
+                onNicknameChange: noop,
+                onRoomCodeChange: noop,
+                onBotDifficultyChange: noop,
+                onCreateGame: noop,
+                onCreateBotGame: noop,
+                onJoinGame: noop,
+                onLeaveSession: noop,
+                onOpenProfile: noop,
+                onOpenCollection: noop,
+                onOpenRanking: noop,
+                onLogout: noop,
+            }}
+        />
     )
 }
 
@@ -64,26 +64,26 @@ function BattlePreview() {
 
 function ProfilePreview() {
     return (
-                <ProfileScreen
-                    profile={PREVIEW_PROFILE}
-                    creature={PREVIEW_CREATURE}
-                    history={PREVIEW_HISTORY}
-                    isLoadingHistory={false}
-                    errorMessage={null}
-                    onBack={noop}
-                    onOpenCollection={noop}
-                    onOpenRanking={noop}
-                    onLogout={noop}
-                    visualUrl={PREVIEW_VISUAL_HISTORY[2].signedUrl}
-                    visualVersionNumber={3}
-                    visualTrait="Arti slanciati"
-                    visualProgress={{ progress: 2, target: 3, status: 'IN_PROGRESS' }}
-                    visualHistory={PREVIEW_VISUAL_HISTORY}
-                    currentVisualVersionId="preview-visual-3"
-                    onSelectVisualVersion={async () => undefined}
-                    onOpenEvolution={noop}
-                    onOpenBackgroundCleanup={noop}
-                />
+        <ProfileScreen
+            profile={PREVIEW_PROFILE}
+            creature={PREVIEW_CREATURE}
+            history={PREVIEW_HISTORY}
+            isLoadingHistory={false}
+            errorMessage={null}
+            onBack={noop}
+            onOpenCollection={noop}
+            onOpenRanking={noop}
+            onLogout={noop}
+            visualUrl={PREVIEW_VISUAL_HISTORY[2].signedUrl}
+            visualVersionNumber={3}
+            visualTrait="Arti slanciati"
+            visualProgress={{ progress: 2, target: 3, status: 'IN_PROGRESS' }}
+            visualHistory={PREVIEW_VISUAL_HISTORY}
+            currentVisualVersionId="preview-visual-3"
+            onSelectVisualVersion={async () => undefined}
+            onOpenEvolution={noop}
+            onOpenBackgroundCleanup={noop}
+        />
     )
 }
 
