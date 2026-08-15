@@ -57,7 +57,15 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         'The selected target must show a clear, unequivocal difference that reads at normal gameplay scale. When the NEW MUTATION is morphological, texture, colour, markings, plates, ridges or other surface details alone do not satisfy it: the primary change must visibly alter the target form described by the concept.',
         'TARGET STRUCTURE BOUNDARY',
         'Structures integrated into and anchored to the selected target are allowed. Do not introduce independently rooted anatomical appendages, new anatomical roots, or unrelated body structures outside the selected target.',
-        ...(structural ? ['AUTHORIZED BODY-PLAN MUTATION', contract.structuralChange!] : []),
+        ...(structural ? [
+            'AUTHORIZED BODY-PLAN MUTATION',
+            contract.structuralChange!,
+            'MANDATORY VISIBLE STRUCTURAL RESULT',
+            `The output must visibly realise this authorized body-plan change: ${contract.structuralChange!} This is mandatory, not optional. A result that preserves the source topology or presentation instead of visibly realising this structural mutation is invalid.`,
+            ...(contract.bodyPlanMutationId === 'BIPEDAL_TRANSITION'
+                ? ['The output must visibly read as an upright bipedal creature. A result that still reads as a quadruped is invalid. Do not preserve the quadrupedal pose from the source image.']
+                : []),
+        ] : []),
         'CURRENT TARGET STATE',
         describeCurrentTargetState(input.lineage),
         'NEW MUTATION',

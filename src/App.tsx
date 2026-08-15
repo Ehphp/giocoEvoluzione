@@ -79,7 +79,7 @@ function creatureEvolutionHash(target: EvolutionRouteTarget): string {
 
 function getInitialScreen(): CurrentScreen {
   if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) return 'creature-transformation-lab'
-  if (isCreatureVisualProgressionEnabled && window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) return 'creature-evolution'
+  if (isCreatureVisualProgressionEnabled && evolutionTargetFromHash()) return 'creature-evolution'
   if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) return 'visual-background-cleanup'
   return 'home'
 }
@@ -199,15 +199,28 @@ function App() {
     }
 
     const syncTechnicalRoute = () => {
-      setCurrentScreen(
-        isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH
-          ? 'creature-transformation-lab'
-          : isCreatureVisualProgressionEnabled && window.location.hash === CREATURE_VISUAL_PROGRESSION_HASH
-            ? 'creature-evolution'
-            : isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH
-              ? 'visual-background-cleanup'
-              : 'home',
-      )
+      const target = evolutionTargetFromHash()
+
+      if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) {
+        setEvolutionTarget(null)
+        setCurrentScreen('creature-transformation-lab')
+        return
+      }
+
+      if (isCreatureVisualProgressionEnabled && target) {
+        setEvolutionTarget(target)
+        setCurrentScreen('creature-evolution')
+        return
+      }
+
+      if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) {
+        setEvolutionTarget(null)
+        setCurrentScreen('visual-background-cleanup')
+        return
+      }
+
+      setEvolutionTarget(null)
+      setCurrentScreen('home')
     }
 
     window.addEventListener('hashchange', syncTechnicalRoute)

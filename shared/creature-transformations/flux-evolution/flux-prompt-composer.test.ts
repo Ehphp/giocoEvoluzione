@@ -99,6 +99,10 @@ describe('composeFluxEvolutionPrompt', () => {
 
         expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
         expect(prompt).toMatch(/Rebuild the posture into an upright bipedal stance/i)
+        expect(prompt).toContain('MANDATORY VISIBLE STRUCTURAL RESULT')
+        expect(prompt).toMatch(/output must visibly read as an upright bipedal creature/i)
+        expect(prompt).toMatch(/result that still reads as a quadruped is invalid/i)
+        expect(prompt).toMatch(/Do not preserve the quadrupedal pose from the source image/i)
         expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
     })
 })
