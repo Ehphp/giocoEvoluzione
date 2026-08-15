@@ -47,10 +47,11 @@ function snapshot(gameId: string, players: PlayerRecord[]): GameSnapshot {
     } as GameSnapshot
 }
 
-function visual(versionId: string, signedUrl: string): GameCreatureVisual {
+function visual(versionId: string, signedUrl: string, versionNumber = 2): GameCreatureVisual {
     return {
         versionId,
-        versionNumber: 1,
+        versionNumber,
+        isBaseVersion: versionNumber === 1,
         signedUrl,
         // A past date avoids renewal timers in this focused resource test.
         expiresAt: '2000-01-01T00:00:00.000Z',
@@ -97,6 +98,22 @@ describe('useGameCreatureVisualResource', () => {
     afterEach(() => {
         act(() => root.unmount())
         container.remove()
+    })
+
+    it('does not replace the default creature with the persisted base image after loading', async () => {
+        const host = player('host', 'host-creature')
+
+        await act(async () => {
+            root.render(createElement(Probe, {
+                snapshot: snapshot('game-1', [host]),
+                loadVisuals: async () => ({ player: visual('host-v1', 'https://image.test/old-base', 1), opponent: null }),
+                preloadImage: async () => undefined,
+            }))
+            await settle()
+        })
+
+        expect(container.querySelector('output')?.dataset.playerStatus).toBe('ready')
+        expect(container.querySelector('output')?.dataset.playerUrl).toBe('/assets/battle/creatures/verdant-hatchling.png')
     })
 
     it('reloads when realtime adds the remote participant and reaches ready without remount', async () => {

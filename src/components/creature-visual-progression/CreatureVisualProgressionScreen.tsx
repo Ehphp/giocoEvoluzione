@@ -9,7 +9,7 @@ import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
 
 import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
-import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } from '../../ui/assets'
 import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
 import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'
 import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
@@ -168,6 +168,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
 
     const track = progress?.track ?? null
     const status = track?.status ?? null
+    const currentPreviewUrl = preview && progress
+        ? withResolvedCreatureImage({ signedUrl: preview.sourceUrl ?? ASSETS.creatures.default, versionNumber: progress.currentVersion.versionNumber }).signedUrl
+        : ASSETS.creatures.default
 
     return (
         <AppShell
@@ -313,9 +316,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                         <Panel className="evolution-preview">
                             {/* Tapping either thumbnail swaps which form the hero shows. */}
                             <figure className="evolution-hero" data-side={heroSide}>
-                                {(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl ?? ASSETS.creatures.default) ? (
+                                {(heroSide === 'result' ? preview.resultUrl : currentPreviewUrl) ? (
                                     <img
-                                        src={(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl ?? ASSETS.creatures.default) ?? undefined}
+                                        src={(heroSide === 'result' ? preview.resultUrl : currentPreviewUrl) ?? undefined}
                                         alt={heroSide === 'result' ? 'Nuova evoluzione proposta' : 'Creatura attuale'}
                                         onError={heroSide === 'current' ? (event) => fallbackToDefaultCreatureImage(event.currentTarget) : undefined}
                                     />
@@ -334,7 +337,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                 >
                                     <span>
                                         <img
-                                            src={preview.sourceUrl ?? ASSETS.creatures.default}
+                                            src={currentPreviewUrl}
                                             alt=""
                                             onError={(event) => fallbackToDefaultCreatureImage(event.currentTarget)}
                                         />

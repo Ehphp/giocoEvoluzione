@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { evolutionTargetFamily } from '../evolution-targets.ts'
-import { composeFluxEvolutionPrompt } from './flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS } from './body-plan-registry.ts'
 
@@ -104,5 +104,23 @@ describe('composeFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/result that still reads as a quadruped is invalid/i)
         expect(prompt).toMatch(/Do not preserve the quadrupedal pose from the source image/i)
         expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
+    })
+})
+
+describe('composeMinimalFluxEvolutionPrompt', () => {
+    it('contains only the identity sentence and the generated micro-concept', () => {
+        const prompt = composeMinimalFluxEvolutionPrompt({
+            conceptName: 'Coda sentinella',
+            mutationIdea: 'La coda sviluppa una punta elastica sensibile alle vibrazioni.',
+            visualDetails: ['spine di cheratina', 'membrana flessibile'],
+            avoid: ['extra limbs', 'a different viewpoint'],
+        })
+
+        expect(prompt).toBe([
+            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            'EVOLUTION:',
+            'Coda sentinella: La coda sviluppa una punta elastica sensibile alle vibrazioni.\nVisual details: spine di cheratina; membrana flessibile',
+        ].join('\n\n'))
+        expect(prompt).not.toMatch(/ANATOMY CONTRACT|HARD INVARIANTS|PRESERVE|FAILURE CONDITIONS|TARGET FREEDOM|CURRENT TARGET STATE|OTHER ESTABLISHED EVOLUTIONS|STRICT FRAMING|BODY-PLAN|viewpoint|composition|extra limbs/i)
     })
 })

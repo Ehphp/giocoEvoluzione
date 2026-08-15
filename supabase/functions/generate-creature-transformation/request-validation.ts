@@ -6,7 +6,7 @@ const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const LAB_USAGE_REQUEST_FIELDS = new Set(['operation'])
 const GENERATED_IMAGE_CATALOG_REQUEST_FIELDS = new Set(['operation', 'page'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
-const FLUX_CHAIN_STEP_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'bodyPlanMutationId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'previousStepRequestIds', 'idempotencyKey'])
+const FLUX_CHAIN_STEP_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'promptTemplateVersion', 'bodyPlanMutationId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'previousStepRequestIds', 'idempotencyKey'])
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64', 'displayAssetWebpBase64'])
 const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
 const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64', 'displayAssetWebpBase64'])
@@ -100,6 +100,10 @@ export function parseGenerateFluxEvolutionChainStepRequest(value: unknown): Pars
         ? undefined
         : isBodyPlanMutationId(body.bodyPlanMutationId) ? body.bodyPlanMutationId : null
     if (bodyPlanMutationId === null) return { valid: false, code: 'INVALID_REQUEST', message: 'bodyPlanMutationId non appartiene al catalogo delle mutazioni strutturali.' }
+    const promptTemplateVersion = body.promptTemplateVersion === undefined
+        ? undefined
+        : body.promptTemplateVersion === 'flux-micro-v6' || body.promptTemplateVersion === 'flux-minimal-v1' ? body.promptTemplateVersion : null
+    if (promptTemplateVersion === null) return { valid: false, code: 'INVALID_REQUEST', message: 'La versione sperimentale del prompt FLUX non e valida.' }
     if (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId')) return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalSourceRequestId deve essere un UUID valido.' }
     if (body.sourceVisualVersionId !== undefined && !readUuid(body, 'sourceVisualVersionId')) return { valid: false, code: 'INVALID_REQUEST', message: 'sourceVisualVersionId deve essere un UUID valido.' }
     if (body.experimentalSourceRequestId !== undefined && body.sourceVisualVersionId !== undefined) return { valid: false, code: 'INVALID_REQUEST', message: 'Imposta una sola sorgente: sperimentale oppure produttiva.' }
@@ -108,6 +112,7 @@ export function parseGenerateFluxEvolutionChainStepRequest(value: unknown): Pars
         valid: true,
         request: {
             operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: required.creatureId, evolutionTargetId,
+            ...(promptTemplateVersion ? { promptTemplateVersion } : {}),
             ...(bodyPlanMutationId ? { bodyPlanMutationId } : {}),
             ...(typeof body.experimentalSourceRequestId === 'string' ? { experimentalSourceRequestId: body.experimentalSourceRequestId } : {}),
             ...(typeof body.sourceVisualVersionId === 'string' ? { sourceVisualVersionId: body.sourceVisualVersionId } : {}),

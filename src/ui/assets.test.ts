@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ASSETS, fallbackToDefaultCreatureImage } from './assets'
+import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } from './assets'
 
 describe('creature assets', () => {
     it('uses the verdant hatchling as every player-facing default', () => {
@@ -16,5 +16,13 @@ describe('creature assets', () => {
         fallbackToDefaultCreatureImage(image)
 
         expect(image.getAttribute('src')).toBe(ASSETS.creatures.default)
+    })
+
+    it('keeps the default for the persisted base version and preserves evolved visuals', () => {
+        const base = withResolvedCreatureImage({ signedUrl: '/signed/old-base.png', versionNumber: 1, isBaseVersion: true })
+        const evolved = withResolvedCreatureImage({ signedUrl: '/signed/evolved.png', versionNumber: 2, isBaseVersion: false })
+
+        expect(base.signedUrl).toBe(ASSETS.creatures.default)
+        expect(evolved.signedUrl).toBe('/signed/evolved.png')
     })
 })

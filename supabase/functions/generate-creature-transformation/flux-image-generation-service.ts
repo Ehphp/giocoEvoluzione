@@ -1,4 +1,4 @@
-import { composeFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeMinimalFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import { createFluxEvolutionSnapshot, type FluxEvolutionSnapshot } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
@@ -10,8 +10,11 @@ import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flu
 
 export const FLUX_RAW_RENDER_SPECIFICATION = Object.freeze({ width: 768, height: 1152 })
 export const FLUX_PROMPT_TEMPLATE_VERSION = 'flux-micro-v6'
+export const FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION = 'flux-minimal-v1'
 export const FLUX_MAX_CROP_RETRIES = 2
 export const FLUX_SUBJECT_MARGIN_RATIO = 0.06
+
+export type FluxPromptTemplateVersion = typeof FLUX_PROMPT_TEMPLATE_VERSION | typeof FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
 
 export type FluxImageGenerationServiceErrorCode = 'FLUX_BODY_PLAN_UNSUPPORTED' | 'FLUX_SOURCE_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_UNCHANGED' | 'FLUX_SUBJECT_CROPPED' | 'FLUX_CONCEPT_NOT_CONFIGURED' | 'FLUX_CONCEPT_TIMEOUT' | 'FLUX_CONCEPT_PROVIDER_ERROR' | 'FLUX_CONCEPT_RESPONSE_INVALID' | 'FAL_FLUX_NOT_CONFIGURED' | 'FAL_FLUX_TIMEOUT' | 'FAL_FLUX_RATE_LIMITED' | 'FAL_FLUX_BAD_REQUEST' | 'FAL_FLUX_PROVIDER_ERROR' | 'FAL_FLUX_RESPONSE_INVALID'
 
@@ -26,6 +29,7 @@ export type GeneratedFluxImage = Readonly<{
     sourceSha256: string
     promptSha256: string
     prompt: string
+    promptTemplateVersion: FluxPromptTemplateVersion
     conceptSnapshot: FluxEvolutionSnapshot
     result: { signedUrl: string, expiresAt: string, mimeType: 'image/png', width: number, height: number, sha256: string, assetReadiness: 'EXPERIMENT_ONLY' }
     generation: { provider: string, model: string, providerRequestId?: string, seed?: number, latencyMs: number, estimatedCostUsd?: number }
@@ -52,9 +56,11 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     storage: SupabaseCreatureTransformationStorageAdapter
     microConceptGenerator: FluxMicroConceptGenerator
     provider: FalFluxImageProvider
+    promptTemplateVersion?: FluxPromptTemplateVersion
     validator?: ImageValidator
 }): Promise<GeneratedFluxImage> {
     const validator = input.validator ?? new ImageValidator()
+    const promptTemplateVersion = input.promptTemplateVersion ?? FLUX_PROMPT_TEMPLATE_VERSION
     let microConcept
     try {
         microConcept = await input.microConceptGenerator.generate({ identity: input.identity, plan: input.plan })
@@ -74,7 +80,9 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     let validOutput: Awaited<ReturnType<ImageValidator['validate']>> | null = null
     let cropRetryCount = 0
     for (let attempt = 0; attempt <= FLUX_MAX_CROP_RETRIES; attempt += 1) {
-        prompt = composeFluxEvolutionPrompt({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
+        prompt = promptTemplateVersion === FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
+            ? composeMinimalFluxEvolutionPrompt(microConcept)
+            : composeFluxEvolutionPrompt({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
         console.info('flux.crop_validation.attempt', { requestId: input.requestId, attempt: attempt + 1, maxAttempts: FLUX_MAX_CROP_RETRIES + 1 })
         try {
             generated = await input.provider.transform({ prompt, sourcePng: source.bytes })
@@ -115,6 +123,7 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
         sourceSha256: validSource.metadata.sha256,
         promptSha256: await sha256Hex(new TextEncoder().encode(prompt)),
         prompt,
+        promptTemplateVersion,
         conceptSnapshot: snapshot,
         result: { signedUrl: stored.signedUrl, expiresAt: stored.expiresAt, mimeType: 'image/png', width: validOutput.metadata.width, height: validOutput.metadata.height, sha256: validOutput.metadata.sha256, assetReadiness: 'EXPERIMENT_ONLY' },
         generation: { provider: generated.provider, model: generated.model, ...(generated.providerRequestId ? { providerRequestId: generated.providerRequestId } : {}), ...(generated.seed === undefined ? {} : { seed: generated.seed }), latencyMs: generated.latencyMs, ...(generated.estimatedCostUsd === undefined ? {} : { estimatedCostUsd: generated.estimatedCostUsd }) },

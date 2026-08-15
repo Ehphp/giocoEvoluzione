@@ -25,6 +25,9 @@ describe('visual progression request validation', () => {
         const base = { operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: 'creature', evolutionTargetId: 'LIMBS_AND_FEET', previousStepRequestIds: [], idempotencyKey: 'key' }
 
         expect(parseGenerateFluxEvolutionChainStepRequest(base)).toMatchObject({ valid: true })
+        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v6' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v6' } })
+        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-minimal-v1' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-minimal-v1' } })
+        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-minimal-v2' })).toMatchObject({ valid: false })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'ADD_LIMB_PAIR' })).toMatchObject({ valid: true, request: { bodyPlanMutationId: 'ADD_LIMB_PAIR' } })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'GROW_EXTRA_HEAD' })).toMatchObject({ valid: false })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, prompt: 'client instructions' })).toMatchObject({ valid: false })

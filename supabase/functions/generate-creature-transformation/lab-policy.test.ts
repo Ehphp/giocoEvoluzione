@@ -17,7 +17,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
-        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
+        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
         expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, backgroundCleanupEnabled: false, winsRequired: 3 })
     })
 
@@ -39,6 +39,7 @@ describe('creature transformation lab policy', () => {
             FAL_FLUX_API_KEY: 'server-only-fal-key',
             FAL_FLUX_MODEL: 'configured-flux-edit-model',
             FAL_FLUX_TIMEOUT_MS: '45000',
+            FLUX_PROMPT_TEMPLATE_VERSION: 'flux-minimal-v1',
             FAL_FLUX_ESTIMATED_COST_USD: '0.0203',
             FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
             OPENAI_API_KEY: 'server-only-concept-key',
@@ -58,7 +59,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.labProfileIds).toEqual(new Set(['profile-1']))
         expect(policy.flux).toMatchObject({
             apiKey: 'server-only-fal-key', model: 'configured-flux-edit-model', timeoutMs: 45000,
-            estimatedCostUsd: 0.0203, maxEstimatedCostUsd: 0.03, microConceptModel: 'configured-micro-concept-model',
+            promptTemplateVersion: 'flux-minimal-v1', estimatedCostUsd: 0.0203, maxEstimatedCostUsd: 0.03, microConceptModel: 'configured-micro-concept-model',
         })
         expect(policy.visualProgression).toMatchObject({ enabled: true, productionGenerationEnabled: true, adoptionEnabled: true, winsRequired: 4 })
     })
@@ -81,7 +82,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
         expect(policy.staleRequestSeconds).toBe(900)
-        expect(policy.flux).toMatchObject({ timeoutMs: 30_000, estimatedCostUsd: null })
+        expect(policy.flux).toMatchObject({ timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null })
     })
 
     it('exposes no legacy pipeline switch, provider or benchmark configuration', () => {

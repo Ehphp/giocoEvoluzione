@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { GameSnapshot, PlayerRecord } from '../../../lib/game-api'
 import { getGameCreatureVisuals } from '../../../lib/creature-transformations-api'
+import { withResolvedCreatureImage } from '../../../ui/assets'
 import { buildBattleParticipants } from './battleParticipants'
 
 export type GameCreatureVisual = Readonly<{
@@ -10,6 +11,7 @@ export type GameCreatureVisual = Readonly<{
     versionNumber: number
     versionId: string
     visualTraitId?: string | null
+    isBaseVersion?: boolean
 }>
 
 export type GameVisualLoadStatus = 'loading' | 'ready' | 'unavailable' | 'error'
@@ -218,7 +220,11 @@ export function useGameCreatureVisualResource(input: {
             applyLoading()
             devLog('start', { fingerprint, sequence, participants, reason: loadReason })
             try {
-                const visuals = await loadVisuals({ gameId: participants.gameId! })
+                const loadedVisuals = await loadVisuals({ gameId: participants.gameId! })
+                const visuals = {
+                    player: withResolvedCreatureImage(loadedVisuals.player),
+                    opponent: loadedVisuals.opponent ? withResolvedCreatureImage(loadedVisuals.opponent) : null,
+                }
                 const preloadResults = await Promise.allSettled([
                     preloadImage(visuals.player.signedUrl),
                     visuals.opponent ? preloadImage(visuals.opponent.signedUrl) : Promise.resolve(),

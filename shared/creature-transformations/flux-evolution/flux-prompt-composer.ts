@@ -25,6 +25,14 @@ function describeAvoid(avoid: readonly string[] | undefined): string {
     return ` Avoid: ${precise.join('; ')}.`
 }
 
+export function composeMinimalFluxEvolutionPrompt(microConcept: FluxMicroConcept): string {
+    return [
+        'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+        'EVOLUTION:',
+        `${microConcept.conceptName}: ${microConcept.mutationIdea}\nVisual details: ${microConcept.visualDetails.join('; ')}`,
+    ].join('\n\n')
+}
+
 export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): string {
     const contract = input.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[contract.target]

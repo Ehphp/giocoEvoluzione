@@ -1,4 +1,5 @@
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
+import type { FluxPromptTemplateVersion } from './flux-image-generation-service.ts'
 
 /**
  * Server-side policy of the FLUX evolution pipeline.
@@ -24,6 +25,7 @@ export type FluxPipelinePolicy = Readonly<{
     apiKey: string | null
     model: string
     timeoutMs: number
+    promptTemplateVersion: FluxPromptTemplateVersion
     estimatedCostUsd: number | null
     maxEstimatedCostUsd: number | null
     microConceptApiKey: string | null
@@ -82,10 +84,12 @@ function readProfileIdSet(value: string | undefined): ReadonlySet<string> {
 }
 
 function readFluxPolicy(readEnvironment: (name: string) => string | undefined): FluxPipelinePolicy {
+    const configuredPromptTemplateVersion = readEnvironment('FLUX_PROMPT_TEMPLATE_VERSION')
     return Object.freeze({
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FLUX_MODEL,
         timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
+        promptTemplateVersion: configuredPromptTemplateVersion === 'flux-minimal-v1' ? 'flux-minimal-v1' : 'flux-micro-v6',
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
         microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,

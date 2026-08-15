@@ -66,4 +66,9 @@ export function fallbackToDefaultCreatureImage(image: HTMLImageElement): void {
     }
 }
 
+export function withResolvedCreatureImage<T extends { signedUrl: string, versionNumber?: number, isBaseVersion?: boolean }>(visual: T): T {
+    if (visual.isBaseVersion !== true && visual.versionNumber !== 1) return visual
+    return { ...visual, signedUrl: ASSETS.creatures.default }
+}
+
 export type GeneAssetKey = keyof typeof ASSETS.genes

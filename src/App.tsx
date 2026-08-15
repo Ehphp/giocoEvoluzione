@@ -44,6 +44,7 @@ import {
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
 import { TOTAL_ROUNDS } from './game/config'
+import { withResolvedCreatureImage } from './ui/assets'
 
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
   if (!player) {
@@ -84,7 +85,7 @@ function getInitialScreen(): CurrentScreen {
   return 'home'
 }
 
-type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null }
+type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null; isBaseVersion?: boolean }
 type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
 type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNumber: number; visualTrait: string | null; currentVisualVersionId: string; visualHistory: VisualProgressSummary['history'] }>
 
@@ -248,8 +249,8 @@ function App() {
           getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: activeCreature.id }),
         ])
         if (!active) return
-        setOfficialVisual(visual.visual)
-        setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history })
+        setOfficialVisual(withResolvedCreatureImage(visual.visual))
+        setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history.map(withResolvedCreatureImage) })
         const wait = Math.max(15_000, Date.parse(visual.visual.expiresAt) - Date.now() - 30_000)
         refreshTimer = window.setTimeout(() => { void load() }, wait)
       } catch {
@@ -273,11 +274,11 @@ function App() {
         getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: lineage.creature.id }),
       ])
       return [lineage.id, {
-        visualUrl: visual.visual.signedUrl,
+        visualUrl: withResolvedCreatureImage(visual.visual).signedUrl,
         visualVersionNumber: progression.currentVersion.versionNumber,
         visualTrait: progression.currentVersion.visualTraitId,
         currentVisualVersionId: progression.currentVersion.id,
-        visualHistory: progression.history,
+        visualHistory: progression.history.map(withResolvedCreatureImage),
       }] as const
     })).then((entries) => {
       if (active) setLineageVisuals(Object.fromEntries(entries))
@@ -749,8 +750,8 @@ function App() {
       getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: activeCreature.id }),
       getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: activeCreature.id }),
     ])
-    setOfficialVisual(visual.visual)
-    setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history })
+    setOfficialVisual(withResolvedCreatureImage(visual.visual))
+    setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history.map(withResolvedCreatureImage) })
     await refreshProfile()
   }
 

@@ -26,7 +26,7 @@ import type { PreviousCreatureTransformationSummary } from '../../../shared/crea
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
-import { FLUX_PROMPT_TEMPLATE_VERSION, FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
+import { FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
 import { parseAdoptCreatureTransformationRequest, parseGenerateUnlockedTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
 import {
     CreatureTransformationRequestRepositoryError,
@@ -279,6 +279,7 @@ async function runUnlockedTransformationTask(
             source: { kind: 'CANONICAL', path: source.sourceImagePath, isBaseVersion: source.sourceIsBaseVersion },
             storage: input.storage,
             microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(),
+            promptTemplateVersion: input.policy.flux.promptTemplateVersion,
             ...(input.validator ? { validator: input.validator } : {}),
         })
         const completed = await input.repository.markSucceeded({
@@ -289,7 +290,7 @@ async function runUnlockedTransformationTask(
                 resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
                 assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: generated.validation.warnings,
                 estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                promptTemplateVersion: FLUX_PROMPT_TEMPLATE_VERSION, promptSha256: generated.promptSha256, conceptSnapshot: generated.conceptSnapshot,
+                promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, conceptSnapshot: generated.conceptSnapshot,
             },
         })
         await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
@@ -571,6 +572,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
                     profileId: input.profileId!, requestId: input.requestId, request: parsed.request,
                     identity: source.identity, plan, source: stepSource, storage: input.storage,
                     microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(),
+                    promptTemplateVersion: parsed.request.promptTemplateVersion ?? input.policy.flux.promptTemplateVersion,
                     ...(input.validator ? { validator: input.validator } : {}),
                 })
                 await input.repository.markSucceeded({ requestId: running.id, profileId: input.profileId!, data: {
@@ -579,7 +581,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
                     resultPath: await input.storage.createRawResultObjectPath(input.profileId!, parsed.request.idempotencyKey), resultMimeType: generated.result.mimeType,
                     resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY',
                     validationWarnings: generated.validation.warnings, estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                    promptTemplateVersion: FLUX_PROMPT_TEMPLATE_VERSION, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
+                    promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
                 } })
             } catch (error) {
                 const details = mapThrownError(error)

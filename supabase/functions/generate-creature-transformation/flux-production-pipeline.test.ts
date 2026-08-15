@@ -118,6 +118,28 @@ describe('FLUX production pipeline', () => {
         })
     })
 
+    it('uses flux-minimal-v1 for a normal gameplay evolution when selected by server policy', async () => {
+        const context = createProductionInput({
+            idempotencyKey: 'production-minimal',
+            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-minimal-v1' },
+        })
+
+        await orchestrateGenerateUnlockedTransformation(context.input as never)
+        await context.tasks[0]
+
+        const expectedPrompt = [
+            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            'EVOLUTION:',
+            'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
+        ].join('\n\n')
+        expect(context.generate).toHaveBeenCalledOnce()
+        expect(context.transform).toHaveBeenCalledOnce()
+        expect(context.transform.mock.calls[0]![0].prompt).toBe(expectedPrompt)
+        expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: null,
+        })
+    })
+
     it('retries a cropped FLUX result once with a wider framing prompt, then accepts the valid retry', async () => {
         const validator = new ScriptedCropValidator(2)
         const context = createProductionInput({ idempotencyKey: 'crop-retry', validator })

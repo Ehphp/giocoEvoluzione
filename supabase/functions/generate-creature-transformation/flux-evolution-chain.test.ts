@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
+import { composeFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import { createResolvedCreatureSource } from './test-creature-fixtures.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { orchestrateGenerateFluxEvolutionChainStep } from './edge-orchestration.ts'
@@ -31,6 +32,7 @@ function createInput(options: {
     idempotencyKey: string
     evolutionTargetId?: string
     bodyPlanMutationId?: string
+    promptTemplateVersion?: 'flux-minimal-v1'
     previousStepRequestIds?: string[]
     sourceVisualVersionId?: string
     source?: ReturnType<typeof createResolvedCreatureSource>
@@ -48,6 +50,7 @@ function createInput(options: {
             body: {
                 operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: CREATURE_ID,
                 evolutionTargetId: options.evolutionTargetId ?? 'LIMBS_AND_FEET',
+                ...(options.promptTemplateVersion ? { promptTemplateVersion: options.promptTemplateVersion } : {}),
                 ...(options.bodyPlanMutationId ? { bodyPlanMutationId: options.bodyPlanMutationId } : {}),
                 previousStepRequestIds,
                 ...(options.sourceVisualVersionId ? { sourceVisualVersionId: options.sourceVisualVersionId } : {}),
@@ -108,7 +111,48 @@ describe('FLUX evolution chain step', () => {
         expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
+        expect(prompt).toBe(composeFluxEvolutionPrompt({
+            identity: createResolvedCreatureSource().identity,
+            anatomyContract: plan.anatomyContract,
+            microConcept: { conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] },
+            lineage: plan.lineage,
+            framingAttempt: 0,
+        }))
         expect(plan.lineage.currentTargetState?.conceptName).toBe('Pale rematrici')
+        expect(persistence.get(PROFILE_ID, 'chain-2')?.promptTemplateVersion).toBe('flux-micro-v6')
+    })
+
+    it('changes only the final provider prompt in flux-minimal-v1 mode', async () => {
+        const persistence = createInMemoryRequestRepository()
+        const tasks: Promise<void>[] = []
+        const sourcePng = createTestPng()
+        const readCanonicalSource = vi.fn(async () => ({ bytes: sourcePng, mimeType: 'image/png' as const }))
+        const context = createInput({
+            repository: persistence,
+            tasks,
+            idempotencyKey: 'chain-minimal',
+            promptTemplateVersion: 'flux-minimal-v1',
+            storage: createTestStorage({ readCanonicalSource }),
+        })
+
+        await orchestrateGenerateFluxEvolutionChainStep(context.input as never)
+        await tasks[0]
+
+        const expectedPrompt = [
+            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
+            'EVOLUTION:',
+            'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
+        ].join('\n\n')
+        expect(context.generate).toHaveBeenCalledTimes(1)
+        expect(Object.keys(context.generate.mock.calls[0]![0]).sort()).toEqual(['identity', 'plan'])
+        expect(readCanonicalSource).toHaveBeenCalledTimes(1)
+        expect(context.transform).toHaveBeenCalledTimes(1)
+        expect(context.transform).toHaveBeenCalledWith({ prompt: expectedPrompt, sourcePng })
+        expect(expectedPrompt).not.toMatch(/ANATOMY CONTRACT|HARD INVARIANTS|PRESERVE|FAILURE CONDITIONS|TARGET FREEDOM|CURRENT TARGET STATE|OTHER ESTABLISHED EVOLUTIONS|STRICT FRAMING|BODY-PLAN/i)
+        expect(persistence.get(PROFILE_ID, 'chain-minimal')).toMatchObject({
+            promptTemplateVersion: 'flux-minimal-v1',
+            promptText: expectedPrompt,
+        })
     })
 
     it('builds G1 from the selected visual version history instead of later adopted evolutions', async () => {

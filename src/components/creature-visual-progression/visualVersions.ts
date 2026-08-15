@@ -1,3 +1,5 @@
+import { withResolvedCreatureImage } from '../../ui/assets'
+
 /**
  * Presentation-only representation of the unlocked visual lineage. Screens can select one of
  * these versions locally, but the active version remains owned by the progression API.
@@ -40,7 +42,7 @@ export function buildCreatureVisualVersions({
         : ordered.find((entry) => entry.versionNumber === currentVersionNumber)?.id ?? ordered.at(-1)?.id
 
     return ordered.map((entry) => ({
-        ...entry,
+        ...withResolvedCreatureImage(entry),
         name: formName(entry),
         isCurrent: entry.id === currentId,
     }))

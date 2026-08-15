@@ -66,6 +66,8 @@ export type GenerateFluxEvolutionChainStepRequest = {
     operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP'
     creatureId: string
     evolutionTargetId: EvolutionTargetId
+    /** Lab-only A/B selection between the two server-owned prompt templates. */
+    promptTemplateVersion?: 'flux-micro-v6' | 'flux-minimal-v1'
     /** Structural mutation, allowed only when the server policy enables the capability. */
     bodyPlanMutationId?: BodyPlanMutationId
     /** Final, processed experimental output from the immediately preceding step. */
