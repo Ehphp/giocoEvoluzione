@@ -76,6 +76,12 @@ describe('creature transformation lab policy', () => {
         expect(policy.flux.promptTemplateVersion).toBe('flux-minimal-v1')
     })
 
+    it('restores flux-micro-v5 when explicitly selected by server policy', () => {
+        const policy = readCreatureTransformationLabPolicy((name) => ({ FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v5' })[name])
+
+        expect(policy.flux.promptTemplateVersion).toBe('flux-micro-v5')
+    })
+
     it('uses bounded fail-safe defaults for invalid quota, budget and cost configuration', () => {
         const policy = readCreatureTransformationLabPolicy((name) => ({
             CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT: '0',

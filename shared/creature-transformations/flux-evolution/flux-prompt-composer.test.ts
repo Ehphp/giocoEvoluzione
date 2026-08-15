@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { evolutionTargetFamily } from '../evolution-targets.ts'
-import { composeFluxEvolutionPrompt, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS } from './body-plan-registry.ts'
 
@@ -104,6 +104,42 @@ describe('composeFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/result that still reads as a quadruped is invalid/i)
         expect(prompt).toMatch(/Do not preserve the quadrupedal pose from the source image/i)
         expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
+    })
+})
+
+describe('composeFluxEvolutionPromptV5', () => {
+    it('restores the historical full prompt without v6 mutation-authority sections', () => {
+        const prompt = composeFluxEvolutionPromptV5({
+            identity: {
+                creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'A stylized fantasy creature with a distinctive, recognizable visual identity.',
+                identityFeatures: ['distinctive individual identity'], mutableVisualFeatures: ['visual characteristics'], styleDefinition: 'illustrated',
+            },
+            anatomyContract: buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' }),
+            microConcept: {
+                conceptName: 'Split Aquatic Tail', mutationIdea: 'The tail evolves into two split tails from a common base.',
+                visualDetails: ['elongated finned appendages', 'bioluminescent stripes'], avoid: ['new anatomical structures'],
+            },
+            lineage: { evolutionTargetId: 'TAIL', family: 'TAIL', currentTargetState: null },
+        })
+
+        expect(prompt).toContain('Edit the supplied source image. This is the same creature and the same individual. Preserve pose, viewpoint, composition and illustrated style as closely as possible.')
+        expect(prompt).toContain('\n\nANATOMY CONTRACT\n\n')
+        expect(prompt).toContain('This is the primary evolutionary target: make the primary mutation clearly readable there.')
+        expect(prompt).toContain('\n\nPRESERVE\n\n')
+        expect(prompt).toContain('Preserve the identity of this individual: distinctive individual identity.')
+        expect(prompt).not.toMatch(/\n\n(?:PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION|HARD INVARIANTS)\n\n/)
+    })
+
+    it('retains the framing retry override', () => {
+        const prompt = composeFluxEvolutionPromptV5({
+            identity: { creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'Creature.', identityFeatures: ['face'], mutableVisualFeatures: [], styleDefinition: 'illustrated' },
+            anatomyContract: buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' }),
+            microConcept: { conceptName: 'Tail', mutationIdea: 'Longer tail.', visualDetails: ['fins'] },
+            lineage: { evolutionTargetId: 'TAIL', family: 'TAIL', currentTargetState: null },
+            framingAttempt: 1,
+        })
+
+        expect(prompt).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
     })
 })
 

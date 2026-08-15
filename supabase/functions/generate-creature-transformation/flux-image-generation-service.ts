@@ -1,4 +1,4 @@
-import { composeFluxEvolutionPrompt, composeMinimalFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeMinimalFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import { createFluxEvolutionSnapshot, type FluxEvolutionSnapshot } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
@@ -10,11 +10,12 @@ import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flu
 
 export const FLUX_RAW_RENDER_SPECIFICATION = FAL_FLUX_IMAGE_SIZE
 export const FLUX_PROMPT_TEMPLATE_VERSION = 'flux-micro-v6'
+export const FLUX_RESTORED_PROMPT_TEMPLATE_VERSION = 'flux-micro-v5'
 export const FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION = 'flux-minimal-v1'
 export const FLUX_MAX_CROP_RETRIES = 2
 export const FLUX_SUBJECT_MARGIN_RATIO = 0.06
 
-export type FluxPromptTemplateVersion = typeof FLUX_PROMPT_TEMPLATE_VERSION | typeof FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
+export type FluxPromptTemplateVersion = typeof FLUX_PROMPT_TEMPLATE_VERSION | typeof FLUX_RESTORED_PROMPT_TEMPLATE_VERSION | typeof FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
 
 export type FluxImageGenerationServiceErrorCode = 'FLUX_BODY_PLAN_UNSUPPORTED' | 'FLUX_SOURCE_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_UNCHANGED' | 'FLUX_SUBJECT_CROPPED' | 'FLUX_CONCEPT_NOT_CONFIGURED' | 'FLUX_CONCEPT_TIMEOUT' | 'FLUX_CONCEPT_PROVIDER_ERROR' | 'FLUX_CONCEPT_RESPONSE_INVALID' | 'FAL_FLUX_NOT_CONFIGURED' | 'FAL_FLUX_TIMEOUT' | 'FAL_FLUX_RATE_LIMITED' | 'FAL_FLUX_BAD_REQUEST' | 'FAL_FLUX_PROVIDER_ERROR' | 'FAL_FLUX_RESPONSE_INVALID'
 
@@ -82,7 +83,9 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
     for (let attempt = 0; attempt <= FLUX_MAX_CROP_RETRIES; attempt += 1) {
         prompt = promptTemplateVersion === FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION
             ? composeMinimalFluxEvolutionPrompt(microConcept, attempt)
-            : composeFluxEvolutionPrompt({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
+            : promptTemplateVersion === FLUX_RESTORED_PROMPT_TEMPLATE_VERSION
+                ? composeFluxEvolutionPromptV5({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
+                : composeFluxEvolutionPrompt({ identity: input.identity, anatomyContract: input.plan.anatomyContract, microConcept, lineage: input.plan.lineage, framingAttempt: attempt })
         console.info('flux.crop_validation.attempt', { requestId: input.requestId, attempt: attempt + 1, maxAttempts: FLUX_MAX_CROP_RETRIES + 1 })
         try {
             generated = await input.provider.transform({ prompt, sourcePng: source.bytes })

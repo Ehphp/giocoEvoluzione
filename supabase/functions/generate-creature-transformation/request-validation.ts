@@ -102,7 +102,7 @@ export function parseGenerateFluxEvolutionChainStepRequest(value: unknown): Pars
     if (bodyPlanMutationId === null) return { valid: false, code: 'INVALID_REQUEST', message: 'bodyPlanMutationId non appartiene al catalogo delle mutazioni strutturali.' }
     const promptTemplateVersion = body.promptTemplateVersion === undefined
         ? undefined
-        : body.promptTemplateVersion === 'flux-micro-v6' || body.promptTemplateVersion === 'flux-minimal-v1' ? body.promptTemplateVersion : null
+        : body.promptTemplateVersion === 'flux-micro-v6' || body.promptTemplateVersion === 'flux-micro-v5' || body.promptTemplateVersion === 'flux-minimal-v1' ? body.promptTemplateVersion : null
     if (promptTemplateVersion === null) return { valid: false, code: 'INVALID_REQUEST', message: 'La versione sperimentale del prompt FLUX non e valida.' }
     if (body.experimentalSourceRequestId !== undefined && !readUuid(body, 'experimentalSourceRequestId')) return { valid: false, code: 'INVALID_REQUEST', message: 'experimentalSourceRequestId deve essere un UUID valido.' }
     if (body.sourceVisualVersionId !== undefined && !readUuid(body, 'sourceVisualVersionId')) return { valid: false, code: 'INVALID_REQUEST', message: 'sourceVisualVersionId deve essere un UUID valido.' }

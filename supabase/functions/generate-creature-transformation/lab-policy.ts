@@ -85,11 +85,14 @@ function readProfileIdSet(value: string | undefined): ReadonlySet<string> {
 
 function readFluxPolicy(readEnvironment: (name: string) => string | undefined): FluxPipelinePolicy {
     const configuredPromptTemplateVersion = readEnvironment('FLUX_PROMPT_TEMPLATE_VERSION')
+    const promptTemplateVersion: FluxPromptTemplateVersion = configuredPromptTemplateVersion === 'flux-minimal-v1'
+        ? 'flux-minimal-v1'
+        : configuredPromptTemplateVersion === 'flux-micro-v5' ? 'flux-micro-v5' : 'flux-micro-v6'
     return Object.freeze({
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FLUX_MODEL,
         timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
-        promptTemplateVersion: configuredPromptTemplateVersion === 'flux-minimal-v1' ? 'flux-minimal-v1' : 'flux-micro-v6',
+        promptTemplateVersion,
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
         microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,

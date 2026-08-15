@@ -151,6 +151,25 @@ describe('FLUX production pipeline', () => {
         })
     })
 
+    it('uses the restored flux-micro-v5 prompt when selected by server policy', async () => {
+        const context = createProductionInput({
+            idempotencyKey: 'production-v5',
+            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v5' },
+        })
+
+        await orchestrateGenerateUnlockedTransformation(context.input as never)
+        await context.tasks[0]
+
+        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        expect(prompt).toContain('Edit the supplied source image. This is the same creature and the same individual. Preserve pose, viewpoint, composition and illustrated style as closely as possible.')
+        expect(prompt).toContain('\n\nANATOMY CONTRACT\n\n')
+        expect(prompt).toContain('\n\nPRESERVE\n\n')
+        expect(prompt).not.toContain('\n\nPRIMARY MUTATION AUTHORITY\n\n')
+        expect(context.persistence.get(PROFILE_ID, 'production-v5')).toMatchObject({
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v5',
+        })
+    })
+
     it('validates and persists the Seedream raw canvas selected by the provider model', async () => {
         const validator = new RenderProfileValidator()
         const context = createProductionInput({ idempotencyKey: 'production-seedream', providerModel: FAL_SEEDREAM_MODEL, validator })
