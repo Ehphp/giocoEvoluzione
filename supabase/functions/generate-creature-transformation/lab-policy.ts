@@ -87,7 +87,9 @@ function readFluxPolicy(readEnvironment: (name: string) => string | undefined): 
     const configuredPromptTemplateVersion = readEnvironment('FLUX_PROMPT_TEMPLATE_VERSION')
     const promptTemplateVersion: FluxPromptTemplateVersion = configuredPromptTemplateVersion === 'flux-minimal-v1'
         ? 'flux-minimal-v1'
-        : configuredPromptTemplateVersion === 'flux-micro-v5' ? 'flux-micro-v5' : 'flux-micro-v6'
+        : configuredPromptTemplateVersion === 'flux-micro-v5'
+            ? 'flux-micro-v5'
+            : configuredPromptTemplateVersion === 'flux-micro-v6' ? 'flux-micro-v6' : 'flux-micro-v7'
     return Object.freeze({
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FAL_FLUX_MODEL,

@@ -76,7 +76,7 @@ export function composeFluxEvolutionPromptV5(input: ComposeFluxPromptInput): str
     ].join('\n\n')
 }
 
-export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): string {
+function composeFluxEvolutionPromptWithFreedom(input: ComposeFluxPromptInput, expandedFreedom: boolean): string {
     const contract = input.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[contract.target]
     const structural = contract.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
@@ -88,7 +88,9 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         'CURRENT SOURCE IMAGE',
         bodyShapePresentationLock
             ? 'Edit the supplied source image as the complete visual truth. Keep the same base pose, viewpoint, facing direction, overall orientation and composition. BODY_SHAPE changes must be achieved within this existing presentation, never by re-staging, rotating, tilting or otherwise reorienting the creature. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.'
-            : 'Edit the supplied source image as the complete visual truth. Keep its viewpoint and composition. Preserve its pose by default, while allowing the slight stance or posture rebalancing expressly authorized below. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.',
+            : expandedFreedom
+                ? 'Edit the supplied source image as the complete visual truth. Keep its viewpoint and composition. Preserve the overall pose family, while allowing natural stance, posture and proportion adjustments that better express and biomechanically support the evolution. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.'
+                : 'Edit the supplied source image as the complete visual truth. Keep its viewpoint and composition. Preserve its pose by default, while allowing the slight stance or posture rebalancing expressly authorized below. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.',
         'STRICT FRAMING',
         'FRAMING IS STRICT: show the entire creature from the highest anatomical point to every foot, claw, tail tip, wing tip, horn, shell edge and appendage. Nothing may touch or cross the canvas boundary. Keep the creature centered with at least 8-10% clear background margin on every side. If the mutation makes the creature larger or wider, zoom the camera out instead of cropping any anatomy. The full silhouette must remain fully visible inside the frame.',
         ...(input.framingAttempt && input.framingAttempt > 0 ? [`RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1}): make the creature visibly smaller in frame. Use a wider camera and extra clear background on every side; full body and every appendage must remain inside the canvas.`] : []),
@@ -127,8 +129,12 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         'Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures should look grown from the creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless explicitly required by the concept. Carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates are valid when grown as part of the creature.',
         'NON-TARGET PRESERVATION',
         bodyShapePresentationLock
-            ? 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, minimal proportion adjustment within the existing pose, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy or alter pose, stance, facing, orientation, viewpoint or composition. If the target transformation changes the subject footprint, use only the authorized zoom-out instead of changing the creature presentation or suppressing the mutation.'
-            : 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, slight posture or stance rebalancing, secondary proportion adjustment, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy. If the target transformation changes the subject footprint, use the authorized slight rebalancing and zoom-out instead of suppressing the mutation.',
+            ? expandedFreedom
+                ? 'Preserve non-target identity and core anatomy, not pixel-identical geometry. Coherent secondary changes may support the primary evolution through anatomical continuity, proportion adjustment, structural integration or target-linked visual propagation; they do not need to be strictly indispensable. Keep them subordinate and visibly derived from the primary mutation, within the existing pose and presentation. Do not create a second unrelated mutation or alter stance, facing, orientation, viewpoint or composition. If the target transformation changes the subject footprint, use only the authorized zoom-out instead of suppressing the mutation.'
+                : 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, minimal proportion adjustment within the existing pose, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy or alter pose, stance, facing, orientation, viewpoint or composition. If the target transformation changes the subject footprint, use only the authorized zoom-out instead of changing the creature presentation or suppressing the mutation.'
+            : expandedFreedom
+                ? 'Preserve non-target identity and core anatomy, not pixel-identical geometry. Coherent secondary changes may support the primary evolution through neighboring proportion changes, natural stance or posture rebalancing, supporting anatomy, structural integration and target-linked material or colour propagation; they do not need to be strictly indispensable. Keep them related to and less dominant than the primary mutation. Do not create a second unrelated mutation or violate the HARD INVARIANTS or TARGET STRUCTURE BOUNDARY. If the target transformation changes the subject footprint, use the authorized rebalancing and zoom-out instead of suppressing the mutation.'
+                : 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, slight posture or stance rebalancing, secondary proportion adjustment, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy. If the target transformation changes the subject footprint, use the authorized slight rebalancing and zoom-out instead of suppressing the mutation.',
         join(contract.preservationRules),
         'BACKGROUND / TECHNICAL RULES',
         'Flat uniform medium-gray background. Surface-visible bioluminescent markings or coloration already present on the creature are allowed. No external glow, aura, halo, bloom, light spill, fog or atmospheric effect. Single isolated creature. No text, objects or environmental scene.',
@@ -136,4 +142,12 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         join(contract.failureConditions),
         'External glow, aura, halo, bloom, background gradient or light spill are invalid results; surface-visible bioluminescent markings or coloration are allowed.',
     ].join('\n\n')
+}
+
+export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): string {
+    return composeFluxEvolutionPromptWithFreedom(input, true)
+}
+
+export function composeFluxEvolutionPromptV6(input: ComposeFluxPromptInput): string {
+    return composeFluxEvolutionPromptWithFreedom(input, false)
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { composeFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
+import { composeFluxEvolutionPromptV6 } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import { createResolvedCreatureSource } from './test-creature-fixtures.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { orchestrateGenerateFluxEvolutionChainStep } from './edge-orchestration.ts'
@@ -32,7 +32,7 @@ function createInput(options: {
     idempotencyKey: string
     evolutionTargetId?: string
     bodyPlanMutationId?: string
-    promptTemplateVersion?: 'flux-micro-v6' | 'flux-minimal-v1'
+    promptTemplateVersion?: 'flux-micro-v7' | 'flux-micro-v6' | 'flux-minimal-v1'
     previousStepRequestIds?: string[]
     sourceVisualVersionId?: string
     source?: ReturnType<typeof createResolvedCreatureSource>
@@ -111,7 +111,7 @@ describe('FLUX evolution chain step', () => {
         expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
-        expect(prompt).toBe(composeFluxEvolutionPrompt({
+        expect(prompt).toBe(composeFluxEvolutionPromptV6({
             identity: createResolvedCreatureSource().identity,
             anatomyContract: plan.anatomyContract,
             microConcept: { conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] },

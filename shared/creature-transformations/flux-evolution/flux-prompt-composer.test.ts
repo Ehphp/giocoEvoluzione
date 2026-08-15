@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { evolutionTargetFamily } from '../evolution-targets.ts'
-import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeFluxEvolutionPromptV6, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS } from './body-plan-registry.ts'
 
-function promptFor(target: Parameters<typeof buildAnatomyContract>[0]['evolutionTargetId']): string {
-    return composeFluxEvolutionPrompt({
+function promptFor(target: Parameters<typeof buildAnatomyContract>[0]['evolutionTargetId'], composer = composeFluxEvolutionPrompt): string {
+    return composer({
         identity: {
             creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'A moss-green quadruped.',
             identityFeatures: ['round eyes'], mutableVisualFeatures: [], styleDefinition: 'illustrated',
@@ -65,11 +65,29 @@ describe('composeFluxEvolutionPrompt', () => {
         }
     })
 
+    it('allows coherent supporting changes without unlocking unrelated mutations', () => {
+        const prompt = promptFor('LIMBS_AND_FEET')
+
+        expect(prompt).toMatch(/Preserve non-target identity and core anatomy, not pixel-identical geometry/i)
+        expect(prompt).toMatch(/natural stance or posture rebalancing, supporting anatomy, structural integration and target-linked material or colour propagation/i)
+        expect(prompt).toMatch(/do not need to be strictly indispensable/i)
+        expect(prompt).toMatch(/Keep them related to and less dominant than the primary mutation/i)
+        expect(prompt).toMatch(/Do not create a second unrelated mutation or violate the HARD INVARIANTS or TARGET STRUCTURE BOUNDARY/i)
+    })
+
+    it('retains the conservative non-target policy in the version 6 composer', () => {
+        const prompt = promptFor('LIMBS_AND_FEET', composeFluxEvolutionPromptV6)
+
+        expect(prompt).toMatch(/Preserve non-target anatomy by default/i)
+        expect(prompt).toMatch(/Secondary changes are allowed only when necessary/i)
+        expect(prompt).not.toMatch(/not pixel-identical geometry|do not need to be strictly indispensable/i)
+    })
+
     it('keeps BODY_SHAPE morphology strong while locking its presentation', () => {
         const prompt = promptFor('BODY_SHAPE')
 
         expect(prompt.match(/\n\nNON-TARGET PRESERVATION\n\n/g)).toHaveLength(1)
-        expect(prompt.match(/Preserve non-target anatomy by default/g)).toHaveLength(1)
+        expect(prompt.match(/Preserve non-target identity and core anatomy, not pixel-identical geometry/g)).toHaveLength(1)
         expect(prompt).toMatch(/BODY-SHAPE PRESENTATION LOCK[\s\S]*Reshape the trunk strongly through length, volume, chest and back mass, back line and mass distribution/i)
         expect(prompt).toMatch(/same base pose, viewpoint, facing direction, overall orientation and composition/i)
         expect(prompt).toMatch(/does not authorize a new stance, camera angle, rotation, tilt or re-staging/i)
