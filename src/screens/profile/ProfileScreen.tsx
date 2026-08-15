@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
 import { ChevronIcon, DnaIcon, ExitIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
@@ -92,7 +92,7 @@ export function ProfileScreen({
     const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
     const selectedVersionId = pendingVersionId ?? currentVisualVersionId ?? null
     const selectedVisual = visualHistory?.find((entry) => entry.id === selectedVersionId)
-    const activeVisualUrl = selectedVisual?.signedUrl ?? visualUrl
+    const activeVisualUrl = selectedVisual?.signedUrl ?? visualUrl ?? ASSETS.creatures.default
 
     async function selectVisualVersion(versionId: string) {
         if (!onSelectVisualVersion || versionId === currentVisualVersionId) {
@@ -159,9 +159,11 @@ export function ProfileScreen({
                 <Panel className="profile-hero">
                     <figure className="profile-hero__stage">
                         <span className="profile-hero__halo" aria-hidden="true" />
-                        {activeVisualUrl ? (
-                            <img src={activeVisualUrl} alt={`Versione attiva di ${creature.name ?? 'Creatura iniziale'}`} />
-                        ) : null}
+                        <img
+                            src={activeVisualUrl}
+                            alt={`Versione attiva di ${creature.name ?? 'Creatura iniziale'}`}
+                            onError={(event) => fallbackToDefaultCreatureImage(event.currentTarget)}
+                        />
                     </figure>
                     <div className="profile-hero__copy">
                         <span className="ev-eyebrow">Creatura attuale</span>

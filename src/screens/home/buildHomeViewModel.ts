@@ -16,7 +16,7 @@ export type BuildGuestHomeViewModelInput = {
 }
 
 const HOME_BACKGROUND_FALLBACK = ASSETS.scenery.fallback
-const PLAYER_CREATURE_FALLBACK = ASSETS.creatures.player
+const PLAYER_CREATURE_FALLBACK = ASSETS.creatures.default
 
 export function buildGuestHomeViewModel({
     nickname,

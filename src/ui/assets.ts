@@ -12,6 +12,8 @@
  * Paths are absolute so they resolve identically from any route.
  */
 
+const DEFAULT_CREATURE_IMAGE = '/assets/battle/creatures/verdant-hatchling.png'
+
 export const ASSETS = {
     branding: {
         logo: '/assets/branding/evori-logo.png',
@@ -24,9 +26,10 @@ export const ASSETS = {
     },
 
     creatures: {
-        player: '/assets/battle/creatures/verdant-hatchling.png',
+        default: DEFAULT_CREATURE_IMAGE,
+        player: DEFAULT_CREATURE_IMAGE,
         opponent: '/assets/battle/creatures/amethyst-hatchling.png',
-        base: '/assets/creatures/base.png',
+        base: DEFAULT_CREATURE_IMAGE,
     },
 
     /** Fallbacks used when a signed or generated asset is unavailable. */
@@ -56,5 +59,11 @@ export const ASSETS = {
         'event-flash-flood': '/assets/game-ui/environments/flash-flood.svg',
     } as Record<string, string>,
 } as const
+
+export function fallbackToDefaultCreatureImage(image: HTMLImageElement): void {
+    if (image.getAttribute('src') !== ASSETS.creatures.default) {
+        image.setAttribute('src', ASSETS.creatures.default)
+    }
+}
 
 export type GeneAssetKey = keyof typeof ASSETS.genes

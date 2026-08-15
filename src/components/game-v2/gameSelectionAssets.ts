@@ -16,7 +16,7 @@ export type CreatureVisual = {
 
 export const GAME_SELECTION_ASSETS = {
     battleBackgroundDefault: ASSETS.scenery.forest,
-    playerCreature: ASSETS.creatures.player,
+    playerCreature: ASSETS.creatures.default,
     opponentCreature: ASSETS.creatures.opponent,
     backgroundFallback: ASSETS.scenery.fallback,
     playerAvatar: ASSETS.placeholders.playerAvatar,

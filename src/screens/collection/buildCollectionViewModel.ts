@@ -16,7 +16,7 @@ export function buildCollectionViewModel({
     currentVisualVersionId,
 }: CollectionViewModelInput): CollectionViewModel {
     const activeGeneration = visualVersionNumber ?? 1
-    const fallbackImage = visualUrl ?? ASSETS.creatures.player
+    const fallbackImage = visualUrl ?? ASSETS.creatures.default
     const forms: CollectionForm[] = buildCreatureVisualVersions({
         history: visualHistory,
         currentVersionId: currentVisualVersionId,

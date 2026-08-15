@@ -3,6 +3,7 @@ import type { GeneCardV2, GeneSelectionViewModelV2 } from '../components/game-v2
 import { getEventAssetByArtKey, getGeneAssetByTrait } from '../components/game-v2/gameSelectionAssets'
 import { buildAuthenticatedHomeViewModel } from '../screens/home/buildHomeViewModel'
 import type { HomeViewModel } from '../screens/home/types'
+import { ASSETS } from '../ui/assets'
 
 /**
  * Deterministic fixtures for the development-only UI preview.
@@ -46,15 +47,15 @@ export const PREVIEW_LEADERBOARD: CompetitiveLeaderboardEntry[] = [
 ]
 
 export const PREVIEW_VISUAL_HISTORY = [
-    { id: 'preview-visual-1', versionNumber: 1, visualTraitId: null, conceptName: 'Forma base', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-2', versionNumber: 2, visualTraitId: 'ARMOR', conceptName: 'Scaglie dorsali', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-3', versionNumber: 3, visualTraitId: 'AGILITY', conceptName: 'Arti slanciati', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-4', versionNumber: 4, visualTraitId: 'CAMOUFLAGE', conceptName: 'Manto del sottobosco', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-5', versionNumber: 5, visualTraitId: 'FEROCITY', conceptName: 'Artigli selvatici', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-6', versionNumber: 6, visualTraitId: 'ARMOR', conceptName: 'Corazza antica', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-7', versionNumber: 7, visualTraitId: 'SENSES', conceptName: 'Sguardo notturno', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-8', versionNumber: 8, visualTraitId: 'AGILITY', conceptName: 'Passo fulmineo', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-9', versionNumber: 9, visualTraitId: 'SENSES', conceptName: 'Corona di cristallo', signedUrl: '/assets/battle/creatures/verdant-hatchling.png', expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-1', versionNumber: 1, visualTraitId: null, conceptName: 'Forma base', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-2', versionNumber: 2, visualTraitId: 'ARMOR', conceptName: 'Scaglie dorsali', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-3', versionNumber: 3, visualTraitId: 'AGILITY', conceptName: 'Arti slanciati', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-4', versionNumber: 4, visualTraitId: 'CAMOUFLAGE', conceptName: 'Manto del sottobosco', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-5', versionNumber: 5, visualTraitId: 'FEROCITY', conceptName: 'Artigli selvatici', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-6', versionNumber: 6, visualTraitId: 'ARMOR', conceptName: 'Corazza antica', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-7', versionNumber: 7, visualTraitId: 'SENSES', conceptName: 'Sguardo notturno', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-8', versionNumber: 8, visualTraitId: 'AGILITY', conceptName: 'Passo fulmineo', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-9', versionNumber: 9, visualTraitId: 'SENSES', conceptName: 'Corona di cristallo', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
 ] as const
 
 export function buildPreviewHomeViewModel(): HomeViewModel {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Pill, ProgressBar, SectionLabel } from '../../ui/components'
 import { AddIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
@@ -58,7 +58,7 @@ function TypeChip({ type }: { type: CollectionForm['types'][number] }) {
 }
 
 function FormArt({ form, className = '' }: { form: Pick<CollectionForm, 'image' | 'name'>; className?: string }) {
-    return <img className={className} src={form.image} alt={`Forma ${form.name}`} loading="lazy" />
+    return <img className={className} src={form.image} alt={`Forma ${form.name}`} loading="lazy" onError={(event) => fallbackToDefaultCreatureImage(event.currentTarget)} />
 }
 
 type FormSelectionProps = {

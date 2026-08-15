@@ -9,7 +9,7 @@ import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
 
 import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
 import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'
 import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
@@ -313,10 +313,11 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                         <Panel className="evolution-preview">
                             {/* Tapping either thumbnail swaps which form the hero shows. */}
                             <figure className="evolution-hero" data-side={heroSide}>
-                                {(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl) ? (
+                                {(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl ?? ASSETS.creatures.default) ? (
                                     <img
-                                        src={(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl) ?? undefined}
+                                        src={(heroSide === 'result' ? preview.resultUrl : preview.sourceUrl ?? ASSETS.creatures.default) ?? undefined}
                                         alt={heroSide === 'result' ? 'Nuova evoluzione proposta' : 'Creatura attuale'}
+                                        onError={heroSide === 'current' ? (event) => fallbackToDefaultCreatureImage(event.currentTarget) : undefined}
                                     />
                                 ) : null}
                                 <figcaption className="evolution-hero__badge">
@@ -331,7 +332,13 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                     aria-pressed={heroSide === 'current'}
                                     onClick={() => setHeroSide('current')}
                                 >
-                                    <span>{preview.sourceUrl ? <img src={preview.sourceUrl} alt="" /> : null}</span>
+                                    <span>
+                                        <img
+                                            src={preview.sourceUrl ?? ASSETS.creatures.default}
+                                            alt=""
+                                            onError={(event) => fallbackToDefaultCreatureImage(event.currentTarget)}
+                                        />
+                                    </span>
                                     <small>Attuale · v{progress.currentVersion.versionNumber}</small>
                                 </button>
                                 <span className="evolution-compare__arrow" aria-hidden="true"><ChevronIcon /></span>

@@ -82,6 +82,9 @@ describe('CollectionScreen', () => {
         expect(container.querySelector('.collection-current__copy')?.textContent).toContain('Forma selezionata')
         expect(container.querySelector('.collection-current__copy')?.textContent).not.toContain('Creatura attuale')
 
+        act(() => preview.dispatchEvent(new Event('error')))
+        expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
+
         act(() => lineageButtons[1]!.click())
 
         expect(cards[0]?.getAttribute('aria-pressed')).toBe('false')
