@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "reset:creature-evolution-environment": "node --experimental-strip-types tools/reset-creature-evolution-environment.ts",
     "backfill:creature-display-assets": "node --experimental-strip-types tools/backfill-creature-display-assets.ts",
     "rules:generate": "node --experimental-strip-types tools/generate-game-rules-sql.ts && node --experimental-strip-types tools/generate-supabase-reset.ts",
     "rules:check": "node --experimental-strip-types tools/generate-game-rules-sql.ts --check && node --experimental-strip-types tools/generate-supabase-reset.ts --check",
