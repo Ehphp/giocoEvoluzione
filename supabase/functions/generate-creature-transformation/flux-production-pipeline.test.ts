@@ -147,7 +147,7 @@ describe('FLUX production pipeline', () => {
         expect(prompt).toContain('EVOLUTION:')
         expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
         expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: null,
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: prompt,
         })
     })
 
@@ -166,7 +166,7 @@ describe('FLUX production pipeline', () => {
         expect(prompt).toContain('\n\nPRESERVE\n\n')
         expect(prompt).not.toContain('\n\nPRIMARY MUTATION AUTHORITY\n\n')
         expect(context.persistence.get(PROFILE_ID, 'production-v5')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v5',
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v5', promptText: prompt,
         })
     })
 

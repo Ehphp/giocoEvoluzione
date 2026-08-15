@@ -295,7 +295,7 @@ async function runUnlockedTransformationTask(
                 resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
                 assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: generated.validation.warnings,
                 estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, conceptSnapshot: generated.conceptSnapshot,
+                promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
             },
         })
         await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
