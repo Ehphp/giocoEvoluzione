@@ -52,17 +52,36 @@ describe('FalFluxImageProvider', () => {
         expect(result).toMatchObject({ provider: 'fal.ai', model: FAL_SEEDREAM_MODEL, providerRequestId: 'seedream-request' })
     })
 
-    it('rejects a Seedream JPEG response before PNG validation', async () => {
-        const fetchImplementation = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
-            images: [{
-                url: 'https://v3b.fal.media/files/result.jpg', content_type: 'image/jpeg',
-                file_name: 'result.jpg', file_size: 1228881, width: null, height: null,
-            }],
-        })))
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+    it('converts the JPEG returned by Seedream before PNG validation', async () => {
+        const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+        const png = createTestPng({ width: 1920, height: 2880 })
+        const convertJpegToPng = vi.fn(async () => png)
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                images: [{
+                    url: 'https://v3b.fal.media/files/result.jpg', content_type: 'image/jpeg',
+                    file_name: 'result.jpg', file_size: 1228881, width: null, height: null,
+                }],
+            })))
+            .mockResolvedValueOnce(new Response(jpeg))
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, convertJpegToPng, fetchImplementation })
+
+        const result = await provider.transform({ prompt: 'SERVER EVOLUTION PROMPT', sourcePng: createTestPng() })
+
+        expect(convertJpegToPng).toHaveBeenCalledWith(jpeg)
+        expect(result.image).toEqual(png)
+    })
+
+    it('reports a specific error when Seedream JPEG conversion fails', async () => {
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({ images: [{ url: 'https://v3b.fal.media/files/result.jpg', content_type: 'image/jpeg' }] })))
+            .mockResolvedValueOnce(new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xd9])))
+        const provider = new FalFluxImageProvider({
+            apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation,
+            convertJpegToPng: async () => { throw new Error('decode failed') },
+        })
 
         await expect(provider.transform({ prompt: 'SERVER EVOLUTION PROMPT', sourcePng: createTestPng() }))
-            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID', message: 'fal.ai ha restituito image/jpeg invece del PNG richiesto.' })
-        expect(fetchImplementation).toHaveBeenCalledTimes(1)
+            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID', message: 'La conversione JPEG di Seedream in PNG non e riuscita.' })
     })
 })

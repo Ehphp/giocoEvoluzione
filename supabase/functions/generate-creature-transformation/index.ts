@@ -16,6 +16,7 @@ import {
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
 import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
+import { convertJpegToPng } from './edge-image-codec.ts'
 import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
 
@@ -170,6 +171,7 @@ Deno.serve(async (request) => {
             apiKey: policy.flux.apiKey ?? '', model: policy.flux.model,
             timeoutMs: policy.flux.timeoutMs,
             estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
+            convertJpegToPng,
         }),
         deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
         repository: requestRepository,

@@ -30,6 +30,7 @@ export type FalFluxImageProviderOptions = Readonly<{
     model?: string
     timeoutMs?: number
     estimatedCostUsd?: number
+    convertJpegToPng?: (jpeg: Uint8Array) => Promise<Uint8Array>
     fetchImplementation?: FetchLike
     now?: () => number
 }>
@@ -71,6 +72,10 @@ function outputImage(payload: unknown): { url: string, contentType: string | nul
 function hasPngSignature(bytes: Uint8Array): boolean {
     return bytes.length >= 8
         && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value)
+}
+
+function hasJpegSignature(bytes: Uint8Array): boolean {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
 }
 
 export class FalFluxImageProvider {
@@ -123,7 +128,7 @@ export class FalFluxImageProvider {
             }
             const output = outputImage(payload)
             if (!output) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai non ha restituito un URL immagine valido.')
-            if (output.contentType && output.contentType !== 'image/png') {
+            if (output.contentType && !['image/png', 'image/jpeg'].includes(output.contentType)) {
                 throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', `fal.ai ha restituito ${output.contentType} invece del PNG richiesto.`)
             }
             let imageResponse: Response
@@ -134,8 +139,17 @@ export class FalFluxImageProvider {
                 throw new FalFluxImageProviderError('FAL_FLUX_PROVIDER_ERROR', 'Il PNG FLUX non e raggiungibile.', { cause: error })
             }
             if (!imageResponse.ok) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai non ha reso disponibile il PNG generato.', { providerStatus: imageResponse.status })
-            const image = new Uint8Array(await imageResponse.arrayBuffer())
-            if (!hasPngSignature(image)) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai ha restituito byte non PNG nonostante il formato richiesto.')
+            const downloadedImage = new Uint8Array(await imageResponse.arrayBuffer())
+            let image = downloadedImage
+            if (hasJpegSignature(downloadedImage)) {
+                if (!this.options.convertJpegToPng) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'La conversione JPEG di Seedream non e configurata.')
+                try {
+                    image = await this.options.convertJpegToPng(downloadedImage)
+                } catch (error) {
+                    throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'La conversione JPEG di Seedream in PNG non e riuscita.', { cause: error })
+                }
+            }
+            if (!hasPngSignature(image)) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai ha restituito byte immagine non convertibili in PNG.')
             const root = record(payload)
             const requestId = typeof root?.request_id === 'string' ? root.request_id : response.headers.get('x-fal-request-id') ?? undefined
             const seed = typeof root?.seed === 'number' && Number.isInteger(root.seed) ? root.seed : undefined
