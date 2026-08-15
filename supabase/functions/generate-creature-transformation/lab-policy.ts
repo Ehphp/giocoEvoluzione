@@ -1,4 +1,5 @@
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
+import { DEFAULT_FAL_FLUX_MODEL } from './fal-flux-image-provider.ts'
 import type { FluxPromptTemplateVersion } from './flux-image-generation-service.ts'
 
 /**
@@ -18,7 +19,6 @@ const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
 const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
 const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
 const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
-const DEFAULT_FLUX_MODEL = 'fal-ai/bytedance/seedream/v4.5/edit'
 const DEFAULT_FLUX_TIMEOUT_MS = 30_000
 
 export type FluxPipelinePolicy = Readonly<{
@@ -90,7 +90,7 @@ function readFluxPolicy(readEnvironment: (name: string) => string | undefined): 
         : configuredPromptTemplateVersion === 'flux-micro-v5' ? 'flux-micro-v5' : 'flux-micro-v6'
     return Object.freeze({
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
-        model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FLUX_MODEL,
+        model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FAL_FLUX_MODEL,
         timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
         promptTemplateVersion,
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),

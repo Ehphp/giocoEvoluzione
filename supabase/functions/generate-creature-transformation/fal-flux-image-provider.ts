@@ -2,7 +2,7 @@ export const FAL_FLUX_MODEL = 'fal-ai/flux-2-klein/9b/edit'
 export const FAL_FLUX_IMAGE_SIZE = Object.freeze({ width: 768, height: 1152 })
 export const FAL_SEEDREAM_MODEL = 'fal-ai/bytedance/seedream/v4.5/edit'
 export const FAL_SEEDREAM_IMAGE_SIZE = Object.freeze({ width: 1920, height: 2880 })
-export const DEFAULT_FAL_FLUX_MODEL = FAL_SEEDREAM_MODEL
+export const DEFAULT_FAL_FLUX_MODEL = FAL_FLUX_MODEL
 
 export function falImageModelProfile(model: string): Readonly<{ imageSize: { width: number, height: number }, maxImageBytes: number, seedream: boolean }> {
     return model === FAL_SEEDREAM_MODEL

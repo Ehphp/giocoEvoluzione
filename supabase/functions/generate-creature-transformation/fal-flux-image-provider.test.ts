@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { FAL_FLUX_MODEL, FAL_SEEDREAM_MODEL, FalFluxImageProvider } from './fal-flux-image-provider.ts'
+import { FAL_SEEDREAM_MODEL, FalFluxImageProvider } from './fal-flux-image-provider.ts'
 
 describe('FalFluxImageProvider', () => {
     it('sends the validated FLUX.2 Klein 9B edit request and returns provider metadata', async () => {
         const fetchImplementation = vi.fn()
             .mockResolvedValueOnce(new Response(JSON.stringify({ request_id: 'fal-request-1', seed: 77, images: [{ url: 'https://cdn.example/result.png' }] }), { headers: { 'x-fal-request-id': 'fallback-id' } }))
             .mockResolvedValueOnce(new Response(createTestPng({ width: 768, height: 1152 })))
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_FLUX_MODEL, estimatedCostUsd: 0.0203, fetchImplementation, now: (() => { const ticks = [10, 22]; return () => ticks.shift() ?? 22 })() })
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', estimatedCostUsd: 0.0203, fetchImplementation, now: (() => { const ticks = [10, 22]; return () => ticks.shift() ?? 22 })() })
 
         const result = await provider.transform({ prompt: 'SERVER FLUX PROMPT', sourcePng: createTestPng() })
         const [url, init] = fetchImplementation.mock.calls[0]!
