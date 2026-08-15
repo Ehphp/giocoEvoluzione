@@ -575,14 +575,16 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
                     promptTemplateVersion: parsed.request.promptTemplateVersion ?? input.policy.flux.promptTemplateVersion,
                     ...(input.validator ? { validator: input.validator } : {}),
                 })
-                await input.repository.markSucceeded({ requestId: running.id, profileId: input.profileId!, data: {
-                    provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
-                    sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256,
-                    resultPath: await input.storage.createRawResultObjectPath(input.profileId!, parsed.request.idempotencyKey), resultMimeType: generated.result.mimeType,
-                    resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY',
-                    validationWarnings: generated.validation.warnings, estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                    promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
-                } })
+                await input.repository.markSucceeded({
+                    requestId: running.id, profileId: input.profileId!, data: {
+                        provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
+                        sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256,
+                        resultPath: await input.storage.createRawResultObjectPath(input.profileId!, parsed.request.idempotencyKey), resultMimeType: generated.result.mimeType,
+                        resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY',
+                        validationWarnings: generated.validation.warnings, estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
+                        promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
+                    }
+                })
             } catch (error) {
                 const details = mapThrownError(error)
                 try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original failure */ }
