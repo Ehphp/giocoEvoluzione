@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(resolve('supabase/migrations/202608140002_creature_lineages.sql'), 'utf8')
 const deletionMigration = readFileSync(resolve('supabase/migrations/202608150003_delete_creature_lineage.sql'), 'utf8')
+const historicalPlayerFix = readFileSync(resolve('supabase/migrations/202608150005_allow_historical_player_creature_delete.sql'), 'utf8')
 
 describe('creature lineage migration', () => {
     it('backfills exactly one lineage relation per legacy creature without copying visual assets', () => {
@@ -32,5 +33,12 @@ describe('creature lineage migration', () => {
         expect(deletionMigration).toMatch(/set active_lineage_id = v_replacement_lineage_id/i)
         expect(deletionMigration).toMatch(/delete from public\.creature_lineages/i)
         expect(deletionMigration).toMatch(/grant execute on function public\.delete_my_creature_lineage\(uuid\) to authenticated/i)
+    })
+
+    it('keeps historical match players when their deleted creature reference becomes null', () => {
+        expect(historicalPlayerFix).toMatch(/create or replace function public\.validate_player_profile_link/i)
+        expect(historicalPlayerFix).toMatch(/new\.creature_id is not null and not exists/i)
+        expect(historicalPlayerFix).not.toMatch(/new\.creature_id is null or not exists/i)
+        expect(historicalPlayerFix).toMatch(/new\.nickname := v_nickname/i)
     })
 })
