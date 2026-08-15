@@ -144,4 +144,45 @@ describe('CollectionScreen', () => {
         act(() => action?.click())
         expect(onCreateLineage).toHaveBeenCalledTimes(1)
     })
+
+    it('asks for confirmation before deleting a lineage from its name label', async () => {
+        const onDeleteLineage = vi.fn().mockResolvedValue(undefined)
+        const creature = { id: 'creature-a', profile_id: 'profile-1', lineage_id: 'lineage-a', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, created_at: '2026-01-01', updated_at: '2026-01-01' }
+        const secondCreature = { ...creature, id: 'creature-b', lineage_id: 'lineage-b', name: 'Viola' }
+        act(() => {
+            root.render(createElement(CollectionScreen, {
+                profile: { id: 'profile-1', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01', active_lineage_id: 'lineage-a' },
+                creature,
+                lineages: [
+                    { id: 'lineage-a', profile_id: 'profile-1', name: 'Stirpe verde', base_creature_key: 'VERDANT_HATCHLING', created_at: '2026-01-01', updated_at: '2026-01-01', creature },
+                    { id: 'lineage-b', profile_id: 'profile-1', name: 'Stirpe viola', base_creature_key: 'VERDANT_HATCHLING', created_at: '2026-01-01', updated_at: '2026-01-01', creature: secondCreature },
+                ],
+                activeLineageId: 'lineage-a', onDeleteLineage, isOnline: true, onBack: vi.fn(), onOpenProfile: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(),
+            }))
+        })
+
+        const deleteButton = container.querySelector<HTMLButtonElement>('[aria-label="Elimina Stirpe viola"]')
+        expect(deleteButton).not.toBeNull()
+        act(() => deleteButton?.click())
+        expect(onDeleteLineage).not.toHaveBeenCalled()
+        expect(document.body.textContent).toContain('Eliminare Stirpe viola?')
+
+        const confirmButton = [...document.body.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent === 'Elimina stirpe')
+        await act(async () => confirmButton?.click())
+
+        expect(onDeleteLineage).toHaveBeenCalledWith('lineage-b')
+        expect(document.body.textContent).not.toContain('Eliminare Stirpe viola?')
+    })
+
+    it('does not offer deletion when only one lineage remains', () => {
+        act(() => {
+            root.render(createElement(CollectionScreen, {
+                profile: { id: 'profile-1', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature-1', profile_id: 'profile-1', lineage_id: 'lineage-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                isOnline: true, onBack: vi.fn(), onOpenProfile: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(), onDeleteLineage: vi.fn(),
+            }))
+        })
+
+        expect(container.querySelector('[aria-label^="Elimina "]')).toBeNull()
+    })
 })

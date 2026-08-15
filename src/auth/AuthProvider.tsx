@@ -4,6 +4,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import {
     bootstrapMyProfile,
     createMyCreatureLineage,
+    deleteMyCreatureLineage,
     loadMyProfile,
     setMyActiveCreatureLineage,
     type CreatureLineageRecord,
@@ -53,6 +54,7 @@ type AuthContextValue = {
     signOut: () => Promise<void>
     refreshProfile: () => Promise<void>
     createLineage: () => Promise<string>
+    deleteLineage: (lineageId: string) => Promise<void>
     setActiveLineage: (lineageId: string) => Promise<void>
     updateNickname: (nickname: string) => Promise<void>
 }
@@ -207,6 +209,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return creature.lineage_id
     }, [refreshProfile])
 
+    const deleteLineage = useCallback(async (lineageId: string) => {
+        await deleteMyCreatureLineage(lineageId)
+        await refreshProfile()
+    }, [refreshProfile])
+
     const value = useMemo<AuthContextValue>(() => ({
         status,
         session,
@@ -221,9 +228,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         refreshProfile,
         createLineage,
+        deleteLineage,
         setActiveLineage,
         updateNickname,
-    }), [activeLineage, createLineage, creature, error, lineages, profile, refreshProfile, session, setActiveLineage, signIn, signOut, signUp, status, updateNickname])
+    }), [activeLineage, createLineage, creature, deleteLineage, error, lineages, profile, refreshProfile, session, setActiveLineage, signIn, signOut, signUp, status, updateNickname])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

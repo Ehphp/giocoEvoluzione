@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(resolve('supabase/migrations/202608140002_creature_lineages.sql'), 'utf8')
+const deletionMigration = readFileSync(resolve('supabase/migrations/202608150003_delete_creature_lineage.sql'), 'utf8')
 
 describe('creature lineage migration', () => {
     it('backfills exactly one lineage relation per legacy creature without copying visual assets', () => {
@@ -23,5 +24,13 @@ describe('creature lineage migration', () => {
         expect(migration).toMatch(/lineages own read/i)
         expect(migration).toMatch(/LINEAGE_NOT_OWNED/i)
         expect(migration).toMatch(/LINEAGE_CREATURE_MISMATCH/i)
+    })
+
+    it('deletes only an owned non-final lineage and replaces it when active', () => {
+        expect(deletionMigration).toMatch(/where id = p_lineage_id and profile_id = v_profile_id/i)
+        expect(deletionMigration).toMatch(/CANNOT_DELETE_LAST_LINEAGE/i)
+        expect(deletionMigration).toMatch(/set active_lineage_id = v_replacement_lineage_id/i)
+        expect(deletionMigration).toMatch(/delete from public\.creature_lineages/i)
+        expect(deletionMigration).toMatch(/grant execute on function public\.delete_my_creature_lineage\(uuid\) to authenticated/i)
     })
 })

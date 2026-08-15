@@ -298,6 +298,11 @@ export async function createMyCreatureLineage(): Promise<PlayerCreatureRecord> {
     return mapPlayerCreatureRecord(data as Record<string, unknown>)
 }
 
+export async function deleteMyCreatureLineage(lineageId: string): Promise<void> {
+    const { error } = await requireSupabase().rpc('delete_my_creature_lineage', { p_lineage_id: lineageId })
+    if (error) throw new Error(error.message)
+}
+
 export async function updateMyNickname(nickname: string): Promise<ProfileRecord> {
     const value = nickname.trim()
 

@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(resolve('supabase/migrations/202608150001_admin_destructive_creature_evolution_environment_reset.sql'), 'utf8')
 const safeDeleteFix = readFileSync(resolve('supabase/migrations/202608150002_fix_destructive_creature_evolution_reset_safe_deletes.sql'), 'utf8')
+const canonicalSourceMigration = readFileSync(resolve('supabase/migrations/202608150004_update_canonical_creature_source.sql'), 'utf8')
 const tool = readFileSync(resolve('tools/reset-creature-evolution-environment.ts'), 'utf8')
+const seedTool = readFileSync(resolve('tools/seed-creature-transformation-source.ts'), 'utf8')
 
 describe('destructive creature evolution environment reset', () => {
     it('is a service-role-only, explicitly confirmed administration path', () => {
@@ -49,6 +51,13 @@ describe('destructive creature evolution environment reset', () => {
         expect(migration).toMatch(/v\.version_number = 1[\s\S]*v\.status = 'ACTIVE'[\s\S]*v\.base_creature_key = 'VERDANT_HATCHLING'/i)
         expect(migration).toMatch(/from public\.creature_visual_progress_tracks t[\s\S]*where t\.creature_id = c\.id/i)
         expect(tool).toContain("'flux_start_violations'")
+    })
+
+    it('uses the new validated creature for new and existing base lineages', () => {
+        expect(canonicalSourceMigration).toContain("asset_path = 'verdant-hatchling-v1.png'")
+        expect(canonicalSourceMigration).toContain("asset_sha256 = '5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c'")
+        expect(canonicalSourceMigration).toMatch(/update public\.creature_visual_versions/i)
+        expect(seedTool).toContain('upsert: true')
     })
 
     it('clears every physical object under the experiments bucket via paginated recursive Storage API calls', () => {

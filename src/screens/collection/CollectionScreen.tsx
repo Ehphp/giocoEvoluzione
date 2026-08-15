@@ -4,8 +4,8 @@ import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, Chip, IconButton, Notice, Pill, ProgressBar, SectionLabel } from '../../ui/components'
-import { AddIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
+import { AppShell, Avatar, Button, Chip, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
+import { AddIcon, CloseIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
 import { buildCollectionViewModel } from './buildCollectionViewModel'
 import type { CollectionForm } from './types'
 
@@ -35,6 +35,7 @@ type CollectionScreenProps = {
     lineages?: ReadonlyArray<CreatureLineageRecord>
     activeLineageId?: string | null
     onCreateLineage?: () => Promise<string>
+    onDeleteLineage?: (lineageId: string) => Promise<void>
     onSetActiveLineage?: (lineageId: string) => void
     /** Opens visual evolution for this exact lineage; it never implies a global active-lineage change. */
     onOpenEvolution?: (lineageId: string) => void
@@ -137,6 +138,7 @@ export function CollectionScreen({
     lineages,
     activeLineageId,
     onCreateLineage,
+    onDeleteLineage,
     onSetActiveLineage,
     onOpenEvolution,
     lineageVisuals,
@@ -154,6 +156,9 @@ export function CollectionScreen({
     const [selectedLineageId, setSelectedLineageId] = useState(resolvedActiveLineageId)
     const [isCreatingLineage, setIsCreatingLineage] = useState(false)
     const [lineageCreationError, setLineageCreationError] = useState<string | null>(null)
+    const [lineagePendingDeletion, setLineagePendingDeletion] = useState<CreatureLineageRecord | null>(null)
+    const [isDeletingLineage, setIsDeletingLineage] = useState(false)
+    const [lineageDeletionError, setLineageDeletionError] = useState<string | null>(null)
     const selectedLineage = availableLineages.find((lineage) => lineage.id === selectedLineageId) ?? availableLineages[0]!
     const selectedVisual = lineageVisuals?.[selectedLineage.id]
     const selectedCreature = selectedLineage.creature
@@ -170,6 +175,11 @@ export function CollectionScreen({
     const activeFormId = viewModel.evolutionForms.find((form) => form.isActive)?.id ?? viewModel.evolutionForms.at(-1)?.id ?? ''
     const initialSelectedFormId = activeFormId
     const [selectedFormId, setSelectedFormId] = useState(initialSelectedFormId)
+    useEffect(() => {
+        if (!availableLineages.some((lineage) => lineage.id === selectedLineageId)) {
+            setSelectedLineageId(resolvedActiveLineageId)
+        }
+    }, [availableLineages, resolvedActiveLineageId, selectedLineageId])
     useEffect(() => {
         setSelectedFormId(activeFormId)
     }, [activeFormId, selectedLineage.id])
@@ -199,7 +209,48 @@ export function CollectionScreen({
         }
     }
 
+    async function handleDeleteLineage() {
+        if (!onDeleteLineage || !lineagePendingDeletion || isDeletingLineage) return
+
+        const lineageId = lineagePendingDeletion.id
+        const nextSelectionId = availableLineages.find((lineage) => lineage.id !== lineageId)?.id
+        setIsDeletingLineage(true)
+        setLineageDeletionError(null)
+        try {
+            await onDeleteLineage(lineageId)
+            if (selectedLineageId === lineageId && nextSelectionId) setSelectedLineageId(nextSelectionId)
+            setLineagePendingDeletion(null)
+        } catch (error) {
+            setLineageDeletionError(error instanceof Error ? error.message : 'Impossibile eliminare la stirpe.')
+        } finally {
+            setIsDeletingLineage(false)
+        }
+    }
+
+    const lineagePendingDeletionName = lineagePendingDeletion
+        ? lineagePendingDeletion.name ?? lineagePendingDeletion.creature.name ?? 'Stirpe senza nome'
+        : ''
+    const deleteConfirmation = lineagePendingDeletion ? (
+        <Overlay
+            label={`Conferma eliminazione di ${lineagePendingDeletionName}`}
+            align="center"
+            onClose={isDeletingLineage ? undefined : () => setLineagePendingDeletion(null)}
+            closeOnBackdrop={!isDeletingLineage}
+        >
+            <Panel className="collection-delete-confirm">
+                <h2>Eliminare {lineagePendingDeletionName}?</h2>
+                <p>La stirpe, le sue forme e tutti i progressi evolutivi verranno eliminati definitivamente.</p>
+                {lineageDeletionError ? <Notice tone="error">{lineageDeletionError}</Notice> : null}
+                <div className="collection-delete-confirm__actions">
+                    <Button tone="danger" block disabled={isDeletingLineage} onClick={() => void handleDeleteLineage()}>{isDeletingLineage ? 'Eliminazione...' : 'Elimina stirpe'}</Button>
+                    <Button tone="cream" block disabled={isDeletingLineage} onClick={() => setLineagePendingDeletion(null)}>Annulla</Button>
+                </div>
+            </Panel>
+        </Overlay>
+    ) : null
+
     return (
+        <>
         <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} dock={
             <Dock active="collection" capabilities={{ collection: true, profile: true, ranking: true }} onNavigate={handleNavigate} />
         } scroll>
@@ -234,11 +285,28 @@ export function CollectionScreen({
                         {availableLineages.map((lineage) => {
                             const isSelected = lineage.id === selectedLineage.id
                             const isActive = lineage.id === resolvedActiveLineageId
+                            const lineageName = lineage.name ?? lineage.creature.name ?? 'Stirpe senza nome'
+                            const canDelete = Boolean(onDeleteLineage && availableLineages.length > 1)
                             return (
-                                <button key={lineage.id} type="button" className={`collection-lineages__button ${isSelected ? 'is-selected' : ''}`} role="tab" aria-selected={isSelected} onClick={() => setSelectedLineageId(lineage.id)}>
-                                    <span className="ev-truncate">{lineage.name ?? lineage.creature.name ?? 'Stirpe senza nome'}</span>
-                                    {isActive ? <small>Attiva</small> : null}
-                                </button>
+                                <div key={lineage.id} className={`collection-lineages__item ${canDelete ? 'has-delete' : ''}`} role="presentation">
+                                    <button type="button" className={`collection-lineages__button ${isSelected ? 'is-selected' : ''}`} role="tab" aria-selected={isSelected} onClick={() => setSelectedLineageId(lineage.id)}>
+                                        <span className="ev-truncate" title={lineageName}>{lineageName}</span>
+                                        {isActive ? <small>Attiva</small> : null}
+                                    </button>
+                                    {canDelete ? (
+                                        <IconButton
+                                            label={`Elimina ${lineageName}`}
+                                            variant="cream"
+                                            className="collection-lineages__delete"
+                                            onClick={() => {
+                                                setLineageDeletionError(null)
+                                                setLineagePendingDeletion(lineage)
+                                            }}
+                                        >
+                                            <CloseIcon />
+                                        </IconButton>
+                                    ) : null}
+                                </div>
                             )
                         })}
                     </div>
@@ -267,5 +335,7 @@ export function CollectionScreen({
                 <FormCatalog forms={viewModel.evolutionForms} selectedFormId={selectedForm.id} onSelectForm={setSelectedFormId} />
             </main>
         </AppShell>
+        {deleteConfirmation}
+        </>
     )
 }

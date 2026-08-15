@@ -114,7 +114,7 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
                 styleDefinition: definition.styleDefinition,
             },
             sourceImagePath: currentVisualVersion?.assetPath ?? definition.sourceImagePath,
-            sourceSha256: currentVisualVersion?.assetSha256 ?? '768a79a14109c0c4a893275492fdac063a4be37346f745c6207c45baecf82d9d',
+            sourceSha256: currentVisualVersion?.assetSha256 ?? '5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c',
             sourceIsBaseVersion: currentVisualVersion?.isBaseVersion ?? true,
             currentVisualVersionId: currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
             currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,

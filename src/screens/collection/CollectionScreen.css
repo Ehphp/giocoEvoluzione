@@ -197,11 +197,18 @@
     display: none;
 }
 
+.collection-lineages__item {
+    position: relative;
+    flex: 0 0 auto;
+    min-width: var(--ev-touch-min);
+    max-width: var(--ev-collection-lineage-tab-width);
+}
+
 .collection-lineages__button {
     display: grid;
-    flex: 0 0 auto;
     min-height: var(--ev-touch-min);
     min-width: var(--ev-touch-min);
+    width: 100%;
     max-width: var(--ev-collection-lineage-tab-width);
     padding: var(--ev-s-2) var(--ev-s-3);
     border: var(--ev-stroke-width) solid var(--ev-stroke-light);
@@ -211,6 +218,19 @@
     box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
     cursor: pointer;
     font-family: var(--ev-font-display);
+}
+
+.collection-lineages__item.has-delete .collection-lineages__button {
+    padding-inline-end: calc(var(--ev-touch-min) + var(--ev-s-1));
+}
+
+.collection-lineages__delete {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    inset-inline-end: var(--ev-s-1);
+    transform: translateY(-50%);
+    font-size: var(--ev-fs-sm);
 }
 
 .collection-lineages__button small {
@@ -223,6 +243,25 @@
 .collection-lineages__button.is-selected {
     border-color: var(--ev-player);
     box-shadow: var(--ev-shadow-glow-player), var(--ev-lip-cream);
+}
+
+.collection-delete-confirm {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-3);
+    text-align: center;
+}
+
+.collection-delete-confirm p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.collection-delete-confirm__actions {
+    display: grid;
+    gap: var(--ev-s-2);
+    width: 100%;
+    margin-top: var(--ev-s-1);
 }
 
 .collection-lineage {
