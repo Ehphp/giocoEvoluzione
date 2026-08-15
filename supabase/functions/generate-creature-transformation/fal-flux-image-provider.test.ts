@@ -45,11 +45,24 @@ describe('FalFluxImageProvider', () => {
         expect(url).toBe('https://fal.run/fal-ai/bytedance/seedream/v4.5/edit')
         expect(request).toMatchObject({
             prompt: 'SERVER EVOLUTION PROMPT', image_size: { width: 1920, height: 2880 },
-            num_images: 1, max_images: 1, enable_safety_checker: true, seed: 42,
+            output_format: 'png', num_images: 1, max_images: 1, enable_safety_checker: true, seed: 42,
         })
         expect(request.image_urls[0]).toMatch(/^data:image\/png;base64,/)
         expect(request).not.toHaveProperty('num_inference_steps')
-        expect(request).not.toHaveProperty('output_format')
         expect(result).toMatchObject({ provider: 'fal.ai', model: FAL_SEEDREAM_MODEL, providerRequestId: 'seedream-request' })
+    })
+
+    it('rejects a Seedream JPEG response before PNG validation', async () => {
+        const fetchImplementation = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+            images: [{
+                url: 'https://v3b.fal.media/files/result.jpg', content_type: 'image/jpeg',
+                file_name: 'result.jpg', file_size: 1228881, width: null, height: null,
+            }],
+        })))
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+
+        await expect(provider.transform({ prompt: 'SERVER EVOLUTION PROMPT', sourcePng: createTestPng() }))
+            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID', message: 'fal.ai ha restituito image/jpeg invece del PNG richiesto.' })
+        expect(fetchImplementation).toHaveBeenCalledTimes(1)
     })
 })

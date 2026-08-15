@@ -126,6 +126,11 @@ function mapThrownError(error: unknown): FailureDetails {
     return { code: 'INTERNAL_ERROR', message: 'Errore interno durante la trasformazione della creatura.' }
 }
 
+function persistedFailureMessage(details: FailureDetails): string {
+    const problem = details.problems?.[0]
+    return problem ? `${details.message} ${problem.message} (${problem.code})` : details.message
+}
+
 function generationAccessFailure(input: Pick<CreatureTransformationEdgeOrchestrationInput, 'profileId' | 'canGenerateImages' | 'policy'>): FailureDetails | null {
     if (input.canGenerateImages || (input.profileId !== null && input.policy.paidGenerationProfileIds.has(input.profileId))) return null
     return { code: 'IMAGE_GENERATION_NOT_ALLOWED', message: 'Il profilo autenticato non e autorizzato alla generazione a pagamento.' }
@@ -296,7 +301,7 @@ async function runUnlockedTransformationTask(
         await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
     } catch (error) {
         const details = mapThrownError(error)
-        try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original outcome */ }
+        try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* preserve original outcome */ }
         await restoreVisualTrackAfterFailure(input, request.progressTrackId, running)
     }
 }
@@ -587,7 +592,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
                 })
             } catch (error) {
                 const details = mapThrownError(error)
-                try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: details.message }) } catch { /* preserve original failure */ }
+                try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* preserve original failure */ }
             }
         })())
         return acceptedGeneration(input.requestId, running, 'CREATED')

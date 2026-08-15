@@ -188,7 +188,10 @@ describe('FLUX production pipeline', () => {
 
         expect(context.transform).toHaveBeenCalledTimes(3)
         expect(validator.outputChecks).toBe(3)
-        expect(context.persistence.get(PROFILE_ID, 'crop-failure')).toMatchObject({ status: 'FAILED', errorCode: 'FLUX_SUBJECT_CROPPED' })
+        expect(context.persistence.get(PROFILE_ID, 'crop-failure')).toMatchObject({
+            status: 'FAILED', errorCode: 'FLUX_SUBJECT_CROPPED',
+            errorMessage: 'Il soggetto FLUX resta troppo vicino al bordo dopo i retry di framing. subject is too close to the edge (FLUX_SUBJECT_CROPPED)',
+        })
     })
 
     it('cannot produce a body-plan mutation in normal gameplay', async () => {

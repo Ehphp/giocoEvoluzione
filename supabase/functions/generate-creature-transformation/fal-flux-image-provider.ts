@@ -60,11 +60,17 @@ function providerErrorCode(payload: unknown): string | null {
     return typeof code === 'string' && /^[A-Za-z0-9._-]{1,80}$/.test(code) ? code : null
 }
 
-function outputUrl(payload: unknown): string | null {
+function outputImage(payload: unknown): { url: string, contentType: string | null } | null {
     const root = record(payload)
     const image = Array.isArray(root?.images) ? record(root?.images[0]) : null
     const url = image?.url
-    return typeof url === 'string' && /^https:\/\//.test(url) ? url : null
+    const contentType = typeof image?.content_type === 'string' ? image.content_type : null
+    return typeof url === 'string' && /^https:\/\//.test(url) ? { url, contentType } : null
+}
+
+function hasPngSignature(bytes: Uint8Array): boolean {
+    return bytes.length >= 8
+        && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value)
 }
 
 export class FalFluxImageProvider {
@@ -95,7 +101,7 @@ export class FalFluxImageProvider {
                     body: JSON.stringify(profile.seedream
                         ? {
                             prompt: input.prompt, image_urls: [bytesToDataUrl(input.sourcePng)], image_size: profile.imageSize,
-                            num_images: 1, max_images: 1, enable_safety_checker: true,
+                            output_format: 'png', num_images: 1, max_images: 1, enable_safety_checker: true,
                             ...(input.seed === undefined ? {} : { seed: input.seed }),
                         }
                         : {
@@ -115,17 +121,21 @@ export class FalFluxImageProvider {
                 const code = response.status === 429 ? 'FAL_FLUX_RATE_LIMITED' : response.status === 400 ? 'FAL_FLUX_BAD_REQUEST' : 'FAL_FLUX_PROVIDER_ERROR'
                 throw new FalFluxImageProviderError(code, 'fal.ai ha rifiutato la generazione.', { providerStatus: response.status, providerErrorCode: providerErrorCode(payload) })
             }
-            const url = outputUrl(payload)
-            if (!url) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai non ha restituito un URL immagine valido.')
+            const output = outputImage(payload)
+            if (!output) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai non ha restituito un URL immagine valido.')
+            if (output.contentType && output.contentType !== 'image/png') {
+                throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', `fal.ai ha restituito ${output.contentType} invece del PNG richiesto.`)
+            }
             let imageResponse: Response
             try {
-                imageResponse = await this.fetchImplementation(url, { signal: controller.signal })
+                imageResponse = await this.fetchImplementation(output.url, { signal: controller.signal })
             } catch (error) {
                 if (controller.signal.aborted) throw new FalFluxImageProviderError('FAL_FLUX_TIMEOUT', 'fal.ai ha superato il tempo massimo.', { cause: error })
                 throw new FalFluxImageProviderError('FAL_FLUX_PROVIDER_ERROR', 'Il PNG FLUX non e raggiungibile.', { cause: error })
             }
             if (!imageResponse.ok) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai non ha reso disponibile il PNG generato.', { providerStatus: imageResponse.status })
             const image = new Uint8Array(await imageResponse.arrayBuffer())
+            if (!hasPngSignature(image)) throw new FalFluxImageProviderError('FAL_FLUX_RESPONSE_INVALID', 'fal.ai ha restituito byte non PNG nonostante il formato richiesto.')
             const root = record(payload)
             const requestId = typeof root?.request_id === 'string' ? root.request_id : response.headers.get('x-fal-request-id') ?? undefined
             const seed = typeof root?.seed === 'number' && Number.isInteger(root.seed) ? root.seed : undefined
