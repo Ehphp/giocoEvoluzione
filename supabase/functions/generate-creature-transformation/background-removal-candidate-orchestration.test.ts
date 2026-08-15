@@ -64,6 +64,15 @@ describe('browser background removal candidate gate', () => {
         expect(pending.requests.get(profileId, 'raw-key')).toMatchObject({ resultWidth: 1024, resultHeight: 1536, assetReadiness: 'FINAL_ASSET' })
     })
 
+    it('accepts a Seedream raw PNG at 1920 by 2880 before promoting the normalized master', async () => {
+        const pending = await pendingRequest([1920, 2880])
+        const prepared = input(pending.transformationRequestId, pending.requests.repository, {
+            async validate() { return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true, transparentPixelRatio: 0.5, visiblePixelRatio: 0.5, sha256: 'b'.repeat(64), bytes: 32 }, warnings: [] } },
+        })
+        await expect(orchestrateSubmitBackgroundRemovalCandidate(prepared as never)).resolves.toMatchObject({ success: true, candidate: { assetReadiness: 'FINAL_ASSET', width: 1024, height: 1536 } })
+        expect(pending.requests.get(profileId, 'raw-key')).toMatchObject({ resultWidth: 1024, resultHeight: 1536, assetReadiness: 'FINAL_ASSET' })
+    })
+
     it('rejects an opaque candidate before upload and leaves the raw request retryable', async () => {
         const pending = await pendingRequest()
         const prepared = input(pending.transformationRequestId, pending.requests.repository, {

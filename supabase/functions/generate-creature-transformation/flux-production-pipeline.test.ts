@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
+import { ImageValidator, type ImageValidationInput } from '../../../shared/creature-transformations/image-validator.ts'
 import { orchestrateAdoptCreatureTransformation, orchestrateGenerateUnlockedTransformation, orchestrateSelectCreatureVisualProgressTrack } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
 import { createResolvedCreatureSource, createTestResolver, createTestStorage, FluxTestValidator } from './test-creature-fixtures.ts'
+import { FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 
 const PROFILE_ID = 'profile-1'
 const CREATURE_ID = '00000000-0000-4000-8000-000000000001'
@@ -49,12 +50,30 @@ class ScriptedCropValidator extends ImageValidator {
     }
 }
 
+class RenderProfileValidator extends ImageValidator {
+    readonly inputs: ImageValidationInput[] = []
+
+    override async validate(input: ImageValidationInput) {
+        this.inputs.push(input)
+        const source = this.inputs.length === 1
+        return {
+            valid: true as const,
+            metadata: {
+                mimeType: 'image/png' as const, width: input.renderSpecification.width, height: input.renderSpecification.height,
+                colorType: source ? 6 : 2, hasAlpha: source, sha256: `${this.inputs.length}`.padStart(64, '0'), bytes: input.bytes.length,
+            },
+            warnings: [],
+        }
+    }
+}
+
 function createProductionInput(options: {
     evolutionTargetId?: string
     policyOverrides?: Record<string, string>
     source?: ReturnType<typeof createResolvedCreatureSource>
     idempotencyKey?: string
     validator?: ImageValidator
+    providerModel?: string
 } = {}) {
     const persistence = createInMemoryRequestRepository()
     const tasks: Promise<void>[] = []
@@ -62,7 +81,7 @@ function createProductionInput(options: {
     const markBackgroundRemovalPending = vi.fn(async () => ({ ...track, status: 'POST_PROCESSING' as const }))
     const completeGeneration = vi.fn(async () => track)
     const generate = vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
-    const transform = vi.fn(async () => ({ image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 }))
+    const transform = vi.fn(async () => ({ image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: options.providerModel ?? 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 }))
     const input = {
         profileId: PROFILE_ID, canGenerateImages: true, requestId: 'http-request',
         body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: TRACK_ID, idempotencyKey: options.idempotencyKey ?? 'production-key' },
@@ -129,6 +148,19 @@ describe('FLUX production pipeline', () => {
         expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
         expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
             status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: null,
+        })
+    })
+
+    it('validates and persists the Seedream raw canvas selected by the provider model', async () => {
+        const validator = new RenderProfileValidator()
+        const context = createProductionInput({ idempotencyKey: 'production-seedream', providerModel: FAL_SEEDREAM_MODEL, validator })
+
+        await orchestrateGenerateUnlockedTransformation(context.input as never)
+        await context.tasks[0]
+
+        expect(validator.inputs[1]).toMatchObject({ renderSpecification: { width: 1920, height: 2880 }, maxBytes: 30 * 1024 * 1024 })
+        expect(context.persistence.get(PROFILE_ID, 'production-seedream')).toMatchObject({
+            status: 'SUCCEEDED', model: FAL_SEEDREAM_MODEL, resultWidth: 1920, resultHeight: 2880,
         })
     })
 

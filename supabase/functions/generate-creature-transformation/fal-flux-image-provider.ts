@@ -1,5 +1,14 @@
-export const DEFAULT_FAL_FLUX_MODEL = 'fal-ai/flux-2-klein/9b/edit'
+export const FAL_FLUX_MODEL = 'fal-ai/flux-2-klein/9b/edit'
 export const FAL_FLUX_IMAGE_SIZE = Object.freeze({ width: 768, height: 1152 })
+export const FAL_SEEDREAM_MODEL = 'fal-ai/bytedance/seedream/v4.5/edit'
+export const FAL_SEEDREAM_IMAGE_SIZE = Object.freeze({ width: 1920, height: 2880 })
+export const DEFAULT_FAL_FLUX_MODEL = FAL_SEEDREAM_MODEL
+
+export function falImageModelProfile(model: string): Readonly<{ imageSize: { width: number, height: number }, maxImageBytes: number, seedream: boolean }> {
+    return model === FAL_SEEDREAM_MODEL
+        ? Object.freeze({ imageSize: FAL_SEEDREAM_IMAGE_SIZE, maxImageBytes: 30 * 1024 * 1024, seedream: true })
+        : Object.freeze({ imageSize: FAL_FLUX_IMAGE_SIZE, maxImageBytes: 10 * 1024 * 1024, seedream: false })
+}
 
 type FetchLike = typeof fetch
 
@@ -74,6 +83,7 @@ export class FalFluxImageProvider {
 
     async transform(input: { prompt: string, sourcePng: Uint8Array, seed?: number }): Promise<FalFluxGenerationResult> {
         const startedAt = this.now()
+        const profile = falImageModelProfile(this.model)
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
         try {
@@ -82,15 +92,17 @@ export class FalFluxImageProvider {
                 response = await this.fetchImplementation(`https://fal.run/${this.model}`, {
                     method: 'POST',
                     headers: { Authorization: `Key ${this.options.apiKey}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: input.prompt,
-                        image_urls: [bytesToDataUrl(input.sourcePng)],
-                        image_size: FAL_FLUX_IMAGE_SIZE,
-                        output_format: 'png',
-                        num_images: 1,
-                        num_inference_steps: 4,
-                        ...(input.seed === undefined ? {} : { seed: input.seed }),
-                    }),
+                    body: JSON.stringify(profile.seedream
+                        ? {
+                            prompt: input.prompt, image_urls: [bytesToDataUrl(input.sourcePng)], image_size: profile.imageSize,
+                            num_images: 1, max_images: 1, enable_safety_checker: true,
+                            ...(input.seed === undefined ? {} : { seed: input.seed }),
+                        }
+                        : {
+                            prompt: input.prompt, image_urls: [bytesToDataUrl(input.sourcePng)], image_size: profile.imageSize,
+                            output_format: 'png', num_images: 1, num_inference_steps: 4,
+                            ...(input.seed === undefined ? {} : { seed: input.seed }),
+                        }),
                     signal: controller.signal,
                 })
             } catch (error) {

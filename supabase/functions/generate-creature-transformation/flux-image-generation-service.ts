@@ -5,10 +5,10 @@ import type { CreatureSemanticIdentity } from '../../../shared/creature-transfor
 import { ImageValidator, sha256Hex, type ImageValidationProblem } from '../../../shared/creature-transformations/image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import type { SupabaseCreatureTransformationStorageAdapter } from './supabase-creature-transformation-storage.ts'
-import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
+import { FAL_FLUX_IMAGE_SIZE, FalFluxImageProvider, FalFluxImageProviderError, falImageModelProfile } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 
-export const FLUX_RAW_RENDER_SPECIFICATION = Object.freeze({ width: 768, height: 1152 })
+export const FLUX_RAW_RENDER_SPECIFICATION = FAL_FLUX_IMAGE_SIZE
 export const FLUX_PROMPT_TEMPLATE_VERSION = 'flux-micro-v6'
 export const FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION = 'flux-minimal-v1'
 export const FLUX_MAX_CROP_RETRIES = 2
@@ -90,8 +90,9 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
             if (error instanceof FalFluxImageProviderError) throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
             throw error
         }
+        const modelProfile = falImageModelProfile(generated.model)
         validOutput = await validator.validate({
-            bytes: generated.image, mimeType: 'image/png', renderSpecification: FLUX_RAW_RENDER_SPECIFICATION,
+            bytes: generated.image, mimeType: 'image/png', renderSpecification: modelProfile.imageSize, maxBytes: modelProfile.maxImageBytes,
             sourceSha256: validSource.metadata.sha256, requireAlpha: false, requireSubjectMargin: FLUX_SUBJECT_MARGIN_RATIO,
         })
         const bounds = validOutput.valid ? validOutput.metadata.foregroundBounds : undefined

@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
+import { FAL_FLUX_MODEL, FAL_SEEDREAM_MODEL, FalFluxImageProvider } from './fal-flux-image-provider.ts'
 
 describe('FalFluxImageProvider', () => {
     it('sends the validated FLUX.2 Klein 9B edit request and returns provider metadata', async () => {
         const fetchImplementation = vi.fn()
             .mockResolvedValueOnce(new Response(JSON.stringify({ request_id: 'fal-request-1', seed: 77, images: [{ url: 'https://cdn.example/result.png' }] }), { headers: { 'x-fal-request-id': 'fallback-id' } }))
             .mockResolvedValueOnce(new Response(createTestPng({ width: 768, height: 1152 })))
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', estimatedCostUsd: 0.0203, fetchImplementation, now: (() => { const ticks = [10, 22]; return () => ticks.shift() ?? 22 })() })
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_FLUX_MODEL, estimatedCostUsd: 0.0203, fetchImplementation, now: (() => { const ticks = [10, 22]; return () => ticks.shift() ?? 22 })() })
 
         const result = await provider.transform({ prompt: 'SERVER FLUX PROMPT', sourcePng: createTestPng() })
         const [url, init] = fetchImplementation.mock.calls[0]!
@@ -30,5 +30,26 @@ describe('FalFluxImageProvider', () => {
 
         const invalid = new FalFluxImageProvider({ apiKey: 'key', fetchImplementation: async () => new Response(JSON.stringify({ images: [] })) })
         await expect(invalid.transform({ prompt: 'p', sourcePng: createTestPng() })).rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID' })
+    })
+
+    it('uses the Seedream 4.5 edit schema without FLUX-only parameters', async () => {
+        const fetchImplementation = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({ request_id: 'seedream-request', images: [{ url: 'https://cdn.example/seedream.png' }] })))
+            .mockResolvedValueOnce(new Response(createTestPng({ width: 1920, height: 2880 })))
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+
+        const result = await provider.transform({ prompt: 'SERVER EVOLUTION PROMPT', sourcePng: createTestPng(), seed: 42 })
+        const [url, init] = fetchImplementation.mock.calls[0]!
+        const request = JSON.parse(String(init.body))
+
+        expect(url).toBe('https://fal.run/fal-ai/bytedance/seedream/v4.5/edit')
+        expect(request).toMatchObject({
+            prompt: 'SERVER EVOLUTION PROMPT', image_size: { width: 1920, height: 2880 },
+            num_images: 1, max_images: 1, enable_safety_checker: true, seed: 42,
+        })
+        expect(request.image_urls[0]).toMatch(/^data:image\/png;base64,/)
+        expect(request).not.toHaveProperty('num_inference_steps')
+        expect(request).not.toHaveProperty('output_format')
+        expect(result).toMatchObject({ provider: 'fal.ai', model: FAL_SEEDREAM_MODEL, providerRequestId: 'seedream-request' })
     })
 })

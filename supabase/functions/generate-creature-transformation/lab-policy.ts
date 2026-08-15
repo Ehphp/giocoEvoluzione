@@ -18,7 +18,7 @@ const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
 const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
 const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
 const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
-const DEFAULT_FLUX_MODEL = 'fal-ai/flux-2-klein/9b/edit'
+const DEFAULT_FLUX_MODEL = 'fal-ai/bytedance/seedream/v4.5/edit'
 const DEFAULT_FLUX_TIMEOUT_MS = 30_000
 
 export type FluxPipelinePolicy = Readonly<{

@@ -17,7 +17,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
-        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
+        expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/bytedance/seedream/v4.5/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v6', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
         expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, backgroundCleanupEnabled: false, winsRequired: 3 })
     })
 
