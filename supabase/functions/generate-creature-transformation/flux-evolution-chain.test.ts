@@ -103,6 +103,9 @@ describe('FLUX evolution chain step', () => {
         const prompt = String(second.transform.mock.calls[0]![0].prompt)
         expect(prompt).not.toContain('This creature has no wings and no tentacles.')
         expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
+        expect(prompt).toMatch(/PRIMARY MUTATION AUTHORITY[\s\S]*NEW MUTATION takes precedence over preserving local geometry/i)
+        expect(prompt).toMatch(/This target already carries[\s\S]*new, substantial, independently readable morphological mutation/i)
+        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
         // The second step reads the first as adopted lineage of the same target.
         const plan = second.generate.mock.calls[0]![0].plan
         expect(plan.lineage.currentTargetState?.conceptName).toBe('Pale rematrici')

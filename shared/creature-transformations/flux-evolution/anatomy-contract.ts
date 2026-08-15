@@ -44,8 +44,8 @@ function limbSentence(topology: CreatureTopology): string | null {
     if (!limbs) return 'The creature has no limbs; it stays limbless.'
     const pairs = limbs / 2
     return Number.isInteger(pairs)
-        ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, at their current attachment points.`
-        : `Keep exactly ${limbs} limbs at their current attachment points.`
+        ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, connected to the same anatomical roots and body regions. Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.`
+        : `Keep exactly ${limbs} limbs connected to the same anatomical roots and body regions. Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.`
 }
 
 function countSentence(count: number, singular: string, plural: string): string | null {
@@ -66,31 +66,29 @@ function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
 
 type TargetContract = Readonly<{ allowances: readonly string[], preservation: readonly string[], failures: readonly string[] }>
 
-const RELATED_SECONDARY_ADAPTATIONS = 'The selected target is the primary evolutionary target. Preserve all unrelated anatomy by default. Introduce secondary adaptations only when they are necessary consequences of the primary mutation: biomechanical support, anatomical continuity, posture rebalancing, structural integration or tightly linked visual propagation. If the primary mutation works on its own, change only the selected target. Any secondary adaptation must stay subordinate, less visually prominent and clearly derived from the primary mutation; no gratuitous changes outside the selected target to the head, limbs, torso, posture, silhouette or body plan. A visible colour treatment is allowed only when it is a biologically motivated, target-linked secondary adaptation; keep it on the selected target or directly connected surface, never as an unrelated whole-body recolour.'
-
 const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Object.freeze({
     TAIL: {
         allowances: [
             'Reshape the existing tail freely: length, thickness, segmentation, tip, fins, fans, ridges, spikes and any structure anchored to that tail.',
             'A strong change of the tail silhouette is wanted.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS, 'The tail keeps its origin on the body.'],
-        failures: ['A second tail, a split tail or a tail growing from a different attachment point is invalid.'],
+        preservation: ['The tail remains connected to the same anatomical root and body region.'],
+        failures: ['A split tail or a tail growing from a new anatomical root is invalid.'],
     },
     LIMBS_AND_FEET: {
         allowances: [
             'Treat all existing limbs as one system and evolve them together: length, mass, visible articulation, feet, toes, claws, pads, spurs, membranes and structures anchored to the limbs.',
             'Strong changes of limb proportion, thickness and stance height are wanted.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS, 'The limb count and every limb attachment point stay exactly as they are.'],
-        failures: ['Any added, removed, duplicated or relocated limb is invalid.'],
+        preservation: ['Keep every limb connected to its existing anatomical root and body region. Relative spacing, stance and visible position may adapt to the evolved limb proportions.'],
+        failures: [],
     },
     HEAD_AND_CROWN: {
         allowances: [
             'Develop the head crown and sensory apparatus: horns, antlers, antennae, crests, frills, ears, spurs, plates, whiskers and eye-region structures anchored to the existing skull.',
             'The head silhouette may change strongly. Keep the face recognisable as the same individual — that means the same identity, not a pixel-identical head.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS, 'One single head, one single face and the existing eye arrangement.'],
+        preservation: ['Keep one single head, one single face and the existing eye arrangement.'],
         failures: ['A second head, a second face or extra eyes are invalid.'],
     },
     BODY_SHAPE: {
@@ -99,11 +97,9 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'The creature may become clearly longer, shorter, heavier, leaner or differently balanced. This target is a change of body form, not an added plate or crest.',
         ],
         preservation: [
-            `${RELATED_SECONDARY_ADAPTATIONS} Head, face, limb count, tail count and every attachment point stay as they are; limbs and tail only follow the new body proportions when necessary.`,
-            'Keep the existing covering material and colour treatment recognisable unless a secondary surface adaptation is necessary to integrate the body transformation.',
+            'Keep the head and face recognisable, and keep limb and tail counts and anatomical roots unchanged. Limbs and tail may shift in relative visual position to follow the new trunk proportions, posture and balance, but they may not migrate to different anatomical regions.',
         ],
         failures: [
-            'New limbs, new tails or new heads are invalid on this target.',
             'Plates, crests or spines may only be necessary, subordinate secondary adaptations; they cannot replace the primary body-form mutation or become a new dominant mutation.',
         ],
     },
@@ -112,7 +108,7 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Add or develop structures anchored to the back and spine: spines, crests, ridges, fins, plates, membranes, sails or humps, following the existing spine line.',
             'These structures may be large and may change the upper silhouette strongly.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS],
+        preservation: ['Keep new dorsal structures biologically rooted along the existing back and spine region.'],
         failures: ['Dorsal structures may not become limbs, wings, tails or heads, and related secondary adaptations may not create a new dominant mutation elsewhere.'],
     },
     SKIN_AND_COVERING: {
@@ -120,7 +116,7 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Rework the surface and covering over the existing anatomy: material, scale shape and grain, plating, fur, feathers, texture, pattern, colour treatment and translucency.',
             'The treatment may be striking and clearly readable at gameplay scale.',
         ],
-        preservation: [`${RELATED_SECONDARY_ADAPTATIONS} The body plan stays the same and the creature silhouette remains recognisable; the covering follows the existing anatomy.`],
+        preservation: ['The covering follows the existing anatomy; keep the body plan and recognisable overall creature silhouette.'],
         failures: ['New appendages or structural anatomy changes are invalid on this target.'],
     },
     WINGS: {
@@ -128,29 +124,25 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Evolve the existing wings: span, membrane shape, spar structure, feathering, edge profile, folds and structures anchored to the wings.',
             'A strong change of the wing silhouette is wanted.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS, 'The wing count and wing attachment points stay exactly as they are.'],
-        failures: ['An added or removed wing pair is invalid.'],
+        preservation: ['Keep every wing connected to its existing anatomical root and body region; its visible angle and span may adapt to the mutation.'],
+        failures: ['Wing structures may not become independently rooted limbs or appendages.'],
     },
     TENTACLES: {
         allowances: [
             'Evolve the existing tentacles as one system: length, section, taper, suckers, barbs, terminal appendages and surface.',
             'Strong changes of tentacle proportion are wanted.',
         ],
-        preservation: [RELATED_SECONDARY_ADAPTATIONS, 'The tentacle count and their attachment ring stay exactly as they are.'],
-        failures: ['An added or removed tentacle is invalid.'],
+        preservation: ['Keep every tentacle connected to the same anatomical root and attachment ring.'],
+        failures: ['Terminal tentacle structures may not become independently rooted appendages.'],
     },
 })
 
 const ANATOMICAL_FAILURES = Object.freeze([
-    'Adding, removing, duplicating or relocating heads, limbs, wings, tentacles or tails is invalid.',
-    'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default. Secondary adaptations are valid only when they are necessary consequences of that mutation, and must remain subordinate; a new dominant mutation or gratuitous redesign outside the selected target is invalid.',
-    'Changing pose, viewpoint, composition or illustrated style is invalid unless a minimal reframing or subject-scale adjustment is necessary to keep the complete creature and mutated target fully visible with comfortable canvas margin.',
+    'Treat any violation of HARD INVARIANTS, STRICT FRAMING, TARGET STRUCTURE BOUNDARY or NON-TARGET PRESERVATION as an invalid result.',
 ])
 
 const STRUCTURAL_FAILURES = Object.freeze([
-    'Only the structural change described above may alter the topology; every other count and attachment point is preserved.',
-    'The primary mutation must be clearly readable on the selected target. Preserve all unrelated anatomy by default; any secondary adaptation must be a necessary, subordinate consequence of it.',
-    'Changing pose, viewpoint, composition or illustrated style is invalid unless a minimal reframing or subject-scale adjustment is necessary to keep the complete creature and mutated target fully visible with comfortable canvas margin.',
+    'Only the AUTHORIZED BODY-PLAN MUTATION may alter topology; treat any other violation of HARD INVARIANTS, STRICT FRAMING, TARGET STRUCTURE BOUNDARY or NON-TARGET PRESERVATION as an invalid result.',
 ])
 
 function resolveAuthorizedMutation(input: {
@@ -197,7 +189,7 @@ export function buildAnatomyContract(input: {
         resultBodyPlanId: resultBodyPlan.id,
         topologyInvariants: freeze(topologyInvariants(resultBodyPlan)),
         targetAllowances: freeze([`Work on ${target.promptRegion}.`, ...contract.allowances]),
-        preservationRules: freeze(mutation ? [RELATED_SECONDARY_ADAPTATIONS, ...mutation.structuralGuardrails] : contract.preservation),
+        preservationRules: freeze(mutation ? mutation.structuralGuardrails : contract.preservation),
         ...(mutation ? { structuralChange: mutation.structuralChange, bodyPlanMutationId: mutation.id } : {}),
         failureConditions: freeze(mutation ? STRUCTURAL_FAILURES : [...ANATOMICAL_FAILURES, ...contract.failures]),
     })

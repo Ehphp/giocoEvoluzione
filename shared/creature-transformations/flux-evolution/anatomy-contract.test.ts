@@ -49,40 +49,33 @@ describe('anatomy contract', () => {
         expect(allowances).toMatch(/silhouette/i)
         expect(allowances).toMatch(/longer, shorter, heavier, leaner/i)
         expect(contract.failureConditions.join(' ')).toMatch(/Plates, crests or spines may only be necessary, subordinate secondary adaptations/i)
-        expect(contract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs, in 2 symmetrical pairs, at their current attachment points.')
-        expect(contract.failureConditions.join(' ')).toMatch(/New limbs, new tails or new heads are invalid/i)
+        expect(contract.topologyInvariants.join(' ')).toMatch(/Keep exactly 4 limbs, in 2 symmetrical pairs, connected to the same anatomical roots and body regions/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/may shift in relative visual position to follow the new trunk proportions, posture and balance/i)
+        expect(contract.preservationRules.join(' ')).not.toMatch(/attachment points stay exactly|current attachment points/i)
     })
 
-    it('defaults to preserving unrelated anatomy while allowing only necessary secondary adaptations', () => {
+    it('keeps target-specific preservation separate from the composer policy', () => {
         const contract = contractFor('TAIL')
 
-        expect(contract.preservationRules.join(' ')).toMatch(/primary evolutionary target/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/Preserve all unrelated anatomy by default/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/only when they are necessary consequences/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/If the primary mutation works on its own, change only the selected target/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/no gratuitous changes outside the selected target/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/visible colour treatment is allowed only when it is a biologically motivated, target-linked secondary adaptation/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/never as an unrelated whole-body recolour/i)
-        expect(contract.failureConditions.join(' ')).toMatch(/primary mutation must be clearly readable on the selected target/i)
-        expect(contract.failureConditions.join(' ')).toMatch(/gratuitous redesign outside the selected target is invalid/i)
-        expect(contract.failureConditions.join(' ')).not.toMatch(/Only the selected target may carry the new mutation/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/same anatomical root and body region/i)
+        expect(contract.preservationRules.join(' ')).not.toMatch(/primary evolutionary target|Preserve all unrelated anatomy|secondary adaptations/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/HARD INVARIANTS.*NON-TARGET PRESERVATION/i)
     })
 
     it('DORSAL_STRUCTURES allows only necessary, subordinate support changes', () => {
         const contract = contractFor('DORSAL_STRUCTURES')
 
         expect(contract.targetAllowances.join(' ')).toMatch(/spines, crests, ridges, fins, plates, membranes, sails or humps/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/Preserve all unrelated anatomy by default/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/only when they are necessary consequences/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/rooted along the existing back and spine region/i)
         expect(contract.failureConditions.join(' ')).toMatch(/may not create a new dominant mutation elsewhere/i)
     })
 
     it('LIMBS_AND_FEET keeps the limb count in a normal mutation', () => {
         const contract = contractFor('LIMBS_AND_FEET')
 
-        expect(contract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs, in 2 symmetrical pairs, at their current attachment points.')
-        expect(contract.preservationRules.join(' ')).toMatch(/limb count and every limb attachment point stay exactly as they are/i)
-        expect(contract.failureConditions.join(' ')).toMatch(/Any added, removed, duplicated or relocated limb is invalid/i)
+        expect(contract.topologyInvariants.join(' ')).toMatch(/Keep exactly 4 limbs, in 2 symmetrical pairs, connected to the same anatomical roots and body regions/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/Relative spacing, stance and visible position may adapt/i)
+        expect(contract.preservationRules.join(' ')).not.toMatch(/attachment point stay exactly|current attachment points/i)
         // The limbs are one system: the contract never distinguishes fore from hind.
         expect(text(contract)).not.toMatch(/forelimb|hind limb/i)
     })
@@ -117,7 +110,7 @@ describe('anatomy contract', () => {
             expect(structural.resultBodyPlanId).toBe('SIX_LIMBED')
             expect(structural.structuralChange).toMatch(/one additional symmetrical pair of limbs/i)
             expect(structural.topologyInvariants.join(' ')).toContain('Keep exactly 6 limbs, in 3 symmetrical pairs')
-            expect(structural.failureConditions.join(' ')).toMatch(/Only the structural change described above may alter the topology/i)
+            expect(structural.failureConditions.join(' ')).toMatch(/Only the AUTHORIZED BODY-PLAN MUTATION may alter topology/i)
             expect(structural.failureConditions.join(' ')).not.toMatch(/Adding, removing, duplicating or relocating heads, limbs/i)
         })
 

@@ -9,7 +9,7 @@ import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-imag
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 
 export const FLUX_RAW_RENDER_SPECIFICATION = Object.freeze({ width: 768, height: 1152 })
-export const FLUX_PROMPT_TEMPLATE_VERSION = 'flux-micro-v5'
+export const FLUX_PROMPT_TEMPLATE_VERSION = 'flux-micro-v6'
 export const FLUX_MAX_CROP_RETRIES = 2
 export const FLUX_SUBJECT_MARGIN_RATIO = 0.06
 

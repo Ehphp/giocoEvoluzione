@@ -100,12 +100,18 @@ describe('FLUX production pipeline', () => {
         expect(context.transform).toHaveBeenCalledOnce()
         const prompt = String(context.transform.mock.calls[0]![0].prompt)
         expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
+        expect(prompt).toMatch(/NEW MUTATION takes precedence over preserving local geometry/i)
+        expect(prompt).toMatch(/local means a circumscribed anatomical origin, not a small, conservative or surface-level edit/i)
+        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
+        expect(prompt).toMatch(/Keep exactly 4 limbs[\s\S]*same anatomical roots and body regions/i)
+        expect(prompt).toMatch(/slight posture or stance rebalancing, secondary proportion adjustment/i)
         expect(prompt).not.toContain('This creature has no wings and no tentacles.')
         expect(prompt).not.toContain('Trunk volume and body proportions, head, face, limbs and tail keep their current shape; only the dorsal structures and the back surface carrying them change.')
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-micro-v5', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            promptTemplateVersion: 'flux-micro-v6', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
