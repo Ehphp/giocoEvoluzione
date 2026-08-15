@@ -65,13 +65,40 @@ describe('composeFluxEvolutionPrompt', () => {
         }
     })
 
-    it('keeps conservation policy singular and does not freeze BODY_SHAPE attachment coordinates', () => {
+    it('keeps BODY_SHAPE morphology strong while locking its presentation', () => {
         const prompt = promptFor('BODY_SHAPE')
 
         expect(prompt.match(/\n\nNON-TARGET PRESERVATION\n\n/g)).toHaveLength(1)
         expect(prompt.match(/Preserve non-target anatomy by default/g)).toHaveLength(1)
-        expect(prompt).toMatch(/anatomical roots unchanged[\s\S]*may shift in relative visual position/i)
-        expect(prompt).not.toMatch(/attachment points stay exactly|current attachment points/i)
-        expect(prompt).not.toMatch(/no gratuitous changes outside the selected target to the head, limbs, torso, posture, silhouette or body plan/i)
+        expect(prompt).toMatch(/BODY-SHAPE PRESENTATION LOCK[\s\S]*Reshape the trunk strongly through length, volume, chest and back mass, back line and mass distribution/i)
+        expect(prompt).toMatch(/same base pose, viewpoint, facing direction, overall orientation and composition/i)
+        expect(prompt).toMatch(/does not authorize a new stance, camera angle, rotation, tilt or re-staging/i)
+        expect(prompt).toMatch(/Changing pose, stance, facing direction, overall orientation, viewpoint or composition is invalid/i)
+        expect(prompt).not.toMatch(/differently balanced|posture rebalancing|slight posture or stance rebalancing|may shift in relative visual position/i)
+    })
+
+    it('keeps the BODY_SHAPE presentation lock out of an explicitly authorized bipedal transition', () => {
+        const prompt = composeFluxEvolutionPrompt({
+            identity: {
+                creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'A moss-green quadruped.',
+                identityFeatures: ['round eyes'], mutableVisualFeatures: [], styleDefinition: 'illustrated',
+            },
+            anatomyContract: buildAnatomyContract({
+                bodyPlan: BODY_PLANS.QUADRUPED,
+                evolutionTargetId: 'BODY_SHAPE',
+                capability: 'BODY_PLAN_MUTATION',
+                bodyPlanMutationId: 'BIPEDAL_TRANSITION',
+            }),
+            microConcept: {
+                conceptName: 'Transizione bipede',
+                mutationIdea: 'Il corpo ricostruisce la postura bipede autorizzata.',
+                visualDetails: ['gambe portanti', 'braccia libere'],
+            },
+            lineage: { evolutionTargetId: 'BODY_SHAPE', family: 'BODY_VOLUME', currentTargetState: null },
+        })
+
+        expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
+        expect(prompt).toMatch(/Rebuild the posture into an upright bipedal stance/i)
+        expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
     })
 })

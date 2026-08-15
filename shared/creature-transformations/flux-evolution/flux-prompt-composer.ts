@@ -29,12 +29,15 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
     const contract = input.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[contract.target]
     const structural = contract.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
+    const bodyShapePresentationLock = contract.target === 'BODY_SHAPE' && !structural
     const mutableAppearance = input.identity.mutableVisualFeatures.length
         ? input.identity.mutableVisualFeatures.join('; ')
         : 'current surface appearance and coloration'
     return [
         'CURRENT SOURCE IMAGE',
-        'Edit the supplied source image as the complete visual truth. Keep its viewpoint and composition. Preserve its pose by default, while allowing the slight stance or posture rebalancing expressly authorized below. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.',
+        bodyShapePresentationLock
+            ? 'Edit the supplied source image as the complete visual truth. Keep the same base pose, viewpoint, facing direction, overall orientation and composition. BODY_SHAPE changes must be achieved within this existing presentation, never by re-staging, rotating, tilting or otherwise reorienting the creature. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.'
+            : 'Edit the supplied source image as the complete visual truth. Keep its viewpoint and composition. Preserve its pose by default, while allowing the slight stance or posture rebalancing expressly authorized below. A minimal reframing or subject-scale adjustment is authorized only when necessary to keep the complete creature and its mutated target inside the canvas.',
         'STRICT FRAMING',
         'FRAMING IS STRICT: show the entire creature from the highest anatomical point to every foot, claw, tail tip, wing tip, horn, shell edge and appendage. Nothing may touch or cross the canvas boundary. Keep the creature centered with at least 8-10% clear background margin on every side. If the mutation makes the creature larger or wider, zoom the camera out instead of cropping any anatomy. The full silhouette must remain fully visible inside the frame.',
         ...(input.framingAttempt && input.framingAttempt > 0 ? [`RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1}): make the creature visibly smaller in frame. Use a wider camera and extra clear background on every side; full body and every appendage must remain inside the canvas.`] : []),
@@ -46,6 +49,10 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         `SELECTED TARGET: ${contract.target} — ${target.promptRegion}. This is the primary evolutionary focus. Within this target, the NEW MUTATION takes precedence over preserving local geometry, proportions, biological material, local silhouette and surface detail. Preservation rules protect identity, topology and non-target anatomy; they must not weaken, miniaturize or cosmetically reduce the requested target transformation. Keep the mutation anatomically focused on this target, but make its change substantial, clearly readable and morphologically significant. Here, local means a circumscribed anatomical origin, not a small, conservative or surface-level edit.`,
         'TARGET FREEDOM',
         join(contract.targetAllowances),
+        ...(bodyShapePresentationLock ? [
+            'BODY-SHAPE PRESENTATION LOCK',
+            'Reshape the trunk strongly through length, volume, chest and back mass, back line and mass distribution while preserving the same base pose, viewpoint, facing direction, overall orientation and composition. This target does not authorize a new stance, camera angle, rotation, tilt or re-staging. Make the body-form change readable through morphology inside the existing presentation.',
+        ] : []),
         'MINIMUM VISUAL DELTA',
         'The selected target must show a clear, unequivocal difference that reads at normal gameplay scale. When the NEW MUTATION is morphological, texture, colour, markings, plates, ridges or other surface details alone do not satisfy it: the primary change must visibly alter the target form described by the concept.',
         'TARGET STRUCTURE BOUNDARY',
@@ -60,7 +67,9 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
         'BIOLOGICAL PRIOR',
         'Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures should look grown from the creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless explicitly required by the concept. Carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates are valid when grown as part of the creature.',
         'NON-TARGET PRESERVATION',
-        'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, slight posture or stance rebalancing, secondary proportion adjustment, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy. If the target transformation changes the subject footprint, use the authorized slight rebalancing and zoom-out instead of suppressing the mutation.',
+        bodyShapePresentationLock
+            ? 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, minimal proportion adjustment within the existing pose, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy or alter pose, stance, facing, orientation, viewpoint or composition. If the target transformation changes the subject footprint, use only the authorized zoom-out instead of changing the creature presentation or suppressing the mutation.'
+            : 'Preserve non-target anatomy by default. Secondary changes are allowed only when necessary for biomechanical support, anatomical continuity, slight posture or stance rebalancing, secondary proportion adjustment, structural integration or tightly derived propagation. Keep them subordinate and visibly derived from the primary mutation; do not redesign unrelated anatomy. If the target transformation changes the subject footprint, use the authorized slight rebalancing and zoom-out instead of suppressing the mutation.',
         join(contract.preservationRules),
         'BACKGROUND / TECHNICAL RULES',
         'Flat uniform medium-gray background. Surface-visible bioluminescent markings or coloration already present on the creature are allowed. No external glow, aura, halo, bloom, light spill, fog or atmospheric effect. Single isolated creature. No text, objects or environmental scene.',

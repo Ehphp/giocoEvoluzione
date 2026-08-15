@@ -47,11 +47,13 @@ describe('anatomy contract', () => {
         expect(allowances).toMatch(/trunk length/i)
         expect(allowances).toMatch(/volume/i)
         expect(allowances).toMatch(/silhouette/i)
-        expect(allowances).toMatch(/longer, shorter, heavier, leaner/i)
+        expect(allowances).toMatch(/longer, shorter, heavier or leaner/i)
         expect(contract.failureConditions.join(' ')).toMatch(/Plates, crests or spines may only be necessary, subordinate secondary adaptations/i)
         expect(contract.topologyInvariants.join(' ')).toMatch(/Keep exactly 4 limbs, in 2 symmetrical pairs, connected to the same anatomical roots and body regions/i)
-        expect(contract.preservationRules.join(' ')).toMatch(/may shift in relative visual position to follow the new trunk proportions, posture and balance/i)
-        expect(contract.preservationRules.join(' ')).not.toMatch(/attachment points stay exactly|current attachment points/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/same base pose, viewpoint, facing direction, overall orientation and composition/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/only minimal proportional adjustments/i)
+        expect(contract.preservationRules.join(' ')).not.toMatch(/differently balanced|posture and balance|may shift in relative visual position/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/Changing pose, stance, facing direction, overall orientation, viewpoint or composition is invalid/i)
     })
 
     it('keeps target-specific preservation separate from the composer policy', () => {

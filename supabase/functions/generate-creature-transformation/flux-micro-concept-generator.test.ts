@@ -10,7 +10,7 @@ const PREVIOUS = [
     { versionNumber: 3, visualTraitId: 'ENERGY_REGULATION' as const, evolutionTargetId: 'SKIN_AND_COVERING' as const, conceptName: 'Pelle abissale', mutationIdea: 'pelle scura con venature luminose' },
 ]
 
-function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET' | 'TAIL', structural = false) {
+function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET' | 'TAIL' | 'BODY_SHAPE', structural = false) {
     return buildFluxEvolutionPlan({
         bodyPlan: BODY_PLANS.QUADRUPED,
         evolutionTargetId,
@@ -67,6 +67,15 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).toMatch(/Avoid manufactured, mechanical, metallic, technological or worn structures/i)
         expect(prompt).toMatch(/carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid/i)
         expect(prompt).not.toContain('IMPACT_ADAPTATION')
+    })
+
+    it('keeps a normal BODY_SHAPE concept inside the existing creature presentation', () => {
+        const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('BODY_SHAPE') })
+
+        expect(prompt).toContain('BODY-SHAPE PRESENTATION LOCK')
+        expect(prompt).toMatch(/same base pose, viewpoint, facing direction, overall orientation and composition/i)
+        expect(prompt).toMatch(/Do not describe a new stance, camera angle, rotation, tilt or re-staging/i)
+        expect(prompt).not.toMatch(/differently balanced|posture rebalancing/i)
     })
 
     it('states the authorized structural change when the capability is used', () => {

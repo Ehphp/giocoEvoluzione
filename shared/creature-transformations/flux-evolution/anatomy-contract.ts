@@ -94,13 +94,14 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
     BODY_SHAPE: {
         allowances: [
             'Reshape the body itself: trunk length, overall volume, chest depth, back line, shoulder and hip mass, waist and general silhouette.',
-            'The creature may become clearly longer, shorter, heavier, leaner or differently balanced. This target is a change of body form, not an added plate or crest.',
+            'The creature may become clearly longer, shorter, heavier or leaner through its trunk morphology and mass distribution. This target is a change of body form, not an added plate or crest or a new presentation of the creature.',
         ],
         preservation: [
-            'Keep the head and face recognisable, and keep limb and tail counts and anatomical roots unchanged. Limbs and tail may shift in relative visual position to follow the new trunk proportions, posture and balance, but they may not migrate to different anatomical regions.',
+            'Keep the head and face recognisable, and keep limb and tail counts and anatomical roots unchanged. Preserve the same base pose, viewpoint, facing direction, overall orientation and composition. Limbs and tail may make only minimal proportional adjustments needed to follow the new trunk shape, without changing the base pose, stance or presentation.',
         ],
         failures: [
             'Plates, crests or spines may only be necessary, subordinate secondary adaptations; they cannot replace the primary body-form mutation or become a new dominant mutation.',
+            'Changing pose, stance, facing direction, overall orientation, viewpoint or composition is invalid. The body-form mutation must be achieved by morphology within the existing presentation; only the minimal technical reframing needed to keep the full creature visible is allowed.',
         ],
     },
     DORSAL_STRUCTURES: {
