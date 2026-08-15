@@ -100,6 +100,23 @@ describe('visual progression access', () => {
             .resolves.toMatchObject({ success: true, lastFailure: failure })
     })
 
+    it('hides an older failure while a newer generation is being post-processed', async () => {
+        const failure = { requestId: 'failed-request', code: 'FLUX_SUBJECT_CROPPED', message: 'Il soggetto era troppo vicino al bordo.' }
+        const repository = {
+            ...visualRepository(failure),
+            async getTrack() {
+                return {
+                    id: 'track-1', creatureId: CREATURE_ID, visualTraitId: 'ANATOMICAL_EVOLUTION', evolutionTargetId: 'TAIL',
+                    status: 'POST_PROCESSING', progress: 1, target: 1, readyAt: '2026-08-15T13:15:43.125834+00:00',
+                    generatedRequestId: 'new-request', completedVersionId: null,
+                }
+            },
+        } as unknown as SupabaseCreatureVisualProgressionRepository
+
+        await expect(orchestrateGetCreatureVisualProgress({ ...input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }), visualRepository: repository } as never))
+            .resolves.toMatchObject({ success: true, track: { generatedRequestId: 'new-request' }, lastFailure: null })
+    })
+
     it('shares the opponent current visual only with a participant of that game', async () => {
         await expect(orchestrateGetGameCreatureVisuals(input({ operation: 'GET_GAME_VISUALS', gameId: '00000000-0000-4000-8000-000000000003' }) as never))
             .resolves.toMatchObject({ success: true, opponent: { versionNumber: 2, isBaseVersion: false } })

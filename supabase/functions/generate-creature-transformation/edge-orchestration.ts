@@ -353,7 +353,7 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
             input.visualRepository.getLatestFailure({ profileId: input.profileId, trackId: track.id }),
         ]) : [null, null]
         return {
-            success: true, requestId: input.requestId, track, lastExperiment, lastFailure,
+            success: true, requestId: input.requestId, track, lastExperiment, lastFailure: track?.status === 'READY' ? lastFailure : null,
             currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName },
             history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId),
             bodyPlan: toBodyPlanResponse(source),

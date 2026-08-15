@@ -122,7 +122,7 @@ describe('FLUX evolution chain step', () => {
         expect(persistence.get(PROFILE_ID, 'chain-2')?.promptTemplateVersion).toBe('flux-micro-v6')
     })
 
-    it('defaults the chain to the minimal final provider prompt', async () => {
+    it('can explicitly use the minimal final provider prompt', async () => {
         const persistence = createInMemoryRequestRepository()
         const tasks: Promise<void>[] = []
         const sourcePng = createTestPng()
@@ -131,6 +131,7 @@ describe('FLUX evolution chain step', () => {
             repository: persistence,
             tasks,
             idempotencyKey: 'chain-minimal',
+            promptTemplateVersion: 'flux-minimal-v1',
             storage: createTestStorage({ readCanonicalSource }),
         })
 

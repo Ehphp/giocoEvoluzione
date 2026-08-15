@@ -5,7 +5,7 @@ export class CreatureBackgroundRemovalError extends Error {
     }
 }
 
-const BACKGROUND_REMOVAL_MODEL = 'isnet_fp16' as const
+const BACKGROUND_REMOVAL_MODELS = ['isnet_fp16', 'isnet_quint8'] as const
 const BACKGROUND_REMOVAL_TIMEOUT_MS = 120_000
 
 function withTimeout<T>(operation: Promise<T>): Promise<T> {
@@ -24,22 +24,31 @@ export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
     if (rawImage.type && rawImage.type !== 'image/png') {
         throw new CreatureBackgroundRemovalError('Il raw della creatura non e un PNG valido.')
     }
+    let lastError: unknown = null
     try {
         const { removeBackground } = await import('@imgly/background-removal')
-        const result = await withTimeout(removeBackground(rawImage, {
-            device: 'cpu',
-            model: BACKGROUND_REMOVAL_MODEL,
-            output: { format: 'image/png' },
-        }))
-        if (result.type !== 'image/png' || !result.size) {
-            throw new CreatureBackgroundRemovalError('Il tool non ha prodotto un PNG trasparente utilizzabile.')
+        for (const model of BACKGROUND_REMOVAL_MODELS) {
+            try {
+                const result = await withTimeout(removeBackground(rawImage, {
+                    device: 'cpu',
+                    model,
+                    output: { format: 'image/png' },
+                }))
+                if (result.type !== 'image/png' || !result.size) {
+                    throw new CreatureBackgroundRemovalError('Il tool non ha prodotto un PNG trasparente utilizzabile.')
+                }
+                if (result.size > 10 * 1024 * 1024) {
+                    throw new CreatureBackgroundRemovalError('Il PNG elaborato supera il limite tecnico di 10 MB.')
+                }
+                return result
+            } catch (error) {
+                lastError = error
+            }
         }
-        if (result.size > 10 * 1024 * 1024) {
-            throw new CreatureBackgroundRemovalError('Il PNG elaborato supera il limite tecnico di 10 MB.')
-        }
-        return result
     } catch (error) {
         if (error instanceof CreatureBackgroundRemovalError) throw error
-        throw new CreatureBackgroundRemovalError('La rimozione dello sfondo non e riuscita.', { cause: error })
+        lastError = error
     }
+    const detail = lastError instanceof Error && lastError.message.trim() ? ` Dettaglio: ${lastError.message}` : ''
+    throw new CreatureBackgroundRemovalError(`La rimozione dello sfondo non e riuscita.${detail}`, { cause: lastError })
 }

@@ -89,7 +89,7 @@ function readFluxPolicy(readEnvironment: (name: string) => string | undefined): 
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FLUX_MODEL,
         timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
-        promptTemplateVersion: configuredPromptTemplateVersion === 'flux-micro-v6' ? 'flux-micro-v6' : 'flux-minimal-v1',
+        promptTemplateVersion: configuredPromptTemplateVersion === 'flux-minimal-v1' ? 'flux-minimal-v1' : 'flux-micro-v6',
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
         microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,

@@ -99,27 +99,24 @@ describe('FLUX production pipeline', () => {
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs')
         expect(context.transform).toHaveBeenCalledOnce()
         const prompt = String(context.transform.mock.calls[0]![0].prompt)
-        expect(prompt).toBe([
-            'Edit the supplied source image as an evolution of the same creature and same individual, keeping its identity recognisable.',
-            "Keep the source image's visual style. Show the complete creature fully inside the canvas, sized to leave at least 10% clear background margin on every side.",
-            'EVOLUTION:',
-            'Pale rematrici: Membrane pieghevoli.\nVisual details: lamelle',
-        ].join('\n\n'))
-        expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
+        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
+        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
+        expect(prompt).toContain('STRICT FRAMING')
         expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
             status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-minimal-v1', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            promptTemplateVersion: 'flux-micro-v6', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
         })
     })
 
-    it('uses flux-micro-v6 for normal gameplay only when selected by server policy', async () => {
+    it('uses flux-minimal-v1 for normal gameplay only when selected by server policy', async () => {
         const context = createProductionInput({
-            idempotencyKey: 'production-full',
-            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v6' },
+            idempotencyKey: 'production-minimal',
+            policyOverrides: { FLUX_PROMPT_TEMPLATE_VERSION: 'flux-minimal-v1' },
         })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
@@ -128,11 +125,10 @@ describe('FLUX production pipeline', () => {
         expect(context.generate).toHaveBeenCalledOnce()
         expect(context.transform).toHaveBeenCalledOnce()
         const prompt = String(context.transform.mock.calls[0]![0].prompt)
-        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
-        expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
-        expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
-        expect(context.persistence.get(PROFILE_ID, 'production-full')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v6', promptText: null,
+        expect(prompt).toContain('EVOLUTION:')
+        expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
+        expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
+            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: null,
         })
     })
 
@@ -144,8 +140,8 @@ describe('FLUX production pipeline', () => {
         await context.tasks[0]
 
         expect(context.transform).toHaveBeenCalledTimes(2)
-        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('at least 10% clear background margin')
-        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('at least 15% clear background margin')
+        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('at least 8-10% clear background margin')
+        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
         expect(context.transform.mock.calls[1]![0].prompt).not.toBe(context.transform.mock.calls[0]![0].prompt)
         expect(validator.outputChecks).toBe(2)
         expect(context.persistence.get(PROFILE_ID, 'crop-retry')).toMatchObject({ status: 'SUCCEEDED' })
