@@ -88,6 +88,14 @@ function ProfilePreview() {
 }
 
 function CollectionPreview() {
+    const secondCreature = {
+        ...PREVIEW_CREATURE,
+        id: 'preview-creature-2',
+        lineage_id: 'preview-lineage-2',
+        name: 'Canopia',
+        current_visual_version_id: undefined,
+    }
+
     return (
         <CollectionScreen
             profile={PREVIEW_PROFILE}
@@ -102,6 +110,12 @@ function CollectionPreview() {
             visualTrait="SENSES"
             visualHistory={PREVIEW_VISUAL_HISTORY}
             currentVisualVersionId="preview-visual-9"
+            lineages={[
+                { id: 'preview-lineage', profile_id: PREVIEW_PROFILE.id, name: 'Stirpe Verdello', base_creature_key: PREVIEW_CREATURE.base_creature_key, created_at: PREVIEW_CREATURE.created_at, updated_at: PREVIEW_CREATURE.updated_at, creature: PREVIEW_CREATURE },
+                { id: 'preview-lineage-2', profile_id: PREVIEW_PROFILE.id, name: 'Stirpe della Canopia', base_creature_key: secondCreature.base_creature_key, created_at: secondCreature.created_at, updated_at: secondCreature.updated_at, creature: secondCreature },
+            ]}
+            activeLineageId="preview-lineage"
+            onDeleteLineage={asyncNoop}
         />
     )
 }
