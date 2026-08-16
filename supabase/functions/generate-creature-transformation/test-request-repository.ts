@@ -15,6 +15,7 @@ function recordFor(input: ReserveCreatureTransformationRequestInput, id: string,
     return {
         id, profileId: input.profileId, creatureId: input.creatureId, idempotencyKey: input.idempotencyKey, operation: input.operation, status: 'RESERVED',
         conceptMode: input.conceptMode ?? null, imageProviderMode: input.imageProviderMode ?? null, provider: null, model: null, providerRequestId: null,
+        falWorkflow: null, falFinalizationRequestId: null, falFinalizationStartedAt: null,
         benchmarkCaseId: input.benchmarkCaseId ?? null, generationProfileId: input.generationProfileId ?? null, conceptSeed: input.conceptSeed ?? null,
         promptSha256: null, promptText: null, generationQuality: null, visualProgressTrackId: input.visualProgressTrackId ?? null, sourceVisualVersionId: input.sourceVisualVersionId ?? null,
         evolutionTargetId: input.evolutionTargetId ?? null, evolutionFunction: input.evolutionFunction ?? null,
@@ -83,6 +84,39 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
             records.set(key(updated.profileId, updated.idempotencyKey), updated)
             return updated
         },
+        async updateRunningFalSubmission(input) {
+            const entry = [...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)
+            const record = entry?.[1]
+            if (!record || record.status !== 'RUNNING' || (input.data.expectedProviderRequestId !== undefined && record.providerRequestId !== input.data.expectedProviderRequestId)) throw new Error('state conflict')
+            const updated: CreatureTransformationRequestRecord = {
+                ...record,
+                provider: input.data.provider,
+                model: input.data.model,
+                providerRequestId: input.data.providerRequestId,
+                sourceSha256: input.data.sourceSha256 ?? record.sourceSha256,
+                promptTemplateVersion: input.data.promptTemplateVersion ?? record.promptTemplateVersion,
+                promptSha256: input.data.promptSha256 ?? record.promptSha256,
+                promptText: input.data.promptText ?? record.promptText,
+                conceptSnapshot: input.data.conceptSnapshot ?? record.conceptSnapshot,
+                falWorkflow: input.data.falWorkflow ?? record.falWorkflow,
+                falFinalizationRequestId: null,
+                falFinalizationStartedAt: null,
+                attemptCount: record.attemptCount + (input.data.incrementAttempt ? 1 : 0),
+                updatedAt: now(),
+            }
+            records.set(entry![0], updated)
+            return updated
+        },
+        async claimFalFinalization(input) {
+            const entry = [...records.entries()].find(([, value]) => value.providerRequestId === input.providerRequestId)
+            const record = entry?.[1]
+            if (!record) return { outcome: 'UNKNOWN' as const }
+            if (record.status !== 'RUNNING') return { outcome: 'TERMINAL' as const, record }
+            if (record.falFinalizationRequestId) return { outcome: 'IN_PROGRESS' as const, record }
+            const updated: CreatureTransformationRequestRecord = { ...record, falFinalizationRequestId: input.providerRequestId, falFinalizationStartedAt: now(), updatedAt: now() }
+            records.set(entry![0], updated)
+            return { outcome: 'CLAIMED' as const, record: updated }
+        },
         async finalizeBackgroundRemovalCandidate(input) {
             calls.finalizeBackgroundRemovalCandidate += 1
             const entry = [...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)
@@ -100,6 +134,9 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
         },
         async getById(input) {
             return [...records.values()].find((record) => record.id === input.requestId && record.profileId === input.profileId) ?? null
+        },
+        async getByProviderRequestId(input) {
+            return [...records.values()].find((record) => record.providerRequestId === input.providerRequestId) ?? null
         },
         async getDailyUsage(input) {
             const profileRecords = [...records.values()].filter((record) => record.profileId === input.profileId)

@@ -1,8 +1,10 @@
 import type { EvolutionTargetId } from './evolution-targets.ts'
 import type { BodyPlanId } from './flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId, EvolutionCapability } from './flux-evolution/body-plan-mutations.ts'
+import type { FluxMicroConcept } from './flux-evolution/micro-concept.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
 import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
+import type { SeedreamDiagnosticConceptSource, SeedreamDiagnosticPromptStrategy, SeedreamDiagnosticVariantId } from './seedream-diagnostic-variants.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, SelectableCreatureVisualVersion } from './creature-visual-versions.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
@@ -116,12 +118,22 @@ export type TransformationRequestStatusResponse = {
         text: string
         sha256: string
     }
+    /** Full metadata for an isolated Seedream diagnostic, stored with its result. */
+    diagnostic?: {
+        variantId: SeedreamDiagnosticVariantId
+        conceptSource: SeedreamDiagnosticConceptSource
+        promptStrategy: SeedreamDiagnosticPromptStrategy
+        target: EvolutionTargetId
+        concept: FluxMicroConcept | null
+        /** Requested Seedream seed, when the diagnostic supplied one. */
+        seed?: number
+    }
     result?: {
         signedUrl: string
         expiresAt: string
         width: number
         height: number
-        mimeType: 'image/png'
+        mimeType: 'image/png' | 'image/jpeg'
         sha256: string
         assetReadiness: CreatureTransformationAssetReadiness
         warnings: string[]
@@ -131,7 +143,7 @@ export type TransformationRequestStatusResponse = {
         expiresAt: string
         width: number
         height: number
-        mimeType: 'image/png'
+        mimeType: 'image/png' | 'image/jpeg'
         sha256: string
     }
     error?: {
@@ -191,7 +203,7 @@ export type GeneratedImageCatalogResponse = Readonly<{
         result: {
             signedUrl: string
             expiresAt: string
-            mimeType: 'image/png'
+            mimeType: 'image/png' | 'image/jpeg'
             width: number
             height: number
             sha256: string

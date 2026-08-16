@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseCreatureTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGenerateUnlockedTransformationRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseRunSeedreamDiagnosticRequest } from './request-validation.ts'
 
 const TRACK_ID = '4f083244-18b0-4d1f-93c6-16742388d0a1'
 const CURRENT_VERSION_ID = 'a62b2b0a-0aa9-4c3c-884a-ddd26785c504'
@@ -23,8 +24,10 @@ describe('visual progression request validation', () => {
 
     it('accepts a structural mutation only from the Lab chain contract and only from the catalogue', () => {
         const base = { operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: 'creature', evolutionTargetId: 'LIMBS_AND_FEET', previousStepRequestIds: [], idempotencyKey: 'key' }
+        ;(base as { promptTemplateVersion?: string }).promptTemplateVersion = 'flux-micro-v7'
 
         expect(parseGenerateFluxEvolutionChainStepRequest(base)).toMatchObject({ valid: true })
+        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: undefined })).toMatchObject({ valid: false, message: 'Il Lab richiede una versione del prompt FLUX esplicita.' })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v7' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v7' } })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v6' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v6' } })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v5' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v5' } })
@@ -33,6 +36,36 @@ describe('visual progression request validation', () => {
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'ADD_LIMB_PAIR' })).toMatchObject({ valid: true, request: { bodyPlanMutationId: 'ADD_LIMB_PAIR' } })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'GROW_EXTRA_HEAD' })).toMatchObject({ valid: false })
         expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, prompt: 'client instructions' })).toMatchObject({ valid: false })
+    })
+
+    it('accepts fixed prompts only in the isolated Seedream diagnostic contract', () => {
+        const base = {
+            operation: 'RUN_SEEDREAM_DIAGNOSTIC',
+            creatureId: 'creature',
+            evolutionTargetId: 'DORSAL_STRUCTURES',
+            idempotencyKey: 'seedream-diagnostic',
+            experimentMode: 'FIXED_FULL_PROMPT',
+            chainMode: 'NONE',
+            source: { base64: 'aGVsbG8=', mimeType: 'image/png' },
+            seedream: { imageSize: 'auto_4K', numImages: 1, maxImages: 1, seed: 42, enableSafetyChecker: true },
+            fixedFullPrompt: 'EXACT PLAYGROUND PROMPT',
+        }
+        expect(parseRunSeedreamDiagnosticRequest(base)).toMatchObject({ valid: true, request: { experimentMode: 'FIXED_FULL_PROMPT' } })
+        expect(parseCreatureTransformationRequest(base)).toMatchObject({ valid: true, request: { operation: 'RUN_SEEDREAM_DIAGNOSTIC' } })
+        expect(parseRunSeedreamDiagnosticRequest({ ...base, fixedFullPrompt: undefined })).toMatchObject({ valid: false })
+        expect(parseRunSeedreamDiagnosticRequest({ ...base, experimentMode: 'REAL_MICRO_CONCEPT' })).toMatchObject({ valid: false })
+        expect(parseGenerateUnlockedTransformationRequest({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: 'creature', progressTrackId: TRACK_ID, idempotencyKey: 'key', fixedFullPrompt: 'forbidden' })).toMatchObject({ valid: false })
+
+        const locked = {
+            ...base,
+            evolutionTargetId: 'HEAD_AND_CROWN',
+            experimentMode: 'fixed-concept-locked-prompt',
+            fixedFullPrompt: undefined,
+        }
+        expect(parseRunSeedreamDiagnosticRequest(locked)).toMatchObject({ valid: true, request: { experimentMode: 'fixed-concept-locked-prompt', evolutionTargetId: 'HEAD_AND_CROWN' } })
+        expect(parseRunSeedreamDiagnosticRequest({ ...locked, experimentMode: 'dynamic-concept-locked-prompt' })).toMatchObject({ valid: true, request: { experimentMode: 'dynamic-concept-locked-prompt' } })
+        expect(parseRunSeedreamDiagnosticRequest({ ...locked, evolutionTargetId: 'DORSAL_STRUCTURES' })).toMatchObject({ valid: false, code: 'INVALID_EVOLUTION_TARGET' })
+        expect(parseRunSeedreamDiagnosticRequest({ ...locked, fixedMicroConcept: { conceptName: 'Client override', mutationIdea: 'non consentito', visualDetails: ['dettaglio'] } })).toMatchObject({ valid: false })
     })
 
     it('accepts only the bounded contracts for visual background cleanup', () => {

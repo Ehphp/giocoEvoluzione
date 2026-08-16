@@ -16,11 +16,10 @@ import {
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
 import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
-import { convertJpegToPng } from './edge-image-codec.ts'
+import { FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
+import { appendFalWebhookCallbackToken } from './fal-webhook-callback-token.ts'
 import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
-
-declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void }
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -137,6 +136,16 @@ Deno.serve(async (request) => {
         return errorResponse(requestId, 'INVALID_REQUEST', 'Il body deve essere JSON valido.', 400)
     }
     const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
+    const falWebhookBaseUrl = Deno.env.get('FAL_CREATURE_TRANSFORMATION_WEBHOOK_URL')?.trim()
+        || `${supabaseUrl}/functions/v1/fal-creature-transformation-webhook`
+    const falWebhookCallbackToken = Deno.env.get('FAL_WEBHOOK_CALLBACK_TOKEN')?.trim()
+    let falWebhookUrl: string
+    try {
+        falWebhookUrl = appendFalWebhookCallbackToken({ webhookUrl: falWebhookBaseUrl, token: falWebhookCallbackToken ?? '' })
+    } catch {
+        console.error('Creature transformation configuration error', { requestId, code: 'FAL_WEBHOOK_CALLBACK_TOKEN_INVALID' })
+        return errorResponse(requestId, 'INTERNAL_ERROR', 'Configurazione callback Fal non disponibile.', 500)
+    }
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
     const { data: authorizationProfile, error: authorizationProfileError } = await supabaseAdmin
         .from('profiles')
@@ -171,9 +180,14 @@ Deno.serve(async (request) => {
             apiKey: policy.flux.apiKey ?? '', model: policy.flux.model,
             timeoutMs: policy.flux.timeoutMs,
             estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
-            convertJpegToPng,
         }),
-        deferBackgroundTask: (task) => EdgeRuntime.waitUntil(task),
+        createSeedreamDiagnosticProvider: () => new FalFluxImageProvider({
+            apiKey: policy.flux.apiKey ?? '',
+            model: FAL_SEEDREAM_MODEL,
+            timeoutMs: policy.flux.timeoutMs,
+            estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
+        }),
+        falWebhookUrl,
         repository: requestRepository,
         visualRepository,
     })

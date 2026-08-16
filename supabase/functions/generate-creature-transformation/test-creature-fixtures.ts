@@ -66,6 +66,7 @@ export function createTestStorage(overrides: Record<string, unknown> = {}) {
         async readExperimentalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
         async readVisualVersionSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
         async saveRawResult() { return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
+        async createVisualVersionSignedUrl() { return { signedUrl: 'https://signed.example/source.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
         async createRawResultObjectPath() { return `experiments/raw/profile-1/${'a'.repeat(64)}.png` },
         ...overrides,
     }

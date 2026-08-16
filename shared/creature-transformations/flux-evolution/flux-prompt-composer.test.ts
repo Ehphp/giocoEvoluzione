@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { evolutionTargetFamily } from '../evolution-targets.ts'
-import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeFluxEvolutionPromptV6, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
+import { composeFluxEvolutionPrompt, composeFluxEvolutionPromptV5, composeFluxEvolutionPromptV6, composeLockedDynamicFluxEvolutionPrompt, composeMinimalFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS } from './body-plan-registry.ts'
 
@@ -122,6 +122,91 @@ describe('composeFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/result that still reads as a quadruped is invalid/i)
         expect(prompt).toMatch(/Do not preserve the quadrupedal pose from the source image/i)
         expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
+    })
+})
+
+describe('composeLockedDynamicFluxEvolutionPrompt', () => {
+    const identity = {
+        creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'A moss-green quadruped.',
+        identityFeatures: ['round eyes'], mutableVisualFeatures: [], styleDefinition: 'illustrated',
+    }
+    const anatomyContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'HEAD_AND_CROWN' })
+    const dynamicConcept = {
+        conceptName: 'TEST_DYNAMIC_MUTATION_123',
+        mutationIdea: 'Grow a symmetrical pair of soft crown structures from the existing skull.',
+        visualDetails: ['rounded upward branches', 'living orange vascular velvet'],
+        avoid: ['exposed white bone'],
+    }
+
+    function lockedPrompt(microConcept: Parameters<typeof composeLockedDynamicFluxEvolutionPrompt>[0]['microConcept'] = dynamicConcept, framingAttempt?: number) {
+        return composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract, microConcept, ...(framingAttempt === undefined ? {} : { framingAttempt }) })
+    }
+
+    function withoutMutation(prompt: string) {
+        const start = prompt.indexOf('\n\nNEW MUTATION —')
+        const end = prompt.indexOf('\n\nBIOLOGICAL PRIOR')
+        return `${prompt.slice(0, start)}${prompt.slice(end)}`
+    }
+
+    it('keeps the deterministic viewpoint, framing, anatomy and invalid-result locks', () => {
+        const prompt = lockedPrompt()
+
+        expect(prompt).toContain('VIEWPOINT LOCK')
+        expect(prompt).toContain('exact same camera angle, 3/4 view, facing direction')
+        expect(prompt).toContain('Do not mirror the subject.')
+        expect(prompt).toContain('Do not rotate it into profile.')
+        expect(prompt).toContain('STRICT FRAMING')
+        expect(prompt).toContain('ANATOMY LOCK')
+        expect(prompt).toContain('Keep exactly 4 limbs')
+        expect(prompt).toContain('SELECTED TARGET: HEAD_AND_CROWN')
+        expect(prompt).toContain('BIOLOGICAL PRIOR')
+        expect(prompt).toContain('NON-TARGET PRESERVATION')
+        expect(prompt).toContain('BACKGROUND')
+        expect(prompt).toContain('INVALID RESULT IF')
+        expect(prompt).toMatch(/front-facing, profile-facing, mirrored/i)
+        expect(prompt).not.toMatch(/stance rebalancing/i)
+    })
+
+    it('renders every field of the dynamic concept without flattening it', () => {
+        const prompt = lockedPrompt()
+
+        expect(prompt).toContain('NEW MUTATION — TEST_DYNAMIC_MUTATION_123')
+        expect(prompt).toContain(dynamicConcept.mutationIdea)
+        expect(prompt).toContain('Visual details:\n- rounded upward branches\n- living orange vascular velvet')
+        expect(prompt).toContain('Avoid:\n- exposed white bone')
+        expect(prompt).toContain('cannot override VIEWPOINT LOCK, STRICT FRAMING, ANATOMY LOCK or NON-TARGET PRESERVATION')
+        expect(lockedPrompt({ ...dynamicConcept, avoid: undefined })).not.toContain('\nAvoid:\n')
+    })
+
+    it('keeps D and E shells identical while only their NEW MUTATION changes', () => {
+        const fixed = lockedPrompt({ ...dynamicConcept, conceptName: 'ORANGE VELVET JUVENILE ANTLERS' })
+        const generated = lockedPrompt()
+
+        expect(withoutMutation(fixed)).toBe(withoutMutation(generated))
+        expect(fixed).toContain('ORANGE VELVET JUVENILE ANTLERS')
+        expect(generated).toContain('TEST_DYNAMIC_MUTATION_123')
+    })
+
+    it('keeps the concept unchanged while a retry tightens framing only', () => {
+        const first = lockedPrompt()
+        const retry = lockedPrompt(dynamicConcept, 1)
+
+        expect(retry).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
+        expect(retry).toContain('at least 15% clear background margin')
+        expect(retry).toContain('TEST_DYNAMIC_MUTATION_123')
+        expect(retry).toContain(dynamicConcept.mutationIdea)
+        expect(first).not.toContain('RETRY FRAMING OVERRIDE')
+    })
+
+    it('refuses a structural body-plan mutation instead of weakening the lock', () => {
+        const structuralContract = buildAnatomyContract({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'LIMBS_AND_FEET',
+            capability: 'BODY_PLAN_MUTATION',
+            bodyPlanMutationId: 'ADD_LIMB_PAIR',
+        })
+
+        expect(() => composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: structuralContract, microConcept: dynamicConcept })).toThrow(/solo mutazioni anatomiche non strutturali/i)
     })
 })
 

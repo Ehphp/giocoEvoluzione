@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createTestPng } from '../../../shared/creature-transformations/image-test-fixtures.ts'
-import { ImageValidator, type ImageValidationInput } from '../../../shared/creature-transformations/image-validator.ts'
+import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
 import { orchestrateAdoptCreatureTransformation, orchestrateGenerateUnlockedTransformation, orchestrateSelectCreatureVisualProgressTrack } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
 import { createResolvedCreatureSource, createTestResolver, createTestStorage, FluxTestValidator } from './test-creature-fixtures.ts'
-import { FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 
 const PROFILE_ID = 'profile-1'
 const CREATURE_ID = '00000000-0000-4000-8000-000000000001'
@@ -35,38 +33,6 @@ function readyTrack(evolutionTargetId: string) {
     }
 }
 
-class ScriptedCropValidator extends ImageValidator {
-    calls = 0
-    outputChecks = 0
-
-    constructor(private readonly validOnOutputCheck: number | null) { super() }
-
-    override async validate() {
-        this.calls += 1
-        if (this.calls === 1) return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 1024, height: 1536, colorType: 6, hasAlpha: true, sha256: 's'.repeat(64), bytes: 256 }, warnings: [] }
-        this.outputChecks += 1
-        if (this.validOnOutputCheck === this.outputChecks) return { valid: true as const, metadata: { mimeType: 'image/png' as const, width: 768, height: 1152, colorType: 2, hasAlpha: false, sha256: `${this.outputChecks}`.padStart(64, '0'), bytes: 256, foregroundBounds: { left: 60, top: 80, right: 700, bottom: 1060, marginLeft: 60, marginTop: 80, marginRight: 67, marginBottom: 91 } }, warnings: [] }
-        return { valid: false as const, problems: [{ code: 'FLUX_SUBJECT_CROPPED' as const, message: 'subject is too close to the edge' }] }
-    }
-}
-
-class RenderProfileValidator extends ImageValidator {
-    readonly inputs: ImageValidationInput[] = []
-
-    override async validate(input: ImageValidationInput) {
-        this.inputs.push(input)
-        const source = this.inputs.length === 1
-        return {
-            valid: true as const,
-            metadata: {
-                mimeType: 'image/png' as const, width: input.renderSpecification.width, height: input.renderSpecification.height,
-                colorType: source ? 6 : 2, hasAlpha: source, sha256: `${this.inputs.length}`.padStart(64, '0'), bytes: input.bytes.length,
-            },
-            warnings: [],
-        }
-    }
-}
-
 function createProductionInput(options: {
     evolutionTargetId?: string
     policyOverrides?: Record<string, string>
@@ -81,7 +47,7 @@ function createProductionInput(options: {
     const markBackgroundRemovalPending = vi.fn(async () => ({ ...track, status: 'POST_PROCESSING' as const }))
     const completeGeneration = vi.fn(async () => track)
     const generate = vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
-    const transform = vi.fn(async () => ({ image: createTestPng({ width: 768, height: 1152 }), provider: 'fal.ai', model: options.providerModel ?? 'fal-ai/flux-2-klein/9b/edit', latencyMs: 12, estimatedCostUsd: 0.0203 }))
+    const submit = vi.fn(async () => ({ provider: 'fal.ai' as const, model: options.providerModel ?? 'fal-ai/flux-2-klein/9b/edit', providerRequestId: `fal-${options.idempotencyKey ?? 'production'}`, estimatedCostUsd: 0.0203 }))
     const input = {
         profileId: PROFILE_ID, canGenerateImages: true, requestId: 'http-request',
         body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: TRACK_ID, idempotencyKey: options.idempotencyKey ?? 'production-key' },
@@ -97,11 +63,12 @@ function createProductionInput(options: {
             completeGeneration,
         },
         createFluxMicroConceptGenerator: () => ({ generate }),
-        createFalFluxImageProvider: () => ({ transform }),
+        createFalFluxImageProvider: () => ({ submitFlux: submit }),
+        falWebhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
         deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) },
         validator: options.validator ?? new FluxTestValidator(),
     }
-    return { input, persistence, tasks, generate, transform, markBackgroundRemovalPending, completeGeneration }
+    return { input, persistence, tasks, generate, submit, markBackgroundRemovalPending, completeGeneration }
 }
 
 describe('FLUX production pipeline', () => {
@@ -110,22 +77,20 @@ describe('FLUX production pipeline', () => {
 
         const result = await orchestrateGenerateUnlockedTransformation(context.input as never)
         expect(result).toMatchObject({ success: true, accepted: true })
-        await context.tasks[0]
-
         expect(context.generate).toHaveBeenCalledOnce()
         const plan = context.generate.mock.calls[0]![0].plan
         expect(plan).toMatchObject({ evolutionTargetId: 'LIMBS_AND_FEET', capability: 'ANATOMICAL_MUTATION', bodyPlanId: 'QUADRUPED', resultBodyPlanId: 'QUADRUPED' })
         expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 4 limbs')
-        expect(context.transform).toHaveBeenCalledOnce()
-        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        expect(context.submit).toHaveBeenCalledOnce()
+        const prompt = String(context.submit.mock.calls[0]![0].prompt)
         expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
         expect(prompt).toContain('PRIMARY MUTATION AUTHORITY')
         expect(prompt).toMatch(/MINIMUM VISUAL DELTA[\s\S]*reads at normal gameplay scale/i)
         expect(prompt).toContain('STRICT FRAMING')
-        expect(context.markBackgroundRemovalPending).toHaveBeenCalledOnce()
+        expect(context.markBackgroundRemovalPending).not.toHaveBeenCalled()
         expect(context.persistence.get(PROFILE_ID, 'production-key')).toMatchObject({
-            status: 'SUCCEEDED', provider: 'fal.ai', assetReadiness: 'EXPERIMENT_ONLY',
-            promptTemplateVersion: 'flux-micro-v7', evolutionTargetId: 'LIMBS_AND_FEET', resultWidth: 768, resultHeight: 1152,
+            status: 'RUNNING', provider: 'fal.ai', providerRequestId: 'fal-production',
+            promptTemplateVersion: 'flux-micro-v7', evolutionTargetId: 'LIMBS_AND_FEET',
         })
         expect(context.persistence.get(PROFILE_ID, 'production-key')?.conceptSnapshot).toMatchObject({
             schemaVersion: 'flux-micro-v2', capability: 'ANATOMICAL_MUTATION', evolutionTargetId: 'LIMBS_AND_FEET',
@@ -139,15 +104,13 @@ describe('FLUX production pipeline', () => {
         })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
-
         expect(context.generate).toHaveBeenCalledOnce()
-        expect(context.transform).toHaveBeenCalledOnce()
-        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        expect(context.submit).toHaveBeenCalledOnce()
+        const prompt = String(context.submit.mock.calls[0]![0].prompt)
         expect(prompt).toContain('EVOLUTION:')
         expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
         expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-minimal-v1', promptText: prompt,
+            status: 'RUNNING', promptTemplateVersion: 'flux-minimal-v1', promptText: prompt,
         })
     })
 
@@ -158,58 +121,13 @@ describe('FLUX production pipeline', () => {
         })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
-
-        const prompt = String(context.transform.mock.calls[0]![0].prompt)
+        const prompt = String(context.submit.mock.calls[0]![0].prompt)
         expect(prompt).toContain('Edit the supplied source image. This is the same creature and the same individual. Preserve pose, viewpoint, composition and illustrated style as closely as possible.')
         expect(prompt).toContain('\n\nANATOMY CONTRACT\n\n')
         expect(prompt).toContain('\n\nPRESERVE\n\n')
         expect(prompt).not.toContain('\n\nPRIMARY MUTATION AUTHORITY\n\n')
         expect(context.persistence.get(PROFILE_ID, 'production-v5')).toMatchObject({
-            status: 'SUCCEEDED', promptTemplateVersion: 'flux-micro-v5', promptText: prompt,
-        })
-    })
-
-    it('validates and persists the Seedream raw canvas selected by the provider model', async () => {
-        const validator = new RenderProfileValidator()
-        const context = createProductionInput({ idempotencyKey: 'production-seedream', providerModel: FAL_SEEDREAM_MODEL, validator })
-
-        await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
-
-        expect(validator.inputs[1]).toMatchObject({ renderSpecification: { width: 1920, height: 2880 }, maxBytes: 30 * 1024 * 1024 })
-        expect(context.persistence.get(PROFILE_ID, 'production-seedream')).toMatchObject({
-            status: 'SUCCEEDED', model: FAL_SEEDREAM_MODEL, resultWidth: 1920, resultHeight: 2880,
-        })
-    })
-
-    it('retries a cropped FLUX result once with a wider framing prompt, then accepts the valid retry', async () => {
-        const validator = new ScriptedCropValidator(2)
-        const context = createProductionInput({ idempotencyKey: 'crop-retry', validator })
-
-        await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
-
-        expect(context.transform).toHaveBeenCalledTimes(2)
-        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('at least 8-10% clear background margin')
-        expect(String(context.transform.mock.calls[1]![0].prompt)).toContain('RETRY FRAMING OVERRIDE (attempt 2)')
-        expect(context.transform.mock.calls[1]![0].prompt).not.toBe(context.transform.mock.calls[0]![0].prompt)
-        expect(validator.outputChecks).toBe(2)
-        expect(context.persistence.get(PROFILE_ID, 'crop-retry')).toMatchObject({ status: 'SUCCEEDED' })
-    })
-
-    it('fails closed when every permitted FLUX framing attempt is cropped', async () => {
-        const validator = new ScriptedCropValidator(null)
-        const context = createProductionInput({ idempotencyKey: 'crop-failure', validator })
-
-        await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
-
-        expect(context.transform).toHaveBeenCalledTimes(3)
-        expect(validator.outputChecks).toBe(3)
-        expect(context.persistence.get(PROFILE_ID, 'crop-failure')).toMatchObject({
-            status: 'FAILED', errorCode: 'FLUX_SUBJECT_CROPPED',
-            errorMessage: 'Il soggetto FLUX resta troppo vicino al bordo dopo i retry di framing. subject is too close to the edge (FLUX_SUBJECT_CROPPED)',
+            status: 'RUNNING', promptTemplateVersion: 'flux-micro-v5', promptText: prompt,
         })
     })
 
@@ -217,7 +135,6 @@ describe('FLUX production pipeline', () => {
         const context = createProductionInput()
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
 
         const plan = context.generate.mock.calls[0]![0].plan
         expect(plan.capability).toBe('ANATOMICAL_MUTATION')
@@ -230,13 +147,12 @@ describe('FLUX production pipeline', () => {
         const context = createProductionInput({ policyOverrides: { CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED: 'true', FLUX_PROMPT_TEMPLATE_VERSION: 'flux-micro-v6' }, idempotencyKey: 'structural-key' })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
 
         const plan = context.generate.mock.calls[0]![0].plan
         expect(plan.capability).toBe('BODY_PLAN_MUTATION')
         expect(plan.bodyPlanMutationId).toBeDefined()
         expect(plan.resultBodyPlanId).not.toBe('QUADRUPED')
-        expect(String(context.transform.mock.calls[0]![0].prompt)).toContain('AUTHORIZED BODY-PLAN MUTATION')
+        expect(String(context.submit.mock.calls[0]![0].prompt)).toContain('AUTHORIZED BODY-PLAN MUTATION')
         expect(context.persistence.get(PROFILE_ID, 'structural-key')?.conceptSnapshot).toMatchObject({ capability: 'BODY_PLAN_MUTATION' })
     })
 
@@ -252,7 +168,6 @@ describe('FLUX production pipeline', () => {
         })
 
         await orchestrateGenerateUnlockedTransformation(context.input as never)
-        await context.tasks[0]
 
         const plan = context.generate.mock.calls[0]![0].plan
         expect(plan.bodyPlanId).toBe('SIX_LIMBED')
@@ -354,7 +269,6 @@ describe('FLUX production pipeline', () => {
         }
 
         await expect(orchestrateGenerateUnlockedTransformation(context.input as never)).resolves.toMatchObject({ success: true, accepted: true })
-        await context.tasks[0]
         expect(context.persistence.get(PROFILE_ID, 'lineage-b-only')).toMatchObject({ creatureId: creatureB, sourceVisualVersionId: sourceB.currentVisualVersionId })
         expect(getTrack).toHaveBeenCalledOnce()
         expect(resolveTrackTrait).toHaveBeenCalledOnce()

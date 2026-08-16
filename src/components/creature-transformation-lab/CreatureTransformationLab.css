@@ -41,6 +41,7 @@
 .creature-transformation-lab__generated-catalog,
 .creature-transformation-lab__usage,
 .creature-transformation-lab__production,
+.seedream-diagnostic-panel,
 .creature-transformation-lab__error {
     position: relative;
     min-width: 0;
@@ -56,6 +57,7 @@
 .creature-transformation-lab__generated-catalog::before,
 .creature-transformation-lab__usage::before,
 .creature-transformation-lab__production::before,
+.seedream-diagnostic-panel::before,
 .creature-transformation-lab__error::before {
     content: '';
     position: absolute;
@@ -81,6 +83,12 @@
 .creature-transformation-lab__error {
     --lab-accent: var(--ev-bad);
     --lab-accent-soft: var(--ev-bad-soft);
+}
+
+/* Purple stays reserved for experiments and evolution work. */
+.seedream-diagnostic-panel {
+    --lab-accent: var(--ev-opponent);
+    --lab-accent-soft: var(--ev-opponent-soft);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -672,6 +680,132 @@
     object-fit: contain;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Seedream diagnostic                                                         */
+/* -------------------------------------------------------------------------- */
+
+.seedream-diagnostic-panel {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--ev-s-3);
+}
+
+.seedream-diagnostic-panel > header,
+.seedream-diagnostic-panel__actions,
+.seedream-diagnostic-panel__result {
+    display: grid;
+    gap: var(--ev-s-2);
+}
+
+.seedream-diagnostic-panel__grid,
+.seedream-diagnostic-panel__concept-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-3);
+}
+
+.seedream-diagnostic-panel__numeric-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.seedream-diagnostic-panel__toggle {
+    display: flex !important;
+    align-items: center;
+    gap: var(--ev-s-2) !important;
+    min-height: var(--ev-touch-min);
+}
+
+.seedream-diagnostic-panel__source {
+    display: grid;
+    grid-template-columns: var(--ev-collection-avatar-size) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-2);
+    min-width: 0;
+}
+
+.seedream-diagnostic-panel__source img {
+    display: block;
+    width: var(--ev-collection-avatar-size);
+    height: var(--ev-collection-avatar-size);
+    object-fit: contain;
+    border-radius: var(--ev-r-sm);
+    background: var(--ev-cream-sunk);
+}
+
+.seedream-diagnostic-panel__source p,
+.seedream-diagnostic-panel__hint {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    overflow-wrap: anywhere;
+}
+
+.seedream-diagnostic-panel__actions {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    padding-top: var(--ev-s-2);
+    border-top: var(--ev-stroke-width) solid var(--ev-stroke-ink);
+}
+
+.seedream-diagnostic-panel__actions p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    overflow-wrap: anywhere;
+}
+
+.seedream-diagnostic-panel__error {
+    margin: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-sm);
+    color: var(--ev-danger-dark);
+    background: var(--ev-bad-soft);
+}
+
+.seedream-diagnostic-panel__result {
+    padding-top: var(--ev-s-3);
+    border-top: var(--ev-stroke-width) solid var(--ev-stroke-ink);
+}
+
+.seedream-diagnostic-panel__result > img {
+    display: block;
+    width: 100%;
+    max-height: var(--ev-scroll-max-medium);
+    object-fit: contain;
+    border-radius: var(--ev-r-md);
+    background: var(--ev-cream-sunk);
+}
+
+.seedream-diagnostic-panel__result dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+    margin: 0;
+}
+
+.seedream-diagnostic-panel__result dl div {
+    min-width: 0;
+    padding: var(--ev-s-2);
+    border-radius: var(--ev-r-sm);
+    background: var(--ev-cream-light);
+}
+
+.seedream-diagnostic-panel__result dt {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.seedream-diagnostic-panel__result dd {
+    margin: var(--ev-s-1) 0 0;
+    overflow-wrap: anywhere;
+}
+
+.seedream-diagnostic-panel__result summary {
+    cursor: pointer;
+    font-weight: 800;
+}
+
 /*
  * A carries far fewer controls than B, so both panels take their natural height rather than
  * matching: stretching either one only pads it with empty cream, and stretching the rows inside
@@ -766,7 +900,13 @@
     }
 
     .creature-transformation-lab__generated-catalog-content,
-.creature-transformation-lab__usage dl {
+    .creature-transformation-lab__usage dl,
+    .seedream-diagnostic-panel__grid,
+    .seedream-diagnostic-panel__concept-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .seedream-diagnostic-panel__actions {
         grid-template-columns: 1fr;
     }
 }

@@ -27,6 +27,9 @@ export type CreatureTransformationRequestRecord = Readonly<{
     provider: string | null
     model: string | null
     providerRequestId: string | null
+    falWorkflow: Record<string, unknown> | null
+    falFinalizationRequestId: string | null
+    falFinalizationStartedAt: string | null
     visualTraitId: string | null
     intensity: number | null
     promptTemplateVersion: string | null
@@ -34,7 +37,7 @@ export type CreatureTransformationRequestRecord = Readonly<{
     sourceSha256: string | null
     resultSha256: string | null
     resultPath: string | null
-    resultMimeType: 'image/png' | null
+    resultMimeType: 'image/png' | 'image/jpeg' | null
     resultWidth: number | null
     resultHeight: number | null
     generationLatencyMs: number | null
@@ -99,7 +102,7 @@ export type RequestTransitionData = TransformationCost & Readonly<{
     sourceSha256?: string
     resultSha256?: string
     resultPath?: string
-    resultMimeType?: 'image/png'
+    resultMimeType?: 'image/png' | 'image/jpeg'
     resultWidth?: number
     resultHeight?: number
     generationLatencyMs?: number
@@ -113,14 +116,35 @@ export type RequestTransitionData = TransformationCost & Readonly<{
     errorMessage?: string
 }>
 
+export type RunningFalSubmissionData = Readonly<{
+    provider: 'fal.ai'
+    model: string
+    providerRequestId: string
+    sourceSha256?: string
+    promptTemplateVersion?: string
+    promptSha256?: string
+    promptText?: string
+    conceptSnapshot?: CreatureTransformationConceptSnapshot
+    falWorkflow?: Record<string, unknown>
+    expectedProviderRequestId?: string
+    incrementAttempt?: boolean
+}>
+
+export type FalFinalizationClaim =
+    | Readonly<{ outcome: 'CLAIMED' | 'IN_PROGRESS' | 'TERMINAL', record: CreatureTransformationRequestRecord }>
+    | Readonly<{ outcome: 'UNKNOWN' }>
+
 export interface CreatureTransformationRequestRepository {
     reserve(input: ReserveCreatureTransformationRequestInput): Promise<RequestReservationResult>
     markRunning(input: { requestId: string; profileId: string }): Promise<CreatureTransformationRequestRecord>
     markSucceeded(input: { requestId: string; profileId: string; data: RequestTransitionData }): Promise<CreatureTransformationRequestRecord>
     markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord>
+    updateRunningFalSubmission(input: { requestId: string; profileId: string; data: RunningFalSubmissionData }): Promise<CreatureTransformationRequestRecord>
+    claimFalFinalization(input: { providerRequestId: string }): Promise<FalFinalizationClaim>
     finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[]; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<CreatureTransformationRequestRecord>
     getByIdempotencyKey(input: { profileId: string; idempotencyKey: string }): Promise<CreatureTransformationRequestRecord | null>
     getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null>
+    getByProviderRequestId(input: { providerRequestId: string }): Promise<CreatureTransformationRequestRecord | null>
     getDailyUsage(input: { profileId: string }): Promise<CreatureTransformationDailyUsage>
     listCompletedImageRecords(input: { profileId: string; offset: number; limit: number }): Promise<CreatureTransformationRequestRecord[]>
 }
@@ -209,10 +233,11 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         evolutionTargetId: readString(record, 'evolution_target_id', true) as EvolutionTargetId | null,
         evolutionFunction: readString(record, 'evolution_function', true) as EvolutionFunctionId | null,
         provider: readString(record, 'provider', true), model: readString(record, 'model', true), providerRequestId: readString(record, 'provider_request_id', true),
+        falWorkflow: asRecord(record.fal_workflow), falFinalizationRequestId: readString(record, 'fal_finalization_request_id', true), falFinalizationStartedAt: readString(record, 'fal_finalization_started_at', true),
         visualTraitId: readString(record, 'visual_trait_id', true), intensity: readNumber(record, 'intensity', true),
         promptTemplateVersion: readString(record, 'prompt_template_version', true), conceptSchemaVersion: readNumber(record, 'concept_schema_version', true),
         sourceSha256: readString(record, 'source_sha256', true), resultSha256: readString(record, 'result_sha256', true), resultPath: readString(record, 'result_path', true),
-        resultMimeType: readString(record, 'result_mime_type', true) as 'image/png' | null, resultWidth: readNumber(record, 'result_width', true), resultHeight: readNumber(record, 'result_height', true),
+        resultMimeType: readString(record, 'result_mime_type', true) as 'image/png' | 'image/jpeg' | null, resultWidth: readNumber(record, 'result_width', true), resultHeight: readNumber(record, 'result_height', true),
         generationLatencyMs: readNumber(record, 'generation_latency_ms', true), estimatedCostUsd: readNumber(record, 'estimated_cost_usd', true), actualCostUsd: readNumber(record, 'actual_cost_usd', true),
         assetReadiness: readString(record, 'asset_readiness', true) as CreatureTransformationAssetReadiness | null, validationWarnings: readWarnings(record),
         conceptSnapshot: record.concept_snapshot && typeof record.concept_snapshot === 'object' ? record.concept_snapshot as CreatureTransformationConceptSnapshot : null,
@@ -279,6 +304,43 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
         return this.transition(input, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage })
     }
 
+    async updateRunningFalSubmission(input: { requestId: string; profileId: string; data: RunningFalSubmissionData }): Promise<CreatureTransformationRequestRecord> {
+        const data = input.data
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.rpc('update_running_fal_submission', {
+                p_request_id: input.requestId, p_profile_id: input.profileId,
+                p_provider: data.provider, p_model: data.model, p_provider_request_id: data.providerRequestId,
+                p_source_sha256: data.sourceSha256 ?? null, p_prompt_template_version: data.promptTemplateVersion ?? null,
+                p_prompt_sha256: data.promptSha256 ?? null, p_prompt_text: data.promptText ?? null,
+                p_concept_snapshot: data.conceptSnapshot ?? null, p_fal_workflow: data.falWorkflow ?? null,
+                p_expected_provider_request_id: data.expectedProviderRequestId ?? null,
+                p_increment_attempt: data.incrementAttempt === true,
+            })
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile salvare la submission Fal.', { cause: error })
+        }
+        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile salvare la submission Fal.', { cause: response.error })
+        const result = readRpcResult(response.data)
+        if (result.outcome === 'CONFLICT') throw new CreatureTransformationRequestRepositoryError('REQUEST_STATE_CONFLICT', 'La richiesta non e piu disponibile per una submission Fal.')
+        if (result.outcome !== 'UPDATED' || !result.record) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'La submission Fal non ha restituito il record aggiornato.')
+        return result.record
+    }
+
+    async claimFalFinalization(input: { providerRequestId: string }): Promise<FalFinalizationClaim> {
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.rpc('claim_fal_transformation_finalization', { p_provider_request_id: input.providerRequestId })
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile acquisire la finalizzazione Fal.', { cause: error })
+        }
+        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile acquisire la finalizzazione Fal.', { cause: response.error })
+        const result = readRpcResult(response.data)
+        if (result.outcome === 'UNKNOWN') return { outcome: 'UNKNOWN' }
+        if ((result.outcome === 'CLAIMED' || result.outcome === 'IN_PROGRESS' || result.outcome === 'TERMINAL') && result.record) return { outcome: result.outcome, record: result.record }
+        throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'La finalizzazione Fal ha restituito un esito non valido.')
+    }
+
     async finalizeBackgroundRemovalCandidate(input: { requestId: string; profileId: string; candidatePath: string; candidateSha256: string; candidateMimeType: 'image/png'; candidateWidth: number; candidateHeight: number; validationWarnings: string[]; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<CreatureTransformationRequestRecord> {
         let response: { data: unknown; error: DatabaseError }
         try {
@@ -306,6 +368,17 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
 
     async getById(input: { profileId: string; requestId: string }): Promise<CreatureTransformationRequestRecord | null> {
         return this.getOne('id', input.requestId, input.profileId)
+    }
+
+    async getByProviderRequestId(input: { providerRequestId: string }): Promise<CreatureTransformationRequestRecord | null> {
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.from('creature_transformation_requests').select('*').eq('provider_request_id', input.providerRequestId).maybeSingle()
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile recuperare la richiesta Fal.', { cause: error })
+        }
+        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile recuperare la richiesta Fal.', { cause: response.error })
+        return response.data ? mapRecord(response.data) : null
     }
 
     async getDailyUsage(input: { profileId: string }): Promise<CreatureTransformationDailyUsage> {

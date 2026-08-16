@@ -258,7 +258,9 @@ async function foregroundBounds(input: { compressedIdat: Uint8Array; width: numb
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
     if (!globalThis.crypto?.subtle) throw new Error('Web Crypto SubtleCrypto non disponibile.')
-    const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes.slice().buffer)
+    // Passing the existing view avoids the explicit full-buffer copy previously made by slice().
+    const view = new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength)
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', view)
     return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 

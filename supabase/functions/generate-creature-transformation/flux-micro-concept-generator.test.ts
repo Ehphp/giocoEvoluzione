@@ -27,6 +27,12 @@ describe('FluxMicroConceptGenerator', () => {
         const prompt = composeFluxMicroConceptInstructions(input)
 
         expect(prompt).toContain('SELECTED TARGET: SKIN_AND_COVERING')
+        expect(prompt).toContain('FIELD ROLES:')
+        expect(prompt).toMatch(/conceptName is a short visible morphology label, not the biological function/i)
+        expect(prompt).toMatch(/mutationIdea describes concrete anatomy: what grows or reshapes/i)
+        expect(prompt).toMatch(/visualDetails contains 1-5 non-overlapping concrete visual details/i)
+        expect(prompt).toMatch(/avoid contains only mutation-specific failure modes/i)
+        expect(prompt).toMatch(/do not include global camera, orientation, framing, background or anatomy rules/i)
         expect(prompt).toMatch(/primary evolutionary target/i)
         expect(prompt).toMatch(/default to a local mutation/i)
         expect(prompt).toMatch(/If the mutation works on its own, describe only that target/i)
@@ -61,7 +67,8 @@ describe('FluxMicroConceptGenerator', () => {
             plan: { ...basePlan, evolutionFunction: 'DEFENSE', visualTraitId: 'ANATOMICAL_EVOLUTION' },
         })
 
-        expect(prompt).toContain('Functional direction: DEFENSE. Use it as the biological purpose')
+        expect(prompt).toContain('Functional direction: DEFENSE. Use the biological function to invent the mutation')
+        expect(prompt).toMatch(/describe visible anatomy rather than explaining its purpose/i)
         expect(prompt).toContain('BIOLOGICAL PRIOR')
         expect(prompt).toMatch(/naturally grown animal anatomy and biological tissues/i)
         expect(prompt).toMatch(/Avoid manufactured, mechanical, metallic, technological or worn structures/i)

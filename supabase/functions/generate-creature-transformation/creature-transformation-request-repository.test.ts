@@ -21,11 +21,16 @@ function databaseRecord(overrides: Record<string, unknown> = {}) {
 function createClient(rpcResponse: unknown) {
     const rpc = vi.fn(async () => ({ data: rpcResponse, error: null }))
     const maybeSingle = vi.fn(async () => ({ data: databaseRecord(), error: null }))
+    const query = {
+        eq: vi.fn(),
+        maybeSingle,
+    }
+    query.eq.mockReturnValue(query)
     const client: CreatureTransformationRequestRepositoryClient = {
         rpc,
-        from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle }) }) }) }),
+        from: () => ({ select: () => query }),
     }
-    return { client, rpc, maybeSingle }
+    return { client, rpc, maybeSingle, query }
 }
 
 describe('SupabaseCreatureTransformationRequestRepository', () => {
@@ -73,5 +78,30 @@ describe('SupabaseCreatureTransformationRequestRepository', () => {
         const repository = new SupabaseCreatureTransformationRequestRepository(mock.client)
         await expect(repository.getByIdempotencyKey({ profileId: 'profile-1', idempotencyKey: 'key-1' })).resolves.toMatchObject({ id: 'request-1' })
         expect(mock.maybeSingle).toHaveBeenCalledTimes(1)
+    })
+
+    it('persists a queue submission and uses the server-only finalization claim RPC', async () => {
+        const submission = createClient({ outcome: 'UPDATED', record: databaseRecord({
+            status: 'RUNNING', provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', provider_request_id: 'fal-job-2',
+            fal_workflow: { version: 1, kind: 'FLUX', source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true } },
+        }) })
+        const repository = new SupabaseCreatureTransformationRequestRepository(submission.client)
+
+        await expect(repository.updateRunningFalSubmission({
+            requestId: 'request-1', profileId: 'profile-1',
+            data: {
+                provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', providerRequestId: 'fal-job-2',
+                sourceSha256: 'a'.repeat(64), promptSha256: 'b'.repeat(64), promptText: 'prompt',
+                falWorkflow: { version: 1, kind: 'FLUX', source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true } },
+            },
+        })).resolves.toMatchObject({ status: 'RUNNING', providerRequestId: 'fal-job-2' })
+        expect(submission.rpc).toHaveBeenCalledWith('update_running_fal_submission', expect.objectContaining({
+            p_provider_request_id: 'fal-job-2', p_fal_workflow: expect.objectContaining({ kind: 'FLUX' }), p_expected_provider_request_id: null,
+        }))
+
+        const claim = createClient({ outcome: 'CLAIMED', record: databaseRecord({ status: 'RUNNING', provider_request_id: 'fal-job-2', fal_finalization_request_id: 'fal-job-2' }) })
+        await expect(new SupabaseCreatureTransformationRequestRepository(claim.client).claimFalFinalization({ providerRequestId: 'fal-job-2' }))
+            .resolves.toMatchObject({ outcome: 'CLAIMED', record: { falFinalizationRequestId: 'fal-job-2' } })
+        expect(claim.rpc).toHaveBeenCalledWith('claim_fal_transformation_finalization', { p_provider_request_id: 'fal-job-2' })
     })
 })

@@ -46,6 +46,23 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
             .rejects.toMatchObject({ code: 'SIGNED_URL_FAILED' } satisfies Partial<CreatureTransformationStorageError>)
     })
 
+    it('signs a native Seedream JPEG raw result', async () => {
+        const mock = createStorageClient()
+        const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client, { signedUrlTtlSeconds: 120, now: () => 0 })
+        const path = await adapter.createRawResultObjectPath('profile-1', 'seedream-jpeg', 'image/jpeg')
+
+        await expect(adapter.saveRawResult({
+            profileId: 'profile-1',
+            idempotencyKey: 'seedream-jpeg',
+            image: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+            mimeType: 'image/jpeg',
+        })).resolves.toEqual({ signedUrl: 'https://signed.example/result', expiresAt: '1970-01-01T00:02:00.000Z' })
+
+        expect(path).toMatch(/^experiments\/raw\/profile-1\/[a-f0-9]{64}\.jpg$/)
+        expect(mock.upload).toHaveBeenCalledWith(path, expect.any(Uint8Array), { contentType: 'image/jpeg', upsert: true })
+        expect(mock.createSignedUrl).toHaveBeenCalledWith(path, 120)
+    })
+
     it('reads a server-selected productive visual from the source or experiment bucket', async () => {
         const mock = createStorageClient()
         const adapter = new SupabaseCreatureTransformationStorageAdapter(mock.client)

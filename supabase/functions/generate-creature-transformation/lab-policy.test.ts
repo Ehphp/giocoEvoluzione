@@ -12,7 +12,7 @@ describe('creature transformation lab policy', () => {
         expect(policy.signedUrlTtlSeconds).toBe(300)
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
-        expect(policy.staleRequestSeconds).toBe(900)
+        expect(policy.staleRequestSeconds).toBe(3900)
         expect(policy.dailyRealImageLimit).toBe(3)
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
@@ -99,7 +99,7 @@ describe('creature transformation lab policy', () => {
 
         expect(policy.dailyRequestLimit).toBe(10)
         expect(policy.dailyBudgetUsd).toBe(0)
-        expect(policy.staleRequestSeconds).toBe(900)
+        expect(policy.staleRequestSeconds).toBe(3900)
         expect(policy.flux).toMatchObject({ timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v7', estimatedCostUsd: null })
     })
 

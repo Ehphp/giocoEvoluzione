@@ -62,7 +62,8 @@ describe('FLUX-only pipeline boundary', () => {
 
         expect(orchestration).not.toMatch(/OpenAi|createRealImageProvider|createImageProvider|MockCreatureImageProvider/)
         expect(orchestration).not.toMatch(/'GENERATE_CONCEPT'|'GENERATE_IMAGE'|GENERATE_LINEAGE_FIRST_EXPERIMENT|GENERATE_CURRENT_PIPELINE_EXPERIMENT|GET_BENCHMARK_RESULTS/)
-        expect(orchestration).toMatch(/generateFluxImageForAuthenticatedProfile/)
+        expect(orchestration).toMatch(/submitFluxQueueForAuthenticatedProfile/)
+        expect(orchestration).not.toMatch(/\.transform\(/)
     })
 
     it('wires only the FLUX providers into the deployed function', () => {

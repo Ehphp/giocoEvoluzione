@@ -24,6 +24,11 @@ function initializeCodecs(): Promise<void> {
 
 export async function convertJpegToPng(jpeg: Uint8Array): Promise<Uint8Array> {
     await initializeCodecs()
-    const pixels = await decodeJpeg(jpeg.buffer.slice(jpeg.byteOffset, jpeg.byteOffset + jpeg.byteLength))
+    // Queue finalization receives a full response buffer in the usual path. Reuse it instead of
+    // allocating a second JPEG-sized ArrayBuffer; retain the safe slice only for sub-views.
+    const source = jpeg.byteOffset === 0 && jpeg.byteLength === jpeg.buffer.byteLength
+        ? jpeg.buffer as ArrayBuffer
+        : jpeg.buffer.slice(jpeg.byteOffset, jpeg.byteOffset + jpeg.byteLength) as ArrayBuffer
+    const pixels = await decodeJpeg(source)
     return new Uint8Array(await encodePng(pixels))
 }

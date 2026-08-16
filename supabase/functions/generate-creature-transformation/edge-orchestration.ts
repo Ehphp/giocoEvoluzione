@@ -14,20 +14,26 @@ import type {
     CreatureTransformationLabUsageResponse,
     GeneratedImageCatalogResponse,
 } from '../../../shared/creature-transformations/api-contracts.ts'
-import type { CreatureIdentityResolver, GenerateUnlockedTransformationRequest, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
+import type { CreatureIdentityResolver, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
+import type { RunSeedreamDiagnosticRequest } from '../../../shared/creature-transformations/contracts.ts'
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import type { TransformationRequestIdempotencyStatus, TransformationRequestPersistence, TransformationRequestStatusPersistence } from '../../../shared/creature-transformations/request-persistence.ts'
-import { buildFluxEvolutionPlan, EvolutionPlanError, type FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
+import { buildFluxEvolutionPlan, EvolutionPlanError } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import { isFluxEvolutionSnapshot, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
+import { seedreamDiagnosticVariant } from '../../../shared/creature-transformations/seedream-diagnostic-variants.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import type { CreatureTransformationLabPolicy } from './lab-policy.ts'
 import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-image-provider.ts'
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
-import { FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION, FluxImageGenerationServiceError, generateFluxImageForAuthenticatedProfile } from './flux-image-generation-service.ts'
+import { FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION, FluxImageGenerationServiceError } from './flux-image-generation-service.ts'
 import { parseAdoptCreatureTransformationRequest, parseGenerateUnlockedTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGetCreatureTransformationLabUsageRequest, parseGetGeneratedImageCatalogRequest, parseGetCreatureVisualProgressRequest, parseGetCurrentCreatureVisualRequest, parseGetGameCreatureVisualsRequest, parseGetTransformationRequestStatusRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitBackgroundRemovalCandidateRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
+import { parseRunSeedreamDiagnosticRequest } from './request-validation.ts'
+import { prepareSeedreamDiagnosticPrompt, readSeedreamDiagnosticSource, SeedreamDiagnosticError } from './seedream-diagnostic-service.ts'
+import { submitFluxQueueForAuthenticatedProfile } from './fal-queue-submission-service.ts'
+import { parseFalQueueWorkflow, type FalQueueWorkflow } from './fal-queue-workflow.ts'
 import {
     CreatureTransformationRequestRepositoryError,
     type CreatureTransformationRequestRecord,
@@ -42,8 +48,6 @@ import {
 import { CreatureIdentityResolutionError } from './supabase-creature-identity-resolver.ts'
 import { CreatureVisualProgressionRepositoryError, type StoredVisualVersion, SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 
-type BackgroundTaskScheduler = (task: Promise<void>) => void
-
 export type CreatureTransformationEdgeOrchestrationInput = Readonly<{
     profileId: string | null
     canGenerateImages?: boolean
@@ -56,7 +60,8 @@ export type CreatureTransformationEdgeOrchestrationInput = Readonly<{
     visualRepository: SupabaseCreatureVisualProgressionRepository
     createFluxMicroConceptGenerator?: () => FluxMicroConceptGenerator
     createFalFluxImageProvider?: () => FalFluxImageProvider
-    deferBackgroundTask?: BackgroundTaskScheduler
+    createSeedreamDiagnosticProvider?: () => FalFluxImageProvider
+    falWebhookUrl?: string
     validator?: ImageValidator
 }>
 
@@ -123,6 +128,7 @@ function mapThrownError(error: unknown): FailureDetails {
     if (error instanceof EvolutionPlanError) return { code: error.code, message: error.message }
     if (error instanceof FluxImageGenerationServiceError) return { code: error.code, message: error.message, ...(error.problems ? { problems: error.problems } : {}) }
     if (error instanceof FluxMicroConceptGeneratorError || error instanceof FalFluxImageProviderError) return { code: error.code, message: error.message }
+    if (error instanceof SeedreamDiagnosticError) return { code: error.code, message: error.message }
     return { code: 'INTERNAL_ERROR', message: 'Errore interno durante la trasformazione della creatura.' }
 }
 
@@ -148,6 +154,14 @@ function fluxConfigurationFailure(policy: CreatureTransformationLabPolicy): Fail
         return { code: 'FAL_FLUX_NOT_CONFIGURED', message: 'La pipeline FLUX non e configurata.' }
     }
     if (flux.estimatedCostUsd > flux.maxEstimatedCostUsd) return { code: 'FLUX_REQUEST_COST_LIMIT_EXCEEDED', message: 'Il costo stimato FLUX supera il limite consentito.' }
+    return null
+}
+
+function seedreamDiagnosticConfigurationFailure(policy: CreatureTransformationLabPolicy, request: RunSeedreamDiagnosticRequest): FailureDetails | null {
+    if (!policy.flux.apiKey || policy.flux.estimatedCostUsd === null || policy.flux.maxEstimatedCostUsd === null) return { code: 'FAL_FLUX_NOT_CONFIGURED', message: 'Il replay Seedream non e configurato.' }
+    const multiplier = request.chainMode === 'NONE' ? 1 : 2
+    if (policy.flux.estimatedCostUsd * multiplier > policy.flux.maxEstimatedCostUsd) return { code: 'FLUX_REQUEST_COST_LIMIT_EXCEEDED', message: 'Il costo stimato del replay Seedream supera il limite consentito.' }
+    if (seedreamDiagnosticVariant(request.experimentMode).conceptSource === 'dynamic' && (!policy.flux.microConceptApiKey || !policy.flux.microConceptModel)) return { code: 'FLUX_CONCEPT_NOT_CONFIGURED', message: 'Il micro-concept reale non e configurato.' }
     return null
 }
 
@@ -270,42 +284,6 @@ async function restoreVisualTrackAfterFailure(input: CreatureTransformationEdgeO
  * The production evolution: progress track → resolver → body plan → anatomy contract → FLUX
  * micro-concept → FLUX prompt → fal.ai → validation → background-removal handover → adoption.
  */
-async function runUnlockedTransformationTask(
-    input: CreatureTransformationEdgeOrchestrationInput,
-    request: GenerateUnlockedTransformationRequest,
-    running: CreatureTransformationRequestRecord,
-    source: ResolvedCreatureSource,
-    plan: FluxEvolutionPlan,
-): Promise<void> {
-    try {
-        const generated = await generateFluxImageForAuthenticatedProfile({
-            profileId: input.profileId!, requestId: input.requestId, request,
-            identity: source.identity, plan,
-            source: { kind: 'CANONICAL', path: source.sourceImagePath, isBaseVersion: source.sourceIsBaseVersion },
-            storage: input.storage,
-            microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(),
-            promptTemplateVersion: input.policy.flux.promptTemplateVersion,
-            ...(input.validator ? { validator: input.validator } : {}),
-        })
-        const completed = await input.repository.markSucceeded({
-            requestId: running.id, profileId: input.profileId!, data: {
-                provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
-                sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256,
-                resultPath: await input.storage.createRawResultObjectPath(input.profileId!, request.idempotencyKey), resultMimeType: generated.result.mimeType,
-                resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs,
-                assetReadiness: 'EXPERIMENT_ONLY', validationWarnings: generated.validation.warnings,
-                estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
-            },
-        })
-        await input.visualRepository.markBackgroundRemovalPending({ profileId: input.profileId!, trackId: request.progressTrackId, requestId: completed.id })
-    } catch (error) {
-        const details = mapThrownError(error)
-        try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* preserve original outcome */ }
-        await restoreVisualTrackAfterFailure(input, request.progressTrackId, running)
-    }
-}
-
 export async function orchestrateSelectCreatureVisualProgressTrack(input: CreatureTransformationEdgeOrchestrationInput): Promise<CreatureVisualProgressResponse | CreatureTransformationErrorResponse> {
     if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
     const parsed = parseSelectCreatureVisualProgressTrackRequest(input.body)
@@ -461,13 +439,51 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
             const details = mapThrownError(error)
             return failure(input.requestId, details.code, details.message)
         }
-        if (!input.deferBackgroundTask || !input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider) {
+        if (!input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider || !input.falWebhookUrl) {
             try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId, errorCode: 'FAL_FLUX_NOT_CONFIGURED', errorMessage: 'La generazione visuale non e disponibile.' }) } catch { /* preserve the safe track restore */ }
             await restoreVisualTrackAfterFailure(input, resolvedTrack.id, running)
             return failure(input.requestId, 'FAL_FLUX_NOT_CONFIGURED', 'La generazione visuale non e disponibile.')
         }
-        input.deferBackgroundTask(runUnlockedTransformationTask(input, parsed.request, running, source, plan))
-        return acceptedGeneration(input.requestId, running, 'CREATED')
+        try {
+            const workflow: FalQueueWorkflow = Object.freeze({
+                version: 1,
+                kind: 'FLUX',
+                source: Object.freeze({ kind: 'CANONICAL', path: source.sourceImagePath, isBaseVersion: source.sourceIsBaseVersion }),
+            })
+            const submitted = await submitFluxQueueForAuthenticatedProfile({
+                identity: source.identity,
+                plan,
+                source: workflow.source,
+                storage: input.storage,
+                microConceptGenerator: input.createFluxMicroConceptGenerator(),
+                provider: input.createFalFluxImageProvider(),
+                webhookUrl: input.falWebhookUrl,
+                promptTemplateVersion: input.policy.flux.promptTemplateVersion,
+                sourceUrlTtlSeconds: input.policy.flux.submissionSourceUrlTtlSeconds,
+                ...(input.validator ? { validator: input.validator } : {}),
+            })
+            const persisted = await input.repository.updateRunningFalSubmission({
+                requestId: running.id,
+                profileId: input.profileId,
+                data: {
+                    provider: submitted.submission.provider,
+                    model: submitted.submission.model,
+                    providerRequestId: submitted.submission.providerRequestId,
+                    sourceSha256: submitted.sourceSha256,
+                    promptTemplateVersion: submitted.promptTemplateVersion,
+                    promptSha256: submitted.promptSha256,
+                    promptText: submitted.prompt,
+                    conceptSnapshot: submitted.conceptSnapshot,
+                    falWorkflow: workflow,
+                },
+            })
+            return acceptedGeneration(input.requestId, persisted, 'CREATED')
+        } catch (error) {
+            const details = mapThrownError(error)
+            try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* the visual track restore remains required */ }
+            await restoreVisualTrackAfterFailure(input, resolvedTrack.id, running)
+            return failure(input.requestId, details.code, details.message)
+        }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
 }
 
@@ -486,7 +502,7 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
     if (generationAccess) return failure(input.requestId, generationAccess.code, generationAccess.message)
     const configuration = fluxConfigurationFailure(input.policy)
     if (configuration) return failure(input.requestId, configuration.code, configuration.message)
-    if (!input.deferBackgroundTask || !input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider) return failure(input.requestId, 'FAL_FLUX_NOT_CONFIGURED', 'La pipeline FLUX non e disponibile.')
+    if (!input.createFluxMicroConceptGenerator || !input.createFalFluxImageProvider || !input.falWebhookUrl) return failure(input.requestId, 'FAL_FLUX_NOT_CONFIGURED', 'La pipeline FLUX non e disponibile.')
 
     try {
         const source = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
@@ -531,13 +547,13 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
         if (parsed.request.experimentalSourceRequestId && parsed.request.experimentalSourceRequestId !== lastHistoryRequestId) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'La sorgente deve essere l ultimo asset finale della catena.')
         if (!parsed.request.experimentalSourceRequestId && parsed.request.previousStepRequestIds.length) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'Una catena con storico deve usare il suo ultimo asset finale come sorgente.')
 
-        let stepSource: { kind: 'CANONICAL' | 'EXPERIMENTAL' | 'VISUAL', path: string, isBaseVersion?: boolean } = {
+        let stepSource: { kind: 'CANONICAL' | 'EXPERIMENTAL' | 'VISUAL', path: string, isBaseVersion: boolean } = {
             kind: 'CANONICAL', path: source.sourceImagePath, isBaseVersion: source.sourceIsBaseVersion,
         }
         if (parsed.request.experimentalSourceRequestId) {
             const experimental = finalizedSteps.at(-1)!.record
             if (!experimental.resultPath) return failure(input.requestId, 'EXPERIMENTAL_SOURCE_NOT_AVAILABLE', 'L asset finale precedente non e recuperabile.')
-            stepSource = { kind: 'EXPERIMENTAL', path: experimental.resultPath }
+            stepSource = { kind: 'EXPERIMENTAL', path: experimental.resultPath, isBaseVersion: false }
         } else if (selectedSourceVersion) {
             stepSource = { kind: 'VISUAL', path: selectedSourceVersion.assetPath, isBaseVersion: selectedSourceVersion.visualTraitId === null }
         }
@@ -571,32 +587,172 @@ export async function orchestrateGenerateFluxEvolutionChainStep(input: CreatureT
         }
         let running: CreatureTransformationRequestRecord
         try { running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId }) } catch (error) { return markFailed(input.repository, input.requestId, input.profileId, reservation.record, 'CREATED', mapThrownError(error)) }
-        input.deferBackgroundTask((async () => {
-            try {
-                const generated = await generateFluxImageForAuthenticatedProfile({
-                    profileId: input.profileId!, requestId: input.requestId, request: parsed.request,
-                    identity: source.identity, plan, source: stepSource, storage: input.storage,
-                    microConceptGenerator: input.createFluxMicroConceptGenerator!(), provider: input.createFalFluxImageProvider!(),
-                    promptTemplateVersion: parsed.request.promptTemplateVersion ?? FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION,
-                    ...(input.validator ? { validator: input.validator } : {}),
-                })
-                await input.repository.markSucceeded({
-                    requestId: running.id, profileId: input.profileId!, data: {
-                        provider: generated.generation.provider, model: generated.generation.model, providerRequestId: generated.generation.providerRequestId,
-                        sourceSha256: generated.sourceSha256, resultSha256: generated.result.sha256,
-                        resultPath: await input.storage.createRawResultObjectPath(input.profileId!, parsed.request.idempotencyKey), resultMimeType: generated.result.mimeType,
-                        resultWidth: generated.result.width, resultHeight: generated.result.height, generationLatencyMs: generated.generation.latencyMs, assetReadiness: 'EXPERIMENT_ONLY',
-                        validationWarnings: generated.validation.warnings, estimatedCostUsd: generated.generation.estimatedCostUsd ?? input.policy.flux.estimatedCostUsd ?? 0,
-                        promptTemplateVersion: generated.promptTemplateVersion, promptSha256: generated.promptSha256, promptText: generated.prompt, conceptSnapshot: generated.conceptSnapshot,
-                    }
-                })
-            } catch (error) {
-                const details = mapThrownError(error)
-                try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId!, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* preserve original failure */ }
-            }
-        })())
-        return acceptedGeneration(input.requestId, running, 'CREATED')
+        try {
+            const workflow: FalQueueWorkflow = Object.freeze({ version: 1, kind: 'FLUX', source: Object.freeze(stepSource) })
+            const submitted = await submitFluxQueueForAuthenticatedProfile({
+                identity: source.identity,
+                plan,
+                source: workflow.source,
+                storage: input.storage,
+                microConceptGenerator: input.createFluxMicroConceptGenerator(),
+                provider: input.createFalFluxImageProvider(),
+                webhookUrl: input.falWebhookUrl,
+                promptTemplateVersion: parsed.request.promptTemplateVersion ?? FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION,
+                sourceUrlTtlSeconds: input.policy.flux.submissionSourceUrlTtlSeconds,
+                ...(input.validator ? { validator: input.validator } : {}),
+            })
+            const persisted = await input.repository.updateRunningFalSubmission({
+                requestId: running.id,
+                profileId: input.profileId,
+                data: {
+                    provider: submitted.submission.provider,
+                    model: submitted.submission.model,
+                    providerRequestId: submitted.submission.providerRequestId,
+                    sourceSha256: submitted.sourceSha256,
+                    promptTemplateVersion: submitted.promptTemplateVersion,
+                    promptSha256: submitted.promptSha256,
+                    promptText: submitted.prompt,
+                    conceptSnapshot: submitted.conceptSnapshot,
+                    falWorkflow: workflow,
+                },
+            })
+            return acceptedGeneration(input.requestId, persisted, 'CREATED')
+        } catch (error) {
+            const details = mapThrownError(error)
+            try { await input.repository.markFailed({ requestId: running.id, profileId: input.profileId, errorCode: details.code, errorMessage: persistedFailureMessage(details) }) } catch { /* preserve original failure */ }
+            return failure(input.requestId, details.code, details.message)
+        }
     } catch (error) { const details = mapThrownError(error); return failure(input.requestId, details.code, details.message) }
+}
+
+export async function orchestrateRunSeedreamDiagnostic(input: CreatureTransformationEdgeOrchestrationInput): Promise<GenerateImageApiResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseRunSeedreamDiagnosticRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    const labAccess = labAccessFailure(input)
+    if (labAccess) return failure(input.requestId, labAccess.code, labAccess.message)
+    const generationAccess = generationAccessFailure(input)
+    if (generationAccess) return failure(input.requestId, generationAccess.code, generationAccess.message)
+    const configuration = seedreamDiagnosticConfigurationFailure(input.policy, parsed.request)
+    if (configuration) return failure(input.requestId, configuration.code, configuration.message)
+    if (!input.createSeedreamDiagnosticProvider || !input.falWebhookUrl || (seedreamDiagnosticVariant(parsed.request.experimentMode).conceptSource === 'dynamic' && !input.createFluxMicroConceptGenerator)) {
+        return failure(input.requestId, 'FAL_FLUX_NOT_CONFIGURED', 'Il replay diagnostico Seedream non e disponibile.')
+    }
+    try {
+        const resolvedSource = await input.resolver.resolve({ profileId: input.profileId, creatureId: parsed.request.creatureId })
+        const bodyPlan = resolvedSource.bodyPlan ?? resolveCanonicalBodyPlan({ baseCreatureKey: resolvedSource.identity.baseCreatureKey, adoptedBodyPlanMutationIds: resolvedSource.adoptedBodyPlanMutationIds })
+        if (!bodyPlan || !bodyPlan.evolutionTargets.includes(parsed.request.evolutionTargetId)) {
+            return failure(input.requestId, 'EVOLUTION_TARGET_NOT_AVAILABLE', 'Il target evolutivo non e disponibile per la creatura selezionata.')
+        }
+        if (parsed.request.source.sourceVisualVersionId) {
+            const version = await input.visualRepository.getVersion({
+                profileId: input.profileId,
+                creatureId: parsed.request.creatureId,
+                versionId: parsed.request.source.sourceVisualVersionId,
+            })
+            if (!version || version.status === 'REVOKED') return failure(input.requestId, 'SOURCE_VISUAL_NOT_AVAILABLE', 'La visuale selezionata non appartiene al profilo o non e disponibile.')
+        }
+        const plan = buildFluxEvolutionPlan({
+            bodyPlan,
+            evolutionTargetId: parsed.request.evolutionTargetId,
+            previousTransformations: resolvedSource.previousTransformations,
+            seed: parsed.request.idempotencyKey,
+            bodyPlanMutationEnabled: false,
+            adoptedBodyPlanMutationIds: resolvedSource.adoptedBodyPlanMutationIds,
+        })
+        const multiplier = parsed.request.chainMode === 'NONE' ? 1 : 2
+        const estimatedCostUsd = input.policy.flux.estimatedCostUsd! * multiplier
+        let reservation: RequestReservationResult
+        try {
+            reservation = await input.repository.reserve({
+                profileId: input.profileId,
+                creatureId: parsed.request.creatureId,
+                idempotencyKey: parsed.request.idempotencyKey,
+                operation: 'GENERATE_UNLOCKED_TRANSFORMATION',
+                imageProviderMode: 'REAL',
+                visualTraitId: plan.visualTraitId,
+                intensity: 2,
+                evolutionTargetId: plan.evolutionTargetId,
+                evolutionFunction: plan.evolutionFunction,
+                ...(parsed.request.source.sourceVisualVersionId ? { sourceVisualVersionId: parsed.request.source.sourceVisualVersionId } : {}),
+                estimatedCostUsd,
+                dailyRequestLimit: input.policy.dailyRequestLimit,
+                dailyBudgetUsd: input.policy.dailyBudgetUsd,
+                requestFingerprint: await requestFingerprint(parsed.request),
+                ...realImageReservationLimits(input.policy),
+            })
+        } catch (error) {
+            const details = mapThrownError(error)
+            return failure(input.requestId, details.code, details.message)
+        }
+        if (reservation.outcome !== 'CREATED' && reservation.outcome !== 'EXISTING') return reservationFailure(input.requestId, reservation)
+        if (reservation.outcome === 'EXISTING') {
+            if (reservation.record.status === 'SUCCEEDED') return failure(input.requestId, 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED', 'Questo replay Seedream e gia stato completato; leggi lo stato della richiesta.', undefined, toPersistence(reservation.record, 'EXISTING'))
+            if (!isStale(reservation.record, input.policy.staleRequestSeconds)) return acceptedGeneration(input.requestId, reservation.record, 'EXISTING')
+            return existingStateFailure(input.requestId, reservation.record, input.policy)!
+        }
+        let running: CreatureTransformationRequestRecord
+        try {
+            running = await input.repository.markRunning({ requestId: reservation.record.id, profileId: input.profileId })
+        } catch (error) {
+            return markFailed(input.repository, input.requestId, input.profileId, reservation.record, 'CREATED', mapThrownError(error))
+        }
+        try {
+            const diagnosticSource = await readSeedreamDiagnosticSource(parsed.request.source)
+            const generator = seedreamDiagnosticVariant(parsed.request.experimentMode).conceptSource === 'dynamic'
+                ? input.createFluxMicroConceptGenerator!()
+                : { async generate() { throw new SeedreamDiagnosticError('SEEDREAM_DIAGNOSTIC_INPUT_INVALID', 'Il generatore di micro-concept non deve essere chiamato in questo test.') } } as unknown as FluxMicroConceptGenerator
+            const prepared = await prepareSeedreamDiagnosticPrompt({
+                experimentMode: parsed.request.experimentMode,
+                ...(parsed.request.fixedFullPrompt ? { fixedFullPrompt: parsed.request.fixedFullPrompt } : {}),
+                ...(parsed.request.fixedMicroConcept ? { fixedMicroConcept: parsed.request.fixedMicroConcept } : {}),
+                identity: resolvedSource.identity,
+                plan,
+                microConceptGenerator: generator,
+            })
+            // The browser payload is already base64. Reusing it after byte-level validation avoids
+            // allocating a second base64 representation of the source in the submission isolate.
+            const sourceUrl = `data:${diagnosticSource.mimeType};base64,${parsed.request.source.base64}`
+            const submission = await input.createSeedreamDiagnosticProvider().submitSeedreamDiagnostic({
+                prompt: prepared.prompt,
+                sourceUrl,
+                parameters: parsed.request.seedream,
+                webhookUrl: input.falWebhookUrl,
+            })
+            const workflow: FalQueueWorkflow = Object.freeze({
+                version: 1,
+                kind: 'SEEDREAM_DIAGNOSTIC',
+                chainMode: parsed.request.chainMode,
+                chainStep: 1,
+                experimentMode: parsed.request.experimentMode,
+                variantId: seedreamDiagnosticVariant(parsed.request.experimentMode).variantId,
+                conceptSource: seedreamDiagnosticVariant(parsed.request.experimentMode).conceptSource,
+                promptStrategy: seedreamDiagnosticVariant(parsed.request.experimentMode).promptStrategy,
+                parameters: parsed.request.seedream,
+            })
+            const persisted = await input.repository.updateRunningFalSubmission({
+                requestId: running.id,
+                profileId: input.profileId,
+                data: {
+                    provider: submission.provider,
+                    model: submission.model,
+                    providerRequestId: submission.providerRequestId,
+                    sourceSha256: diagnosticSource.sha256,
+                    promptTemplateVersion: prepared.promptTemplateVersion,
+                    promptSha256: prepared.promptSha256,
+                    promptText: prepared.prompt,
+                    ...(prepared.conceptSnapshot ? { conceptSnapshot: prepared.conceptSnapshot } : {}),
+                    falWorkflow: workflow,
+                },
+            })
+            return acceptedGeneration(input.requestId, persisted, 'CREATED')
+        } catch (error) {
+            return markFailed(input.repository, input.requestId, input.profileId, running, 'CREATED', mapThrownError(error))
+        }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message)
+    }
 }
 
 function decodeBackgroundRemovalCandidate(base64: string): Uint8Array | null {
@@ -796,6 +952,22 @@ export async function orchestrateGetTransformationRequestStatus(input: CreatureT
     if (!record) return failure(input.requestId, 'REQUEST_NOT_FOUND', 'La richiesta di trasformazione non e disponibile.')
 
     const snapshot = isFluxEvolutionSnapshot(record.conceptSnapshot) ? record.conceptSnapshot : null
+    const workflow = parseFalQueueWorkflow(record.falWorkflow)
+    const diagnostic = workflow?.kind === 'SEEDREAM_DIAGNOSTIC' && record.evolutionTargetId
+        ? {
+            variantId: workflow.variantId,
+            conceptSource: workflow.conceptSource,
+            promptStrategy: workflow.promptStrategy,
+            target: record.evolutionTargetId,
+            concept: snapshot ? {
+                conceptName: snapshot.conceptName,
+                mutationIdea: snapshot.mutationIdea,
+                visualDetails: snapshot.visualDetails,
+                ...(snapshot.avoid?.length ? { avoid: snapshot.avoid } : {}),
+            } : null,
+            ...(workflow.parameters.seed === undefined ? {} : { seed: workflow.parameters.seed }),
+        }
+        : null
     const response: TransformationRequestStatusResponse = {
         success: true,
         requestId: input.requestId,
@@ -809,6 +981,7 @@ export async function orchestrateGetTransformationRequestStatus(input: CreatureT
             },
         } : {}),
         ...(record.assetReadiness === 'EXPERIMENT_ONLY' && record.promptText && record.promptSha256 ? { prompt: { text: record.promptText, sha256: record.promptSha256 } } : {}),
+        ...(diagnostic ? { diagnostic } : {}),
         ...(record.status === 'FAILED' && record.errorCode && record.errorMessage ? { error: { code: record.errorCode, message: record.errorMessage } } : {}),
         ...(record.visualProgressTrackId && record.sourceVisualVersionId && record.visualTraitId ? {
             productPreview: {
@@ -910,6 +1083,7 @@ export async function orchestrateCreatureTransformation(input: CreatureTransform
     const operation = input.body && typeof input.body === 'object' && !Array.isArray(input.body) ? (input.body as { operation?: unknown }).operation : undefined
     if (operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return orchestrateGenerateUnlockedTransformation(input)
     if (operation === 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP') return orchestrateGenerateFluxEvolutionChainStep(input)
+    if (operation === 'RUN_SEEDREAM_DIAGNOSTIC') return orchestrateRunSeedreamDiagnostic(input)
     if (operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return orchestrateSubmitBackgroundRemovalCandidate(input)
     if (operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return orchestrateListVisualBackgroundCleanup(input)
     if (operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return orchestrateSubmitVisualBackgroundCleanup(input)

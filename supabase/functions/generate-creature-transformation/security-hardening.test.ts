@@ -9,9 +9,11 @@ const authProvider = readFileSync(resolve(process.cwd(), 'src/auth/AuthProvider.
 const authScreen = readFileSync(resolve(process.cwd(), 'src/screens/auth/AuthScreen.tsx'), 'utf8')
 
 describe('security hardening regression controls', () => {
-    it('disables public signup and requires JWT verification for every deployed Edge Function', () => {
+    it('disables public signup, keeps user routes on JWT and makes Fal callbacks explicit exceptions', () => {
         expect(config).toMatch(/\[functions\.resolve-round\][\s\S]*verify_jwt\s*=\s*true/)
         expect(config).toMatch(/\[functions\.generate-creature-transformation\][\s\S]*verify_jwt\s*=\s*true/)
+        expect(config).toMatch(/\[functions\.fal-creature-transformation-webhook\][\s\S]*verify_jwt\s*=\s*false/)
+        expect(config).toMatch(/\[functions\.fal-creature-transformation-finalizer\][\s\S]*verify_jwt\s*=\s*false/)
         expect([...config.matchAll(/^enable_signup\s*=\s*(\w+)/gm)].map((match) => match[1])).toEqual(['false', 'false', 'false'])
         expect(authProvider).not.toContain('.auth.signUp(')
         expect(authScreen).not.toContain('Registrati')

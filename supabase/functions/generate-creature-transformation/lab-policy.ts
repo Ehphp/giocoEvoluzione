@@ -14,17 +14,21 @@ import type { FluxPromptTemplateVersion } from './flux-image-generation-service.
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 300
 const DEFAULT_DAILY_REQUEST_LIMIT = 10
 const DEFAULT_DAILY_BUDGET_USD = 0
-const DEFAULT_STALE_REQUEST_SECONDS = 900
+// Fal Queue can legitimately wait for a worker. This must outlive the signed source URL, or the
+// stale-request reaper would terminally fail a healthy queued job before its callback arrives.
+const DEFAULT_STALE_REQUEST_SECONDS = 3_900
 const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
 const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
 const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
 const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
 const DEFAULT_FLUX_TIMEOUT_MS = 30_000
+const DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS = 3_600
 
 export type FluxPipelinePolicy = Readonly<{
     apiKey: string | null
     model: string
     timeoutMs: number
+    submissionSourceUrlTtlSeconds: number
     promptTemplateVersion: FluxPromptTemplateVersion
     estimatedCostUsd: number | null
     maxEstimatedCostUsd: number | null
@@ -94,6 +98,7 @@ function readFluxPolicy(readEnvironment: (name: string) => string | undefined): 
         apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FAL_FLUX_MODEL,
         timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
+        submissionSourceUrlTtlSeconds: readBoundedInteger(readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'), DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS, 300, 86_400),
         promptTemplateVersion,
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),

@@ -151,3 +151,87 @@ export function composeFluxEvolutionPrompt(input: ComposeFluxPromptInput): strin
 export function composeFluxEvolutionPromptV6(input: ComposeFluxPromptInput): string {
     return composeFluxEvolutionPromptWithFreedom(input, false)
 }
+
+function lockedTopologyInvariants(invariants: readonly string[]): readonly string[] {
+    return invariants.map((invariant) => invariant.replace(
+        ' Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.',
+        ' Keep every limb in its existing anatomical root and body region.',
+    ))
+}
+
+function lockedTargetRules(contract: AnatomyContract): readonly string[] {
+    // The locked shell owns presentation. Domain rules that explicitly grant a stance or camera
+    // adjustment belong to the flexible FLUX composers, never to this diagnostic template.
+    return [...contract.targetAllowances, ...contract.preservationRules]
+        .filter((rule) => !/\b(?:stance|posture|orientation|viewpoint|camera|composition|rebalancing)\b/i.test(rule))
+}
+
+/**
+ * Lab-only deterministic shell for comparing a fixed and a generated micro-concept.
+ * It deliberately supports normal anatomical mutations only: a structural body-plan change
+ * needs a different presentation/anatomy lock instead of silently weakening this one.
+ */
+export function composeLockedDynamicFluxEvolutionPrompt(input: Omit<ComposeFluxPromptInput, 'lineage'>): string {
+    const contract = input.anatomyContract
+    if (contract.capability !== 'ANATOMICAL_MUTATION') {
+        throw new Error('Il prompt lockato supporta solo mutazioni anatomiche non strutturali.')
+    }
+    const target = EVOLUTION_TARGET_BY_ID[contract.target]
+    const retryFraming = input.framingAttempt && input.framingAttempt > 0
+        ? `RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1})\n\nMake the creature visibly smaller in frame. Use a wider camera and at least ${10 + input.framingAttempt * 5}% clear background margin around the complete silhouette. Do not crop, rotate or mirror the creature.`
+        : null
+    const targetRules = lockedTargetRules(contract)
+    const identity = input.identity.identityFeatures.length
+        ? input.identity.identityFeatures.join('; ')
+        : input.identity.description
+
+    return [
+        'CURRENT SOURCE IMAGE',
+        'Edit the supplied source image as the visual truth.\nThis is the same creature and the same individual.',
+        'VIEWPOINT LOCK',
+        'Preserve the exact same camera angle, 3/4 view, facing direction and overall pose as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nThe mutation must be achieved without changing how the creature is oriented.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.',
+        'STRICT FRAMING',
+        'Show the entire creature and every appendage.\n\nNothing may touch or cross the canvas boundary.\n\nKeep at least 8-10% clear background margin around the complete silhouette.\n\nIf the mutation requires more space, zoom out instead of cropping or rotating the creature.',
+        ...(retryFraming ? [retryFraming] : []),
+        'ANATOMY LOCK',
+        [
+            ...lockedTopologyInvariants(contract.topologyInvariants),
+            'Keep the existing eye arrangement.',
+            `Preserve the creature's distinctive identity: ${identity}.`,
+        ].join('\n'),
+        `SELECTED TARGET: ${contract.target}`,
+        [
+            `The primary mutation is restricted to ${target.promptRegion}.`,
+            'Structures belonging to this mutation must be anatomically integrated with and rooted in the selected target.',
+            ...(targetRules.length ? ['Target-specific anatomical rules:', ...targetRules] : []),
+            'Do not redesign unrelated anatomy.',
+        ].join('\n'),
+        `NEW MUTATION — ${input.microConcept.conceptName}`,
+        [
+            input.microConcept.mutationIdea,
+            'Visual details:',
+            ...input.microConcept.visualDetails.map((detail) => `- ${detail}`),
+            ...(input.microConcept.avoid?.length ? ['Avoid:', ...input.microConcept.avoid.map((item) => `- ${item}`)] : []),
+            'These mutation details cannot override VIEWPOINT LOCK, STRICT FRAMING, ANATOMY LOCK or NON-TARGET PRESERVATION.',
+        ].join('\n'),
+        'BIOLOGICAL PRIOR',
+        'Prefer living animal tissue and naturally grown anatomy.\n\nEvolutionary structures must look grown from the creature itself.\n\nNo metal, machinery, technology, manufactured accessories or artificial materials unless explicitly required by the mutation.',
+        'NON-TARGET PRESERVATION',
+        'Preserve unrelated body regions by default.\n\nDo not redesign unrelated limbs, tail, face, body coloration or pose.\n\nOnly minor local anatomical integration required by the selected mutation is allowed.',
+        'BACKGROUND',
+        'Flat uniform medium-gray technical background.\n\nSingle isolated creature.\n\nNo objects, scenery, text, aura, glow, bloom, fog, light spill or background gradient.',
+        'INVALID RESULT IF',
+        [
+            'The creature becomes front-facing, profile-facing, mirrored, turned toward the opposite direction, or otherwise changes its original presentation.',
+            'Also invalid:',
+            '- cropped anatomy',
+            '- unauthorized extra limbs',
+            '- extra heads',
+            '- extra faces',
+            '- extra eyes',
+            '- artificial-looking structures',
+            '- failure to make the requested mutation clearly visible',
+            ...contract.failureConditions.map((condition) => `- ${condition}`),
+        ].join('\n'),
+    ].join('\n\n')
+}

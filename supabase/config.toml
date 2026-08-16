@@ -421,3 +421,9 @@ verify_jwt = true
 
 [functions.generate-creature-transformation]
 verify_jwt = true
+
+[functions.fal-creature-transformation-webhook]
+verify_jwt = false
+
+[functions.fal-creature-transformation-finalizer]
+verify_jwt = false

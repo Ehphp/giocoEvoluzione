@@ -1,4 +1,5 @@
 import type { EvolutionTargetId } from './evolution-targets.ts'
+import type { SeedreamDiagnosticVariantId } from './seedream-diagnostic-variants.ts'
 import type { BodyPlanMutationId } from './flux-evolution/body-plan-mutations.ts'
 import type { CreatureBodyPlan } from './flux-evolution/body-plan-registry.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
@@ -79,6 +80,41 @@ export type GenerateFluxEvolutionChainStepRequest = {
     idempotencyKey: string
 }
 
+/**
+ * Authenticated Lab-only Seedream parity replay. It never enters the productive adoption path.
+ * Source bytes are provided explicitly so an exact Playground PNG or JPEG can be reproduced.
+ */
+export type RunSeedreamDiagnosticRequest = {
+    operation: 'RUN_SEEDREAM_DIAGNOSTIC'
+    creatureId: string
+    evolutionTargetId: EvolutionTargetId
+    idempotencyKey: string
+    experimentMode: SeedreamDiagnosticVariantId
+    chainMode: 'NONE' | 'RAW_PROVIDER_CHAIN' | 'NORMALIZED_PROJECT_CHAIN'
+    source: {
+        base64: string
+        mimeType: 'image/png' | 'image/jpeg'
+        sourceVisualVersionId?: string
+    }
+    seedream: {
+        imageSize: 'square_hd' | 'square' | 'portrait_4_3' | 'portrait_16_9' | 'landscape_4_3' | 'landscape_16_9' | 'auto_2K' | 'auto_4K' | { width: number, height: number }
+        numImages?: number
+        maxImages?: number
+        seed?: number
+        syncMode?: boolean
+        enableSafetyChecker?: boolean
+    }
+    /** Accepted only by this diagnostic operation, never by productive generation. */
+    fixedFullPrompt?: string
+    /** Bypasses the generator, while the real flux-micro-v7 composer stays in use. */
+    fixedMicroConcept?: {
+        conceptName: string
+        mutationIdea: string
+        visualDetails: string[]
+        avoid?: string[]
+    }
+}
+
 export type SubmitBackgroundRemovalCandidateRequest = {
     operation: 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE'
     transformationRequestId: string
@@ -147,6 +183,7 @@ export type CreatureTransformationRequest =
     | GetGeneratedImageCatalogRequest
     | GenerateUnlockedTransformationRequest
     | GenerateFluxEvolutionChainStepRequest
+    | RunSeedreamDiagnosticRequest
     | SubmitBackgroundRemovalCandidateRequest
     | ListVisualBackgroundCleanupRequest
     | SubmitVisualBackgroundCleanupRequest

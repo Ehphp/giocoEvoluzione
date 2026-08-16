@@ -1,12 +1,17 @@
-import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateUnlockedTransformationRequest, GenerateFluxEvolutionChainStepRequest, GetCreatureTransformationLabUsageRequest, GetGeneratedImageCatalogRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
+import type { AdoptCreatureTransformationRequest, CreatureTransformationRequest, GenerateUnlockedTransformationRequest, GenerateFluxEvolutionChainStepRequest, GetCreatureTransformationLabUsageRequest, GetGeneratedImageCatalogRequest, GetCreatureVisualProgressRequest, GetCurrentCreatureVisualRequest, GetGameCreatureVisualsRequest, GetTransformationRequestStatusRequest, ListVisualBackgroundCleanupRequest, RollbackCreatureVisualVersionRequest, RunSeedreamDiagnosticRequest, SelectCreatureVisualProgressTrackRequest, SubmitBackgroundRemovalCandidateRequest, SubmitVisualBackgroundCleanupRequest } from '../../../shared/creature-transformations/contracts.ts'
 import { EVOLUTION_TARGET_BY_ID, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { isBodyPlanMutationId, type BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
+import { parseFluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import { isSeedreamDiagnosticVariantId } from '../../../shared/creature-transformations/seedream-diagnostic-variants.ts'
 
 const STATUS_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId'])
 const LAB_USAGE_REQUEST_FIELDS = new Set(['operation'])
 const GENERATED_IMAGE_CATALOG_REQUEST_FIELDS = new Set(['operation', 'page'])
 const UNLOCKED_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'progressTrackId', 'idempotencyKey'])
 const FLUX_CHAIN_STEP_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'promptTemplateVersion', 'bodyPlanMutationId', 'experimentalSourceRequestId', 'sourceVisualVersionId', 'previousStepRequestIds', 'idempotencyKey'])
+const SEEDREAM_DIAGNOSTIC_REQUEST_FIELDS = new Set(['operation', 'creatureId', 'evolutionTargetId', 'idempotencyKey', 'experimentMode', 'chainMode', 'source', 'seedream', 'fixedFullPrompt', 'fixedMicroConcept'])
+const SEEDREAM_DIAGNOSTIC_SOURCE_FIELDS = new Set(['base64', 'mimeType', 'sourceVisualVersionId'])
+const SEEDREAM_DIAGNOSTIC_PARAMETER_FIELDS = new Set(['imageSize', 'numImages', 'maxImages', 'seed', 'syncMode', 'enableSafetyChecker'])
 const BACKGROUND_REMOVAL_CANDIDATE_REQUEST_FIELDS = new Set(['operation', 'transformationRequestId', 'candidatePngBase64', 'displayAssetWebpBase64'])
 const VISUAL_BACKGROUND_CLEANUP_LIST_REQUEST_FIELDS = new Set(['operation'])
 const VISUAL_BACKGROUND_CLEANUP_SUBMIT_REQUEST_FIELDS = new Set(['operation', 'visualVersionId', 'candidatePngBase64', 'displayAssetWebpBase64'])
@@ -47,6 +52,68 @@ function readUuid(body: Record<string, unknown>, field: string): string | null {
 
 function readEvolutionTargetId(value: unknown): EvolutionTargetId | null {
     return typeof value === 'string' && EVOLUTION_TARGET_BY_ID[value as EvolutionTargetId] ? value as EvolutionTargetId : null
+}
+
+function readSeedreamImageSize(value: unknown): RunSeedreamDiagnosticRequest['seedream']['imageSize'] | null {
+    if (value === 'square_hd' || value === 'square' || value === 'portrait_4_3' || value === 'portrait_16_9' || value === 'landscape_4_3' || value === 'landscape_16_9' || value === 'auto_2K' || value === 'auto_4K') return value
+    const size = asRecord(value)
+    if (!size || !Number.isInteger(size.width) || !Number.isInteger(size.height) || typeof size.width !== 'number' || typeof size.height !== 'number' || size.width < 1 || size.width > 8192 || size.height < 1 || size.height > 8192) return null
+    return { width: size.width, height: size.height }
+}
+
+function readOptionalInteger(value: unknown, minimum: number, maximum: number): number | undefined | null {
+    if (value === undefined) return undefined
+    return typeof value === 'number' && Number.isInteger(value) && value >= minimum && value <= maximum ? value : null
+}
+
+export function parseRunSeedreamDiagnosticRequest(value: unknown): ParsedRequest<RunSeedreamDiagnosticRequest> {
+    const body = asRecord(value)
+    const required = body ? readRequiredStrings(body) : null
+    const evolutionTargetId = readEvolutionTargetId(body?.evolutionTargetId)
+    const source = asRecord(body?.source)
+    const seedream = asRecord(body?.seedream)
+    const experimentMode = body?.experimentMode
+    const chainMode = body?.chainMode
+    if (!body || !hasOnlyFields(body, SEEDREAM_DIAGNOSTIC_REQUEST_FIELDS) || body.operation !== 'RUN_SEEDREAM_DIAGNOSTIC' || !required || !evolutionTargetId || !source || !seedream || !isSeedreamDiagnosticVariantId(experimentMode) || (chainMode !== 'NONE' && chainMode !== 'RAW_PROVIDER_CHAIN' && chainMode !== 'NORMALIZED_PROJECT_CHAIN')) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'Il replay diagnostico Seedream non rispetta il contratto.' }
+    }
+    if (!hasOnlyFields(source, SEEDREAM_DIAGNOSTIC_SOURCE_FIELDS) || !hasOnlyFields(seedream, SEEDREAM_DIAGNOSTIC_PARAMETER_FIELDS)) return { valid: false, code: 'INVALID_REQUEST', message: 'Il replay Seedream contiene parametri non documentati.' }
+    const mimeType = source.mimeType === 'image/png' || source.mimeType === 'image/jpeg' ? source.mimeType : null
+    const base64 = typeof source.base64 === 'string' && source.base64.length >= 4 && source.base64.length <= 41_943_040 && source.base64.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(source.base64) ? source.base64 : null
+    const sourceVisualVersionId = source.sourceVisualVersionId === undefined ? undefined : typeof source.sourceVisualVersionId === 'string' && isUuid(source.sourceVisualVersionId) ? source.sourceVisualVersionId : null
+    const imageSize = readSeedreamImageSize(seedream.imageSize)
+    const numImages = readOptionalInteger(seedream.numImages, 1, 15)
+    const maxImages = readOptionalInteger(seedream.maxImages, 1, 15)
+    const seed = readOptionalInteger(seedream.seed, 0, 2_147_483_647)
+    const syncMode = seedream.syncMode === undefined ? undefined : typeof seedream.syncMode === 'boolean' ? seedream.syncMode : null
+    const enableSafetyChecker = seedream.enableSafetyChecker === undefined ? undefined : typeof seedream.enableSafetyChecker === 'boolean' ? seedream.enableSafetyChecker : null
+    const fixedFullPrompt = typeof body.fixedFullPrompt === 'string' && body.fixedFullPrompt.trim().length > 0 && body.fixedFullPrompt.trim().length <= 20_000 ? body.fixedFullPrompt.trim() : body.fixedFullPrompt === undefined ? undefined : null
+    const fixedMicroConcept = body.fixedMicroConcept === undefined ? undefined : parseFluxMicroConcept(body.fixedMicroConcept)
+    if (!mimeType || !base64 || sourceVisualVersionId === null || !imageSize || numImages === null || maxImages === null || seed === null || syncMode === null || enableSafetyChecker === null || (numImages !== undefined && maxImages !== undefined && numImages * maxImages > 15) || fixedFullPrompt === null || (body.fixedMicroConcept !== undefined && !fixedMicroConcept)) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'La sorgente, i parametri Seedream o il concept diagnostico non sono validi.' }
+    }
+    const lockedPromptVariant = experimentMode === 'fixed-concept-locked-prompt' || experimentMode === 'dynamic-concept-locked-prompt'
+    if (lockedPromptVariant && evolutionTargetId !== 'HEAD_AND_CROWN') {
+        return { valid: false, code: 'INVALID_EVOLUTION_TARGET', message: 'Il prompt completo lockato richiede il target HEAD_AND_CROWN.' }
+    }
+    if ((experimentMode === 'FIXED_FULL_PROMPT' && (!fixedFullPrompt || fixedMicroConcept)) || (experimentMode === 'FIXED_MICRO_CONCEPT' && (!fixedMicroConcept || fixedFullPrompt)) || ((experimentMode === 'REAL_MICRO_CONCEPT' || lockedPromptVariant) && (fixedFullPrompt || fixedMicroConcept))) {
+        return { valid: false, code: 'INVALID_REQUEST', message: 'I dati fissi non corrispondono alla modalita diagnostica selezionata.' }
+    }
+    return {
+        valid: true,
+        request: {
+            operation: 'RUN_SEEDREAM_DIAGNOSTIC', creatureId: required.creatureId, evolutionTargetId, idempotencyKey: required.idempotencyKey,
+            experimentMode, chainMode,
+            source: { base64, mimeType, ...(sourceVisualVersionId ? { sourceVisualVersionId } : {}) },
+            seedream: {
+                imageSize, ...(numImages === undefined ? {} : { numImages }), ...(maxImages === undefined ? {} : { maxImages }),
+                ...(seed === undefined ? {} : { seed }), ...(syncMode === undefined ? {} : { syncMode }),
+                ...(enableSafetyChecker === undefined ? {} : { enableSafetyChecker }),
+            },
+            ...(fixedFullPrompt ? { fixedFullPrompt } : {}),
+            ...(fixedMicroConcept ? { fixedMicroConcept: { conceptName: fixedMicroConcept.conceptName, mutationIdea: fixedMicroConcept.mutationIdea, visualDetails: [...fixedMicroConcept.visualDetails], ...(fixedMicroConcept.avoid?.length ? { avoid: [...fixedMicroConcept.avoid] } : {}) } } : {}),
+        },
+    }
 }
 
 export function parseGetTransformationRequestStatusRequest(value: unknown): ParsedRequest<GetTransformationRequestStatusRequest> {
@@ -100,6 +167,7 @@ export function parseGenerateFluxEvolutionChainStepRequest(value: unknown): Pars
         ? undefined
         : isBodyPlanMutationId(body.bodyPlanMutationId) ? body.bodyPlanMutationId : null
     if (bodyPlanMutationId === null) return { valid: false, code: 'INVALID_REQUEST', message: 'bodyPlanMutationId non appartiene al catalogo delle mutazioni strutturali.' }
+    if (body.promptTemplateVersion === undefined) return { valid: false, code: 'INVALID_REQUEST', message: 'Il Lab richiede una versione del prompt FLUX esplicita.' }
     const promptTemplateVersion = body.promptTemplateVersion === undefined
         ? undefined
         : body.promptTemplateVersion === 'flux-micro-v7' || body.promptTemplateVersion === 'flux-micro-v6' || body.promptTemplateVersion === 'flux-micro-v5' || body.promptTemplateVersion === 'flux-minimal-v1' ? body.promptTemplateVersion : null
@@ -188,6 +256,7 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'GET_GENERATED_IMAGE_CATALOG') return parseGetGeneratedImageCatalogRequest(body)
     if (body.operation === 'GENERATE_UNLOCKED_TRANSFORMATION') return parseGenerateUnlockedTransformationRequest(body)
     if (body.operation === 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP') return parseGenerateFluxEvolutionChainStepRequest(body)
+    if (body.operation === 'RUN_SEEDREAM_DIAGNOSTIC') return parseRunSeedreamDiagnosticRequest(body)
     if (body.operation === 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE') return parseSubmitBackgroundRemovalCandidateRequest(body)
     if (body.operation === 'LIST_VISUAL_BACKGROUND_CLEANUP') return parseListVisualBackgroundCleanupRequest(body)
     if (body.operation === 'SUBMIT_VISUAL_BACKGROUND_CLEANUP') return parseSubmitVisualBackgroundCleanupRequest(body)

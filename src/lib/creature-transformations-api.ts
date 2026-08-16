@@ -5,6 +5,7 @@ import type {
     CreatureVisualProgressResponse,
     GenerateUnlockedTransformationRequest,
     GenerateFluxEvolutionChainStepRequest,
+    RunSeedreamDiagnosticRequest,
     SelectCreatureVisualProgressTrackRequest,
     GetCreatureVisualProgressRequest,
     GetCurrentCreatureVisualRequest,
@@ -190,6 +191,11 @@ export async function generateUnlockedCreatureTransformation(request: GenerateUn
 }
 
 export async function generateFluxEvolutionChainStep(request: GenerateFluxEvolutionChainStepRequest, invoker?: CreatureTransformationFunctionInvoker) {
+    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { accepted: true }>>(request, invoker)
+}
+
+/** Runs an isolated Seedream parity diagnostic. Its result is always experiment-only. */
+export async function runSeedreamDiagnostic(request: RunSeedreamDiagnosticRequest, invoker?: CreatureTransformationFunctionInvoker) {
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { accepted: true }>>(request, invoker)
 }
 

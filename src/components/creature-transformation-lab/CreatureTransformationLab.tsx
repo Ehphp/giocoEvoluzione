@@ -10,6 +10,7 @@ import {
 } from '../../lib/creature-transformations-api'
 import { GeneratedImageCatalog } from './GeneratedImageCatalog'
 import { FluxEvolutionChainSimulator } from './FluxEvolutionChainSimulator'
+import { SeedreamDiagnosticPanel } from './SeedreamDiagnosticPanel'
 import { BackIcon, CollectionIcon } from '../../ui/icons'
 
 import '../technical-screens.css'
@@ -113,6 +114,7 @@ export function CreatureTransformationLab({ creature, onBack }: CreatureTransfor
                 {progress?.lastFailure ? <p role="alert">{progress.lastFailure.code}: {progress.lastFailure.message}</p> : null}
             </section>
 
+            <SeedreamDiagnosticPanel creatureId={creature.id} />
             <FluxEvolutionChainSimulator creatureId={creature.id} />
         </section>
     )
