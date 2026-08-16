@@ -16,7 +16,6 @@ import {
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
 import { FalFluxImageProvider } from './fal-flux-image-provider.ts'
-import { FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 import { appendFalWebhookCallbackToken } from './fal-webhook-callback-token.ts'
 import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
@@ -181,11 +180,16 @@ Deno.serve(async (request) => {
             timeoutMs: policy.flux.timeoutMs,
             estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
         }),
+        createSeedreamEvolutionProvider: () => new FalFluxImageProvider({
+            apiKey: policy.seedream.apiKey ?? '', model: policy.seedream.model,
+            timeoutMs: policy.seedream.timeoutMs,
+            estimatedCostUsd: policy.seedream.estimatedCostUsd ?? undefined,
+        }),
         createSeedreamDiagnosticProvider: () => new FalFluxImageProvider({
-            apiKey: policy.flux.apiKey ?? '',
-            model: FAL_SEEDREAM_MODEL,
-            timeoutMs: policy.flux.timeoutMs,
-            estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
+            apiKey: policy.seedream.apiKey ?? '',
+            model: policy.seedream.model,
+            timeoutMs: policy.seedream.timeoutMs,
+            estimatedCostUsd: policy.seedream.estimatedCostUsd ?? undefined,
         }),
         falWebhookUrl,
         repository: requestRepository,

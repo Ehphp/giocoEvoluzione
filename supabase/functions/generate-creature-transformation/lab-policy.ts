@@ -1,5 +1,5 @@
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
-import { DEFAULT_FAL_FLUX_MODEL } from './fal-flux-image-provider.ts'
+import { DEFAULT_FAL_FLUX_MODEL, FAL_SEEDREAM_IMAGE_SIZE, FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 import type { FluxPromptTemplateVersion } from './flux-image-generation-service.ts'
 
 /**
@@ -36,6 +36,25 @@ export type FluxPipelinePolicy = Readonly<{
     microConceptModel: string | null
 }>
 
+export type CreatureEvolutionImagePipeline = 'flux' | 'seedream'
+
+/**
+ * The production Seedream contract is deliberately smaller than the Lab contract:
+ * one portrait image, no seed/sync controls, and the provider's safety checker on.
+ * Keeping it here makes the persisted queue workflow independent from later env edits.
+ */
+export type SeedreamPipelinePolicy = Readonly<{
+    apiKey: string | null
+    model: typeof FAL_SEEDREAM_MODEL
+    timeoutMs: number
+    submissionSourceUrlTtlSeconds: number
+    estimatedCostUsd: number | null
+    maxEstimatedCostUsd: number | null
+    parameters: Readonly<{
+        imageSize: Readonly<{ width: number, height: number }>
+    }>
+}>
+
 export type CreatureTransformationLabPolicy = Readonly<{
     enabled: boolean
     signedUrlTtlSeconds: number
@@ -50,7 +69,10 @@ export type CreatureTransformationLabPolicy = Readonly<{
     paidGenerationProfileIds: ReadonlySet<string>
     /** Profiles allowed to reach the internal Lab operations. A VITE flag is never sufficient. */
     labProfileIds: ReadonlySet<string>
+    /** Defaults to FLUX so Seedream remains opt-in until production validation is complete. */
+    imagePipeline: CreatureEvolutionImagePipeline
     flux: FluxPipelinePolicy
+    seedream: SeedreamPipelinePolicy
     /** Structural topology changes. Disabled in production gameplay by default. */
     bodyPlanMutation: Readonly<{ enabled: boolean }>
     visualProgression: Readonly<{
@@ -107,6 +129,19 @@ function readFluxPolicy(readEnvironment: (name: string) => string | undefined): 
     })
 }
 
+function readSeedreamPolicy(readEnvironment: (name: string) => string | undefined): SeedreamPipelinePolicy {
+    return Object.freeze({
+        apiKey: readEnvironment('FAL_SEEDREAM_API_KEY')?.trim() || readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
+        model: FAL_SEEDREAM_MODEL,
+        timeoutMs: readBoundedInteger(readEnvironment('FAL_SEEDREAM_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
+        submissionSourceUrlTtlSeconds: readBoundedInteger(readEnvironment('FAL_SEEDREAM_SUBMISSION_SOURCE_URL_TTL_SECONDS') ?? readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'), DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS, 300, 86_400),
+        // Seedream has its own billing envelope. Never borrow the FLUX estimate here.
+        estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_ESTIMATED_COST_PER_GENERATION')),
+        maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION')),
+        parameters: Object.freeze({ imageSize: Object.freeze({ ...FAL_SEEDREAM_IMAGE_SIZE }) }),
+    })
+}
+
 function readVisualProgressionPolicy(readEnvironment: (name: string) => string | undefined) {
     return Object.freeze({
         enabled: readEnvironment('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true',
@@ -119,6 +154,7 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
 }
 
 export function readCreatureTransformationLabPolicy(readEnvironment: (name: string) => string | undefined): CreatureTransformationLabPolicy {
+    const configuredImagePipeline = readEnvironment('CREATURE_EVOLUTION_IMAGE_PIPELINE')?.trim().toLowerCase()
     return Object.freeze({
         enabled: readEnvironment('CREATURE_TRANSFORMATION_LAB_ENABLED') === 'true',
         signedUrlTtlSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'), DEFAULT_SIGNED_URL_TTL_SECONDS, 60, 3600),
@@ -132,7 +168,9 @@ export function readCreatureTransformationLabPolicy(readEnvironment: (name: stri
         paidGenerationProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS')),
         // The deployed variable is still the one that gated the internal experiments.
         labProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LAB_PROFILE_IDS') ?? readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')),
+        imagePipeline: configuredImagePipeline === 'seedream' ? 'seedream' : 'flux',
         flux: readFluxPolicy(readEnvironment),
+        seedream: readSeedreamPolicy(readEnvironment),
         bodyPlanMutation: Object.freeze({ enabled: readEnvironment('CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED') === 'true' }),
         visualProgression: readVisualProgressionPolicy(readEnvironment),
     })

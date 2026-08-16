@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { ImageValidator } from '../../../shared/creature-transformations/image-validator.ts'
+import { FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 import { orchestrateAdoptCreatureTransformation, orchestrateGenerateUnlockedTransformation, orchestrateSelectCreatureVisualProgressTrack } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createInMemoryRequestRepository } from './test-request-repository.ts'
@@ -40,6 +41,7 @@ function createProductionInput(options: {
     idempotencyKey?: string
     validator?: ImageValidator
     providerModel?: string
+    seedreamSubmit?: ReturnType<typeof vi.fn>
 } = {}) {
     const persistence = createInMemoryRequestRepository()
     const tasks: Promise<void>[] = []
@@ -48,6 +50,7 @@ function createProductionInput(options: {
     const completeGeneration = vi.fn(async () => track)
     const generate = vi.fn(async () => ({ conceptName: 'Pale rematrici', mutationIdea: 'Membrane pieghevoli.', visualDetails: ['lamelle'] }))
     const submit = vi.fn(async () => ({ provider: 'fal.ai' as const, model: options.providerModel ?? 'fal-ai/flux-2-klein/9b/edit', providerRequestId: `fal-${options.idempotencyKey ?? 'production'}`, estimatedCostUsd: 0.0203 }))
+    const seedreamSubmit = options.seedreamSubmit ?? vi.fn(async () => ({ provider: 'fal.ai' as const, model: FAL_SEEDREAM_MODEL, providerRequestId: `seedream-${options.idempotencyKey ?? 'production'}`, estimatedCostUsd: 0.07 }))
     const input = {
         profileId: PROFILE_ID, canGenerateImages: true, requestId: 'http-request',
         body: { operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: CREATURE_ID, progressTrackId: TRACK_ID, idempotencyKey: options.idempotencyKey ?? 'production-key' },
@@ -64,11 +67,12 @@ function createProductionInput(options: {
         },
         createFluxMicroConceptGenerator: () => ({ generate }),
         createFalFluxImageProvider: () => ({ submitFlux: submit }),
+        createSeedreamEvolutionProvider: () => ({ submitSeedreamEvolution: seedreamSubmit }),
         falWebhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
         deferBackgroundTask: (task: Promise<void>) => { tasks.push(task) },
         validator: options.validator ?? new FluxTestValidator(),
     }
-    return { input, persistence, tasks, generate, submit, markBackgroundRemovalPending, completeGeneration }
+    return { input, persistence, tasks, generate, submit, seedreamSubmit, markBackgroundRemovalPending, completeGeneration }
 }
 
 describe('FLUX production pipeline', () => {
@@ -111,6 +115,33 @@ describe('FLUX production pipeline', () => {
         expect(prompt).not.toMatch(/HARD INVARIANTS|PRIMARY MUTATION AUTHORITY|MINIMUM VISUAL DELTA|NON-TARGET PRESERVATION/i)
         expect(context.persistence.get(PROFILE_ID, 'production-minimal')).toMatchObject({
             status: 'RUNNING', promptTemplateVersion: 'flux-minimal-v1', promptText: prompt,
+        })
+    })
+
+    it('routes an opted-in gameplay request through the persisted locked Seedream workflow', async () => {
+        const context = createProductionInput({
+            idempotencyKey: 'seedream-production',
+            policyOverrides: {
+                CREATURE_EVOLUTION_IMAGE_PIPELINE: 'seedream',
+                FAL_SEEDREAM_API_KEY: 'seedream-only-key',
+                SEEDREAM_ESTIMATED_COST_PER_GENERATION: '0.07',
+                SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION: '0.08',
+            },
+        })
+
+        await expect(orchestrateGenerateUnlockedTransformation(context.input as never)).resolves.toMatchObject({ success: true, accepted: true })
+        await expect(orchestrateGenerateUnlockedTransformation(context.input as never)).resolves.toMatchObject({ success: false, code: 'REQUEST_ALREADY_IN_PROGRESS' })
+
+        expect(context.submit).not.toHaveBeenCalled()
+        expect(context.seedreamSubmit).toHaveBeenCalledOnce()
+        expect(context.seedreamSubmit).toHaveBeenCalledWith(expect.objectContaining({ imageSize: { width: 1920, height: 2880 } }))
+        const prompt = String(context.seedreamSubmit.mock.calls[0]![0].prompt)
+        expect(prompt).toContain('VIEWPOINT LOCK')
+        expect(prompt).toContain('SELECTED TARGET: LIMBS_AND_FEET')
+        expect(context.persistence.get(PROFILE_ID, 'seedream-production')).toMatchObject({
+            status: 'RUNNING', provider: 'fal.ai', model: FAL_SEEDREAM_MODEL,
+            promptTemplateVersion: 'seedream-locked-dynamic-v1',
+            falWorkflow: { kind: 'SEEDREAM_PRODUCTION', parameters: { imageSize: { width: 1920, height: 2880 } } },
         })
     })
 

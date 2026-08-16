@@ -14,10 +14,19 @@ export type FalQueueSource = Readonly<{
     isBaseVersion: boolean
 }>
 
+export type SeedreamProductionParameters = Readonly<{
+    imageSize: Readonly<{ width: number, height: number }>
+}>
+
 export type FalQueueWorkflow = Readonly<{
     version: 1
     kind: 'FLUX'
     source: FalQueueSource
+}> | Readonly<{
+    version: 1
+    kind: 'SEEDREAM_PRODUCTION'
+    source: FalQueueSource
+    parameters: SeedreamProductionParameters
 }> | Readonly<{
     version: 1
     kind: 'SEEDREAM_DIAGNOSTIC'
@@ -59,12 +68,24 @@ function parameters(value: unknown): FalSeedreamParameters | null {
     })
 }
 
+function productionParameters(value: unknown): SeedreamProductionParameters | null {
+    const parsed = parameters(value)
+    if (!parsed || typeof parsed.imageSize !== 'object' || !parsed.imageSize || Array.isArray(parsed.imageSize)) return null
+    if (parsed.numImages !== undefined || parsed.maxImages !== undefined || parsed.seed !== undefined || parsed.syncMode !== undefined || parsed.enableSafetyChecker !== undefined) return null
+    return Object.freeze({ imageSize: Object.freeze({ width: parsed.imageSize.width, height: parsed.imageSize.height }) })
+}
+
 export function parseFalQueueWorkflow(value: unknown): FalQueueWorkflow | null {
     const item = object(value)
     if (!item || item.version !== 1) return null
     if (item.kind === 'FLUX') {
         const parsedSource = source(item.source)
         return parsedSource ? Object.freeze({ version: 1, kind: 'FLUX', source: parsedSource }) : null
+    }
+    if (item.kind === 'SEEDREAM_PRODUCTION') {
+        const parsedSource = source(item.source)
+        const parsedParameters = productionParameters(item.parameters)
+        return parsedSource && parsedParameters ? Object.freeze({ version: 1, kind: 'SEEDREAM_PRODUCTION', source: parsedSource, parameters: parsedParameters }) : null
     }
     if (item.kind === 'SEEDREAM_DIAGNOSTIC') {
         const parsedParameters = parameters(item.parameters)

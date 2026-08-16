@@ -17,7 +17,9 @@ describe('creature transformation lab policy', () => {
         expect(policy.globalDailyRealImageLimit).toBe(10)
         expect(policy.globalConcurrentRealImageLimit).toBe(2)
         expect(policy.realImageCooldownSeconds).toBe(60)
+        expect(policy.imagePipeline).toBe('flux')
         expect(policy.flux).toMatchObject({ apiKey: null, model: 'fal-ai/flux-2-klein/9b/edit', timeoutMs: 30_000, promptTemplateVersion: 'flux-micro-v7', estimatedCostUsd: null, maxEstimatedCostUsd: null, microConceptApiKey: null, microConceptModel: null })
+        expect(policy.seedream).toMatchObject({ apiKey: null, model: 'fal-ai/bytedance/seedream/v4.5/edit', timeoutMs: 30_000, estimatedCostUsd: null, maxEstimatedCostUsd: null, parameters: { imageSize: { width: 1920, height: 2880 } } })
         expect(policy.visualProgression).toMatchObject({ enabled: false, productionGenerationEnabled: false, adoptionEnabled: false, backgroundCleanupEnabled: false, winsRequired: 3 })
     })
 
@@ -74,6 +76,21 @@ describe('creature transformation lab policy', () => {
         const policy = readCreatureTransformationLabPolicy((name) => ({ FLUX_PROMPT_TEMPLATE_VERSION: 'flux-minimal-v1' })[name])
 
         expect(policy.flux.promptTemplateVersion).toBe('flux-minimal-v1')
+    })
+
+    it('selects Seedream only through the server flag and keeps its billing envelope separate from FLUX', () => {
+        const policy = readCreatureTransformationLabPolicy((name) => ({
+            CREATURE_EVOLUTION_IMAGE_PIPELINE: 'seedream',
+            FAL_SEEDREAM_API_KEY: 'seedream-only-key',
+            SEEDREAM_ESTIMATED_COST_PER_GENERATION: '0.07',
+            SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION: '0.08',
+            FAL_FLUX_ESTIMATED_COST_USD: '0.02',
+            FAL_FLUX_MAX_ESTIMATED_COST_USD: '0.03',
+        })[name])
+
+        expect(policy.imagePipeline).toBe('seedream')
+        expect(policy.seedream).toMatchObject({ apiKey: 'seedream-only-key', estimatedCostUsd: 0.07, maxEstimatedCostUsd: 0.08 })
+        expect(policy.flux.estimatedCostUsd).toBe(0.02)
     })
 
     it('restores flux-micro-v5 when explicitly selected by server policy', () => {

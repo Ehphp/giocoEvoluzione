@@ -7,6 +7,7 @@ export class CreatureBackgroundRemovalError extends Error {
 
 const BACKGROUND_REMOVAL_MODELS = ['isnet_fp16', 'isnet_quint8'] as const
 const BACKGROUND_REMOVAL_TIMEOUT_MS = 120_000
+const SUPPORTED_RAW_MIME_TYPES = new Set(['image/png', 'image/jpeg'])
 
 function withTimeout<T>(operation: Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -21,8 +22,8 @@ function withTimeout<T>(operation: Promise<T>): Promise<T> {
 }
 
 export async function removeCreatureBackground(rawImage: Blob): Promise<Blob> {
-    if (rawImage.type && rawImage.type !== 'image/png') {
-        throw new CreatureBackgroundRemovalError('Il raw della creatura non e un PNG valido.')
+    if (rawImage.type && !SUPPORTED_RAW_MIME_TYPES.has(rawImage.type)) {
+        throw new CreatureBackgroundRemovalError('Il raw della creatura deve essere un PNG o JPEG valido.')
     }
     let lastError: unknown = null
     try {

@@ -305,6 +305,30 @@ export class FalFluxImageProvider {
         return this.submitQueue({ webhookUrl: input.webhookUrl, payload: seedreamPayloadFromUrl(input) })
     }
 
+    /**
+     * Production uses the locked portrait contract, not the Lab's configurable replay payload.
+     * It still goes through the same durable Queue/callback lifecycle as FLUX.
+     */
+    async submitSeedreamEvolution(input: { prompt: string, sourceUrl: string, imageSize: Readonly<{ width: number, height: number }>, webhookUrl: string }): Promise<FalQueueSubmission> {
+        if (this.model !== FAL_SEEDREAM_MODEL) {
+            throw new FalFluxImageProviderError('FAL_SEEDREAM_MODEL_REQUIRED', 'La generazione Seedream richiede fal-ai/bytedance/seedream/v4.5/edit.')
+        }
+        if (!input.prompt.trim() || !isFalImageUrl(input.sourceUrl) || !isWebhookUrl(input.webhookUrl) || !Number.isInteger(input.imageSize.width) || !Number.isInteger(input.imageSize.height) || input.imageSize.width < 1 || input.imageSize.height < 1) {
+            throw new FalFluxImageProviderError('FAL_FLUX_BAD_REQUEST', 'La submission Seedream non contiene un prompt, una sorgente, un formato o un webhook validi.')
+        }
+        return this.submitQueue({
+            webhookUrl: input.webhookUrl,
+            payload: {
+                prompt: input.prompt,
+                image_urls: [input.sourceUrl],
+                image_size: input.imageSize,
+                num_images: 1,
+                max_images: 1,
+                enable_safety_checker: true,
+            },
+        })
+    }
+
     /** Downloads exactly one final media representation. Callers own validation and persistence. */
     async downloadQueuedImage(input: FalQueuedImage): Promise<Readonly<{ bytes: Uint8Array, mimeType: FalImageMimeType }>> {
         const profile = falImageModelProfile(this.model)

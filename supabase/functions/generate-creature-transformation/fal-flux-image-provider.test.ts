@@ -86,6 +86,29 @@ describe('FalFluxImageProvider', () => {
         expect(result).toMatchObject({ provider: 'fal.ai', model: FAL_SEEDREAM_MODEL, providerRequestId: 'seedream-request' })
     })
 
+    it('submits the locked Seedream production payload through Queue without a JPEG conversion hook', async () => {
+        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ request_id: 'seedream-queue-request' })))
+        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+
+        await expect(provider.submitSeedreamEvolution({
+            prompt: 'LOCKED SEEDREAM PROMPT',
+            sourceUrl: 'https://storage.example/source.png?token=private',
+            imageSize: { width: 1920, height: 2880 },
+            webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
+        })).resolves.toMatchObject({ providerRequestId: 'seedream-queue-request', model: FAL_SEEDREAM_MODEL })
+
+        const [url, init] = fetchImplementation.mock.calls[0]!
+        expect(url).toContain('https://queue.fal.run/fal-ai/bytedance/seedream/v4.5/edit?fal_webhook=')
+        expect(JSON.parse(String(init.body))).toEqual({
+            prompt: 'LOCKED SEEDREAM PROMPT',
+            image_urls: ['https://storage.example/source.png?token=private'],
+            image_size: { width: 1920, height: 2880 },
+            num_images: 1,
+            max_images: 1,
+            enable_safety_checker: true,
+        })
+    })
+
     it('converts the JPEG returned by Seedream before PNG validation', async () => {
         const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
         const png = createTestPng({ width: 1920, height: 2880 })

@@ -22,6 +22,11 @@ describe('removeCreatureBackground', () => {
         })
     })
 
+    it('accepts a Seedream JPEG raw and still requires PNG output from the browser processor', async () => {
+        await expect(removeCreatureBackground(new Blob(['raw'], { type: 'image/jpeg' }))).resolves.toMatchObject({ type: 'image/png' })
+        expect(removeBackground).toHaveBeenCalledWith(expect.objectContaining({ type: 'image/jpeg' }), expect.any(Object))
+    })
+
     it('falls back to the lighter quantized model when the high-quality model fails', async () => {
         removeBackground.mockRejectedValueOnce(new Error('fp16 allocation failed'))
 
