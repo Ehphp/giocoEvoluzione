@@ -33,27 +33,27 @@ function inspection(facing: Facing, mirrored = true): VisualInspection {
 
 describe('Seedream horizontal mirror correction decision', () => {
     it.each([
-        ['IMAGE_RIGHT', 'FLIP'],
-        ['IMAGE_LEFT', 'KEEP'],
+        ['IMAGE_LEFT', 'FLIP'],
+        ['IMAGE_RIGHT', 'KEEP'],
         ['UNKNOWN', 'KEEP'],
         ['CENTER', 'KEEP'],
-    ] as const)('flips only a raw output that faces right in the observed image: %s', (outputFacing, action) => {
+    ] as const)('flips only a raw output whose Vision facing maps to visible right: %s', (outputFacing, action) => {
         expect(decideHorizontalMirrorCorrection({ inspection: inspection(outputFacing) }).action).toBe(action)
     })
 
-    it('does not require MIRRORED_SUBJECT when the raw output faces right', () => {
-        expect(decideHorizontalMirrorCorrection({ inspection: inspection('IMAGE_RIGHT', false) })).toMatchObject({ action: 'FLIP', reason: 'OUTPUT_FACING_RIGHT' })
+    it('does not require MIRRORED_SUBJECT when the raw output is IMAGE_LEFT', () => {
+        expect(decideHorizontalMirrorCorrection({ inspection: inspection('IMAGE_LEFT', false) })).toMatchObject({ action: 'FLIP', reason: 'OUTPUT_FACING_LEFT' })
     })
 
     it('records the correction, updates the persisted orientation and cannot flip the same inspection twice', () => {
-        const raw = inspection('IMAGE_RIGHT')
+        const raw = inspection('IMAGE_LEFT')
         const corrected = applyHorizontalMirrorCorrection({
-            inspection: raw, outputFacing: 'IMAGE_RIGHT', correctedFacing: 'IMAGE_LEFT', generation: 4, appliedAt: '2026-08-17T00:00:01.000Z',
+            inspection: raw, outputFacing: 'IMAGE_LEFT', correctedFacing: 'IMAGE_RIGHT', generation: 4, appliedAt: '2026-08-17T00:00:01.000Z',
         })
 
         expect(corrected).toMatchObject({
-            observedVisualState: { orientation: { facing: 'IMAGE_LEFT' } },
-            assetCorrection: { type: 'HORIZONTAL_MIRROR', outputFacing: 'IMAGE_RIGHT', correctedFacing: 'IMAGE_LEFT' },
+            observedVisualState: { orientation: { facing: 'IMAGE_RIGHT' } },
+            assetCorrection: { type: 'HORIZONTAL_MIRROR', outputFacing: 'IMAGE_LEFT', correctedFacing: 'IMAGE_RIGHT' },
             visualAnomalies: [expect.objectContaining({ type: 'MIRRORED_SUBJECT', status: 'RESOLVED', resolvedAtGeneration: 4 })],
         })
         expect(corrected.anomalyDetector.evidence[0]).toMatchObject({ imageRegion: 'CENTER_IMAGE_RIGHT' })

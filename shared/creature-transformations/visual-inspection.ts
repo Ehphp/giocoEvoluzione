@@ -249,9 +249,9 @@ export type HorizontalMirrorCorrectionDecision = Readonly<{
 }>
 
 /**
- * The canonical product orientation is creature-facing-left from the observer's viewpoint.
- * Once Vision maps a raw Seedream image as IMAGE_RIGHT, mirror its pixels regardless of anomaly
- * labels or the source image's prior facing. UNKNOWN and non-directional views remain untouched.
+ * Gemini's IMAGE_LEFT / IMAGE_RIGHT convention is the inverse of the product's observer-facing
+ * convention. A raw IMAGE_LEFT therefore means the creature visibly looks right and must be
+ * mirrored. UNKNOWN and non-directional views remain untouched.
  */
 export function decideHorizontalMirrorCorrection(input: {
     inspection: VisualInspection
@@ -259,9 +259,9 @@ export function decideHorizontalMirrorCorrection(input: {
     const outputFacing = directionalFacing(input.inspection.observedVisualState?.orientation.facing)
     if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR') return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', outputFacing })
     if (!outputFacing) return Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_UNKNOWN', outputFacing })
-    return outputFacing === 'IMAGE_RIGHT'
-        ? Object.freeze({ action: 'FLIP', reason: 'OUTPUT_FACING_RIGHT', outputFacing })
-        : Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_LEFT', outputFacing })
+    return outputFacing === 'IMAGE_LEFT'
+        ? Object.freeze({ action: 'FLIP', reason: 'OUTPUT_FACING_LEFT', outputFacing })
+        : Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_RIGHT', outputFacing })
 }
 
 function mirrorImageRegion(region: VisualImageRegion): VisualImageRegion {

@@ -419,7 +419,7 @@ async function finalizeSeedreamProduction(input: {
             persistedInspection = applyHorizontalMirrorCorrection({
                 inspection: visualInspection.inspection,
                 outputFacing: mirrorDecision.outputFacing!,
-                correctedFacing: 'IMAGE_LEFT',
+                correctedFacing: 'IMAGE_RIGHT',
                 generation: visualInspection.generation,
                 appliedAt: new Date().toISOString(),
             })
