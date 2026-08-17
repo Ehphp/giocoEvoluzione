@@ -77,7 +77,12 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
             if (!data) return null
             return {
                 id: String(data.id), creatureId: String(data.creature_id), assetPath: String(data.asset_path),
-                assetSha256: String(data.asset_sha256), versionNumber: Number(data.version_number), isBaseVersion: !/^(?:[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|cleanup\/[a-f0-9]{64})\.png$/.test(String(data.asset_path)),
+                assetSha256: String(data.asset_sha256), versionNumber: Number(data.version_number),
+                // Storage ownership is part of the visual-version state, not of its file name.
+                // Canonical starter assets are content-addressed too (for example
+                // verdant-hatchling/<sha256>.png), which otherwise looks like an
+                // experiment object path and would be read from the wrong bucket.
+                isBaseVersion: data.visual_trait_id === null,
                 visualInspection: parseVisualInspection(data.visual_inspection),
             }
         },
