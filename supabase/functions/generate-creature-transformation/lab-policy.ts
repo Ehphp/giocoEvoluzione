@@ -50,6 +50,8 @@ export type SeedreamPipelinePolicy = Readonly<{
     submissionSourceUrlTtlSeconds: number
     estimatedCostUsd: number | null
     maxEstimatedCostUsd: number | null
+    /** Explicit production-test switch. Defaults off even when body-plan mutations are enabled globally. */
+    structuralMutationsEnabled: boolean
     parameters: Readonly<{
         imageSize: Readonly<{ width: number, height: number }>
     }>
@@ -138,6 +140,7 @@ function readSeedreamPolicy(readEnvironment: (name: string) => string | undefine
         // Seedream has its own billing envelope. Never borrow the FLUX estimate here.
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_ESTIMATED_COST_PER_GENERATION')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION')),
+        structuralMutationsEnabled: readEnvironment('SEEDREAM_STRUCTURAL_MUTATIONS_ENABLED') === 'true',
         parameters: Object.freeze({ imageSize: Object.freeze({ ...FAL_SEEDREAM_IMAGE_SIZE }) }),
     })
 }

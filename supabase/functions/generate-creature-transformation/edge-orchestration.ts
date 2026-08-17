@@ -410,17 +410,16 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
         if (!source.bodyPlan) return failure(input.requestId, 'FLUX_BODY_PLAN_UNSUPPORTED', 'La topologia anatomica della creatura non e configurata.')
         // Normal gameplay never carries a structural mutation request: the capability is only
         // reachable when the server policy enables it.
+        const bodyPlanMutationEnabled = input.policy.bodyPlanMutation.enabled
+            && (selectedPipeline !== 'seedream' || input.policy.seedream.structuralMutationsEnabled)
         const plan = buildFluxEvolutionPlan({
             bodyPlan: source.bodyPlan,
             evolutionTargetId: track.evolutionTargetId,
             previousTransformations: source.previousTransformations,
             seed: parsed.request.idempotencyKey,
-            bodyPlanMutationEnabled: input.policy.bodyPlanMutation.enabled,
+            bodyPlanMutationEnabled,
             adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds,
         })
-        if (selectedPipeline === 'seedream' && plan.capability !== 'ANATOMICAL_MUTATION') {
-            return failure(input.requestId, 'FLUX_BODY_PLAN_UNSUPPORTED', 'Seedream non supporta ancora le mutazioni strutturali nel gameplay.')
-        }
         const resolvedTrack = await input.visualRepository.resolveTrackTrait({ profileId: input.profileId, creatureId: parsed.request.creatureId, trackId: track.id, visualTraitId: plan.visualTraitId })
         if (!resolvedTrack.visualTraitId) return failure(input.requestId, 'VISUAL_TRACK_STATE_CONFLICT', 'Il percorso non ha una direzione funzionale risolvibile.')
         const fingerprint = await requestFingerprint({ operation: parsed.request.operation, creatureId: parsed.request.creatureId, progressTrackId: parsed.request.progressTrackId, visualTraitId: plan.visualTraitId, evolutionTargetId: plan.evolutionTargetId, capability: plan.capability, sourceVisualVersionId: source.currentVisualVersionId, idempotencyKey: parsed.request.idempotencyKey })

@@ -16,6 +16,7 @@ import { parseFalQueueWorkflow } from '../generate-creature-transformation/fal-q
 import { readCreatureTransformationLabPolicy } from '../generate-creature-transformation/lab-policy.ts'
 import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
 import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
+import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -265,7 +266,11 @@ async function retryCroppedSeedream(input: {
 }) {
     const workflow = parseFalQueueWorkflow(input.record.falWorkflow)
     const concept = fluxMicroConceptFromSnapshot(input.record.conceptSnapshot)
-    if (!workflow || workflow.kind !== 'SEEDREAM_PRODUCTION' || !concept || !input.record.providerRequestId || !input.record.promptTemplateVersion) {
+    const snapshot = isFluxEvolutionSnapshot(input.record.conceptSnapshot) ? input.record.conceptSnapshot : null
+    const capability = snapshot ? readFluxSnapshotCapability(snapshot) : null
+    const bodyPlanMutationId = snapshot ? readBodyPlanMutationId(snapshot) : null
+    if (!workflow || workflow.kind !== 'SEEDREAM_PRODUCTION' || !concept || !snapshot || !capability || !input.record.providerRequestId || !input.record.promptTemplateVersion
+        || (capability === 'BODY_PLAN_MUTATION' && !bodyPlanMutationId)) {
         throw new FluxImageGenerationServiceError('FLUX_RESULT_IMAGE_INVALID', 'I metadati della submission Seedream non sono disponibili per il retry di framing.')
     }
     const source = await input.resolver.resolve({ profileId: input.record.profileId, creatureId: input.record.creatureId })
@@ -276,7 +281,8 @@ async function retryCroppedSeedream(input: {
         evolutionTargetId: input.record.evolutionTargetId,
         previousTransformations: source.previousTransformations,
         seed: input.record.idempotencyKey,
-        bodyPlanMutationEnabled: false,
+        bodyPlanMutationEnabled: capability === 'BODY_PLAN_MUTATION',
+        ...(bodyPlanMutationId ? { requestedBodyPlanMutationId: bodyPlanMutationId } : {}),
         adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds,
     })
     const sourceUrl = (await input.storage.createVisualVersionSignedUrl({ assetPath: workflow.source.path, isBaseVersion: workflow.source.isBaseVersion, expiresInSeconds: input.sourceUrlTtlSeconds })).signedUrl

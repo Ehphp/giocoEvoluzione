@@ -198,7 +198,7 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(first).not.toContain('RETRY FRAMING OVERRIDE')
     })
 
-    it('refuses a structural body-plan mutation instead of weakening the lock', () => {
+    it('makes an authorized structural mutation explicit without unlocking other topology changes', () => {
         const structuralContract = buildAnatomyContract({
             bodyPlan: BODY_PLANS.QUADRUPED,
             evolutionTargetId: 'LIMBS_AND_FEET',
@@ -206,7 +206,12 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
             bodyPlanMutationId: 'ADD_LIMB_PAIR',
         })
 
-        expect(() => composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: structuralContract, microConcept: dynamicConcept })).toThrow(/solo mutazioni anatomiche non strutturali/i)
+        const prompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: structuralContract, microConcept: dynamicConcept })
+
+        expect(prompt).toContain('AUTHORIZED STRUCTURAL MUTATION')
+        expect(prompt).toMatch(/Grow one additional symmetrical pair of limbs/i)
+        expect(prompt).toContain('Keep exactly 6 limbs')
+        expect(prompt).toContain('any topology change other than the authorized structural mutation')
     })
 })
 
