@@ -9,6 +9,7 @@ import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-imag
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 import { FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION, FLUX_PREVIOUS_PROMPT_TEMPLATE_VERSION, FLUX_RESTORED_PROMPT_TEMPLATE_VERSION, type FluxPromptTemplateVersion, FluxImageGenerationServiceError } from './flux-image-generation-service.ts'
 import type { FalQueueSource, SeedreamProductionParameters } from './fal-queue-workflow.ts'
+import { visualContinuityBrief, visualRepairBrief, type VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 function composePrompt(input: { identity: CreatureSemanticIdentity, plan: FluxEvolutionPlan, concept: FluxMicroConcept, promptTemplateVersion: FluxPromptTemplateVersion, framingAttempt: number }): string {
     if (input.promptTemplateVersion === FLUX_MINIMAL_PROMPT_TEMPLATE_VERSION) return composeMinimalFluxEvolutionPrompt(input.concept, input.framingAttempt)
@@ -33,13 +34,14 @@ export async function composeFluxQueuePrompt(input: { identity: CreatureSemantic
 }
 
 /** The production Seedream route is intentionally pinned to the locked dynamic composer. */
-export async function composeSeedreamQueuePrompt(input: { identity: CreatureSemanticIdentity, plan: FluxEvolutionPlan, concept: FluxMicroConcept, framingAttempt: number }) {
-    const prompt = composeLockedDynamicFluxEvolutionPrompt({
+export async function composeSeedreamQueuePrompt(input: { identity: CreatureSemanticIdentity, plan: FluxEvolutionPlan, concept: FluxMicroConcept, framingAttempt: number, repairBrief?: string | null }) {
+    const lockedPrompt = composeLockedDynamicFluxEvolutionPrompt({
         identity: input.identity,
         anatomyContract: input.plan.anatomyContract,
         microConcept: input.concept,
         framingAttempt: input.framingAttempt,
     })
+    const prompt = input.repairBrief ? `${lockedPrompt}\n\n${input.repairBrief}` : lockedPrompt
     return Object.freeze({ prompt, promptSha256: await sha256Hex(new TextEncoder().encode(prompt)) })
 }
 
@@ -120,19 +122,20 @@ export async function submitSeedreamEvolutionForAuthenticatedProfile(input: {
     webhookUrl: string
     parameters: SeedreamProductionParameters
     sourceUrlTtlSeconds: number
+    visualInspection?: VisualInspection | null
     validator?: ImageValidator
 }) {
     const validator = input.validator ?? new ImageValidator()
     let microConcept: FluxMicroConcept
     try {
-        microConcept = await input.microConceptGenerator.generate({ identity: input.identity, plan: input.plan })
+        microConcept = await input.microConceptGenerator.generate({ identity: input.identity, plan: input.plan, visualContinuity: visualContinuityBrief(input.visualInspection) })
     } catch (error) {
         if (error instanceof FluxMicroConceptGeneratorError) throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
         throw error
     }
     const sourceSha256 = await validateFluxSource({ storage: input.storage, source: input.source, validator })
     const sourceUrl = (await signedSource({ storage: input.storage, source: input.source, expiresInSeconds: input.sourceUrlTtlSeconds })).signedUrl
-    const composed = await composeSeedreamQueuePrompt({ identity: input.identity, plan: input.plan, concept: microConcept, framingAttempt: 0 })
+    const composed = await composeSeedreamQueuePrompt({ identity: input.identity, plan: input.plan, concept: microConcept, framingAttempt: 0, repairBrief: visualRepairBrief(input.visualInspection) })
     let submission
     try {
         submission = await input.provider.submitSeedreamEvolution({ prompt: composed.prompt, sourceUrl, imageSize: input.parameters.imageSize, webhookUrl: input.webhookUrl })

@@ -25,6 +25,8 @@ export type FluxMicroConceptGeneratorOptions = Readonly<{
 export type GenerateFluxMicroConceptInput = Readonly<{
     identity: CreatureSemanticIdentity
     plan: FluxEvolutionPlan
+    /** Observed-state continuity only; the selected target remains primary. */
+    visualContinuity?: string | null
 }>
 
 const INDEPENDENT_APPENDAGE_PATTERN = /\b(?:independently rooted|independent(?:ly)?(?: rooted)?\s+(?:anatomical\s+)?appendages?|new\s+(?:anatomical\s+)?roots?|separate\s+(?:anatomical\s+)?appendages?)\b|\b(?:appendici\s+indipendenti|nuov[ea]\s+radici\s+anatomiche)\b/i
@@ -100,6 +102,10 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
         'FIELD ROLES: conceptName is a short visible morphology label, not the biological function. mutationIdea describes concrete anatomy: what grows or reshapes, where it originates or attaches, its main silhouette and the visually dominant transformation. visualDetails contains 1-5 non-overlapping concrete visual details covering, when relevant, proportions or arrangement, growth pattern, biological tissue or material, surface, target-linked colour and local anatomical integration. avoid contains only mutation-specific failure modes; do not include global camera, orientation, framing, background or anatomy rules.',
         `SELECTED TARGET: ${plan.evolutionTargetId} — ${target.promptRegion}. Treat it as the primary evolutionary target and default to a local mutation. If the mutation works on its own, describe only that target. Preserve all unrelated anatomy by default. ${secondaryAdaptationRule}`,
+        ...(input.visualContinuity ? [
+            `VISUAL CONTINUITY (secondary repair context): ${input.visualContinuity}`,
+            'Use this only to preserve observed continuity or repair a confirmed or persistent visual defect when compatible with the selected target. The selected target remains the primary mutation; do not turn repair context into a second evolution.',
+        ] : []),
         `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
         ...(bodyShapePresentationLock ? ['BODY-SHAPE PRESENTATION LOCK: Reshape the trunk strongly through morphology while preserving the same base pose, viewpoint, facing direction, overall orientation and composition. Do not describe a new stance, camera angle, rotation, tilt or re-staging as part of this mutation.'] : []),
         'TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.',

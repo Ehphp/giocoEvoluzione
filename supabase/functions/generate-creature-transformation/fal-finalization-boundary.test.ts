@@ -33,4 +33,12 @@ describe('Fal webhook and finalization boundary', () => {
         expect(finalizer).not.toContain('edge-image-codec')
         expect(submission).not.toContain('edge-image-codec')
     })
+
+    it('runs Gemini inspection only after Seedream success, before background removal, without entering retry flow', () => {
+        const seedreamFinalizer = finalizer.slice(finalizer.indexOf('async function finalizeSeedreamProduction'), finalizer.indexOf('async function finalizeSeedream(input:'))
+        expect(seedreamFinalizer.indexOf('markSucceeded')).toBeLessThan(seedreamFinalizer.indexOf('inspectSeedreamVisual'))
+        expect(seedreamFinalizer.indexOf('inspectSeedreamVisual')).toBeLessThan(seedreamFinalizer.indexOf('markBackgroundRemovalPending'))
+        expect(finalizer).toContain('GeminiVisualInspectionService')
+        expect(seedreamFinalizer.slice(seedreamFinalizer.indexOf('inspectSeedreamVisual'))).not.toContain('retryCroppedSeedream')
+    })
 })

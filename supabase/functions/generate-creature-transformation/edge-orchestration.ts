@@ -475,6 +475,7 @@ export async function orchestrateGenerateUnlockedTransformation(input: CreatureT
                     webhookUrl: input.falWebhookUrl,
                     parameters: input.policy.seedream.parameters,
                     sourceUrlTtlSeconds: input.policy.seedream.submissionSourceUrlTtlSeconds,
+                    visualInspection: source.visualInspection,
                     ...(input.validator ? { validator: input.validator } : {}),
                 })
                 : await submitFluxQueueForAuthenticatedProfile({

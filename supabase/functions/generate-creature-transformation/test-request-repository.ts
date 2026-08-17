@@ -22,7 +22,7 @@ function recordFor(input: ReserveCreatureTransformationRequestInput, id: string,
         visualTraitId: input.visualTraitId ?? null, intensity: input.intensity ?? null, promptTemplateVersion: null, conceptSchemaVersion: null,
         sourceSha256: null, resultSha256: null, resultPath: null, resultMimeType: null, resultWidth: null, resultHeight: null,
         generationLatencyMs: null,
-        estimatedCostUsd: input.estimatedCostUsd ?? null, actualCostUsd: null, assetReadiness: null, validationWarnings: [], conceptSnapshot: null, attemptCount: 0, errorCode: null, errorMessage: null,
+        estimatedCostUsd: input.estimatedCostUsd ?? null, actualCostUsd: null, assetReadiness: null, validationWarnings: [], conceptSnapshot: null, visualInspection: null, attemptCount: 0, errorCode: null, errorMessage: null,
         createdAt: now, startedAt: null, completedAt: null, updatedAt: now,
     }
 }
@@ -44,7 +44,7 @@ function applyTransition(record: CreatureTransformationRequestRecord, status: 'R
 
 export function createInMemoryRequestRepository(options: RepositoryOptions = {}) {
     const records = new Map<string, CreatureTransformationRequestRecord>()
-    const calls = { reserve: 0, markRunning: 0, markSucceeded: 0, markFailed: 0, finalizeBackgroundRemovalCandidate: 0 }
+    const calls = { reserve: 0, markRunning: 0, markSucceeded: 0, markFailed: 0, recordVisualInspection: 0, finalizeBackgroundRemovalCandidate: 0 }
     let sequence = 0
     const key = (profileId: string, idempotencyKey: string) => `${profileId}:${idempotencyKey}`
     const now = options.now ?? (() => new Date().toISOString())
@@ -82,6 +82,15 @@ export function createInMemoryRequestRepository(options: RepositoryOptions = {})
             if (!record || (record.status !== 'RESERVED' && record.status !== 'RUNNING')) throw new Error('state conflict')
             const updated = applyTransition(record, 'FAILED', { errorCode: input.errorCode, errorMessage: input.errorMessage }, now())
             records.set(key(updated.profileId, updated.idempotencyKey), updated)
+            return updated
+        },
+        async recordVisualInspection(input) {
+            calls.recordVisualInspection += 1
+            const entry = [...records.entries()].find(([, value]) => value.id === input.requestId && value.profileId === input.profileId)
+            const current = entry?.[1]
+            if (!current || current.status !== 'SUCCEEDED') throw new Error('state conflict')
+            const updated: CreatureTransformationRequestRecord = { ...current, visualInspection: input.visualInspection, updatedAt: now() }
+            records.set(entry![0], updated)
             return updated
         },
         async updateRunningFalSubmission(input) {

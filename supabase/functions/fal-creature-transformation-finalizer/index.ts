@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
-import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
+import { getBodyPlan, resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from '../generate-creature-transformation/supabase-creature-identity-resolver.ts'
 import { SupabaseCreatureTransformationStorageAdapter, type CreatureTransformationStorageClient } from '../generate-creature-transformation/supabase-creature-transformation-storage.ts'
@@ -17,6 +17,8 @@ import { readCreatureTransformationLabPolicy } from '../generate-creature-transf
 import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
 import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import { parseVisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
+import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration } from './gemini-visual-inspection-service.ts'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -55,11 +57,12 @@ function createPlayerRepository(supabaseAdmin: ReturnType<typeof createClient>):
             } : null
         },
         async findCurrentVisualVersion({ creatureId, versionId }) {
-            const { data, error } = await supabaseAdmin.from('creature_visual_versions').select('id, creature_id, asset_path, asset_sha256, version_number, visual_trait_id').eq('id', versionId).eq('creature_id', creatureId).eq('status', 'ACTIVE').maybeSingle()
+            const { data, error } = await supabaseAdmin.from('creature_visual_versions').select('id, creature_id, asset_path, asset_sha256, version_number, visual_trait_id, visual_inspection').eq('id', versionId).eq('creature_id', creatureId).eq('status', 'ACTIVE').maybeSingle()
             if (error) throw error
             return data ? {
                 id: String(data.id), creatureId: String(data.creature_id), assetPath: String(data.asset_path), assetSha256: String(data.asset_sha256), versionNumber: Number(data.version_number),
                 isBaseVersion: !/^(?:[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|cleanup\/[a-f0-9]{64})\.png$/.test(String(data.asset_path)),
+                visualInspection: parseVisualInspection(data.visual_inspection),
             } : null
         },
         async listPreviousTransformations(creatureId) {
@@ -286,7 +289,7 @@ async function retryCroppedSeedream(input: {
         adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds,
     })
     const sourceUrl = (await input.storage.createVisualVersionSignedUrl({ assetPath: workflow.source.path, isBaseVersion: workflow.source.isBaseVersion, expiresInSeconds: input.sourceUrlTtlSeconds })).signedUrl
-    const prompt = await composeSeedreamQueuePrompt({ identity: source.identity, plan, concept, framingAttempt: input.record.attemptCount })
+    const prompt = await composeSeedreamQueuePrompt({ identity: source.identity, plan, concept, framingAttempt: input.record.attemptCount, repairBrief: visualRepairBrief(source.visualInspection) })
     const submission = await input.provider.submitSeedreamEvolution({ prompt: prompt.prompt, sourceUrl, imageSize: workflow.parameters.imageSize, webhookUrl: input.webhookUrl })
     await input.repository.updateRunningFalSubmission({
         requestId: input.record.id,
@@ -302,6 +305,44 @@ async function retryCroppedSeedream(input: {
             incrementAttempt: true,
         },
     })
+}
+
+async function inspectSeedreamVisual(input: {
+    record: CreatureTransformationRequestRecord
+    image: Uint8Array
+    mimeType: 'image/png' | 'image/jpeg'
+    repository: SupabaseCreatureTransformationRequestRepository
+    resolver: SupabaseCreatureIdentityResolver
+}) {
+    try {
+        const source = await input.resolver.resolve({ profileId: input.record.profileId, creatureId: input.record.creatureId })
+        const snapshot = isFluxEvolutionSnapshot(input.record.conceptSnapshot) ? input.record.conceptSnapshot : null
+        const bodyPlan = snapshot?.resultBodyPlanId
+            ? getBodyPlan(snapshot.resultBodyPlanId)
+            : source.bodyPlan ?? resolveCanonicalBodyPlan({ baseCreatureKey: source.identity.baseCreatureKey, adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds })
+        if (!bodyPlan) return
+        const orientation = source.visualInspection?.observedVisualState?.orientation
+        const inspection = await new GeminiVisualInspectionService(readGeminiVisualInspectionConfiguration((name) => Deno.env.get(name))).inspect({
+            image: input.image,
+            mimeType: input.mimeType,
+            bodyPlan,
+            generation: source.currentVersionNumber + 1,
+            previous: source.visualInspection,
+            expectedOrientation: orientation ? `${orientation.viewpoint}/${orientation.facing}` : null,
+        })
+        await input.repository.recordVisualInspection({ requestId: input.record.id, profileId: input.record.profileId, visualInspection: inspection })
+        console.info('fal.finalizer.seedream_visual_inspection', {
+            providerRequestId: input.record.providerRequestId,
+            detector: inspection.anomalyDetector.status,
+            mapper: inspection.stateMapper.status,
+            anomalies: inspection.visualAnomalies.filter((anomaly) => anomaly.status === 'UNRESOLVED').length,
+        })
+    } catch (error) {
+        console.warn('fal.finalizer.seedream_visual_inspection_unavailable', {
+            providerRequestId: input.record.providerRequestId,
+            reason: error instanceof Error ? error.message.slice(0, 180) : 'unknown',
+        })
+    }
 }
 
 async function finalizeSeedreamProduction(input: {
@@ -373,6 +414,15 @@ async function finalizeSeedreamProduction(input: {
             assetReadiness: 'EXPERIMENT_ONLY',
             validationWarnings: ['BACKGROUND_REMOVAL_PENDING_CLIENT', ...(downloaded.mimeType === 'image/jpeg' ? ['SEEDREAM_PROVIDER_JPEG'] : [])],
         },
+    })
+    // The image is already successful before Gemini is involved. Inspection is best-effort and
+    // never reaches the crop-retry or failed-request branches.
+    await inspectSeedreamVisual({
+        record: completed,
+        image: downloaded.bytes,
+        mimeType: downloaded.mimeType,
+        repository: input.repository,
+        resolver: input.resolver,
     })
     if (completed.visualProgressTrackId) await input.visualRepository.markBackgroundRemovalPending({ profileId: completed.profileId, trackId: completed.visualProgressTrackId, requestId: completed.id })
 }

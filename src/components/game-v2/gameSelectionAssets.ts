@@ -30,10 +30,11 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.playerCreature,
     alt: 'Creatura del giocatore verde',
     nativeFacing: 'right',
-    scale: .95,
+    // The current starter is a tightly framed square PNG. Keep its visible body comparable to
+    // the portrait opponent sprite; the arena itself owns the available space.
+    scale: .62,
     offsetX: 0,
-    // The supplied PNG has transparent space under the feet.
-    offsetY: 18,
+    offsetY: 0,
 }
 
 export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
@@ -41,10 +42,9 @@ export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     alt: 'Creatura avversaria viola',
     // The supplied bot sprite already looks toward the left.
     nativeFacing: 'left',
-    scale: .86,
+    scale: .62,
     offsetX: 0,
-    // The supplied PNG has transparent space under the feet.
-    offsetY: 18,
+    offsetY: 0,
 }
 
 const EVENT_BATTLE_BACKGROUNDS: Record<string, string> = {

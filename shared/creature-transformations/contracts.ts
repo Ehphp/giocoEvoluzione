@@ -4,6 +4,7 @@ import type { BodyPlanMutationId } from './flux-evolution/body-plan-mutations.ts
 import type { CreatureBodyPlan } from './flux-evolution/body-plan-registry.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type { VisualInspection } from './visual-inspection.ts'
 
 export type CreatureSemanticIdentity = {
     creatureId: string
@@ -27,6 +28,8 @@ export type ResolvedCreatureSource = {
     /** Canonical topology: the starter body plan plus every adopted structural mutation. */
     bodyPlan: CreatureBodyPlan | null
     adoptedBodyPlanMutationIds: BodyPlanMutationId[]
+    /** Non-canonical server-side observation of the current rendered visual, when available. */
+    visualInspection?: VisualInspection | null
 }
 
 export interface CreatureIdentityResolver {

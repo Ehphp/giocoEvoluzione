@@ -4,6 +4,7 @@ import {
     SupabaseCreatureTransformationRequestRepository,
     type CreatureTransformationRequestRepositoryClient,
 } from './creature-transformation-request-repository.ts'
+import type { VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 function databaseRecord(overrides: Record<string, unknown> = {}) {
     return {
@@ -78,6 +79,20 @@ describe('SupabaseCreatureTransformationRequestRepository', () => {
         const repository = new SupabaseCreatureTransformationRequestRepository(mock.client)
         await expect(repository.getByIdempotencyKey({ profileId: 'profile-1', idempotencyKey: 'key-1' })).resolves.toMatchObject({ id: 'request-1' })
         expect(mock.maybeSingle).toHaveBeenCalledTimes(1)
+    })
+
+    it('persists the bounded visual inspection JSON only after request success', async () => {
+        const inspection: VisualInspection = {
+            schemaVersion: 'visual-inspection-v1', inspectedAt: '2026-08-17T00:00:00.000Z',
+            anomalyDetector: { status: 'COMPLETE', evidence: [] }, visualAnomalies: [],
+            stateMapper: { status: 'COMPLETE', usedVision1Evidence: false, evidenceAssessments: [], structuralConcerns: [] },
+        }
+        const saved = createClient({ outcome: 'UPDATED', record: databaseRecord({ status: 'SUCCEEDED', visual_inspection: inspection }) })
+        await expect(new SupabaseCreatureTransformationRequestRepository(saved.client).recordVisualInspection({ requestId: 'request-1', profileId: 'profile-1', visualInspection: inspection }))
+            .resolves.toMatchObject({ visualInspection: { schemaVersion: 'visual-inspection-v1' } })
+        expect(saved.rpc).toHaveBeenCalledWith('record_creature_transformation_visual_inspection', expect.objectContaining({
+            p_request_id: 'request-1', p_profile_id: 'profile-1', p_visual_inspection: inspection,
+        }))
     })
 
     it('persists a queue submission and uses the server-only finalization claim RPC', async () => {

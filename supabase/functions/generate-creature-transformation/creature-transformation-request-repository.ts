@@ -2,6 +2,7 @@ import type { CreatureTransformationAssetReadiness } from '../../../shared/creat
 import type { TransformationCost, TransformationRequestStatus } from '../../../shared/creature-transformations/request-persistence.ts'
 import type { CreatureTransformationConceptSnapshot } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { parseVisualInspection, type VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 export type CreatureTransformationRequestOperation = 'GENERATE_CONCEPT' | 'GENERATE_IMAGE' | 'GENERATE_UNLOCKED_TRANSFORMATION'
 
@@ -46,6 +47,7 @@ export type CreatureTransformationRequestRecord = Readonly<{
     assetReadiness: CreatureTransformationAssetReadiness | null
     validationWarnings: string[]
     conceptSnapshot: CreatureTransformationConceptSnapshot | null
+    visualInspection: VisualInspection | null
     attemptCount: number
     errorCode: string | null
     errorMessage: string | null
@@ -138,6 +140,7 @@ export interface CreatureTransformationRequestRepository {
     reserve(input: ReserveCreatureTransformationRequestInput): Promise<RequestReservationResult>
     markRunning(input: { requestId: string; profileId: string }): Promise<CreatureTransformationRequestRecord>
     markSucceeded(input: { requestId: string; profileId: string; data: RequestTransitionData }): Promise<CreatureTransformationRequestRecord>
+    recordVisualInspection(input: { requestId: string; profileId: string; visualInspection: VisualInspection }): Promise<CreatureTransformationRequestRecord>
     markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord>
     updateRunningFalSubmission(input: { requestId: string; profileId: string; data: RunningFalSubmissionData }): Promise<CreatureTransformationRequestRecord>
     claimFalFinalization(input: { providerRequestId: string }): Promise<FalFinalizationClaim>
@@ -241,6 +244,7 @@ function mapRecord(value: unknown): CreatureTransformationRequestRecord {
         generationLatencyMs: readNumber(record, 'generation_latency_ms', true), estimatedCostUsd: readNumber(record, 'estimated_cost_usd', true), actualCostUsd: readNumber(record, 'actual_cost_usd', true),
         assetReadiness: readString(record, 'asset_readiness', true) as CreatureTransformationAssetReadiness | null, validationWarnings: readWarnings(record),
         conceptSnapshot: record.concept_snapshot && typeof record.concept_snapshot === 'object' ? record.concept_snapshot as CreatureTransformationConceptSnapshot : null,
+        visualInspection: parseVisualInspection(record.visual_inspection),
         attemptCount: readNumber(record, 'attempt_count') ?? 0, errorCode: readString(record, 'error_code', true), errorMessage: readString(record, 'error_message', true),
         createdAt: readString(record, 'created_at')!, startedAt: readString(record, 'started_at', true), completedAt: readString(record, 'completed_at', true), updatedAt: readString(record, 'updated_at')!,
     }
@@ -298,6 +302,24 @@ export class SupabaseCreatureTransformationRequestRepository implements Creature
 
     async markSucceeded(input: { requestId: string; profileId: string; data: RequestTransitionData }): Promise<CreatureTransformationRequestRecord> {
         return this.transition(input, 'SUCCEEDED', input.data)
+    }
+
+    async recordVisualInspection(input: { requestId: string; profileId: string; visualInspection: VisualInspection }): Promise<CreatureTransformationRequestRecord> {
+        let response: { data: unknown; error: DatabaseError }
+        try {
+            response = await this.client.rpc('record_creature_transformation_visual_inspection', {
+                p_request_id: input.requestId,
+                p_profile_id: input.profileId,
+                p_visual_inspection: input.visualInspection,
+            })
+        } catch (error) {
+            throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile salvare l ispezione visuale.', { cause: error })
+        }
+        if (response.error) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'Non e stato possibile salvare l ispezione visuale.', { cause: response.error })
+        const result = readRpcResult(response.data)
+        if (result.outcome === 'CONFLICT') throw new CreatureTransformationRequestRepositoryError('REQUEST_STATE_CONFLICT', 'La richiesta non e piu disponibile per l ispezione visuale.')
+        if (result.outcome !== 'UPDATED' || !result.record) throw new CreatureTransformationRequestRepositoryError('REQUEST_PERSISTENCE_FAILED', 'L ispezione visuale non ha restituito il record aggiornato.')
+        return result.record
     }
 
     async markFailed(input: { requestId: string; profileId: string; errorCode: string; errorMessage: string }): Promise<CreatureTransformationRequestRecord> {

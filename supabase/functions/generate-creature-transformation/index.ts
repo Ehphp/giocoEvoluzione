@@ -3,6 +3,7 @@ import type { CreatureTransformationErrorResponse } from '../../../shared/creatu
 import { readBodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
+import { parseVisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { getCreatureTransformationFailureStatus, orchestrateCreatureTransformation } from './edge-orchestration.ts'
@@ -67,7 +68,7 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
         async findCurrentVisualVersion({ creatureId, versionId }) {
             const { data, error } = await supabaseAdmin
                 .from('creature_visual_versions')
-                .select('id, creature_id, asset_path, asset_sha256, version_number, visual_trait_id')
+                .select('id, creature_id, asset_path, asset_sha256, version_number, visual_trait_id, visual_inspection')
                 .eq('id', versionId)
                 .eq('creature_id', creatureId)
                 .eq('status', 'ACTIVE')
@@ -77,6 +78,7 @@ function createRepository(supabaseAdmin: ReturnType<typeof createClient>, reques
             return {
                 id: String(data.id), creatureId: String(data.creature_id), assetPath: String(data.asset_path),
                 assetSha256: String(data.asset_sha256), versionNumber: Number(data.version_number), isBaseVersion: !/^(?:[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}|cleanup\/[a-f0-9]{64})\.png$/.test(String(data.asset_path)),
+                visualInspection: parseVisualInspection(data.visual_inspection),
             }
         },
         async listPreviousTransformations(creatureId) {

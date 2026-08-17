@@ -60,6 +60,17 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION')
     })
 
+    it('adds observed state only as secondary repair context and leaves the selected target primary', () => {
+        const prompt = composeFluxMicroConceptInstructions({
+            ...input,
+            visualContinuity: 'CURRENT OBSERVED VISUAL STATE: four limbs; unresolved EXTRA_LIMB at CENTER_IMAGE_RIGHT.',
+        })
+
+        expect(prompt).toContain('VISUAL CONTINUITY (secondary repair context)')
+        expect(prompt).toContain('unresolved EXTRA_LIMB')
+        expect(prompt).toMatch(/selected target remains the primary mutation/i)
+    })
+
     it('treats DEFENSE as a purpose and asks for grown biological anatomy', () => {
         const basePlan = planFor('TAIL')
         const prompt = composeFluxMicroConceptInstructions({

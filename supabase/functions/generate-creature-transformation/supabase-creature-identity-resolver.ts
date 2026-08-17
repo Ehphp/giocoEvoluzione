@@ -3,6 +3,7 @@ import { CREATURE_IDENTITY_REGISTRY, type CreatureIdentityDefinition } from './i
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
+import type { VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 export type StoredPlayerCreature = Readonly<{
     id: string
@@ -18,6 +19,7 @@ export type StoredCurrentVisualVersion = Readonly<{
     assetSha256: string
     versionNumber: number
     isBaseVersion: boolean
+    visualInspection?: VisualInspection | null
 }>
 
 export interface PlayerCreatureRepository {
@@ -118,6 +120,7 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
             sourceIsBaseVersion: currentVisualVersion?.isBaseVersion ?? true,
             currentVisualVersionId: currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
             currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,
+            visualInspection: currentVisualVersion?.visualInspection ?? null,
             // The full adopted history is needed to reconstruct permanent body-plan mutations.
             // Prompt lineage itself is bounded separately by the evolution planner.
             previousTransformations,
