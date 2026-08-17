@@ -61,8 +61,8 @@ describe('visual inspection repair lifecycle', () => {
     it('accepts bounded persisted horizontal-mirror correction metadata', () => {
         const parsed = parseVisualInspection({
             ...prior(),
-            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_LEFT', sourceFacing: 'IMAGE_RIGHT' },
+            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_RIGHT', correctedFacing: 'IMAGE_LEFT' },
         })
-        expect(parsed?.assetCorrection).toMatchObject({ type: 'HORIZONTAL_MIRROR', sourceFacing: 'IMAGE_RIGHT' })
+        expect(parsed?.assetCorrection).toMatchObject({ type: 'HORIZONTAL_MIRROR', correctedFacing: 'IMAGE_LEFT' })
     })
 })

@@ -116,6 +116,15 @@ describe('anatomy contract', () => {
             expect(structural.failureConditions.join(' ')).not.toMatch(/Adding, removing, duplicating or relocating heads, limbs/i)
         })
 
+        it('keeps source and result topology distinct for an authorized tail split', () => {
+            const structural = buildAnatomyContract({ bodyPlan: quadruped, evolutionTargetId: 'TAIL', capability: 'BODY_PLAN_MUTATION', bodyPlanMutationId: 'TAIL_SPLIT' })
+
+            expect(structural.sourceTopology.tailCount).toBe(1)
+            expect(structural.resultTopology.tailCount).toBe(2)
+            expect(structural.topologyInvariants.join(' ')).toContain('Keep exactly 2 tails')
+            expect(structural.structuralChange).toMatch(/Split the tail into two tails/i)
+        })
+
         it('rejects a structural mutation without the capability, with the wrong target or outside the body plan', () => {
             expect(() => buildAnatomyContract({ bodyPlan: quadruped, evolutionTargetId: 'LIMBS_AND_FEET', bodyPlanMutationId: 'ADD_LIMB_PAIR' }))
                 .toThrowError(expect.objectContaining({ code: 'BODY_PLAN_MUTATION_NOT_AUTHORIZED' }))

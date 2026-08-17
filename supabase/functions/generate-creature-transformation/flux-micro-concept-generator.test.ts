@@ -16,7 +16,10 @@ function planFor(evolutionTargetId: 'SKIN_AND_COVERING' | 'LIMBS_AND_FEET' | 'TA
         evolutionTargetId,
         previousTransformations: PREVIOUS,
         seed: 'seed',
-        ...(structural ? { bodyPlanMutationEnabled: true, requestedBodyPlanMutationId: 'ADD_LIMB_PAIR' as const } : {}),
+        ...(structural ? {
+            bodyPlanMutationEnabled: true,
+            requestedBodyPlanMutationId: evolutionTargetId === 'TAIL' ? 'TAIL_SPLIT' as const : 'ADD_LIMB_PAIR' as const,
+        } : {}),
     })
 }
 
@@ -96,12 +99,33 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toMatch(/differently balanced|posture rebalancing/i)
     })
 
+    it('locks TAIL concepts to the source pose and local tail anatomy', () => {
+        const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('TAIL') })
+        const nonTailPrompt = composeFluxMicroConceptInstructions(input)
+
+        expect(prompt).toContain('TAIL POSE AND BODY LOCK')
+        expect(prompt).toMatch(/Preserve the original pose and body plan/i)
+        expect(prompt).toMatch(/secondary adaptation only when it is necessary for local anatomical continuity, tail-root integration or tightly linked target material or colour propagation/i)
+        expect(prompt).toMatch(/never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i)
+        expect(prompt).not.toMatch(/posture rebalancing|stance rebalancing|supporting anatomy/i)
+        expect(nonTailPrompt).not.toContain('TAIL POSE AND BODY LOCK')
+    })
+
     it('states the authorized structural change when the capability is used', () => {
         const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('LIMBS_AND_FEET', true) })
 
         expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
         expect(prompt).toMatch(/one additional symmetrical pair of limbs/i)
         expect(prompt).toContain('Keep exactly 6 limbs')
+    })
+
+    it('separates source, authorized change and output topology for a structural TAIL concept', () => {
+        const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('TAIL', true) })
+
+        expect(prompt).toMatch(/SOURCE ANATOMY: The source creature currently has exactly 1 tail/i)
+        expect(prompt).toMatch(/AUTHORIZED TOPOLOGY CHANGE: Change exactly 1 existing tail into 2 tails sharing the original tail root/i)
+        expect(prompt).toMatch(/OUTPUT ANATOMY: The final creature must have exactly 2 tails/i)
+        expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION: Split the tail into two tails')
     })
 
     it('uses strict structured output and returns only the small micro-concept', async () => {

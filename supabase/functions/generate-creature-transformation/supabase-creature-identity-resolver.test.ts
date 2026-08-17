@@ -80,11 +80,11 @@ describe('SupabaseCreatureIdentityResolver', () => {
             anomalyDetector: { status: 'COMPLETE', evidence: [] }, visualAnomalies: [],
             stateMapper: { status: 'COMPLETE', usedVision1Evidence: false, evidenceAssessments: [], structuralConcerns: [] },
             observedVisualState: {
-                schemaVersion: 'observed-visual-v1', orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped',
+                schemaVersion: 'observed-visual-v1', orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_LEFT' }, observedBodyPlan: 'quadruped',
                 headAndEyes: 'one head', limbsAndLimbLikeStructures: 'four legs', tail: 'one tail', hornsAntlers: 'none', dorsalStructures: 'none', appendages: 'none',
                 skinCovering: 'scales', primaryColors: ['green'], distinctiveStructures: [], targetRegions: [],
             },
-            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_LEFT', sourceFacing: 'IMAGE_RIGHT' },
+            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_RIGHT', correctedFacing: 'IMAGE_LEFT' },
         }
         const repository: PlayerCreatureRepository = {
             async findByCreatureId() { return { id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING', currentVisualVersionId: 'version-2' } },
@@ -100,7 +100,7 @@ describe('SupabaseCreatureIdentityResolver', () => {
 
         expect(result).toMatchObject({
             sourceImagePath: 'candidates/profile-1/' + 'c'.repeat(64) + '.png', sourceSha256: 'c'.repeat(64),
-            visualInspection: { observedVisualState: { orientation: { facing: 'IMAGE_RIGHT' } }, assetCorrection: { type: 'HORIZONTAL_MIRROR' } },
+            visualInspection: { observedVisualState: { orientation: { facing: 'IMAGE_LEFT' } }, assetCorrection: { type: 'HORIZONTAL_MIRROR' } },
         })
     })
 })

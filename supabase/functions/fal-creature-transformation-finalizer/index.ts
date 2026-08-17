@@ -315,7 +315,6 @@ async function inspectSeedreamVisual(input: {
     resolver: SupabaseCreatureIdentityResolver
 }): Promise<Readonly<{
     inspection: VisualInspection
-    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | 'CENTER' | 'UNKNOWN' | null
     generation: number
 }> | null> {
     try {
@@ -340,7 +339,7 @@ async function inspectSeedreamVisual(input: {
             mapper: inspection.stateMapper.status,
             anomalies: inspection.visualAnomalies.filter((anomaly) => anomaly.status === 'UNRESOLVED').length,
         })
-        return Object.freeze({ inspection, sourceFacing: orientation?.facing ?? null, generation: source.currentVersionNumber + 1 })
+        return Object.freeze({ inspection, generation: source.currentVersionNumber + 1 })
     } catch (error) {
         console.warn('fal.finalizer.seedream_visual_inspection_unavailable', {
             providerRequestId: input.record.providerRequestId,
@@ -411,7 +410,7 @@ async function finalizeSeedreamProduction(input: {
     let persistedInspection = visualInspection?.inspection ?? null
     let mirrorCorrectionApplied = false
     if (visualInspection) {
-        const mirrorDecision = decideHorizontalMirrorCorrection({ sourceFacing: visualInspection.sourceFacing, inspection: visualInspection.inspection })
+        const mirrorDecision = decideHorizontalMirrorCorrection({ inspection: visualInspection.inspection })
         if (mirrorDecision.action === 'FLIP') {
             const mirrored = await flipImageHorizontallyToPng({ bytes: downloaded.bytes, mimeType: downloaded.mimeType })
             dimensions = seedreamProductionDimensions({ ...mirrored, expected: workflow.parameters.imageSize })
@@ -419,15 +418,14 @@ async function finalizeSeedreamProduction(input: {
             resultSha256 = await sha256Hex(mirrored.bytes)
             persistedInspection = applyHorizontalMirrorCorrection({
                 inspection: visualInspection.inspection,
-                sourceFacing: mirrorDecision.sourceFacing!,
                 outputFacing: mirrorDecision.outputFacing!,
+                correctedFacing: 'IMAGE_LEFT',
                 generation: visualInspection.generation,
                 appliedAt: new Date().toISOString(),
             })
             mirrorCorrectionApplied = true
             console.info('fal.finalizer.seedream_horizontal_mirror_corrected', {
                 providerRequestId: input.record.providerRequestId,
-                sourceFacing: mirrorDecision.sourceFacing,
                 outputFacing: mirrorDecision.outputFacing,
                 sourceMimeType: downloaded.mimeType,
                 persistedMimeType: mirrored.mimeType,

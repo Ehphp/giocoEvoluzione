@@ -14,6 +14,10 @@ export type AnatomyContract = Readonly<{
     bodyPlanId: BodyPlanId
     /** The body plan the result must show. For a structural mutation this is the new plan. */
     resultBodyPlanId: BodyPlanId
+    /** Canonical topology visible in the supplied source image. */
+    sourceTopology: CreatureTopology
+    /** Canonical topology the generated result must show. */
+    resultTopology: CreatureTopology
     topologyInvariants: readonly string[]
     targetAllowances: readonly string[]
     preservationRules: readonly string[]
@@ -39,24 +43,27 @@ function freeze(items: readonly string[]): readonly string[] {
     return Object.freeze(items.filter((item) => item.trim().length > 0))
 }
 
-function limbSentence(topology: CreatureTopology): string | null {
+function limbSentence(topology: CreatureTopology, preservePresentation = false): string | null {
     const limbs = topology.forelimbCount + topology.hindLimbCount
     if (!limbs) return 'The creature has no limbs; it stays limbless.'
     const pairs = limbs / 2
+    const presentationRule = preservePresentation
+        ? ' Keep every limb in its existing anatomical root and body region.'
+        : ' Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.'
     return Number.isInteger(pairs)
-        ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, connected to the same anatomical roots and body regions. Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.`
-        : `Keep exactly ${limbs} limbs connected to the same anatomical roots and body regions. Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.`
+        ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, connected to the same anatomical roots and body regions.${presentationRule}`
+        : `Keep exactly ${limbs} limbs connected to the same anatomical roots and body regions.${presentationRule}`
 }
 
 function countSentence(count: number, singular: string, plural: string): string | null {
     return count > 0 ? `Keep exactly ${count} ${count === 1 ? singular : plural}.` : null
 }
 
-function topologyInvariants(bodyPlan: CreatureBodyPlan): string[] {
+function topologyInvariants(bodyPlan: CreatureBodyPlan, preservePresentation = false): string[] {
     const topology = bodyPlan.topology
     return [
         `Keep exactly ${topology.headCount} head${topology.headCount === 1 ? '' : 's'} with the recognisable face of this individual.`,
-        limbSentence(topology),
+        limbSentence(topology, preservePresentation),
         countSentence(topology.wingCount, 'wing', 'wings'),
         countSentence(topology.tentacleCount, 'tentacle', 'tentacles'),
         countSentence(topology.tailCount, 'tail', 'tails'),
@@ -70,7 +77,7 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
     TAIL: {
         allowances: [
             'Reshape the existing tail freely: length, thickness, segmentation, tip, fins, fans, ridges, spikes and any structure anchored to that tail.',
-            'A strong change of the tail silhouette is wanted.',
+            'A strong tail-local silhouette change is wanted; it must not alter the body silhouette outside the tail.',
         ],
         preservation: ['The tail remains connected to the same anatomical root and body region.'],
         failures: ['A split tail or a tail growing from a new anatomical root is invalid.'],
@@ -188,7 +195,9 @@ export function buildAnatomyContract(input: {
         capability,
         bodyPlanId: input.bodyPlan.id,
         resultBodyPlanId: resultBodyPlan.id,
-        topologyInvariants: freeze(topologyInvariants(resultBodyPlan)),
+        sourceTopology: Object.freeze({ ...input.bodyPlan.topology }),
+        resultTopology: Object.freeze({ ...resultBodyPlan.topology }),
+        topologyInvariants: freeze(topologyInvariants(resultBodyPlan, input.evolutionTargetId === 'TAIL')),
         targetAllowances: freeze([`Work on ${target.promptRegion}.`, ...contract.allowances]),
         preservationRules: freeze(mutation ? mutation.structuralGuardrails : contract.preservation),
         ...(mutation ? { structuralChange: mutation.structuralChange, bodyPlanMutationId: mutation.id } : {}),

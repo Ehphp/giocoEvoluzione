@@ -60,8 +60,8 @@ export type HorizontalMirrorAssetCorrection = Readonly<{
     appliedAt: string
     /** Facing seen in the raw provider output before its pixels were mirrored. */
     outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
-    /** Facing of the source image and of the corrected persisted asset. */
-    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+    /** Facing of the canonical persisted asset after the deterministic pixel flip. */
+    correctedFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
 }>
 
 export type VisualInspection = Readonly<{
@@ -206,12 +206,14 @@ function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
 
 function parseHorizontalMirrorAssetCorrection(value: unknown): HorizontalMirrorAssetCorrection | null {
     const item = record(value)
-    if (!item || Object.keys(item).some((key) => !['type', 'appliedAt', 'outputFacing', 'sourceFacing'].includes(key))) return null
+    // sourceFacing was the short-lived pre-canonical field name; retain read compatibility for
+    // any inspection persisted while that implementation was active.
+    if (!item || Object.keys(item).some((key) => !['type', 'appliedAt', 'outputFacing', 'correctedFacing', 'sourceFacing'].includes(key))) return null
     const appliedAt = text(item.appliedAt, 64)
     const outputFacing = directionalFacing(item.outputFacing)
-    const sourceFacing = directionalFacing(item.sourceFacing)
-    return item.type === 'HORIZONTAL_MIRROR' && appliedAt && outputFacing && sourceFacing
-        ? Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt, outputFacing, sourceFacing })
+    const correctedFacing = directionalFacing(item.correctedFacing ?? item.sourceFacing)
+    return item.type === 'HORIZONTAL_MIRROR' && appliedAt && outputFacing && correctedFacing
+        ? Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt, outputFacing, correctedFacing })
         : null
 }
 
@@ -242,34 +244,24 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
 
 export type HorizontalMirrorCorrectionDecision = Readonly<{
     action: 'FLIP' | 'KEEP'
-    reason: 'SOURCE_FACING_UNKNOWN' | 'OUTPUT_FACING_UNKNOWN' | 'FACING_ALREADY_MATCHES' | 'MIRROR_NOT_CONFIRMED' | 'ALREADY_CORRECTED' | 'CONFIRMED_OPPOSITE_FACING'
-    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null
+    reason: 'OUTPUT_FACING_UNKNOWN' | 'OUTPUT_FACING_LEFT' | 'ALREADY_CORRECTED' | 'OUTPUT_FACING_RIGHT'
     outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null
 }>
 
 /**
- * The visual detector's MIRRORED_SUBJECT finding is the semantic signal. Facing is an
- * independent guard: a horizontal flip is safe only when the source and raw output are known
- * opposites and Vision 2 confirms the exact Vision 1 mirror finding.
+ * The canonical product orientation is creature-facing-left from the observer's viewpoint.
+ * Once Vision maps a raw Seedream image as IMAGE_RIGHT, mirror its pixels regardless of anomaly
+ * labels or the source image's prior facing. UNKNOWN and non-directional views remain untouched.
  */
 export function decideHorizontalMirrorCorrection(input: {
-    sourceFacing: ObservedVisualState['orientation']['facing'] | null | undefined
     inspection: VisualInspection
 }): HorizontalMirrorCorrectionDecision {
-    const sourceFacing = directionalFacing(input.sourceFacing)
     const outputFacing = directionalFacing(input.inspection.observedVisualState?.orientation.facing)
-    if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR') return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', sourceFacing, outputFacing })
-    if (!sourceFacing) return Object.freeze({ action: 'KEEP', reason: 'SOURCE_FACING_UNKNOWN', sourceFacing, outputFacing })
-    if (!outputFacing) return Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_UNKNOWN', sourceFacing, outputFacing })
-    if (sourceFacing === outputFacing) return Object.freeze({ action: 'KEEP', reason: 'FACING_ALREADY_MATCHES', sourceFacing, outputFacing })
-    const hasConfirmedMirror = input.inspection.anomalyDetector.status === 'COMPLETE'
-        && input.inspection.stateMapper.status === 'COMPLETE'
-        && input.inspection.anomalyDetector.evidence.some((evidence, evidenceIndex) => evidence.type === 'MIRRORED_SUBJECT'
-            && evidence.confidence >= 0.8
-            && input.inspection.stateMapper.evidenceAssessments.some((assessment) => assessment.evidenceIndex === evidenceIndex && assessment.disposition === 'CONFIRMED'))
-    return hasConfirmedMirror
-        ? Object.freeze({ action: 'FLIP', reason: 'CONFIRMED_OPPOSITE_FACING', sourceFacing, outputFacing })
-        : Object.freeze({ action: 'KEEP', reason: 'MIRROR_NOT_CONFIRMED', sourceFacing, outputFacing })
+    if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR') return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', outputFacing })
+    if (!outputFacing) return Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_UNKNOWN', outputFacing })
+    return outputFacing === 'IMAGE_RIGHT'
+        ? Object.freeze({ action: 'FLIP', reason: 'OUTPUT_FACING_RIGHT', outputFacing })
+        : Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_LEFT', outputFacing })
 }
 
 function mirrorImageRegion(region: VisualImageRegion): VisualImageRegion {
@@ -292,8 +284,8 @@ function mirrorEvidenceRegion<T extends Vision1DiagnosticEvidence>(evidence: T):
  */
 export function applyHorizontalMirrorCorrection(input: {
     inspection: VisualInspection
-    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
     outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+    correctedFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
     generation: number
     appliedAt: string
 }): VisualInspection {
@@ -315,9 +307,9 @@ export function applyHorizontalMirrorCorrection(input: {
         }),
         observedVisualState: Object.freeze({
             ...observed,
-            orientation: Object.freeze({ ...observed.orientation, facing: input.sourceFacing }),
+            orientation: Object.freeze({ ...observed.orientation, facing: input.correctedFacing }),
         }),
-        assetCorrection: Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt: input.appliedAt, outputFacing: input.outputFacing, sourceFacing: input.sourceFacing }),
+        assetCorrection: Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt: input.appliedAt, outputFacing: input.outputFacing, correctedFacing: input.correctedFacing }),
     })
 }
 

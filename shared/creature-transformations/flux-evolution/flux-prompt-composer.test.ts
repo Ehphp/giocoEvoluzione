@@ -75,6 +75,18 @@ describe('composeFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/Do not create a second unrelated mutation or violate the HARD INVARIANTS or TARGET STRUCTURE BOUNDARY/i)
     })
 
+    it('keeps the default Flux policy tail-local without changing the LIMBS_AND_FEET policy', () => {
+        const tailPrompt = promptFor('TAIL')
+        const limbPrompt = promptFor('LIMBS_AND_FEET')
+
+        expect(tailPrompt).toContain('TAIL POSE AND BODY LOCK')
+        expect(tailPrompt).toMatch(/Every resulting tail must read clearly as a tail, never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i)
+        expect(tailPrompt).not.toMatch(/posture rebalancing|stance rebalancing/i)
+        expect(tailPrompt).toMatch(/Do not add supporting anatomy/i)
+        expect(limbPrompt).not.toContain('TAIL POSE AND BODY LOCK')
+        expect(limbPrompt).toMatch(/natural stance or posture rebalancing, supporting anatomy, structural integration/i)
+    })
+
     it('retains the conservative non-target policy in the version 6 composer', () => {
         const prompt = promptFor('LIMBS_AND_FEET', composeFluxEvolutionPromptV6)
 
@@ -196,6 +208,38 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(retry).toContain('TEST_DYNAMIC_MUTATION_123')
         expect(retry).toContain(dynamicConcept.mutationIdea)
         expect(first).not.toContain('RETRY FRAMING OVERRIDE')
+    })
+
+    it('applies the pose, locality and non-target locks only to TAIL', () => {
+        const tailContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' })
+        const tailPrompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: tailContract, microConcept: dynamicConcept })
+        const nonTailPrompt = lockedPrompt()
+
+        expect(tailPrompt).toContain('TAIL POSE AND BODY LOCK')
+        expect(tailPrompt).toMatch(/Preserve the original pose and body plan/i)
+        expect(tailPrompt).toMatch(/Do not make the creature taller, more upright, more serpentine or substantially elongated/i)
+        expect(tailPrompt).toMatch(/never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i)
+        expect(tailPrompt).toMatch(/Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation/i)
+        expect(tailPrompt).not.toMatch(/posture rebalancing|stance rebalancing|supporting anatomy/i)
+        expect(nonTailPrompt).not.toContain('TAIL POSE AND BODY LOCK')
+        expect(nonTailPrompt).not.toContain('TAIL LOCALITY AND INTEGRATION')
+    })
+
+    it('states tail split topology from source through authorized change to output', () => {
+        const tailSplitContract = buildAnatomyContract({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'TAIL',
+            capability: 'BODY_PLAN_MUTATION',
+            bodyPlanMutationId: 'TAIL_SPLIT',
+        })
+        const prompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: tailSplitContract, microConcept: dynamicConcept })
+
+        expect(prompt).toMatch(/SOURCE ANATOMY[\s\S]*source creature currently has exactly 1 tail/i)
+        expect(prompt).toMatch(/AUTHORIZED TOPOLOGY CHANGE[\s\S]*Change exactly 1 existing tail into 2 tails sharing the original tail root/i)
+        expect(prompt).toMatch(/OUTPUT ANATOMY[\s\S]*final creature must have exactly 2 tails/i)
+        expect(prompt.indexOf('SOURCE ANATOMY')).toBeLessThan(prompt.indexOf('AUTHORIZED TOPOLOGY CHANGE'))
+        expect(prompt.indexOf('AUTHORIZED TOPOLOGY CHANGE')).toBeLessThan(prompt.indexOf('OUTPUT ANATOMY'))
+        expect(prompt).not.toContain('AUTHORIZED STRUCTURAL MUTATION: Split the tail into two tails')
     })
 
     it('makes an authorized structural mutation explicit without unlocking other topology changes', () => {

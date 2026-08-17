@@ -85,13 +85,38 @@ function describeNoveltyReferences(references: readonly EvolutionLineageEntry[])
     return references.map((reference) => `${reference.conceptName}${reference.mutationIdea ? ` (${reference.mutationIdea})` : ''}`).join('; ')
 }
 
+function plural(count: number, singular: string, pluralForm: string): string {
+    return count === 1 ? singular : pluralForm
+}
+
+function isTailStructuralMutation(plan: FluxEvolutionPlan): boolean {
+    return plan.evolutionTargetId === 'TAIL'
+        && plan.capability === 'BODY_PLAN_MUTATION'
+        && Boolean(plan.anatomyContract.structuralChange)
+}
+
+function tailStructuralTopologyInstructions(plan: FluxEvolutionPlan): readonly string[] {
+    const sourceCount = plan.anatomyContract.sourceTopology.tailCount
+    const outputCount = plan.anatomyContract.resultTopology.tailCount
+    return [
+        'TAIL STRUCTURAL TOPOLOGY:',
+        `SOURCE ANATOMY: The source creature currently has exactly ${sourceCount} ${plural(sourceCount, 'tail', 'tails')}.`,
+        `AUTHORIZED TOPOLOGY CHANGE: Change exactly ${sourceCount} existing ${plural(sourceCount, 'tail', 'tails')} into ${outputCount} ${plural(outputCount, 'tail', 'tails')} sharing the original tail root.`,
+        `OUTPUT ANATOMY: The final creature must have exactly ${outputCount} ${plural(outputCount, 'tail', 'tails')}, all clearly readable as tails and all rooted at the original tail attachment point.`,
+    ]
+}
+
 export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConceptInput, retryForNovelty = false): string {
     const plan = input.plan
     const contract = plan.anatomyContract
     const target = EVOLUTION_TARGET_BY_ID[plan.evolutionTargetId]
     const structural = plan.capability === 'BODY_PLAN_MUTATION' && contract.structuralChange
     const bodyShapePresentationLock = plan.evolutionTargetId === 'BODY_SHAPE' && plan.capability === 'ANATOMICAL_MUTATION'
-    const secondaryAdaptationRule = bodyShapePresentationLock
+    const tailPresentationLock = plan.evolutionTargetId === 'TAIL'
+    const tailStructural = isTailStructuralMutation(plan)
+    const secondaryAdaptationRule = tailPresentationLock
+        ? 'Introduce a secondary adaptation only when it is necessary for local anatomical continuity, tail-root integration or tightly linked target material or colour propagation. A secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation; never add one by default, rebalance posture or change stance, redesign the torso or neck, or reposition limbs.'
+        : bodyShapePresentationLock
         ? 'Introduce a secondary adaptation only when it is a necessary consequence of the primary mutation for biomechanical support, anatomical continuity, minimal proportion adjustment within the existing pose, structural integration or tightly linked visual propagation. A secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation; never add one by default, redesign unrelated anatomy or change pose, stance, facing, orientation, viewpoint or composition.'
         : 'Introduce a secondary adaptation only when it is a necessary consequence of the primary mutation for biomechanical support, anatomical continuity, posture rebalancing, structural integration or tightly linked visual propagation. A secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation; never add one by default or redesign unrelated anatomy.'
     const mutableAppearance = input.identity.mutableVisualFeatures.length
@@ -107,14 +132,21 @@ export function composeFluxMicroConceptInstructions(input: GenerateFluxMicroConc
             'Use this only to preserve observed continuity or repair a confirmed or persistent visual defect when compatible with the selected target. The selected target remains the primary mutation; do not turn repair context into a second evolution.',
         ] : []),
         `TARGET FREEDOM: ${contract.targetAllowances.join(' ')}`,
+        ...(tailPresentationLock ? [
+            'TAIL POSE AND BODY LOCK: Preserve the original pose and body plan. Do not make the creature taller, more upright, more serpentine or substantially elongated. Do not lengthen the neck, redesign the torso or reposition the limbs. A tail mutation does not authorize a posture or stance change.',
+            'TAIL LOCALITY AND INTEGRATION: Keep the mutation confined to the tail and the minimum local anatomical integration required at the tail root. Every resulting tail must read clearly as a tail, never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages.',
+            'TAIL NON-TARGET PRESERVATION: Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation. Do not redesign the rest of the creature to present the tail mutation.',
+        ] : []),
         ...(bodyShapePresentationLock ? ['BODY-SHAPE PRESENTATION LOCK: Reshape the trunk strongly through morphology while preserving the same base pose, viewpoint, facing direction, overall orientation and composition. Do not describe a new stance, camera angle, rotation, tilt or re-staging as part of this mutation.'] : []),
-        'TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.',
+        ...(tailStructural
+            ? tailStructuralTopologyInstructions(plan)
+            : ['TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.']),
         `Functional direction: ${plan.evolutionFunction}. Use the biological function to invent the mutation, but describe visible anatomy rather than explaining its purpose. It is not a limit on the concrete morphology.`,
         'BIOLOGICAL PRIOR: Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures must look grown from this creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless the concept explicitly requires them. Biological carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid.',
-        ...(structural
+        ...(structural && !tailStructural
             ? [`AUTHORIZED BODY-PLAN MUTATION: ${contract.structuralChange} Describe the mutation as this structural change actually realised on the creature.`]
             : []),
-        `ANATOMY CONTRACT: ${contract.topologyInvariants.join(' ')}`,
+        `ANATOMY CONTRACT: ${(tailStructural ? contract.topologyInvariants.filter((invariant) => !/\btails?\b/i.test(invariant)) : contract.topologyInvariants).join(' ')}`,
         `PRESERVE: ${contract.preservationRules.join(' ')}`,
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
         `MUTABLE APPEARANCE: ${mutableAppearance}. These are not identity invariants. A visible colour treatment is optional: use it only as a biologically motivated, target-linked secondary adaptation. When warranted, state its location and biological role as part of mutationIdea or visualDetails; otherwise preserve the current coloration.`,

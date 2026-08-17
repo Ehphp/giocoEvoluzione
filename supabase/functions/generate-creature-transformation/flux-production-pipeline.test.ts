@@ -145,6 +145,30 @@ describe('FLUX production pipeline', () => {
         })
     })
 
+    it('uses the tail-specific locked policy in the Seedream production workflow', async () => {
+        const context = createProductionInput({
+            evolutionTargetId: 'TAIL',
+            idempotencyKey: 'seedream-tail-split',
+            policyOverrides: {
+                CREATURE_EVOLUTION_IMAGE_PIPELINE: 'seedream',
+                FAL_SEEDREAM_API_KEY: 'seedream-only-key',
+                SEEDREAM_ESTIMATED_COST_PER_GENERATION: '0.07',
+                SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION: '0.08',
+            },
+        })
+
+        await expect(orchestrateGenerateUnlockedTransformation(context.input as never)).resolves.toMatchObject({ success: true, accepted: true })
+
+        const prompt = String(context.seedreamSubmit.mock.calls[0]![0].prompt)
+        expect(prompt).toContain('TAIL POSE AND BODY LOCK')
+        expect(prompt).toMatch(/never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i)
+        expect(prompt).not.toMatch(/posture rebalancing|stance rebalancing|supporting anatomy/i)
+        expect(context.persistence.get(PROFILE_ID, 'seedream-tail-split')).toMatchObject({
+            promptTemplateVersion: 'seedream-locked-dynamic-v1',
+            evolutionTargetId: 'TAIL',
+        })
+    })
+
     it('uses the restored flux-micro-v5 prompt when selected by server policy', async () => {
         const context = createProductionInput({
             idempotencyKey: 'production-v5',
