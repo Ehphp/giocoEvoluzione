@@ -15,6 +15,11 @@ describe('ImageValidator', () => {
         if (result.valid) expect(result.metadata.sha256).toMatch(/^[a-f0-9]{64}$/)
     })
 
+    it('accepts a valid native canvas when validating a canonical source image', async () => {
+        const result = await validate(createTestPng({ width: 500, height: 500 }), { allowNonStandardDimensions: true })
+        expect(result).toMatchObject({ valid: true, metadata: { width: 500, height: 500, hasAlpha: true } })
+    })
+
     it('rejects invalid signatures, missing IHDR, wrong dimensions, missing alpha, empty and oversized data', async () => {
         const badSignature = createTestPng()
         badSignature[0] = 0

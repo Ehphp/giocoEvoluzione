@@ -68,6 +68,8 @@ export type ImageValidationInput = Readonly<{
     requireAlpha?: boolean
     requireAlphaCoverage?: boolean
     requireTransparentEdges?: boolean
+    /** Source art can use its native canvas; generated pipeline output keeps the render specification. */
+    allowNonStandardDimensions?: boolean
     /** Reject an opaque FLUX render whose detected subject enters this canvas margin. */
     requireSubjectMargin?: boolean | number
 }>
@@ -336,7 +338,7 @@ export class ImageValidator {
 
         if (!ihdr) problems.push(problem('PNG_IHDR_MISSING', 'Il PNG non contiene un chunk IHDR valido.'))
         if (structureInvalid || !sawIend || !sawIdat) problems.push(problem('PNG_STRUCTURE_INVALID', 'La struttura dei chunk PNG non e sufficientemente leggibile.'))
-        if (ihdr && (ihdr.width !== input.renderSpecification.width || ihdr.height !== input.renderSpecification.height)) {
+        if (!input.allowNonStandardDimensions && ihdr && (ihdr.width !== input.renderSpecification.width || ihdr.height !== input.renderSpecification.height)) {
             problems.push(problem('PNG_DIMENSIONS_INVALID', `Il canvas PNG deve essere ${input.renderSpecification.width}x${input.renderSpecification.height}.`))
         }
         if (ihdr && !isCompatibleColorType(ihdr.colorType, ihdr.bitDepth)) {

@@ -51,7 +51,14 @@ async function validateFluxSource(input: { storage: SupabaseCreatureTransformati
         : input.source.kind === 'VISUAL'
             ? await input.storage.readVisualVersionSource(input.source.path, input.source.isBaseVersion)
             : await input.storage.readCanonicalSource(input.source.path, input.source.isBaseVersion)
-    const valid = await input.validator.validate({ bytes: source.bytes, mimeType: source.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION })
+    const valid = await input.validator.validate({
+        bytes: source.bytes,
+        mimeType: source.mimeType,
+        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        // The provider receives the starter as a reference image and produces its own locked
+        // portrait output. Do not reject a valid canonical source merely for being square.
+        allowNonStandardDimensions: true,
+    })
     if (!valid.valid) throw new FluxImageGenerationServiceError('FLUX_SOURCE_IMAGE_INVALID', 'La sorgente FLUX non ha superato i controlli tecnici.', valid.problems)
     return valid.metadata.sha256
 }

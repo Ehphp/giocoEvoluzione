@@ -75,7 +75,12 @@ export async function generateFluxImageForAuthenticatedProfile(input: {
         : input.source.kind === 'VISUAL'
             ? await input.storage.readVisualVersionSource(input.source.path, input.source.isBaseVersion ?? false)
             : await input.storage.readCanonicalSource(input.source.path, input.source.isBaseVersion ?? false)
-    const validSource = await validator.validate({ bytes: source.bytes, mimeType: source.mimeType, renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION })
+    const validSource = await validator.validate({
+        bytes: source.bytes,
+        mimeType: source.mimeType,
+        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
+        allowNonStandardDimensions: true,
+    })
     if (!validSource.valid) throw failedResult('FLUX_SOURCE_IMAGE_INVALID', 'La sorgente FLUX non ha superato i controlli tecnici.', validSource.problems)
     let prompt = ''
     let generated: Awaited<ReturnType<FalFluxImageProvider['transform']>> | null = null
