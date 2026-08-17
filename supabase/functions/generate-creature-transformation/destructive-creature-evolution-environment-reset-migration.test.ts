@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 const migration = readFileSync(resolve('supabase/migrations/202608150001_admin_destructive_creature_evolution_environment_reset.sql'), 'utf8')
 const safeDeleteFix = readFileSync(resolve('supabase/migrations/202608150002_fix_destructive_creature_evolution_reset_safe_deletes.sql'), 'utf8')
 const canonicalSourceMigration = readFileSync(resolve('supabase/migrations/202608150004_update_canonical_creature_source.sql'), 'utf8')
+const canonicalSourceSyncMigration = readFileSync(resolve('supabase/migrations/202608170002_sync_verdant_hatchling_canonical_source.sql'), 'utf8')
 const tool = readFileSync(resolve('tools/reset-creature-evolution-environment.ts'), 'utf8')
 const seedTool = readFileSync(resolve('tools/seed-creature-transformation-source.ts'), 'utf8')
 
@@ -58,6 +59,17 @@ describe('destructive creature evolution environment reset', () => {
         expect(canonicalSourceMigration).toContain("asset_sha256 = '5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c'")
         expect(canonicalSourceMigration).toMatch(/update public\.creature_visual_versions/i)
         expect(seedTool).toContain('upsert: true')
+    })
+
+    it('synchronizes a replacement starter source with every base visual through a service-role RPC', () => {
+        expect(canonicalSourceSyncMigration).toContain('sync_verdant_hatchling_canonical_source')
+        expect(canonicalSourceSyncMigration).toContain("auth.role() <> 'service_role'")
+        expect(canonicalSourceSyncMigration).toContain("set_config('app.syncing_verdant_hatchling_source', 'true', true)")
+        expect(canonicalSourceSyncMigration).toMatch(/update public\.creature_visual_base_asset_catalog[\s\S]*asset_sha256 = p_asset_sha256/i)
+        expect(canonicalSourceSyncMigration).toMatch(/update public\.creature_visual_versions[\s\S]*version_number = 1/i)
+        expect(seedTool).toContain("sync_verdant_hatchling_canonical_source")
+        expect(seedTool).toContain('createHash')
+        expect(seedTool).toContain('syncCanonicalManifest(true)')
     })
 
     it('clears every physical object under the experiments bucket via paginated recursive Storage API calls', () => {

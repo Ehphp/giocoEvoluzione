@@ -234,6 +234,21 @@ Il flag browser mostra solo il controllo; il server resta autorevole e rifiuta `
 
 Il backfill non duplica il PNG per profilo. Le versioni adottate riferiscono l'oggetto Storage esistente: una futura cleanup non deve eliminare alcun `result_path` presente in `creature_visual_versions`.
 
+### Sostituzione della creatura iniziale canonica
+
+Dopo avere deployato la migration che espone `sync_verdant_hatchling_canonical_source`, la sorgente
+canonica e il file locale `public/assets/battle/creatures/verdant-hatchling.png`. Per sostituirla:
+
+1. rimpiazzare quel PNG (deve avere un canale alpha);
+2. eseguire `npm run seed:creature-transformation-source` in un ambiente con `SUPABASE_URL` e
+   `SUPABASE_SERVICE_ROLE_KEY`;
+3. deployare nuovamente le Edge Function se necessario.
+
+Il comando carica lo stesso file in un percorso immutabile basato sul suo hash nel bucket
+`creature-transformation-sources`, calcola hash e dimensioni, quindi aggiorna in un'unica
+transazione il catalogo e tutte le versioni base v1. Le forme evolute restano immutate: la loro
+catena continua dalla propria visuale attiva.
+
 ### Smoke test Fase 7 da eseguire sul remoto
 
 1. Applicare migration/backfill, seedare Storage e deployare entrambe le Function.

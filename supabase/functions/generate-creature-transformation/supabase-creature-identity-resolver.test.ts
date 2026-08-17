@@ -28,8 +28,8 @@ describe('SupabaseCreatureIdentityResolver', () => {
         })
         expect(result.identity.identityFeatures).toEqual(['distinctive individual identity'])
         expect(result.identity.mutableVisualFeatures).toEqual(['visual characteristics'])
-        expect(result.sourceImagePath).toBe('verdant-hatchling-v1.png')
-        expect(result.sourceSha256).toBe('5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c')
+        expect(result.sourceImagePath).toBe('verdant-hatchling/e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605.png')
+        expect(result.sourceSha256).toBe('e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605')
     })
 
     it('rejects missing, foreign and unsupported creature records', async () => {

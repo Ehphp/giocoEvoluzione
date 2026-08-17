@@ -18,7 +18,7 @@ function defineIdentity(definition: CreatureIdentityDefinition): CreatureIdentit
 export const CREATURE_IDENTITY_REGISTRY: Readonly<Record<string, CreatureIdentityDefinition>> = Object.freeze({
     VERDANT_HATCHLING: defineIdentity({
         baseCreatureKey: 'VERDANT_HATCHLING',
-        sourceImagePath: 'verdant-hatchling-v1.png',
+        sourceImagePath: 'verdant-hatchling/e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605.png',
         description: 'A stylized fantasy creature with a distinctive, recognizable visual identity.',
         identityFeatures: ['distinctive individual identity'],
         mutableVisualFeatures: ['visual characteristics'],
