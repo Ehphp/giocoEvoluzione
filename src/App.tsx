@@ -936,7 +936,7 @@ function App() {
         errorMessage={errorMessage}
         playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 } : undefined}
         opponentVisual={gameVisualResource.opponent.visual
-          ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .86, offsetX: 0, offsetY: 18 }
+          ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 }
           : gameVisualResource.opponent.status === 'loading' ? null : undefined}
       />
     )
