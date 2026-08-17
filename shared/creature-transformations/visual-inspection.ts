@@ -55,6 +55,15 @@ export type ObservedVisualState = Readonly<{
     targetRegions: readonly Readonly<{ target: EvolutionTargetId, description: string }>[]
 }>
 
+export type HorizontalMirrorAssetCorrection = Readonly<{
+    type: 'HORIZONTAL_MIRROR'
+    appliedAt: string
+    /** Facing seen in the raw provider output before its pixels were mirrored. */
+    outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+    /** Facing of the source image and of the corrected persisted asset. */
+    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+}>
+
 export type VisualInspection = Readonly<{
     schemaVersion: typeof VISUAL_INSPECTION_SCHEMA_VERSION
     inspectedAt: string
@@ -70,6 +79,7 @@ export type VisualInspection = Readonly<{
         structuralConcerns: readonly Vision1DiagnosticEvidence[]
     }>
     observedVisualState?: ObservedVisualState
+    assetCorrection?: HorizontalMirrorAssetCorrection
 }>
 
 type RecordValue = Record<string, unknown>
@@ -90,6 +100,10 @@ function textList(value: unknown, maximumItems: number, maximumLength: number): 
 
 function confidence(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null
+}
+
+function directionalFacing(value: unknown): 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null {
+    return value === 'IMAGE_LEFT' || value === 'IMAGE_RIGHT' ? value : null
 }
 
 function generation(value: unknown): number | null {
@@ -144,9 +158,10 @@ export function parseMapperEvidenceAssessment(value: unknown): MapperEvidenceAss
 export function parseObservedVisualState(value: unknown): ObservedVisualState | null {
     const item = record(value)
     if (!item || Object.keys(item).some((key) => ![
-        'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages',
+        'schemaVersion', 'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages',
         'skinCovering', 'primaryColors', 'distinctiveStructures', 'targetRegions',
     ].includes(key))) return null
+    if (item.schemaVersion !== undefined && item.schemaVersion !== OBSERVED_VISUAL_STATE_SCHEMA_VERSION) return null
     const orientation = record(item.orientation)
     const viewpoint = orientation?.viewpoint === 'FRONT' || orientation?.viewpoint === 'THREE_QUARTER' || orientation?.viewpoint === 'PROFILE' || orientation?.viewpoint === 'REAR' || orientation?.viewpoint === 'UNKNOWN'
         ? orientation.viewpoint
@@ -189,9 +204,20 @@ function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
     return Object.freeze({ ...evidence, status, detectedAtGeneration, ...(resolvedAtGeneration ? { resolvedAtGeneration } : {}) })
 }
 
+function parseHorizontalMirrorAssetCorrection(value: unknown): HorizontalMirrorAssetCorrection | null {
+    const item = record(value)
+    if (!item || Object.keys(item).some((key) => !['type', 'appliedAt', 'outputFacing', 'sourceFacing'].includes(key))) return null
+    const appliedAt = text(item.appliedAt, 64)
+    const outputFacing = directionalFacing(item.outputFacing)
+    const sourceFacing = directionalFacing(item.sourceFacing)
+    return item.type === 'HORIZONTAL_MIRROR' && appliedAt && outputFacing && sourceFacing
+        ? Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt, outputFacing, sourceFacing })
+        : null
+}
+
 export function parseVisualInspection(value: unknown): VisualInspection | null {
     const item = record(value)
-    if (!item || item.schemaVersion !== VISUAL_INSPECTION_SCHEMA_VERSION || Object.keys(item).some((key) => !['schemaVersion', 'inspectedAt', 'anomalyDetector', 'visualAnomalies', 'stateMapper', 'observedVisualState'].includes(key))) return null
+    if (!item || item.schemaVersion !== VISUAL_INSPECTION_SCHEMA_VERSION || Object.keys(item).some((key) => !['schemaVersion', 'inspectedAt', 'anomalyDetector', 'visualAnomalies', 'stateMapper', 'observedVisualState', 'assetCorrection'].includes(key))) return null
     const inspectedAt = text(item.inspectedAt, 64)
     const detector = record(item.anomalyDetector)
     const mapper = record(item.stateMapper)
@@ -200,15 +226,98 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
     const assessments = Array.isArray(mapper?.evidenceAssessments) && mapper.evidenceAssessments.length <= 8 ? mapper.evidenceAssessments.map(parseMapperEvidenceAssessment) : null
     const structuralConcerns = parseEvidenceList(mapper?.structuralConcerns)
     const observed = item.observedVisualState === undefined ? undefined : parseObservedVisualState(item.observedVisualState)
+    const assetCorrection = item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
     if (!inspectedAt || (detector?.status !== 'COMPLETE' && detector?.status !== 'UNAVAILABLE') || !evidence || !anomalies || !anomalies.every((entry): entry is VisualAnomaly => entry !== null)
         || (mapper?.status !== 'COMPLETE' && mapper?.status !== 'UNAVAILABLE') || typeof mapper?.usedVision1Evidence !== 'boolean' || !assessments || !assessments.every((entry): entry is MapperEvidenceAssessment => entry !== null)
-        || !structuralConcerns || (item.observedVisualState !== undefined && !observed)) return null
+        || !structuralConcerns || (item.observedVisualState !== undefined && !observed) || (item.assetCorrection !== undefined && !assetCorrection)) return null
     return Object.freeze({
         schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION, inspectedAt,
         anomalyDetector: Object.freeze({ status: detector.status, evidence: Object.freeze(evidence) }),
         visualAnomalies: Object.freeze(anomalies),
         stateMapper: Object.freeze({ status: mapper.status, usedVision1Evidence: mapper.usedVision1Evidence, evidenceAssessments: Object.freeze(assessments), structuralConcerns: Object.freeze(structuralConcerns) }),
         ...(observed ? { observedVisualState: observed } : {}),
+        ...(assetCorrection ? { assetCorrection } : {}),
+    })
+}
+
+export type HorizontalMirrorCorrectionDecision = Readonly<{
+    action: 'FLIP' | 'KEEP'
+    reason: 'SOURCE_FACING_UNKNOWN' | 'OUTPUT_FACING_UNKNOWN' | 'FACING_ALREADY_MATCHES' | 'MIRROR_NOT_CONFIRMED' | 'ALREADY_CORRECTED' | 'CONFIRMED_OPPOSITE_FACING'
+    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null
+    outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null
+}>
+
+/**
+ * The visual detector's MIRRORED_SUBJECT finding is the semantic signal. Facing is an
+ * independent guard: a horizontal flip is safe only when the source and raw output are known
+ * opposites and Vision 2 confirms the exact Vision 1 mirror finding.
+ */
+export function decideHorizontalMirrorCorrection(input: {
+    sourceFacing: ObservedVisualState['orientation']['facing'] | null | undefined
+    inspection: VisualInspection
+}): HorizontalMirrorCorrectionDecision {
+    const sourceFacing = directionalFacing(input.sourceFacing)
+    const outputFacing = directionalFacing(input.inspection.observedVisualState?.orientation.facing)
+    if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR') return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', sourceFacing, outputFacing })
+    if (!sourceFacing) return Object.freeze({ action: 'KEEP', reason: 'SOURCE_FACING_UNKNOWN', sourceFacing, outputFacing })
+    if (!outputFacing) return Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_UNKNOWN', sourceFacing, outputFacing })
+    if (sourceFacing === outputFacing) return Object.freeze({ action: 'KEEP', reason: 'FACING_ALREADY_MATCHES', sourceFacing, outputFacing })
+    const hasConfirmedMirror = input.inspection.anomalyDetector.status === 'COMPLETE'
+        && input.inspection.stateMapper.status === 'COMPLETE'
+        && input.inspection.anomalyDetector.evidence.some((evidence, evidenceIndex) => evidence.type === 'MIRRORED_SUBJECT'
+            && evidence.confidence >= 0.8
+            && input.inspection.stateMapper.evidenceAssessments.some((assessment) => assessment.evidenceIndex === evidenceIndex && assessment.disposition === 'CONFIRMED'))
+    return hasConfirmedMirror
+        ? Object.freeze({ action: 'FLIP', reason: 'CONFIRMED_OPPOSITE_FACING', sourceFacing, outputFacing })
+        : Object.freeze({ action: 'KEEP', reason: 'MIRROR_NOT_CONFIRMED', sourceFacing, outputFacing })
+}
+
+function mirrorImageRegion(region: VisualImageRegion): VisualImageRegion {
+    const regions: Record<VisualImageRegion, VisualImageRegion> = {
+        IMAGE_LEFT: 'IMAGE_RIGHT', IMAGE_RIGHT: 'IMAGE_LEFT',
+        UPPER_IMAGE_LEFT: 'UPPER_IMAGE_RIGHT', UPPER_IMAGE_CENTER: 'UPPER_IMAGE_CENTER', UPPER_IMAGE_RIGHT: 'UPPER_IMAGE_LEFT',
+        CENTER_IMAGE_LEFT: 'CENTER_IMAGE_RIGHT', CENTER_IMAGE: 'CENTER_IMAGE', CENTER_IMAGE_RIGHT: 'CENTER_IMAGE_LEFT',
+        LOWER_IMAGE_LEFT: 'LOWER_IMAGE_RIGHT', LOWER_IMAGE_CENTER: 'LOWER_IMAGE_CENTER', LOWER_IMAGE_RIGHT: 'LOWER_IMAGE_LEFT',
+    }
+    return regions[region]
+}
+
+function mirrorEvidenceRegion<T extends Vision1DiagnosticEvidence>(evidence: T): T {
+    return Object.freeze({ ...evidence, imageRegion: mirrorImageRegion(evidence.imageRegion) }) as T
+}
+
+/**
+ * Records the raw-orientation evidence while making the persisted inspection describe the
+ * corrected asset. This keeps future visual-continuity prompts aligned with the actual source.
+ */
+export function applyHorizontalMirrorCorrection(input: {
+    inspection: VisualInspection
+    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+    outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT'
+    generation: number
+    appliedAt: string
+}): VisualInspection {
+    const observed = input.inspection.observedVisualState
+    if (!observed) throw new Error('L ispezione non contiene un orientamento da correggere.')
+    return Object.freeze({
+        ...input.inspection,
+        anomalyDetector: Object.freeze({
+            ...input.inspection.anomalyDetector,
+            evidence: Object.freeze(input.inspection.anomalyDetector.evidence.map(mirrorEvidenceRegion)),
+        }),
+        visualAnomalies: Object.freeze(input.inspection.visualAnomalies.map((anomaly) => Object.freeze({
+            ...mirrorEvidenceRegion(anomaly),
+            ...(anomaly.type === 'MIRRORED_SUBJECT' ? { status: 'RESOLVED' as const, resolvedAtGeneration: input.generation } : {}),
+        }))),
+        stateMapper: Object.freeze({
+            ...input.inspection.stateMapper,
+            structuralConcerns: Object.freeze(input.inspection.stateMapper.structuralConcerns.map(mirrorEvidenceRegion)),
+        }),
+        observedVisualState: Object.freeze({
+            ...observed,
+            orientation: Object.freeze({ ...observed.orientation, facing: input.sourceFacing }),
+        }),
+        assetCorrection: Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt: input.appliedAt, outputFacing: input.outputFacing, sourceFacing: input.sourceFacing }),
     })
 }
 

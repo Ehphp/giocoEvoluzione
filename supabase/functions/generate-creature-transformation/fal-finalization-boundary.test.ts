@@ -30,15 +30,23 @@ describe('Fal webhook and finalization boundary', () => {
         expect(finalizer).toContain("mimeType: downloaded.mimeType")
         expect(finalizer).toContain("downloaded.mimeType === 'image/png'")
         expect(finalizer).toContain("downloaded.mimeType === 'image/jpeg'")
-        expect(finalizer).not.toContain('edge-image-codec')
+        expect(finalizer).toContain('flipImageHorizontallyToPng')
         expect(submission).not.toContain('edge-image-codec')
     })
 
-    it('runs Gemini inspection only after Seedream success, before background removal, without entering retry flow', () => {
+    it('inspects and corrects the Seedream raw before persistence and background removal, without entering retry flow', () => {
         const seedreamFinalizer = finalizer.slice(finalizer.indexOf('async function finalizeSeedreamProduction'), finalizer.indexOf('async function finalizeSeedream(input:'))
-        expect(seedreamFinalizer.indexOf('markSucceeded')).toBeLessThan(seedreamFinalizer.indexOf('inspectSeedreamVisual'))
-        expect(seedreamFinalizer.indexOf('inspectSeedreamVisual')).toBeLessThan(seedreamFinalizer.indexOf('markBackgroundRemovalPending'))
+        expect(seedreamFinalizer.indexOf('inspectSeedreamVisual')).toBeLessThan(seedreamFinalizer.indexOf('flipImageHorizontallyToPng'))
+        expect(seedreamFinalizer.indexOf('flipImageHorizontallyToPng')).toBeLessThan(seedreamFinalizer.indexOf('saveRawResult'))
+        expect(seedreamFinalizer.indexOf('saveRawResult')).toBeLessThan(seedreamFinalizer.indexOf('markSucceeded'))
+        expect(seedreamFinalizer.indexOf('recordVisualInspection')).toBeLessThan(seedreamFinalizer.indexOf('markBackgroundRemovalPending'))
+        expect(seedreamFinalizer).toContain('dimensions = seedreamProductionDimensions({ ...mirrored')
+        expect(seedreamFinalizer).toContain('resultMimeType: rawImage.mimeType')
         expect(finalizer).toContain('GeminiVisualInspectionService')
         expect(seedreamFinalizer.slice(seedreamFinalizer.indexOf('inspectSeedreamVisual'))).not.toContain('retryCroppedSeedream')
+    })
+
+    it('does not re-enter finalization for a duplicate callback after the first claim', () => {
+        expect(finalizer).toContain("if (claim.outcome !== 'CLAIMED') return json(202)")
     })
 })

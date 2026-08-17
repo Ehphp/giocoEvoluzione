@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeVisualInspection, type ObservedVisualState, type Vision1DiagnosticEvidence, type VisualInspection, visualRepairBrief } from './visual-inspection.ts'
+import { mergeVisualInspection, parseVisualInspection, type ObservedVisualState, type Vision1DiagnosticEvidence, type VisualInspection, visualRepairBrief } from './visual-inspection.ts'
 
 const evidence: Vision1DiagnosticEvidence = Object.freeze({ type: 'EXTRA_LIMB', imageRegion: 'CENTER_IMAGE_RIGHT', confidence: 0.93, description: 'Additional limb-like structure.' })
 const observed: ObservedVisualState = Object.freeze({
@@ -56,5 +56,13 @@ describe('visual inspection repair lifecycle', () => {
 
     it('keeps repair instructions compact and secondary to the chosen target', () => {
         expect(visualRepairBrief(prior())).toContain('secondary to the selected evolution target')
+    })
+
+    it('accepts bounded persisted horizontal-mirror correction metadata', () => {
+        const parsed = parseVisualInspection({
+            ...prior(),
+            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_LEFT', sourceFacing: 'IMAGE_RIGHT' },
+        })
+        expect(parsed?.assetCorrection).toMatchObject({ type: 'HORIZONTAL_MIRROR', sourceFacing: 'IMAGE_RIGHT' })
     })
 })

@@ -17,8 +17,9 @@ import { readCreatureTransformationLabPolicy } from '../generate-creature-transf
 import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
 import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
-import { parseVisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
+import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration } from './gemini-visual-inspection-service.ts'
+import { flipImageHorizontallyToPng } from '../generate-creature-transformation/edge-image-codec.ts'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -311,16 +312,19 @@ async function inspectSeedreamVisual(input: {
     record: CreatureTransformationRequestRecord
     image: Uint8Array
     mimeType: 'image/png' | 'image/jpeg'
-    repository: SupabaseCreatureTransformationRequestRepository
     resolver: SupabaseCreatureIdentityResolver
-}) {
+}): Promise<Readonly<{
+    inspection: VisualInspection
+    sourceFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | 'CENTER' | 'UNKNOWN' | null
+    generation: number
+}> | null> {
     try {
         const source = await input.resolver.resolve({ profileId: input.record.profileId, creatureId: input.record.creatureId })
         const snapshot = isFluxEvolutionSnapshot(input.record.conceptSnapshot) ? input.record.conceptSnapshot : null
         const bodyPlan = snapshot?.resultBodyPlanId
             ? getBodyPlan(snapshot.resultBodyPlanId)
             : source.bodyPlan ?? resolveCanonicalBodyPlan({ baseCreatureKey: source.identity.baseCreatureKey, adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds })
-        if (!bodyPlan) return
+        if (!bodyPlan) return null
         const orientation = source.visualInspection?.observedVisualState?.orientation
         const inspection = await new GeminiVisualInspectionService(readGeminiVisualInspectionConfiguration((name) => Deno.env.get(name))).inspect({
             image: input.image,
@@ -330,18 +334,19 @@ async function inspectSeedreamVisual(input: {
             previous: source.visualInspection,
             expectedOrientation: orientation ? `${orientation.viewpoint}/${orientation.facing}` : null,
         })
-        await input.repository.recordVisualInspection({ requestId: input.record.id, profileId: input.record.profileId, visualInspection: inspection })
         console.info('fal.finalizer.seedream_visual_inspection', {
             providerRequestId: input.record.providerRequestId,
             detector: inspection.anomalyDetector.status,
             mapper: inspection.stateMapper.status,
             anomalies: inspection.visualAnomalies.filter((anomaly) => anomaly.status === 'UNRESOLVED').length,
         })
+        return Object.freeze({ inspection, sourceFacing: orientation?.facing ?? null, generation: source.currentVersionNumber + 1 })
     } catch (error) {
         console.warn('fal.finalizer.seedream_visual_inspection_unavailable', {
             providerRequestId: input.record.providerRequestId,
             reason: error instanceof Error ? error.message.slice(0, 180) : 'unknown',
         })
+        return null
     }
 }
 
@@ -361,7 +366,7 @@ async function finalizeSeedreamProduction(input: {
     }
     const downloaded = await input.provider.downloadQueuedImage(input.image)
     console.info('fal.finalizer.seedream_production_downloaded', { providerRequestId: input.record.providerRequestId, mimeType: downloaded.mimeType, bytes: downloaded.bytes.byteLength })
-    const dimensions = seedreamProductionDimensions({ ...downloaded, expected: workflow.parameters.imageSize })
+    let dimensions = seedreamProductionDimensions({ ...downloaded, expected: workflow.parameters.imageSize })
     let resultSha256: string
     if (downloaded.mimeType === 'image/png') {
         // PNG raw can be checked before it is stored. JPEG deliberately skips this decode: the
@@ -396,8 +401,41 @@ async function finalizeSeedreamProduction(input: {
     } else {
         resultSha256 = await sha256Hex(downloaded.bytes)
     }
-    await input.storage.saveRawResult({ profileId: input.record.profileId, idempotencyKey: input.record.idempotencyKey, image: downloaded.bytes, mimeType: downloaded.mimeType })
-    const completed = await input.repository.markSucceeded({
+    const visualInspection = await inspectSeedreamVisual({
+        record: input.record,
+        image: downloaded.bytes,
+        mimeType: downloaded.mimeType,
+        resolver: input.resolver,
+    })
+    let rawImage: Readonly<{ bytes: Uint8Array, mimeType: 'image/png' | 'image/jpeg' }> = downloaded
+    let persistedInspection = visualInspection?.inspection ?? null
+    let mirrorCorrectionApplied = false
+    if (visualInspection) {
+        const mirrorDecision = decideHorizontalMirrorCorrection({ sourceFacing: visualInspection.sourceFacing, inspection: visualInspection.inspection })
+        if (mirrorDecision.action === 'FLIP') {
+            const mirrored = await flipImageHorizontallyToPng({ bytes: downloaded.bytes, mimeType: downloaded.mimeType })
+            dimensions = seedreamProductionDimensions({ ...mirrored, expected: workflow.parameters.imageSize })
+            rawImage = mirrored
+            resultSha256 = await sha256Hex(mirrored.bytes)
+            persistedInspection = applyHorizontalMirrorCorrection({
+                inspection: visualInspection.inspection,
+                sourceFacing: mirrorDecision.sourceFacing!,
+                outputFacing: mirrorDecision.outputFacing!,
+                generation: visualInspection.generation,
+                appliedAt: new Date().toISOString(),
+            })
+            mirrorCorrectionApplied = true
+            console.info('fal.finalizer.seedream_horizontal_mirror_corrected', {
+                providerRequestId: input.record.providerRequestId,
+                sourceFacing: mirrorDecision.sourceFacing,
+                outputFacing: mirrorDecision.outputFacing,
+                sourceMimeType: downloaded.mimeType,
+                persistedMimeType: mirrored.mimeType,
+            })
+        }
+    }
+    await input.storage.saveRawResult({ profileId: input.record.profileId, idempotencyKey: input.record.idempotencyKey, image: rawImage.bytes, mimeType: rawImage.mimeType })
+    let completed = await input.repository.markSucceeded({
         requestId: input.record.id,
         profileId: input.record.profileId,
         data: {
@@ -406,24 +444,31 @@ async function finalizeSeedreamProduction(input: {
             providerRequestId: input.record.providerRequestId,
             sourceSha256: input.record.sourceSha256,
             resultSha256,
-            resultPath: await input.storage.createRawResultObjectPath(input.record.profileId, input.record.idempotencyKey, downloaded.mimeType),
-            resultMimeType: downloaded.mimeType,
+            resultPath: await input.storage.createRawResultObjectPath(input.record.profileId, input.record.idempotencyKey, rawImage.mimeType),
+            resultMimeType: rawImage.mimeType,
             resultWidth: dimensions.width,
             resultHeight: dimensions.height,
             generationLatencyMs: 0,
             assetReadiness: 'EXPERIMENT_ONLY',
-            validationWarnings: ['BACKGROUND_REMOVAL_PENDING_CLIENT', ...(downloaded.mimeType === 'image/jpeg' ? ['SEEDREAM_PROVIDER_JPEG'] : [])],
+            validationWarnings: [
+                'BACKGROUND_REMOVAL_PENDING_CLIENT',
+                ...(downloaded.mimeType === 'image/jpeg' ? ['SEEDREAM_PROVIDER_JPEG'] : []),
+                ...(mirrorCorrectionApplied ? ['SEEDREAM_HORIZONTAL_MIRROR_CORRECTED'] : []),
+            ],
         },
     })
-    // The image is already successful before Gemini is involved. Inspection is best-effort and
-    // never reaches the crop-retry or failed-request branches.
-    await inspectSeedreamVisual({
-        record: completed,
-        image: downloaded.bytes,
-        mimeType: downloaded.mimeType,
-        repository: input.repository,
-        resolver: input.resolver,
-    })
+    // Inspection is fail-open metadata. The visual-progress track remains pending until this
+    // persistence attempt has completed, so browser background removal reads the corrected raw.
+    if (persistedInspection) {
+        try {
+            completed = await input.repository.recordVisualInspection({ requestId: completed.id, profileId: completed.profileId, visualInspection: persistedInspection })
+        } catch (error) {
+            console.warn('fal.finalizer.seedream_visual_inspection_persistence_unavailable', {
+                providerRequestId: input.record.providerRequestId,
+                reason: error instanceof Error ? error.message.slice(0, 180) : 'unknown',
+            })
+        }
+    }
     if (completed.visualProgressTrackId) await input.visualRepository.markBackgroundRemovalPending({ profileId: completed.profileId, trackId: completed.visualProgressTrackId, requestId: completed.id })
 }
 

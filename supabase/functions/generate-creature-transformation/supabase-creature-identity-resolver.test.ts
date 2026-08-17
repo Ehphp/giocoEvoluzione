@@ -6,6 +6,7 @@ import {
     type PlayerCreatureRepository,
     type StoredPlayerCreature,
 } from './supabase-creature-identity-resolver.ts'
+import type { VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 function createRepository(record: StoredPlayerCreature | null): PlayerCreatureRepository {
     return { async findByCreatureId() { return record } }
@@ -71,5 +72,35 @@ describe('SupabaseCreatureIdentityResolver', () => {
         expect(result.previousTransformations).toHaveLength(10)
         expect(result.adoptedBodyPlanMutationIds).toEqual(['ADD_LIMB_PAIR'])
         expect(result.bodyPlan?.id).toBe('SIX_LIMBED')
+    })
+
+    it('uses the adopted corrected visual asset and its corrected facing as the next evolution source', async () => {
+        const correctedInspection: VisualInspection = {
+            schemaVersion: 'visual-inspection-v1', inspectedAt: '2026-08-17T00:00:01.000Z',
+            anomalyDetector: { status: 'COMPLETE', evidence: [] }, visualAnomalies: [],
+            stateMapper: { status: 'COMPLETE', usedVision1Evidence: false, evidenceAssessments: [], structuralConcerns: [] },
+            observedVisualState: {
+                schemaVersion: 'observed-visual-v1', orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped',
+                headAndEyes: 'one head', limbsAndLimbLikeStructures: 'four legs', tail: 'one tail', hornsAntlers: 'none', dorsalStructures: 'none', appendages: 'none',
+                skinCovering: 'scales', primaryColors: ['green'], distinctiveStructures: [], targetRegions: [],
+            },
+            assetCorrection: { type: 'HORIZONTAL_MIRROR', appliedAt: '2026-08-17T00:00:01.000Z', outputFacing: 'IMAGE_LEFT', sourceFacing: 'IMAGE_RIGHT' },
+        }
+        const repository: PlayerCreatureRepository = {
+            async findByCreatureId() { return { id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING', currentVisualVersionId: 'version-2' } },
+            async findCurrentVisualVersion() {
+                return {
+                    id: 'version-2', creatureId: 'creature-1', assetPath: 'candidates/profile-1/' + 'c'.repeat(64) + '.png', assetSha256: 'c'.repeat(64),
+                    versionNumber: 2, isBaseVersion: false, visualInspection: correctedInspection,
+                }
+            },
+        }
+
+        const result = await new SupabaseCreatureIdentityResolver(repository).resolve({ profileId: 'profile-1', creatureId: 'creature-1' })
+
+        expect(result).toMatchObject({
+            sourceImagePath: 'candidates/profile-1/' + 'c'.repeat(64) + '.png', sourceSha256: 'c'.repeat(64),
+            visualInspection: { observedVisualState: { orientation: { facing: 'IMAGE_RIGHT' } }, assetCorrection: { type: 'HORIZONTAL_MIRROR' } },
+        })
     })
 })
