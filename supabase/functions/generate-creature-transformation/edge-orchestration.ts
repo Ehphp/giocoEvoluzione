@@ -271,6 +271,16 @@ async function toVisualHistoryResponse(input: CreatureTransformationEdgeOrchestr
     }))
 }
 
+function currentVisualVersionSummary(version: StoredVisualVersion): CreatureVisualProgressResponse['currentVersion'] {
+    return {
+        id: version.id,
+        versionNumber: version.versionNumber,
+        visualTraitId: version.visualTraitId,
+        conceptName: version.conceptName,
+        shortDescription: version.visualInspection?.observedVisualState?.shortDescription ?? null,
+    }
+}
+
 function toBodyPlanResponse(source: ResolvedCreatureSource): CreatureVisualProgressResponse['bodyPlan'] {
     return source.bodyPlan
         ? {
@@ -311,7 +321,7 @@ export async function orchestrateSelectCreatureVisualProgressTrack(input: Creatu
         if (!current) return failure(input.requestId, 'CURRENT_VISUAL_UNAVAILABLE', 'La visuale corrente non e disponibile.')
         return {
             success: true, requestId: input.requestId, track, lastExperiment: null, lastFailure: null,
-            currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName },
+            currentVersion: currentVisualVersionSummary(current),
             history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId),
             bodyPlan: toBodyPlanResponse(source),
         }
@@ -347,7 +357,7 @@ export async function orchestrateGetCreatureVisualProgress(input: CreatureTransf
         ]) : [null, null]
         return {
             success: true, requestId: input.requestId, track, lastExperiment, lastFailure: track?.status === 'READY' ? lastFailure : null,
-            currentVersion: { id: current.id, versionNumber: current.versionNumber, visualTraitId: current.visualTraitId, conceptName: current.conceptName },
+            currentVersion: currentVisualVersionSummary(current),
             history: await toVisualHistoryResponse(input, input.profileId, parsed.request.creatureId),
             bodyPlan: toBodyPlanResponse(source),
         }

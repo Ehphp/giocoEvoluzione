@@ -88,6 +88,7 @@ const EVIDENCE_SCHEMA = responseSchema('OBJECT', {
 }, ['type', 'imageRegion', 'description', 'confidence'])
 
 const OBSERVED_STATE_SCHEMA = responseSchema('OBJECT', {
+    shortDescription: responseSchema('STRING'),
     orientation: responseSchema('OBJECT', {
         viewpoint: responseSchema('STRING', { enum: ['FRONT', 'THREE_QUARTER', 'PROFILE', 'REAR', 'UNKNOWN'] }),
         facing: responseSchema('STRING', { enum: ['IMAGE_LEFT', 'IMAGE_RIGHT', 'CENTER', 'UNKNOWN'] }),
@@ -106,7 +107,7 @@ const OBSERVED_STATE_SCHEMA = responseSchema('OBJECT', {
         target: responseSchema('STRING', { enum: ['TAIL', 'LIMBS_AND_FEET', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING', 'WINGS', 'TENTACLES'] }),
         description: responseSchema('STRING'),
     }, ['target', 'description']) }),
-}, ['orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages', 'skinCovering', 'primaryColors', 'distinctiveStructures', 'targetRegions'])
+}, ['shortDescription', 'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages', 'skinCovering', 'primaryColors', 'distinctiveStructures', 'targetRegions'])
 
 const DETECTOR_SCHEMA = responseSchema('OBJECT', {
     evidence: responseSchema('ARRAY', { items: EVIDENCE_SCHEMA }),
@@ -142,6 +143,7 @@ function mapperPrompt(evidence: readonly Vision1DiagnosticEvidence[]): string {
         'You map the actual visible anatomy of one generated creature image. Return JSON only.',
         'Describe what the image shows, not what canonical anatomy should be. A limb-like structure can be observed without becoming canonical anatomy.',
         'Map orientation/facing, viewpoint, observed locomotion/body plan, head and eyes, limbs and limb-like structures, tail, horns/antlers, dorsal structures, appendages, covering, colours, distinctive anatomy and reliable evolvable regions.',
+        'Write shortDescription in Italian: exactly one natural, lightly evocative character-card sentence, ideally 15-25 words, using 2-4 distinctive traits visibly present now. It may mention anatomy, body shape, colours, covering, tail, horns, dorsal structures or appendages. Do not mention camera, framing, facing, Vision, anomalies, errors, generations, pipelines or evolutionary history. Do not invent hidden traits. Never use report formulas such as "The image shows...".',
         'UPSTREAM DIAGNOSTIC EVIDENCE',
         'A specialized anomaly detector has already inspected this image. Treat each supplied item as high-priority visual evidence. Verify it against the image and incorporate it into the anatomical mapping.',
         'For every supplied item return CONFIRMED, POSSIBLE, or REJECTED_WITH_STRONG_CONTRARY_EVIDENCE. Do not silently discard upstream evidence. Upstream evidence describes possible visual defects and MUST NOT modify canonical anatomy.',

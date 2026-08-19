@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeVisualInspection, parseVisualInspection, type ObservedVisualState, type Vision1DiagnosticEvidence, type VisualInspection, visualRepairBrief } from './visual-inspection.ts'
+import { mergeVisualInspection, parseObservedVisualState, parseVisualInspection, type ObservedVisualState, type Vision1DiagnosticEvidence, type VisualInspection, visualRepairBrief } from './visual-inspection.ts'
 
 const evidence: Vision1DiagnosticEvidence = Object.freeze({ type: 'EXTRA_LIMB', imageRegion: 'CENTER_IMAGE_RIGHT', confidence: 0.93, description: 'Additional limb-like structure.' })
 const observed: ObservedVisualState = Object.freeze({
@@ -17,6 +17,13 @@ function prior(): VisualInspection {
 }
 
 describe('visual inspection repair lifecycle', () => {
+    it('parses Vision 2 short descriptions while keeping prior inspections readable', () => {
+        const description = 'Una creatura quadrupede dalle scaglie verdi, con una coda lunga e soffici corna arancioni.'
+        expect(parseObservedVisualState({ ...observed, shortDescription: description })?.shortDescription).toBe(description)
+        expect(parseObservedVisualState({ ...observed, shortDescription: `${description} Ha anche una cresta.` })).toBeNull()
+        expect(parseObservedVisualState(observed)?.shortDescription).toBeUndefined()
+    })
+
     it('resolves prior debt only after detector absence and a successful mapper without a compatible concern', () => {
         const next = mergeVisualInspection({
             previous: prior(), generation: 4, inspectedAt: '2026-08-17T00:01:00.000Z',

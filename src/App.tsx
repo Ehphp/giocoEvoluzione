@@ -86,7 +86,7 @@ function getInitialScreen(): CurrentScreen {
 }
 
 type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null; isBaseVersion?: boolean }
-type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
+type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null; shortDescription?: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
 type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNumber: number; visualTrait: string | null; currentVisualVersionId: string; visualHistory: VisualProgressSummary['history'] }>
 
 function App() {
@@ -514,6 +514,7 @@ function App() {
         officialVisualUrl: officialVisual?.signedUrl,
         visualVersionNumber: visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber,
         visualTrait: visualProgress?.currentVersion.visualTraitId ?? officialVisual?.visualTraitId ?? null,
+        currentVisualShortDescription: visualProgress?.currentVersion.shortDescription ?? null,
         visualHistory: visualProgress?.history,
         currentVisualVersionId: visualProgress?.currentVersion.id ?? officialVisual?.versionId,
       })

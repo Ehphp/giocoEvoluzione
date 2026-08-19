@@ -5,6 +5,7 @@ import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration,
 const configuration: GeminiVisualInspectionConfiguration = Object.freeze({ enabled: true, apiKey: 'test-key', model: 'gemini-3.1-flash-lite', detectorTimeoutMs: 100, mapperTimeoutMs: 100 })
 const detectorEvidence = { type: 'EXTRA_LIMB', imageRegion: 'CENTER_IMAGE_RIGHT', confidence: 0.93, description: 'Additional limb-like structure detected.' }
 const observed = {
+    shortDescription: 'Una piccola creatura quadrupede dalle scaglie verdi, con una lunga coda e un arto in più visibile.',
     orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped', headAndEyes: 'one head',
     limbsAndLimbLikeStructures: 'four limbs plus a possible extra limb', tail: 'one tail', hornsAntlers: 'none', dorsalStructures: 'none',
     appendages: 'possible extra limb', skinCovering: 'scales', primaryColors: ['green'], distinctiveStructures: [], targetRegions: [],
@@ -52,10 +53,12 @@ describe('GeminiVisualInspectionService', () => {
         const result = await service.inspect({ image: new Uint8Array([1, 2, 3]), mimeType: 'image/png', bodyPlan: BODY_PLANS.QUADRUPED, generation: 2, previous: null, now: () => '2026-08-17T00:00:00.000Z' })
         expect(result.anomalyDetector.evidence).toEqual([detectorEvidence])
         expect(result.stateMapper.usedVision1Evidence).toBe(true)
+        expect(result.observedVisualState?.shortDescription).toBe(observed.shortDescription)
         const mapperPrompt = String((((mapperBody!.contents as Array<{ parts: Array<{ text?: string }> }>)[0].parts[0]).text))
         expect(mapperPrompt).toContain('"type":"EXTRA_LIMB"')
         expect(mapperPrompt).toContain('"imageRegion":"CENTER_IMAGE_RIGHT"')
         expect(mapperPrompt).toContain('Do not silently discard upstream evidence')
+        expect(mapperPrompt).toContain('shortDescription in Italian')
     })
 
     it('continues with image-only Vision 2 when Vision 1 returns invalid JSON', async () => {

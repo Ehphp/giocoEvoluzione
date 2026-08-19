@@ -35,6 +35,7 @@ export type HomeViewModel = {
     creature: {
         id?: string
         name: string
+        shortDescription?: string
         image: HomeCreatureImage
         visualVersions: ReadonlyArray<HomeCreatureVisualVersion>
         level?: number

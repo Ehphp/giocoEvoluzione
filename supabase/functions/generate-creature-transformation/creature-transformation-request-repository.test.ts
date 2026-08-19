@@ -86,10 +86,16 @@ describe('SupabaseCreatureTransformationRequestRepository', () => {
             schemaVersion: 'visual-inspection-v1', inspectedAt: '2026-08-17T00:00:00.000Z',
             anomalyDetector: { status: 'COMPLETE', evidence: [] }, visualAnomalies: [],
             stateMapper: { status: 'COMPLETE', usedVision1Evidence: false, evidenceAssessments: [], structuralConcerns: [] },
+            observedVisualState: {
+                schemaVersion: 'observed-visual-v1', shortDescription: 'Una creatura quadrupede dalle scaglie verdi, con una lunga coda piumata e corna arancioni.',
+                orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped', headAndEyes: 'one head',
+                limbsAndLimbLikeStructures: 'four legs', tail: 'long feathered tail', hornsAntlers: 'orange horns', dorsalStructures: 'none', appendages: 'none',
+                skinCovering: 'green scales', primaryColors: ['green', 'orange'], distinctiveStructures: ['feathered tail'], targetRegions: [],
+            },
         }
         const saved = createClient({ outcome: 'UPDATED', record: databaseRecord({ status: 'SUCCEEDED', visual_inspection: inspection }) })
         await expect(new SupabaseCreatureTransformationRequestRepository(saved.client).recordVisualInspection({ requestId: 'request-1', profileId: 'profile-1', visualInspection: inspection }))
-            .resolves.toMatchObject({ visualInspection: { schemaVersion: 'visual-inspection-v1' } })
+            .resolves.toMatchObject({ visualInspection: { observedVisualState: { shortDescription: inspection.observedVisualState!.shortDescription } } })
         expect(saved.rpc).toHaveBeenCalledWith('record_creature_transformation_visual_inspection', expect.objectContaining({
             p_request_id: 'request-1', p_profile_id: 'profile-1', p_visual_inspection: inspection,
         }))

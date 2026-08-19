@@ -67,7 +67,10 @@ export type CreatureVisualProgressResponse = Readonly<{
     track: CreatureVisualProgressTrack | null
     lastExperiment: { requestId: string; warnings: string[] } | null
     lastFailure: { requestId: string; code: string; message: string } | null
-    currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'>
+    currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'> & Readonly<{
+        /** Derived from the current version's persisted visual inspection; absent for legacy versions. */
+        shortDescription?: string | null
+    }>
     history: readonly SelectableCreatureVisualVersion[]
     /** Canonical anatomical state and the targets it offers. */
     bodyPlan: {

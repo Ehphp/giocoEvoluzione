@@ -95,6 +95,25 @@
     gap: 6px;
 }
 
+.home-creature-description {
+    align-self: center;
+    width: min(100%, var(--ev-sheet-width-narrow));
+}
+
+.home-creature-description__copy {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--ev-on-dark);
+    font-size: var(--ev-fs-sm);
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    text-shadow: var(--ev-shadow-text-on-scene);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Creature stage                                                              */
 /* -------------------------------------------------------------------------- */
@@ -478,6 +497,10 @@
 
     .home-stage {
         flex-basis: 160px;
+    }
+
+    .home-creature-description__copy {
+        -webkit-line-clamp: 2;
     }
 
     .home-cta__play {

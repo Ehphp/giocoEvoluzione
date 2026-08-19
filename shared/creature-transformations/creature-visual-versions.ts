@@ -2,6 +2,7 @@ import type { BodyPlanMutationId } from './flux-evolution/body-plan-mutations.ts
 import type { FluxEvolutionSnapshot } from './flux-evolution/micro-concept.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from './evolution-targets.ts'
 import type { VisualTraitId } from './visual-traits.ts'
+import type { VisualInspection } from './visual-inspection.ts'
 
 export type CreatureVisualVersionStatus = 'BASE' | 'ACTIVE' | 'SUPERSEDED' | 'REVOKED'
 
@@ -48,6 +49,8 @@ export type CreatureVisualVersion = Readonly<{
     conceptSnapshot: CreatureTransformationConceptSnapshot | null
     promptTemplateVersion: string | null
     promptSha256: string | null
+    /** Optional because visual versions created before the inspection rollout have no metadata. */
+    visualInspection?: VisualInspection | null
     assetSha256: string
     mimeType: 'image/png'
     width: number

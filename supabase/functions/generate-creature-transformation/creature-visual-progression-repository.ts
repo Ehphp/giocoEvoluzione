@@ -3,6 +3,7 @@ import { readBodyPlanMutationId } from '../../../shared/creature-transformations
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { CreatureVisualProgressTrack } from '../../../shared/creature-transformations/visual-progression.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
+import { parseVisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 
 type DatabaseError = { message?: string } | null
 type Query = PromiseLike<{ data: unknown; error: DatabaseError }> & { eq(column: string, value: unknown): Query; in?(column: string, values: unknown[]): Query; order(column: string, options: { ascending: boolean }): Query; limit(count: number): Query; maybeSingle(): Promise<{ data: unknown; error: DatabaseError }>; select(columns: string): Query }
@@ -83,6 +84,7 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
         evolutionFunction: nullableString(row.evolution_function) as EvolutionFunctionId | null,
         conceptName: nullableString(row.concept_name), conceptSnapshot: row.concept_snapshot && typeof row.concept_snapshot === 'object' ? row.concept_snapshot as StoredVisualVersion['conceptSnapshot'] : null,
         promptTemplateVersion: nullableString(row.prompt_template_version), promptSha256: nullableString(row.prompt_sha256), assetPath: string(row.asset_path)!,
+        visualInspection: parseVisualInspection(row.visual_inspection),
         assetSha256: string(row.asset_sha256)!, mimeType: row.mime_type === 'image/png' ? 'image/png' : 'image/png', width: number(row.width), height: number(row.height),
         hasAlpha: row.has_alpha === true, status: status as StoredVisualVersion['status'], adoptedAt: nullableString(row.adopted_at),
         displayAssetPath: nullableString(row.display_asset_path), displayAssetSha256: nullableString(row.display_asset_sha256),

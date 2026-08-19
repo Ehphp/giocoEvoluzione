@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { StoredVisualVersion, SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
+import { mapVisualVersion, type StoredVisualVersion, type SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 import { orchestrateGenerateUnlockedTransformation, orchestrateGetCreatureVisualProgress, orchestrateGetCurrentCreatureVisual, orchestrateGetGameCreatureVisuals } from './edge-orchestration.ts'
 import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
 import { createTestResolver } from './test-creature-fixtures.ts'
@@ -24,6 +24,20 @@ function version(profileId: string, creatureId: string, visualTraitId: StoredVis
         conceptSnapshot: null, promptTemplateVersion: null, promptSha256: null,
         assetPath: 'verdant-hatchling-v1.png', assetSha256: 'a'.repeat(64), mimeType: 'image/png', width: 512, height: 512,
         hasAlpha: true, status: 'ACTIVE', adoptedAt: null,
+    }
+}
+
+function inspectionWithDescription(shortDescription: string): NonNullable<StoredVisualVersion['visualInspection']> {
+    return {
+        schemaVersion: 'visual-inspection-v1', inspectedAt: '2026-08-17T00:00:00.000Z',
+        anomalyDetector: { status: 'COMPLETE', evidence: [] }, visualAnomalies: [],
+        stateMapper: { status: 'COMPLETE', usedVision1Evidence: false, evidenceAssessments: [], structuralConcerns: [] },
+        observedVisualState: {
+            schemaVersion: 'observed-visual-v1', shortDescription,
+            orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped', headAndEyes: 'one head',
+            limbsAndLimbLikeStructures: 'four legs', tail: 'one tail', hornsAntlers: 'none', dorsalStructures: 'none', appendages: 'none',
+            skinCovering: 'green scales', primaryColors: ['green'], distinctiveStructures: [], targetRegions: [],
+        },
     }
 }
 
@@ -75,6 +89,32 @@ describe('visual progression access', () => {
             .resolves.toMatchObject({ success: true, currentVersion: { versionNumber: 1 }, bodyPlan: { id: 'QUADRUPED' } })
         await expect(orchestrateGetCurrentCreatureVisual(input({ operation: 'GET_CURRENT_VISUAL', creatureId: CREATURE_ID }) as never))
             .resolves.toMatchObject({ success: true, visual: { signedUrl: 'https://signed.example/verdant-hatchling-v1.png' } })
+    })
+
+    it('returns the current version short description from its persisted visual inspection', async () => {
+        const shortDescription = 'Una creatura quadrupede dalle scaglie verdi, con una coda lunga e luminose placche dorsali.'
+        const repository = {
+            ...visualRepository(),
+            async getCurrentVersion({ profileId, creatureId }: { profileId: string, creatureId: string }) {
+                return { ...version(profileId, creatureId), visualInspection: inspectionWithDescription(shortDescription) }
+            },
+        } as unknown as SupabaseCreatureVisualProgressionRepository
+
+        await expect(orchestrateGetCreatureVisualProgress({ ...input({ operation: 'GET_VISUAL_PROGRESS', creatureId: CREATURE_ID }), visualRepository: repository } as never))
+            .resolves.toMatchObject({ success: true, currentVersion: { shortDescription } })
+    })
+
+    it('reads the short description from an active visual-version database record', () => {
+        const shortDescription = 'Una creatura quadrupede dalle scaglie verdi, con una coda lunga e luminose placche dorsali.'
+        const mapped = mapVisualVersion({
+            id: 'version-2', creature_id: CREATURE_ID, profile_id: OPEN_PROFILE, version_number: 2, previous_version_id: 'version-1',
+            visual_trait_id: 'IMPACT_ADAPTATION', evolution_target_id: 'DORSAL_STRUCTURES', evolution_function: 'DEFENSE', concept_name: 'Placche luminose', concept_snapshot: null,
+            prompt_template_version: null, prompt_sha256: null, asset_path: 'cleanup/' + 'a'.repeat(64) + '.png', asset_sha256: 'a'.repeat(64),
+            mime_type: 'image/png', width: 1024, height: 1536, has_alpha: true, status: 'ACTIVE', adopted_at: '2026-08-17T00:00:00.000Z',
+            visual_inspection: inspectionWithDescription(shortDescription),
+        })
+
+        expect(mapped.visualInspection?.observedVisualState?.shortDescription).toBe(shortDescription)
     })
 
     it('prefers a persisted WebP display asset and falls back to the legacy PNG master', async () => {

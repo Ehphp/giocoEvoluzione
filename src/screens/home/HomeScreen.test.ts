@@ -282,6 +282,21 @@ describe('HomeScreen', () => {
         expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
     })
 
+    it('shows the active creature description in a compact vignette when available', () => {
+        const viewModel = createVisualLineageViewModel()
+        viewModel.creature = { ...viewModel.creature!, shortDescription: 'Una creatura quadrupede dalle scaglie verdi, con una lunga coda piumata e morbide corna arancioni.' }
+
+        render(viewModel)
+
+        expect(container.querySelector('.home-creature-description')?.textContent).toContain('lunga coda piumata')
+    })
+
+    it('does not render a creature description vignette when the active version has none', () => {
+        render(createVisualLineageViewModel())
+
+        expect(container.querySelector('.home-creature-description')).toBeNull()
+    })
+
     it('starts the Home carousel on the current, most recent unlocked form', () => {
         render(createVisualLineageViewModel())
 

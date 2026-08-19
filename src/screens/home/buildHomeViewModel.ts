@@ -111,6 +111,7 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
     officialVisualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
+    currentVisualShortDescription?: string | null
     visualHistory?: ReadonlyArray<CreatureVisualVersionSource>
     currentVisualVersionId?: string | null
 }): HomeViewModel {
@@ -164,6 +165,7 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             visualVersions,
             id: input.creature.id,
             name: input.creature.name ?? 'Creatura iniziale',
+            ...(input.currentVisualShortDescription ? { shortDescription: input.currentVisualShortDescription } : {}),
             level: input.creature.level,
             experience,
         },

@@ -38,6 +38,8 @@ export type MapperEvidenceAssessment = Readonly<{
 
 export type ObservedVisualState = Readonly<{
     schemaVersion: typeof OBSERVED_VISUAL_STATE_SCHEMA_VERSION
+    /** Optional for inspections persisted before Vision 2 began generating this UI copy. */
+    shortDescription?: string
     orientation: Readonly<{
         viewpoint: 'FRONT' | 'THREE_QUARTER' | 'PROFILE' | 'REAR' | 'UNKNOWN'
         facing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | 'CENTER' | 'UNKNOWN'
@@ -96,6 +98,13 @@ function textList(value: unknown, maximumItems: number, maximumLength: number): 
     if (!Array.isArray(value) || value.length > maximumItems) return null
     const parsed = value.map((entry) => text(entry, maximumLength))
     return parsed.every((entry): entry is string => entry !== null) ? parsed : null
+}
+
+function parseShortDescription(value: unknown): string | null {
+    const parsed = text(value, 220)
+    // Keep this UI copy as a single visible sentence. A trailing sentence mark is fine; another
+    // sentence after whitespace or a newline would make the Home vignette read like a report.
+    return parsed && !/[\r\n]/.test(parsed) && !/[.!?](?=\s+\S)/.test(parsed) ? parsed : null
 }
 
 function confidence(value: unknown): number | null {
@@ -158,7 +167,7 @@ export function parseMapperEvidenceAssessment(value: unknown): MapperEvidenceAss
 export function parseObservedVisualState(value: unknown): ObservedVisualState | null {
     const item = record(value)
     if (!item || Object.keys(item).some((key) => ![
-        'schemaVersion', 'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages',
+        'schemaVersion', 'shortDescription', 'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages',
         'skinCovering', 'primaryColors', 'distinctiveStructures', 'targetRegions',
     ].includes(key))) return null
     if (item.schemaVersion !== undefined && item.schemaVersion !== OBSERVED_VISUAL_STATE_SCHEMA_VERSION) return null
@@ -179,13 +188,15 @@ export function parseObservedVisualState(value: unknown): ObservedVisualState | 
         : null
     const primaryColors = textList(item.primaryColors, 8, 80)
     const distinctiveStructures = textList(item.distinctiveStructures, 8, 160)
+    const shortDescription = item.shortDescription === undefined ? undefined : parseShortDescription(item.shortDescription)
     const fields = [
         text(item.observedBodyPlan, 300), text(item.headAndEyes, 300), text(item.limbsAndLimbLikeStructures, 360), text(item.tail, 240),
         text(item.hornsAntlers, 240), text(item.dorsalStructures, 240), text(item.appendages, 300), text(item.skinCovering, 240),
     ]
-    if (!viewpoint || !facing || !primaryColors || !distinctiveStructures || !targetRegions || !targetRegions.every((entry): entry is { target: EvolutionTargetId, description: string } => entry !== null) || fields.some((entry) => entry === null)) return null
+    if (!viewpoint || !facing || !primaryColors || !distinctiveStructures || !targetRegions || !targetRegions.every((entry): entry is { target: EvolutionTargetId, description: string } => entry !== null) || fields.some((entry) => entry === null) || (item.shortDescription !== undefined && !shortDescription)) return null
     return Object.freeze({
         schemaVersion: OBSERVED_VISUAL_STATE_SCHEMA_VERSION,
+        ...(shortDescription ? { shortDescription } : {}),
         orientation: Object.freeze({ viewpoint, facing }),
         observedBodyPlan: fields[0]!, headAndEyes: fields[1]!, limbsAndLimbLikeStructures: fields[2]!, tail: fields[3]!, hornsAntlers: fields[4]!,
         dorsalStructures: fields[5]!, appendages: fields[6]!, skinCovering: fields[7]!, primaryColors: Object.freeze(primaryColors),

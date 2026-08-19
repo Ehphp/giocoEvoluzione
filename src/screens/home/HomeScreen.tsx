@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, IconButton, Notice, Pill, ProgressBar } from '../../ui/components'
+import { AppShell, Avatar, Button, IconButton, Notice, Panel, Pill, ProgressBar } from '../../ui/components'
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
 import { ASSETS } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
@@ -201,6 +201,19 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                     <div className="home-notices">
                         {viewModel.notices.map((notice) => <Notice key={notice.id} tone={notice.tone}>{notice.message}</Notice>)}
                     </div>
+                ) : null}
+
+                {viewModel.creature?.shortDescription ? (
+                    <Panel
+                        variant="glass"
+                        flat
+                        className="home-creature-description"
+                        aria-label="Descrizione della creatura corrente"
+                    >
+                        <p className="home-creature-description__copy" title={viewModel.creature.shortDescription}>
+                            {viewModel.creature.shortDescription}
+                        </p>
+                    </Panel>
                 ) : null}
 
                 {viewModel.creature ? (
