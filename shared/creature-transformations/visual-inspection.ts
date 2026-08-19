@@ -249,6 +249,16 @@ export type HorizontalMirrorCorrectionDecision = Readonly<{
 }>
 
 /**
+ * A deliberately front-facing generated creature cannot preserve the side-on presentation.
+ * This is a quality gate for Seedream production only: unavailable Vision and UNKNOWN remain
+ * fail-open so a transient mapper outage cannot discard a paid generation.
+ */
+export function shouldRejectSeedreamCenterFacing(inspection: VisualInspection | null | undefined): boolean {
+    return inspection?.stateMapper.status === 'COMPLETE'
+        && inspection.observedVisualState?.orientation.facing === 'CENTER'
+}
+
+/**
  * Gemini's IMAGE_LEFT / IMAGE_RIGHT convention is the inverse of the product's observer-facing
  * convention. A raw IMAGE_LEFT therefore means the creature visibly looks right and must be
  * mirrored. UNKNOWN and non-directional views remain untouched.

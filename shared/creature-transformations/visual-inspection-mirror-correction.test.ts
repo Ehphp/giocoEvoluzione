@@ -4,6 +4,7 @@ import {
     applyHorizontalMirrorCorrection,
     decideHorizontalMirrorCorrection,
     mergeVisualInspection,
+    shouldRejectSeedreamCenterFacing,
     type ObservedVisualState,
     type VisualInspection,
 } from './visual-inspection.ts'
@@ -32,6 +33,12 @@ function inspection(facing: Facing, mirrored = true): VisualInspection {
 }
 
 describe('Seedream horizontal mirror correction decision', () => {
+    it('rejects only a Vision-verified center-facing output', () => {
+        expect(shouldRejectSeedreamCenterFacing(inspection('CENTER'))).toBe(true)
+        expect(shouldRejectSeedreamCenterFacing(inspection('UNKNOWN'))).toBe(false)
+        expect(shouldRejectSeedreamCenterFacing(null)).toBe(false)
+    })
+
     it.each([
         ['IMAGE_LEFT', 'FLIP'],
         ['IMAGE_RIGHT', 'KEEP'],

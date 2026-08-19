@@ -17,7 +17,7 @@ import { readCreatureTransformationLabPolicy } from '../generate-creature-transf
 import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
 import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
-import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
+import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, shouldRejectSeedreamCenterFacing, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration } from './gemini-visual-inspection-service.ts'
 import { flipImageHorizontallyToPng } from '../generate-creature-transformation/edge-image-codec.ts'
 
@@ -406,6 +406,15 @@ async function finalizeSeedreamProduction(input: {
         mimeType: downloaded.mimeType,
         resolver: input.resolver,
     })
+    if (shouldRejectSeedreamCenterFacing(visualInspection?.inspection)) {
+        console.warn('fal.finalizer.seedream_orientation_rejected', {
+            providerRequestId: input.record.providerRequestId,
+            facing: 'CENTER',
+            detector: visualInspection.inspection.anomalyDetector.status,
+            mapper: visualInspection.inspection.stateMapper.status,
+        })
+        throw new FluxImageGenerationServiceError('SEEDREAM_CENTER_FACING', 'Output Seedream scartato: Vision ha rilevato una posa frontale/centrale.')
+    }
     let rawImage: Readonly<{ bytes: Uint8Array, mimeType: 'image/png' | 'image/jpeg' }> = downloaded
     let persistedInspection = visualInspection?.inspection ?? null
     let mirrorCorrectionApplied = false

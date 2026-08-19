@@ -46,6 +46,14 @@ describe('Fal webhook and finalization boundary', () => {
         expect(seedreamFinalizer.slice(seedreamFinalizer.indexOf('inspectSeedreamVisual'))).not.toContain('retryCroppedSeedream')
     })
 
+    it('rejects a Vision-verified center-facing Seedream image before it can reach raw storage or background removal', () => {
+        const seedreamFinalizer = finalizer.slice(finalizer.indexOf('async function finalizeSeedreamProduction'), finalizer.indexOf('async function finalizeSeedream(input:'))
+        expect(seedreamFinalizer).toContain('shouldRejectSeedreamCenterFacing')
+        expect(seedreamFinalizer).toContain("'SEEDREAM_CENTER_FACING'")
+        expect(seedreamFinalizer.indexOf('seedream_orientation_rejected')).toBeLessThan(seedreamFinalizer.indexOf('saveRawResult'))
+        expect(seedreamFinalizer.indexOf('seedream_orientation_rejected')).toBeLessThan(seedreamFinalizer.indexOf('markBackgroundRemovalPending'))
+    })
+
     it('does not re-enter finalization for a duplicate callback after the first claim', () => {
         expect(finalizer).toContain("if (claim.outcome !== 'CLAIMED') return json(202)")
     })
