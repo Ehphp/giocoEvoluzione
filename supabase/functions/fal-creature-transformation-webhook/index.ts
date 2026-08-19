@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { parseFalWebhookEvent } from '../generate-creature-transformation/fal-flux-image-provider.ts'
 import { hasFalWebhookCallbackToken } from '../generate-creature-transformation/fal-webhook-callback-token.ts'
 import { verifyFalWebhookSignature } from '../generate-creature-transformation/fal-webhook-signature.ts'
+import { redactErrorMessage } from '../generate-creature-transformation/secret-redaction.ts'
 import { SupabaseCreatureTransformationRequestRepository, type CreatureTransformationRequestRepositoryClient } from '../generate-creature-transformation/creature-transformation-request-repository.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from '../generate-creature-transformation/creature-visual-progression-repository.ts'
 
@@ -19,15 +20,14 @@ async function restoreTrack(visualRepository: SupabaseCreatureVisualProgressionR
     try {
         await visualRepository.completeGeneration({ profileId: record.profileId, trackId: record.visualProgressTrackId, requestId: record.id, finalAsset: false })
     } catch (error) {
-        console.error('fal.webhook.track_restore_failed', { transformationRequestId: record.id, reason: error instanceof Error ? error.message : 'unknown' })
+        console.error('fal.webhook.track_restore_failed', { transformationRequestId: record.id, reason: redactErrorMessage(error) })
     }
 }
 
-async function invokeFinalizer(input: { supabaseUrl: string, serviceRoleKey: string, secret: string, providerRequestId: string, image: { url: string, contentType: 'image/png' | 'image/jpeg' | null } }) {
+async function invokeFinalizer(input: { supabaseUrl: string, secret: string, providerRequestId: string, image: { url: string, contentType: 'image/png' | 'image/jpeg' | null } }) {
     const response = await fetch(`${input.supabaseUrl}/functions/v1/fal-creature-transformation-finalizer`, {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${input.serviceRoleKey}`,
             'Content-Type': 'application/json',
             'x-fal-finalizer-secret': input.secret,
         },
@@ -91,7 +91,8 @@ Deno.serve(async (request) => {
                 requestId: record.id,
                 profileId: record.profileId,
                 errorCode: event.status === 'ERROR' ? 'FAL_FLUX_PROVIDER_ERROR' : 'FAL_FLUX_RESPONSE_INVALID',
-                errorMessage: event.errorMessage ?? (event.status === 'ERROR' ? 'Fal ha segnalato un errore durante la generazione.' : 'Il webhook Fal non contiene un output immagine valido.'),
+                // Provider error text is external input. Do not persist or return it to the browser.
+                errorMessage: event.status === 'ERROR' ? 'Fal ha segnalato un errore durante la generazione.' : 'Il webhook Fal non contiene un output immagine valido.',
             })
         } catch { return json(200) }
         await restoreTrack(visualRepository, record)
@@ -102,10 +103,9 @@ Deno.serve(async (request) => {
     // collapsed by the finalizer's atomic claim.
     EdgeRuntime.waitUntil(invokeFinalizer({
         supabaseUrl,
-        serviceRoleKey,
         secret: finalizerSecret,
         providerRequestId: event.providerRequestId,
         image: event.image,
-    }).catch((error) => console.error('fal.webhook.finalizer_enqueue_failed', { providerRequestId: event.providerRequestId, reason: error instanceof Error ? error.message : 'unknown' })))
+    }).catch((error) => console.error('fal.webhook.finalizer_enqueue_failed', { providerRequestId: event.providerRequestId, reason: redactErrorMessage(error) })))
     return json(202)
 })

@@ -16,6 +16,7 @@ import { parseFalQueueWorkflow } from '../generate-creature-transformation/fal-q
 import { readCreatureTransformationLabPolicy } from '../generate-creature-transformation/lab-policy.ts'
 import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
 import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
+import { redactErrorMessage, redactSensitiveText } from '../generate-creature-transformation/secret-redaction.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, shouldRejectSeedreamCenterFacing, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration } from './gemini-visual-inspection-service.ts'
@@ -140,13 +141,15 @@ async function restoreTrack(visualRepository: SupabaseCreatureVisualProgressionR
     try {
         await visualRepository.completeGeneration({ profileId: record.profileId, trackId: record.visualProgressTrackId, requestId: record.id, finalAsset: false })
     } catch (error) {
-        console.error('fal.finalizer.track_restore_failed', { transformationRequestId: record.id, reason: error instanceof Error ? error.message : 'unknown' })
+        console.error('fal.finalizer.track_restore_failed', { transformationRequestId: record.id, reason: redactErrorMessage(error) })
     }
 }
 
 async function failRequest(repository: SupabaseCreatureTransformationRequestRepository, visualRepository: SupabaseCreatureVisualProgressionRepository, record: CreatureTransformationRequestRecord, error: unknown) {
     const code = error instanceof FluxImageGenerationServiceError ? error.code : error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string' ? (error as { code: string }).code : 'FAL_FINALIZATION_FAILED'
-    const message = error instanceof Error ? error.message : 'La finalizzazione Fal non e riuscita.'
+    const message = error instanceof FluxImageGenerationServiceError
+        ? redactSensitiveText(error.message)
+        : 'La finalizzazione Fal non e riuscita.'
     try { await repository.markFailed({ requestId: record.id, profileId: record.profileId, errorCode: code, errorMessage: message }) } catch { /* terminal/duplicate requests are already safe */ }
     await restoreTrack(visualRepository, record)
 }
@@ -343,7 +346,7 @@ async function inspectSeedreamVisual(input: {
     } catch (error) {
         console.warn('fal.finalizer.seedream_visual_inspection_unavailable', {
             providerRequestId: input.record.providerRequestId,
-            reason: error instanceof Error ? error.message.slice(0, 180) : 'unknown',
+            reason: redactErrorMessage(error, 180),
         })
         return null
     }
@@ -472,7 +475,7 @@ async function finalizeSeedreamProduction(input: {
         } catch (error) {
             console.warn('fal.finalizer.seedream_visual_inspection_persistence_unavailable', {
                 providerRequestId: input.record.providerRequestId,
-                reason: error instanceof Error ? error.message.slice(0, 180) : 'unknown',
+                reason: redactErrorMessage(error, 180),
             })
         }
     }
@@ -637,8 +640,8 @@ Deno.serve(async (request) => {
     } catch (error) {
         console.error('fal.finalizer.failed', {
             providerRequestId,
-            reason: error instanceof Error ? error.message.slice(0, 300) : 'unknown',
-            cause: error instanceof Error && error.cause instanceof Error ? error.cause.message.slice(0, 300) : undefined,
+            reason: redactErrorMessage(error),
+            cause: error instanceof Error && error.cause instanceof Error ? redactErrorMessage(error.cause) : undefined,
         })
         await failRequest(repository, visualRepository, record, error)
     }

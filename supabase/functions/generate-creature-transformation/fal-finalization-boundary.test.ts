@@ -14,6 +14,7 @@ describe('Fal webhook and finalization boundary', () => {
         expect(webhook).toContain("fal.webhook.callback_token_authorized")
         expect(webhook).toContain('new Uint8Array(await request.arrayBuffer())')
         expect(webhook).toContain('EdgeRuntime.waitUntil')
+        expect(webhook).not.toContain('Authorization: `Bearer ${input.serviceRoleKey}`')
     })
 
     it('leaves result download, validation, crop retry and storage to the second invocation', () => {

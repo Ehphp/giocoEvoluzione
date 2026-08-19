@@ -31,3 +31,16 @@ dist/
 !.env.example
 .netlify/
 supabase/.temp/
+# Private key, local credential and backup material must never be committed.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.env.backup
+*.env.bak
+*.secrets
+*.credentials
+*.dump
+*.backup
