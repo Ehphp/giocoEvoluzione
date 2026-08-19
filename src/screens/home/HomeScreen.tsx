@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, IconButton, Notice, Panel, Pill, ProgressBar } from '../../ui/components'
+import { AppShell, Avatar, Button, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SheetHeader } from '../../ui/components'
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
 import { ASSETS } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
@@ -80,6 +80,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
 
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
+    const [isCreatureDescriptionOpen, setIsCreatureDescriptionOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
     const creatureCarouselRef = useRef<HTMLDivElement>(null)
     const dragStartRef = useRef<{ x: number; scrollLeft: number } | null>(null)
@@ -90,6 +91,7 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const [selectedVisualId, setSelectedVisualId] = useState(currentVisualId)
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
+    const closeCreatureDescription = useCallback(() => setIsCreatureDescriptionOpen(false), [])
 
     useEffect(() => {
         setBackgroundSource(viewModel.stage.backgroundSrc)
@@ -203,19 +205,6 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                     </div>
                 ) : null}
 
-                {viewModel.creature?.shortDescription ? (
-                    <Panel
-                        variant="glass"
-                        flat
-                        className="home-creature-description"
-                        aria-label="Descrizione della creatura corrente"
-                    >
-                        <p className="home-creature-description__copy" title={viewModel.creature.shortDescription}>
-                            {viewModel.creature.shortDescription}
-                        </p>
-                    </Panel>
-                ) : null}
-
                 {viewModel.creature ? (
                     <section className="home-stage" aria-label="La tua creatura" data-testid="home-creature-stage">
                         {/*
@@ -268,16 +257,34 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                 onPointerCancel={() => { dragStartRef.current = null }}
                                 data-testid="home-creature-carousel"
                             >
-                                {visualVersions.map((version) => (
-                                    <div
-                                        key={version.id}
-                                        className="home-stage__slide"
-                                        aria-hidden={version.id !== selectedVisual?.id}
-                                        data-testid={`home-creature-form-${version.id}`}
-                                    >
-                                        <CreatureArt image={version.image} />
-                                    </div>
-                                ))}
+                                {visualVersions.map((version) => {
+                                    const canInspect = Boolean(
+                                        viewModel.creature?.shortDescription
+                                        && version.id === selectedVisual?.id
+                                        && version.isCurrent,
+                                    )
+
+                                    return (
+                                        <div
+                                            key={version.id}
+                                            className="home-stage__slide"
+                                            aria-hidden={version.id !== selectedVisual?.id}
+                                            data-testid={`home-creature-form-${version.id}`}
+                                        >
+                                            {canInspect ? (
+                                                <button
+                                                    type="button"
+                                                    className="home-stage__inspect"
+                                                    aria-label={`Leggi la descrizione di ${viewModel.creature?.name ?? 'questa creatura'}`}
+                                                    onClick={() => setIsCreatureDescriptionOpen(true)}
+                                                    data-testid="home-creature-description-trigger"
+                                                >
+                                                    <CreatureArt image={version.image} />
+                                                </button>
+                                            ) : <CreatureArt image={version.image} />}
+                                        </div>
+                                    )
+                                })}
                             </div>
                             {visualVersions.length > 1 ? (
                                 <span className="home-stage__position" role="status" aria-live="polite" aria-label={`Forma ${visualVersions.findIndex((version) => version.id === selectedVisual?.id) + 1} di ${visualVersions.length}`}>
@@ -319,6 +326,22 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                     actions={actions}
                     onClose={closePlayModes}
                 />
+            ) : null}
+
+            {isCreatureDescriptionOpen && viewModel.creature?.shortDescription ? (
+                <Overlay
+                    label={`Descrizione di ${viewModel.creature.name}`}
+                    align="center"
+                    width="narrow"
+                    onClose={closeCreatureDescription}
+                >
+                    <Panel className="home-creature-description-dialog">
+                        <SheetHeader eyebrow="La tua creatura" title={viewModel.creature.name} onClose={closeCreatureDescription} />
+                        <p className="home-creature-description-dialog__copy">
+                            {viewModel.creature.shortDescription}
+                        </p>
+                    </Panel>
+                </Overlay>
             ) : null}
         </AppShell>
     )

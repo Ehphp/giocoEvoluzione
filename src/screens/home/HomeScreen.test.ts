@@ -282,19 +282,25 @@ describe('HomeScreen', () => {
         expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
     })
 
-    it('shows the active creature description in a compact vignette when available', () => {
+    it('opens the active creature description when its image is selected', () => {
         const viewModel = createVisualLineageViewModel()
         viewModel.creature = { ...viewModel.creature!, shortDescription: 'Una creatura quadrupede dalle scaglie verdi, con una lunga coda piumata e morbide corna arancioni.' }
 
         render(viewModel)
+        const trigger = container.querySelector<HTMLButtonElement>('[data-testid="home-creature-description-trigger"]')
 
-        expect(container.querySelector('.home-creature-description')?.textContent).toContain('lunga coda piumata')
+        expect(trigger?.getAttribute('aria-label')).toBe('Leggi la descrizione di Verdante')
+        expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+        act(() => trigger?.click())
+
+        expect(document.querySelector('[role="dialog"]')?.textContent).toContain('lunga coda piumata')
     })
 
-    it('does not render a creature description vignette when the active version has none', () => {
+    it('does not make the creature interactive when the active version has no description', () => {
         render(createVisualLineageViewModel())
 
-        expect(container.querySelector('.home-creature-description')).toBeNull()
+        expect(container.querySelector('[data-testid="home-creature-description-trigger"]')).toBeNull()
     })
 
     it('starts the Home carousel on the current, most recent unlocked form', () => {

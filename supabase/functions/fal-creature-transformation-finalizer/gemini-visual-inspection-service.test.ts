@@ -5,7 +5,7 @@ import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration,
 const configuration: GeminiVisualInspectionConfiguration = Object.freeze({ enabled: true, apiKey: 'test-key', model: 'gemini-3.1-flash-lite', detectorTimeoutMs: 100, mapperTimeoutMs: 100 })
 const detectorEvidence = { type: 'EXTRA_LIMB', imageRegion: 'CENTER_IMAGE_RIGHT', confidence: 0.93, description: 'Additional limb-like structure detected.' }
 const observed = {
-    shortDescription: 'Una piccola creatura quadrupede dalle scaglie verdi, con una lunga coda e un arto in più visibile.',
+    shortDescription: 'Una minuta creatura quadrupede dalle scaglie verde giada, con un quinto arto laterale, coda piumata e corna ricurve d\'ambra.',
     orientation: { viewpoint: 'PROFILE', facing: 'IMAGE_RIGHT' }, observedBodyPlan: 'quadruped', headAndEyes: 'one head',
     limbsAndLimbLikeStructures: 'four limbs plus a possible extra limb', tail: 'one tail', hornsAntlers: 'none', dorsalStructures: 'none',
     appendages: 'possible extra limb', skinCovering: 'scales', primaryColors: ['green'], distinctiveStructures: [], targetRegions: [],
@@ -59,6 +59,8 @@ describe('GeminiVisualInspectionService', () => {
         expect(mapperPrompt).toContain('"imageRegion":"CENTER_IMAGE_RIGHT"')
         expect(mapperPrompt).toContain('Do not silently discard upstream evidence')
         expect(mapperPrompt).toContain('shortDescription in Italian')
+        expect(mapperPrompt).toContain('compact visual signature')
+        expect(mapperPrompt).toContain('never say "occhi espressivi"')
     })
 
     it('continues with image-only Vision 2 when Vision 1 returns invalid JSON', async () => {
