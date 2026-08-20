@@ -1,6 +1,6 @@
-import type { AdaptationDefinition, AdaptationId, EnvironmentalCrisisDefinition } from './types.ts'
+import type { AdaptationDefinition, AdaptationId, CombatMutationDefinition, CombatMutationId, EnvironmentalCrisisDefinition } from './types.ts'
 
-export const RULE_VERSION = 'adaptations-exhaustion-best-of-seven-v2'
+export const RULE_VERSION = 'combat-mutations-mvp-v1'
 export const TOTAL_ROUNDS = 7
 export const WINS_TO_WIN = 4
 export const BASE_USE_VALUE = 2
@@ -17,6 +17,12 @@ export const ADAPTATION_CATALOG: Record<AdaptationId, AdaptationDefinition> = {
     AGILITY: { id: 'AGILITY', label: 'Agilita', description: 'Movimento rapido e manovre evasive.', assetKey: 'agility', displayOrder: 3 },
     SENSES: { id: 'SENSES', label: 'Sensi', description: 'Lettura dell ambiente e anticipazione delle minacce.', assetKey: 'senses', displayOrder: 4 },
     CAMOUFLAGE: { id: 'CAMOUFLAGE', label: 'Mimetismo', description: 'Occultamento e confusione visiva.', assetKey: 'camouflage', displayOrder: 5 },
+}
+
+/** Fixed MVP catalog: no unlocks, loadouts, slots or visual-evolution link. */
+export const COMBAT_MUTATION_CATALOG: Record<CombatMutationId, CombatMutationDefinition> = {
+    ELASTIC_LIMBS: { id: 'ELASTIC_LIMBS', label: 'Arti elastici', description: 'Il primo USA Agilita del match non esaurisce il gene.' },
+    ADAPTIVE_CORE: { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', description: 'Il primo EVOLVI arma +1 al successivo USA.' },
 }
 
 export const NATURAL_ADVANTAGE: Record<AdaptationId, AdaptationId> = {

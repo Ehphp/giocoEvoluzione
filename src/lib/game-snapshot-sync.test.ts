@@ -105,4 +105,20 @@ describe('GameSnapshotSync', () => {
         request.resolve(snapshot(1))
         await flush()
     })
+
+    it('keeps persisted combat mutation state through a reconnect snapshot', async () => {
+        const request = deferred<GameSnapshot>()
+        let persistedCombatMutationState: unknown = null
+        const sync = new GameSnapshotSync({ fetchSnapshot: () => request.promise, onSnapshot: (next) => { persistedCombatMutationState = next.me?.combat_mutation_state ?? null } })
+
+        sync.reconcile()
+        await flush()
+        request.resolve({
+            stateRevision: 4,
+            me: { combat_mutation_state: { elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' } },
+        } as unknown as GameSnapshot)
+        await flush()
+
+        expect(persistedCombatMutationState).toEqual({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+    })
 })

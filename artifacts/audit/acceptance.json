@@ -1,30 +1,36 @@
 {
-  "ruleVersion": "adaptations-exhaustion-best-of-seven-v2",
+  "ruleVersion": "combat-mutations-mvp-v1",
   "seed": 1592598566,
   "methodology": "Seeded symmetric tournament using only production getLegalBotActions, resolveRound, resolveMatchOutcome and simulateMatch. Mirrored pairings share the same seed. No alternate scoring or transition model.",
   "actions": {
-    "USE": 1472,
-    "EVOLVE": 504,
-    "evolveRate": 0.2550607287449393,
+    "USE": 1488,
+    "EVOLVE": 460,
+    "evolveRate": 0.23613963039014374,
     "pureMaxLevelRecoveries": 0,
     "pureRecoveryRate": 0
   },
   "geneFrequency": {
-    "FEROCITY": 0.21153846153846154,
-    "ARMOR": 0.2054655870445344,
-    "AGILITY": 0.19129554655870445,
-    "SENSES": 0.19331983805668015,
-    "CAMOUFLAGE": 0.19838056680161945
+    "FEROCITY": 0.20739219712525667,
+    "ARMOR": 0.1919917864476386,
+    "AGILITY": 0.2433264887063655,
+    "SENSES": 0.17659137577002054,
+    "CAMOUFLAGE": 0.1806981519507187
   },
-  "concentration": 0.21153846153846154,
+  "concentration": 0.2433264887063655,
   "matchup": {
-    "doubleUseRounds": 582,
-    "winnerChanges": 164,
-    "lowerEnvironmentalValueWins": 90
+    "doubleUseRounds": 599,
+    "winnerChanges": 178,
+    "lowerEnvironmentalValueWins": 112
   },
   "exhaustion": {
-    "averageExhaustedGenesPerPlayerRound": 1.951417004048583,
-    "averageFirstRecoveryRound": 5.088235294117647
+    "averageExhaustedGenesPerPlayerRound": 1.5595482546201231,
+    "averageFirstRecoveryRound": 5.060869565217391
+  },
+  "combatMutations": {
+    "elasticActivations": 256,
+    "adaptiveCoreArmed": 272,
+    "adaptiveCoreBonuses": 206,
+    "invalidTransitions": 0
   },
   "integrity": {
     "illegalActions": 0,
@@ -32,64 +38,64 @@
   },
   "matches": {
     "count": 150,
-    "averageDurationRounds": 6.586666666666667,
-    "leftWins": 60,
-    "rightWins": 60,
+    "averageDurationRounds": 6.493333333333333,
+    "leftWins": 59,
+    "rightWins": 59,
     "positionDifference": 0,
-    "draws": 30,
+    "draws": 32,
     "tiebreaks": 14,
     "endReasons": {
-      "DRAW": 30,
-      "CLINCH": 64,
-      "SCORE": 42,
-      "ROUND_VALUE_TIEBREAK": 14
+      "DRAW": 32,
+      "CLINCH": 74,
+      "ROUND_VALUE_TIEBREAK": 14,
+      "SCORE": 30
     }
   },
   "policyResults": {
     "random": {
-      "wins": 2,
+      "wins": 4,
       "draws": 12,
-      "losses": 46,
-      "actions": 384,
-      "evolves": 202,
-      "evolveRate": 0.5260416666666666,
-      "scoreRate": 0.13333333333333333
+      "losses": 44,
+      "actions": 372,
+      "evolves": 184,
+      "evolveRate": 0.4946236559139785,
+      "scoreRate": 0.16666666666666666
     },
     "greedy-immediate-use": {
-      "wins": 16,
-      "draws": 12,
+      "wins": 14,
+      "draws": 14,
       "losses": 32,
       "actions": 398,
-      "evolves": 52,
-      "evolveRate": 0.1306532663316583,
-      "scoreRate": 0.36666666666666664
+      "evolves": 48,
+      "evolveRate": 0.12060301507537688,
+      "scoreRate": 0.35
     },
     "evolve-first": {
-      "wins": 24,
+      "wins": 26,
       "draws": 12,
-      "losses": 24,
-      "actions": 410,
+      "losses": 22,
+      "actions": 408,
       "evolves": 120,
-      "evolveRate": 0.2926829268292683,
-      "scoreRate": 0.5
+      "evolveRate": 0.29411764705882354,
+      "scoreRate": 0.5333333333333333
     },
     "heuristic": {
-      "wins": 40,
+      "wins": 36,
       "draws": 12,
-      "losses": 8,
-      "actions": 394,
-      "evolves": 54,
-      "evolveRate": 0.13705583756345177,
-      "scoreRate": 0.7666666666666667
+      "losses": 12,
+      "actions": 390,
+      "evolves": 52,
+      "evolveRate": 0.13333333333333333,
+      "scoreRate": 0.7
     },
     "lookahead-2": {
       "wins": 38,
-      "draws": 12,
-      "losses": 10,
-      "actions": 390,
-      "evolves": 76,
-      "evolveRate": 0.19487179487179487,
-      "scoreRate": 0.7333333333333333
+      "draws": 14,
+      "losses": 8,
+      "actions": 380,
+      "evolves": 56,
+      "evolveRate": 0.14736842105263157,
+      "scoreRate": 0.75
     }
   },
   "strategicVsGreedy": [
@@ -102,24 +108,24 @@
     },
     {
       "strategic": "evolve-first",
-      "wins": 6,
+      "wins": 12,
       "draws": 0,
-      "losses": 6,
-      "scoreRate": 0.5
+      "losses": 0,
+      "scoreRate": 1
     },
     {
       "strategic": "heuristic",
-      "wins": 12,
+      "wins": 8,
       "draws": 0,
-      "losses": 0,
-      "scoreRate": 1
+      "losses": 4,
+      "scoreRate": 0.6666666666666666
     },
     {
       "strategic": "lookahead-2",
-      "wins": 12,
-      "draws": 0,
+      "wins": 10,
+      "draws": 2,
       "losses": 0,
-      "scoreRate": 1
+      "scoreRate": 0.9166666666666666
     }
   ],
   "thresholds": {
@@ -130,7 +136,8 @@
     "strategicBeatsGreedy": true,
     "positionBalanced": true,
     "noIllegalActions": true,
-    "deterministic": true
+    "deterministic": true,
+    "mutationTransitions": true
   },
   "accepted": true
 }

@@ -52,6 +52,7 @@ function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => v
                         <li><span>Base</span><strong>{formatContribution(prediction.baseContribution)}</strong></li>
                         <li><span>Livello</span><strong>{formatContribution(prediction.levelContribution)}</strong></li>
                         <li><span>Ambiente</span><strong>{formatContribution(prediction.eventModifier)}</strong></li>
+                        {prediction.mutationBonus ? <li><span>Nucleo adattivo</span><strong>+{prediction.mutationBonus}</strong></li> : null}
                     </ul>
                 ) : (
                     <p className="gene-detail__note">Valore ambientale non disponibile.</p>
@@ -72,6 +73,7 @@ function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => v
                     </p>
                 </div>
                 <p className="gene-detail__note">Il vantaggio naturale si attiva solo quando entrambi scelgono USA; il matchup avversario resta nascosto.</p>
+                {gene.mutationHints?.map((hint) => <p key={hint} className="gene-detail__note">{hint}</p>)}
             </Panel>
         </Overlay>
     )

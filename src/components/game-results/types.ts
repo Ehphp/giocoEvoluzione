@@ -1,5 +1,5 @@
 import type { CreatureVisual } from '../game-v2/gameSelectionAssets'
-import type { RoundValueBreakdown, TraitType } from '../../game/types'
+import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../game/types'
 
 export type MatchResultOutcome = 'win' | 'loss' | 'draw'
 
@@ -27,6 +27,7 @@ export type ResultRoundParticipant = {
     value: number
     points: number | null
     breakdown: RoundValueBreakdown | null
+    mutationEffects: CombatMutationEffect[]
 }
 
 export type MatchResultRound = {

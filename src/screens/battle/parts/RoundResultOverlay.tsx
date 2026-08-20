@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 
 import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from '../../../game/config'
-import { getRoundExplanation } from '../../../game/round-result-explainer'
+import { getCombatMutationEffectDescription, getRoundExplanation } from '../../../game/round-result-explainer'
 import { getRoundEventLabel } from '../../../game/ui-context'
-import type { RoundValueBreakdown, TraitType } from '../../../game/types'
+import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { Button, Chip, Notice, Overlay, Panel } from '../../../ui/components'
 import { GeneIcon } from '../../../ui/icons'
@@ -19,6 +19,8 @@ export type RoundResolutionData = {
     player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
     player1Breakdown?: RoundValueBreakdown
     player2Breakdown?: RoundValueBreakdown
+    player1MutationEffects?: CombatMutationEffect[]
+    player2MutationEffects?: CombatMutationEffect[]
     matchEndReason?: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null
     player1RoundValueTotal?: number
     player2RoundValueTotal?: number
@@ -36,6 +38,7 @@ type BreakdownCardProps = {
     title: string
     action: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string } | undefined
     breakdown: RoundValueBreakdown | undefined
+    mutationEffects: CombatMutationEffect[]
     total: number
     awardedPoints: number
     roundEventLabel: string
@@ -48,6 +51,7 @@ function BreakdownCard({
     title,
     action,
     breakdown,
+    mutationEffects,
     total,
     awardedPoints,
     roundEventLabel,
@@ -92,6 +96,7 @@ function BreakdownCard({
                         ) : (
                             <p>Livello effettivo {breakdown.effectiveLevel}</p>
                         )}
+                        {mutationEffects.map((effect) => <p key={`${effect.id}-${effect.effect}`}>{getCombatMutationEffectDescription(effect)}</p>)}
                     </div>
                 </details>
             ) : (
@@ -118,12 +123,16 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
     const player2Action = resolutionData?.player2Action
     const player1Breakdown = resolutionData?.player1Breakdown
     const player2Breakdown = resolutionData?.player2Breakdown
+    const player1MutationEffects = resolutionData?.player1MutationEffects ?? []
+    const player2MutationEffects = resolutionData?.player2MutationEffects ?? []
     const hasCurrentRuleVersion = resolutionData?.ruleVersion === RULE_VERSION
         && resolutionData.catalogSignature === PRODUCTION_CATALOG_AUDIT.catalogSignature
     const myResolvedAction = player1Action?.playerId === snapshot.me?.id ? player1Action : player2Action
     const opponentResolvedAction = player1Action?.playerId === snapshot.opponent?.id ? player1Action : player2Action
     const myBreakdown = iAmPlayer1 ? player1Breakdown : player2Breakdown
     const opponentBreakdown = iAmPlayer1 ? player2Breakdown : player1Breakdown
+    const myMutationEffects = iAmPlayer1 ? player1MutationEffects : player2MutationEffects
+    const opponentMutationEffects = iAmPlayer1 ? player2MutationEffects : player1MutationEffects
     const myRoundValue = iAmPlayer1 ? result?.player_1_value ?? 0 : result?.player_2_value ?? 0
     const opponentRoundValue = iAmPlayer1 ? result?.player_2_value ?? 0 : result?.player_1_value ?? 0
     const myRoundPoints = iAmPlayer1
@@ -212,6 +221,7 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
                         title={snapshot.me?.nickname ?? 'Tu'}
                         action={myResolvedAction}
                         breakdown={myBreakdown}
+                        mutationEffects={myMutationEffects}
                         total={myRoundValue}
                         awardedPoints={myRoundPoints}
                         roundEventLabel={roundEventLabel}
@@ -223,6 +233,7 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
                         title={snapshot.opponent?.nickname ?? 'Avversario'}
                         action={opponentResolvedAction}
                         breakdown={opponentBreakdown}
+                        mutationEffects={opponentMutationEffects}
                         total={opponentRoundValue}
                         awardedPoints={opponentRoundPoints}
                         roundEventLabel={roundEventLabel}

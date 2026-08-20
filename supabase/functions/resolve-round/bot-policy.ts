@@ -2,13 +2,13 @@ import { createLookaheadPolicy, getLegalBotActions, randomPolicy, selectBotActio
 
 export type EdgeBotRoundAction = BotRoundAction
 export type SelectEdgeBotActionInput = {
-  traits: SelectBotActionInput['adaptations']; roundEvent: SelectBotActionInput['roundEvent']; roundNumber: number
-  publicOpponentTraits?: SelectBotActionInput['publicOpponentAdaptations']; nextRoundEvent?: SelectBotActionInput['roundEvent'] | null; random?: () => number; difficulty?: 'EASY' | 'NORMAL' | 'HARD'
+  traits: SelectBotActionInput['adaptations']; combatMutationState?: SelectBotActionInput['combatMutationState']; roundEvent: SelectBotActionInput['roundEvent']; roundNumber: number
+  publicOpponentTraits?: SelectBotActionInput['publicOpponentAdaptations']; publicOpponentCombatMutationState?: SelectBotActionInput['publicOpponentCombatMutationState']; nextRoundEvent?: SelectBotActionInput['roundEvent'] | null; random?: () => number; difficulty?: 'EASY' | 'NORMAL' | 'HARD'
 }
 /** Edge adapter intentionally delegates to the shared policy source of truth. */
-export function selectEdgeBotAction({ traits, roundEvent, roundNumber, publicOpponentTraits, nextRoundEvent = null, random, difficulty = 'NORMAL' }: SelectEdgeBotActionInput): EdgeBotRoundAction {
+export function selectEdgeBotAction({ traits, combatMutationState, roundEvent, roundNumber, publicOpponentTraits, publicOpponentCombatMutationState, nextRoundEvent = null, random, difficulty = 'NORMAL' }: SelectEdgeBotActionInput): EdgeBotRoundAction {
   const legalActions = getLegalBotActions(traits)
-  if (difficulty === 'EASY') return randomPolicy.selectAction({ adaptations: traits, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, ownScore: 0, opponentScore: 0, nextRoundEvent, publicHistory: [], legalActions, random: random ?? Math.random })
-  if (difficulty === 'HARD') return createLookaheadPolicy({ depth: 2 }).selectAction({ adaptations: traits, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, ownScore: 0, opponentScore: 0, nextRoundEvent, publicHistory: [], legalActions, random: random ?? Math.random })
-  return selectBotAction({ adaptations: traits, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, random })
+  if (difficulty === 'EASY') return randomPolicy.selectAction({ adaptations: traits, combatMutationState, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, publicOpponentCombatMutationState, ownScore: 0, opponentScore: 0, nextRoundEvent, publicHistory: [], legalActions, random: random ?? Math.random })
+  if (difficulty === 'HARD') return createLookaheadPolicy({ depth: 2 }).selectAction({ adaptations: traits, combatMutationState, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, publicOpponentCombatMutationState, ownScore: 0, opponentScore: 0, nextRoundEvent, publicHistory: [], legalActions, random: random ?? Math.random })
+  return selectBotAction({ adaptations: traits, combatMutationState, roundEvent, roundNumber, publicOpponentAdaptations: publicOpponentTraits, publicOpponentCombatMutationState, random })
 }

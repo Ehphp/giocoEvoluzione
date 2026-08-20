@@ -1,6 +1,6 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
 import { NATURAL_ADVANTAGE } from '../../../../shared/game-rules/catalog.ts'
-import { isTraitEvolvable, isTraitUsable } from '../../../game/engine'
+import { getCombatMutationUsePreview, isTraitEvolvable, isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { getValidatedTraitUseBreakdown } from '../../../game/scoring'
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
@@ -187,9 +187,14 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 : 0
             const usable = isTraitUsable(myTraits, traitType)
             const weakAgainst = TRAITS.find((candidate) => NATURAL_ADVANTAGE[candidate] === traitType)!
+            const combatMutationPreview = getCombatMutationUsePreview(snapshot.me?.combat_mutation_state, traitType)
             const prediction = roundEvent
-                ? getValidatedTraitUseBreakdown(roundEvent, myTraits, traitType)
+                ? getValidatedTraitUseBreakdown(roundEvent, myTraits, traitType, 0, combatMutationPreview.mutationBonus)
                 : null
+            const mutationHints = [
+                ...(combatMutationPreview.elasticLimbsWillPreserveAgility && !state.exhausted ? ['Arti elastici: il primo USA non esaurisce Agilità.'] : []),
+                ...(combatMutationPreview.mutationBonus ? ['Nucleo adattivo pronto: +1 al prossimo USA.'] : []),
+            ]
 
             return {
                 id: traitType,
@@ -209,9 +214,11 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                         baseContribution: prediction.baseContribution,
                         levelContribution: prediction.levelContribution,
                         eventModifier: prediction.eventModifier,
+                        mutationBonus: prediction.mutationBonus,
                         reasons: prediction.appliedEventEffects.map((effect) => effect.reason),
                     }
                     : undefined,
+                mutationHints: mutationHints.length ? mutationHints : undefined,
             }
         })
         .filter((gene): gene is GeneCardV2 => gene !== null)

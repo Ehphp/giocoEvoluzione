@@ -11,6 +11,7 @@ const breakdown = {
     levelContribution: 2,
     eventModifier: 1,
     matchupBonus: 1,
+    mutationBonus: 0,
     originalLevel: 2,
     effectiveLevel: 2,
     total: 5,
@@ -23,8 +24,8 @@ function makeRound(overrides: Partial<MatchResultRound> = {}): MatchResultRound 
         number: 2,
         eventLabel: 'Foresta incantata',
         outcome: 'win',
-        player: { action: { trait: 'AGILITY', actionType: 'USE' }, value: 5, points: 1, breakdown },
-        opponent: { action: { trait: 'ARMOR', actionType: 'USE' }, value: 3, points: 0, breakdown: { ...breakdown, total: 3 } },
+        player: { action: { trait: 'AGILITY', actionType: 'USE' }, value: 5, points: 1, breakdown, mutationEffects: [] },
+        opponent: { action: { trait: 'ARMOR', actionType: 'USE' }, value: 3, points: 0, breakdown: { ...breakdown, total: 3 }, mutationEffects: [] },
         explanation: 'Hai vinto grazie al vantaggio naturale.',
         ...overrides,
     }
@@ -106,8 +107,8 @@ describe('MatchResultScreen', () => {
     it('shows both USE and EVOLVE actions in the final round', () => {
         render(makeViewModel({
             lastRound: makeRound({
-                player: { action: { trait: 'SENSES', actionType: 'USE' }, value: 4, points: 1, breakdown },
-                opponent: { action: { trait: 'CAMOUFLAGE', actionType: 'EVOLVE' }, value: 1, points: 0, breakdown: { ...breakdown, actionType: 'EVOLVE', total: 1 } },
+                player: { action: { trait: 'SENSES', actionType: 'USE' }, value: 4, points: 1, breakdown, mutationEffects: [] },
+                opponent: { action: { trait: 'CAMOUFLAGE', actionType: 'EVOLVE' }, value: 1, points: 0, breakdown: { ...breakdown, actionType: 'EVOLVE', total: 1 }, mutationEffects: [] },
             }),
         }))
 
@@ -119,7 +120,7 @@ describe('MatchResultScreen', () => {
 
     it('opens the persisted calculation detail and supports legacy records without a breakdown', () => {
         render(makeViewModel({
-            lastRound: makeRound({ player: { action: { trait: 'AGILITY', actionType: 'USE' }, value: 5, points: 1, breakdown: null } }),
+            lastRound: makeRound({ player: { action: { trait: 'AGILITY', actionType: 'USE' }, value: 5, points: 1, breakdown: null, mutationEffects: [] } }),
         }))
 
         const detail = container.querySelectorAll<HTMLButtonElement>('.result-side__toggle')[0]!
@@ -128,6 +129,26 @@ describe('MatchResultScreen', () => {
 
         expect(detail.getAttribute('aria-expanded')).toBe('true')
         expect(container.textContent).toContain('Dettaglio calcolo non disponibile per questo risultato storico.')
+    })
+
+    it('shows persisted Combat Mutation effects for a match-clinching round', () => {
+        render(makeViewModel({
+            lastRound: makeRound({
+                player: {
+                    action: { trait: 'AGILITY', actionType: 'USE' }, value: 6, points: 1,
+                    breakdown: { ...breakdown, mutationBonus: 1, total: 6 },
+                    mutationEffects: [
+                        { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
+                        { id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' },
+                    ],
+                },
+            }),
+        }))
+
+        act(() => container.querySelector<HTMLButtonElement>('.result-side__toggle')?.click())
+
+        expect(container.textContent).toContain('Nucleo adattivo: +1 valore round.')
+        expect(container.textContent).toContain('Arti elastici: Agilità resta disponibile.')
     })
 
     it('keeps persisted history sorted and allows one expanded row at a time', () => {

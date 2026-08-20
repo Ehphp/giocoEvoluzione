@@ -59,8 +59,10 @@ export interface GeneCardV2 {
         baseContribution: number
         levelContribution: number
         eventModifier: number
+        mutationBonus?: number
         reasons: string[]
     }
+    mutationHints?: string[]
 }
 
 export interface WaitingStateV2 {

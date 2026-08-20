@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
-import { getRoundEventById, normalizeAdaptationCollection } from '../../../shared/game-rules/state.ts'
-import type { AdaptationCollection, AdaptationId } from '../../../shared/game-rules/types.ts'
+import { getRoundEventById, normalizeAdaptationCollection, normalizeCombatMutationState } from '../../../shared/game-rules/state.ts'
+import type { AdaptationCollection, AdaptationId, CombatMutationState } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
 import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion, recordEvolutionTargetWinFromMatchCompletion } from './visual-progression-adapter.ts'
@@ -41,14 +41,16 @@ function json(body: unknown, status = 200) {
 
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: ReturnType<typeof createClient>,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits?: AdaptationCollection; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; combatMutationState: CombatMutationState; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits?: AdaptationCollection; publicOpponentCombatMutationState?: CombatMutationState; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
+        combatMutationState: input.combatMutationState,
         roundEvent: input.roundEvent,
         roundNumber: input.roundNumber,
         nextRoundEvent: input.nextRoundEvent,
         publicOpponentTraits: input.publicOpponentTraits,
+        publicOpponentCombatMutationState: input.publicOpponentCombatMutationState,
         difficulty: input.difficulty,
     })
     try {
@@ -191,6 +193,7 @@ Deno.serve(async (request) => {
         const roundEvent = getRoundEventById(roundEventId)
         if (gameMode === 'VS_BOT') {
             const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
+            const humanPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'HUMAN')
 
             if (botPlayer && (!actionsData || !actionsData.some((action) => action.player_id === botPlayer.id))) {
                 await ensureEdgeBotRoundAction(supabaseAdmin, {
@@ -198,8 +201,11 @@ Deno.serve(async (request) => {
                     roundNumber,
                     playerId: String(botPlayer.id),
                     traits: normalizeAdaptationCollection(botPlayer.traits as AdaptationCollection),
+                    combatMutationState: normalizeCombatMutationState(botPlayer.combat_mutation_state as CombatMutationState),
                     roundEvent,
                     nextRoundEvent: roundNumber < TOTAL_ROUNDS ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? '')) : null,
+                    publicOpponentTraits: humanPlayer ? normalizeAdaptationCollection(humanPlayer.traits as AdaptationCollection) : undefined,
+                    publicOpponentCombatMutationState: humanPlayer ? normalizeCombatMutationState(humanPlayer.combat_mutation_state as CombatMutationState) : undefined,
                     difficulty: (['EASY', 'NORMAL', 'HARD'].includes(String((gameData as Record<string, unknown>).bot_difficulty)) ? String((gameData as Record<string, unknown>).bot_difficulty) : 'NORMAL') as 'EASY' | 'NORMAL' | 'HARD',
                 })
 
@@ -237,6 +243,8 @@ Deno.serve(async (request) => {
             player2Score: Number(gameData.player_2_score ?? 0),
             player1Traits: normalizeAdaptationCollection(player1.traits as AdaptationCollection),
             player2Traits: normalizeAdaptationCollection(player2.traits as AdaptationCollection),
+            player1CombatMutationState: normalizeCombatMutationState(player1.combat_mutation_state as CombatMutationState),
+            player2CombatMutationState: normalizeCombatMutationState(player2.combat_mutation_state as CombatMutationState),
             player1Action: {
                 playerId: String(player1.id),
                 trait: player1ActionRow.trait as TraitName,
@@ -259,6 +267,8 @@ Deno.serve(async (request) => {
             p_player_2_id: String(player2.id),
             p_player_1_traits: normalizeAdaptationCollection(resolutionData.player1TraitsAfter as AdaptationCollection),
             p_player_2_traits: normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection),
+            p_player_1_combat_mutation_state: normalizeCombatMutationState(resolutionData.player1CombatMutationStateAfter as CombatMutationState),
+            p_player_2_combat_mutation_state: normalizeCombatMutationState(resolutionData.player2CombatMutationStateAfter as CombatMutationState),
             p_player_1_score: Number(resolutionData.player1ScoreAfter ?? 0),
             p_player_2_score: Number(resolutionData.player2ScoreAfter ?? 0),
             p_status: String(resolutionData.statusAfter ?? 'REVEALING'),

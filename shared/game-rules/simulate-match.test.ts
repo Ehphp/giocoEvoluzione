@@ -44,8 +44,8 @@ describe('deterministic policy simulation', () => {
         const stats = { statesVisited: 0, cacheHits: 0, cacheMisses: 0 }; const policy = createLookaheadPolicy({ depth: 2, stats }); const adaptations = createInitialAdaptations(); const input = context(policy); input.adaptations = adaptations
         policy.selectAction(input); expect(adaptations).toEqual(createInitialAdaptations()); expect(stats.cacheMisses).toBeGreaterThan(0)
     })
-    it('greedy and lookahead beat random across a deterministic, non-fragile fixture', () => {
+    it('mutation-aware heuristic and lookahead beat random across a deterministic fixture', () => {
         const score = (left: BotPolicy, right: BotPolicy) => Array.from({ length: 8 }, (_, index) => simulateMatch({ leftPolicy: index % 2 ? right : left, rightPolicy: index % 2 ? left : right, eventSequence: events, seed: index + 90 })).reduce((total, match, index) => total + (match.winner === (index % 2 ? 'right' : 'left') ? 1 : match.winner ? -1 : 0), 0)
-        expect(score(greedyUsePolicy, randomPolicy)).toBeGreaterThan(3); expect(score(lookaheadPolicy, greedyUsePolicy)).toBeGreaterThanOrEqual(-1)
+        expect(score(heuristicPolicy, randomPolicy)).toBeGreaterThan(3); expect(score(lookaheadPolicy, heuristicPolicy)).toBeGreaterThanOrEqual(-1)
     })
 })

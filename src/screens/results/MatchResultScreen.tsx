@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { TRAIT_LABELS } from '../../game/config'
 import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
 import { getResultActionLabel } from '../../components/game-results/buildMatchResultViewModel'
+import { getCombatMutationEffectDescription } from '../../game/round-result-explainer'
 import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from '../../components/game-results/types'
 import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
 import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
@@ -45,17 +46,22 @@ function CalculationDetails({ action, participant, eventLabel }: {
     }
 
     if (action?.actionType === 'EVOLVE') {
-        return <p className="result-calc__empty">EVOLVI: valore fisso {participant.breakdown.total}. Affinita e vantaggio naturale non si applicano.</p>
+        return <>
+            <p className="result-calc__empty">EVOLVI: valore fisso {participant.breakdown.total}. Affinita e vantaggio naturale non si applicano.</p>
+            {participant.mutationEffects.map((effect) => <p key={`${effect.id}-${effect.effect}`} className="result-calc__empty">{getCombatMutationEffectDescription(effect)}</p>)}
+        </>
     }
 
-    return (
+    return <>
         <dl className="result-calc">
             <div><dt>Uso base</dt><dd>+{participant.breakdown.baseContribution}</dd></div>
             <div><dt>Ambiente{eventLabel ? ` · ${eventLabel}` : ''}</dt><dd>+{participant.breakdown.eventModifier}</dd></div>
             <div><dt>Livello</dt><dd>+{participant.breakdown.levelContribution}</dd></div>
             <div><dt>Vantaggio naturale</dt><dd>+{participant.breakdown.matchupBonus}</dd></div>
+            {participant.breakdown.mutationBonus ? <div><dt>Nucleo adattivo</dt><dd>+{participant.breakdown.mutationBonus}</dd></div> : null}
         </dl>
-    )
+        {participant.mutationEffects.map((effect) => <p key={`${effect.id}-${effect.effect}`} className="result-calc__empty">{getCombatMutationEffectDescription(effect)}</p>)}
+    </>
 }
 
 function RoundSideCard({ side, round, participant }: { side: 'player' | 'opponent'; round: MatchResultRound; participant: ResultRoundParticipant }) {

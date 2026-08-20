@@ -1,7 +1,7 @@
 {
   "audit": "exact-domain-parity",
-  "ruleVersion": "adaptations-exhaustion-best-of-seven-v2",
+  "ruleVersion": "combat-mutations-mvp-v1",
   "sequences": 720,
-  "elapsedMs": 2,
+  "elapsedMs": 3,
   "implementation": "shared-game-rules-only"
 }

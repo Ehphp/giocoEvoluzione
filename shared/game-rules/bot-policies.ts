@@ -1,12 +1,12 @@
-import { ADAPTATION_IDS, type ActionType, type AdaptationCollection, type AdaptationId, type EnvironmentalCrisisDefinition } from './types.ts'
+import { ADAPTATION_IDS, type ActionType, type AdaptationCollection, type AdaptationId, type CombatMutationState, type EnvironmentalCrisisDefinition } from './types.ts'
 import { EVOLVE_ROUND_VALUE, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, TOTAL_ROUNDS } from './catalog.ts'
-import { getAdaptationRoundValue, isAdaptationEvolvable, isAdaptationUsable } from './engine.ts'
+import { getAdaptationRoundValue, getCombatMutationStateAfterEvolve, isAdaptationEvolvable, isAdaptationUsable } from './engine.ts'
 
 export type BotRoundAction = { trait: AdaptationId; actionType: ActionType }
 export type PublicRoundHistory = { roundNumber: number; eventId: string; leftAction: BotRoundAction; rightAction: BotRoundAction; leftValue: number; rightValue: number }
 export type BotDecisionContext = {
     roundNumber: number; ownScore: number; opponentScore: number
-    adaptations: AdaptationCollection; publicOpponentAdaptations?: AdaptationCollection
+    adaptations: AdaptationCollection; combatMutationState?: CombatMutationState; publicOpponentAdaptations?: AdaptationCollection; publicOpponentCombatMutationState?: CombatMutationState
     roundEvent: EnvironmentalCrisisDefinition; nextRoundEvent?: EnvironmentalCrisisDefinition | null
     publicHistory: readonly PublicRoundHistory[]; legalActions: readonly BotRoundAction[]
     random: () => number
@@ -56,7 +56,7 @@ export const randomPolicy: BotPolicy = { id: 'random', selectAction: (context) =
 export const greedyUsePolicy: BotPolicy = { id: 'greedy-immediate-use', selectAction(context) {
     const uses = context.legalActions.filter((action) => action.actionType === 'USE')
     const candidates = uses.length ? uses : context.legalActions
-    return best(candidates.map((action) => ({ action, score: action.actionType === 'USE' ? getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait) : EVOLVE_ROUND_VALUE, reason: action.actionType === 'USE' ? 'Massimizza il valore immediato.' : 'Nessun USE disponibile.' })), context.random)
+    return best(candidates.map((action) => ({ action, score: action.actionType === 'USE' ? getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait, context.combatMutationState) : EVOLVE_ROUND_VALUE, reason: action.actionType === 'USE' ? 'Massimizza il valore immediato.' : 'Nessun USE disponibile.' })), context.random)
 } }
 export const evolveFirstPolicy: BotPolicy = { id: 'evolve-first', selectAction(context) {
     const evolutions = context.legalActions.filter((action) => action.actionType === 'EVOLVE')
@@ -67,10 +67,10 @@ export const evolveFirstPolicy: BotPolicy = { id: 'evolve-first', selectAction(c
 export function evaluateHeuristicAction(context: BotDecisionContext, action: BotRoundAction, weights: HeuristicWeights = DEFAULT_HEURISTIC_WEIGHTS): HeuristicActionEvaluation {
     const remaining = TOTAL_ROUNDS - context.roundNumber + 1; const behind = Math.max(0, context.opponentScore - context.ownScore); const decisive = Math.abs(context.ownScore - context.opponentScore) <= 1 && remaining <= 2 ? 1 : 0; const trait = context.adaptations[action.trait]
     if (action.actionType === 'USE') {
-        const immediateValue = getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait); const matchup = estimateMatchup(action.trait, context.publicOpponentAdaptations); const conservation = context.nextRoundEvent ? getAdaptationRoundValue(context.nextRoundEvent, context.adaptations, action.trait) : immediateValue
+        const immediateValue = getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait, context.combatMutationState); const matchup = estimateMatchup(action.trait, context.publicOpponentAdaptations); const conservation = context.nextRoundEvent ? getAdaptationRoundValue(context.nextRoundEvent, context.adaptations, action.trait, context.combatMutationState) : immediateValue
         return { action, score: immediateValue * weights.immediateValue + matchup * weights.matchup + trait.level * weights.level - conservation * weights.conservation + behind * weights.scorePressure + decisive * weights.decisiveRound, reason: `Valore ${immediateValue}, previsione matchup e costo di consumo valutati.`, components: { immediateValue, matchup, level: trait.level, conservation: -conservation, evolution: 0, remainingRounds: 0, scorePressure: behind, decisiveRound: decisive } }
     }
-    const nextLevel = Math.min(MAX_ADAPTATION_LEVEL, trait.level + 1) as typeof trait.level; const recovered = trait.exhausted ? 1 : 0; const evolution = context.nextRoundEvent ? getAdaptationRoundValue(context.nextRoundEvent, { ...context.adaptations, [action.trait]: { level: nextLevel, exhausted: false } }, action.trait) - getAdaptationRoundValue(context.nextRoundEvent, context.adaptations, action.trait) : nextLevel - trait.level; const remainingRounds = (MAX_ADAPTATION_LEVEL - trait.level + recovered) * remaining / TOTAL_ROUNDS
+    const nextLevel = Math.min(MAX_ADAPTATION_LEVEL, trait.level + 1) as typeof trait.level; const recovered = trait.exhausted ? 1 : 0; const nextCombatMutationState = getCombatMutationStateAfterEvolve(context.combatMutationState); const evolution = context.nextRoundEvent ? getAdaptationRoundValue(context.nextRoundEvent, { ...context.adaptations, [action.trait]: { level: nextLevel, exhausted: false } }, action.trait, nextCombatMutationState) - getAdaptationRoundValue(context.nextRoundEvent, context.adaptations, action.trait, context.combatMutationState) : nextLevel - trait.level; const remainingRounds = (MAX_ADAPTATION_LEVEL - trait.level + recovered) * remaining / TOTAL_ROUNDS
     return { action, score: EVOLVE_ROUND_VALUE + evolution * weights.evolution + recovered * weights.conservation + remainingRounds * weights.remainingRounds - behind * weights.scorePressure * 0.3 + decisive * weights.decisiveRound * 0.2, reason: `${recovered ? 'Recupero e ' : ''}investimento futuro ${evolution} con ${remaining} round residui.`, components: { immediateValue: EVOLVE_ROUND_VALUE, matchup: 0, level: 0, conservation: recovered, evolution, remainingRounds, scorePressure: -behind * 0.3, decisiveRound: decisive * 0.2 } }
 }
 export function createHeuristicPolicy(weights: HeuristicWeights = DEFAULT_HEURISTIC_WEIGHTS): BotPolicy {
@@ -87,9 +87,9 @@ export function createParametricPolicy(options: ParametricPolicyOptions): BotPol
         const canEvolve = withinEvolutionWindow && (options.evolveWhen === 'ahead' ? context.ownScore > context.opponentScore : options.evolveWhen === 'behind' ? context.ownScore < context.opponentScore : true)
         const requested = options.evolveTrait ? context.legalActions.find((action) => action.actionType === 'EVOLVE' && action.trait === options.evolveTrait) : context.legalActions.find((action) => action.actionType === 'EVOLVE')
         const greedy = greedyUsePolicy.selectAction(context)
-        if (canEvolve && requested && (options.evolveThreshold === undefined || getAdaptationRoundValue(context.roundEvent, context.adaptations, greedy.trait) <= options.evolveThreshold)) return { ...requested, reason: 'Regola parametrica di evoluzione.' }
+        if (canEvolve && requested && (options.evolveThreshold === undefined || getAdaptationRoundValue(context.roundEvent, context.adaptations, greedy.trait, context.combatMutationState) <= options.evolveThreshold)) return { ...requested, reason: 'Regola parametrica di evoluzione.' }
         const uses = context.legalActions.filter((action) => action.actionType === 'USE')
-        if (options.useMatchup && uses.length) return best(uses.map((action) => ({ action, score: getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait) + estimateMatchup(action.trait, context.publicOpponentAdaptations), reason: 'Regola parametrica: valore e matchup.' })), context.random)
+        if (options.useMatchup && uses.length) return best(uses.map((action) => ({ action, score: getAdaptationRoundValue(context.roundEvent, context.adaptations, action.trait, context.combatMutationState) + estimateMatchup(action.trait, context.publicOpponentAdaptations), reason: 'Regola parametrica: valore e matchup.' })), context.random)
         return greedy
     } }
 }

@@ -1,4 +1,11 @@
-import type { RoundValueBreakdown } from './types'
+import type { CombatMutationEffect, RoundValueBreakdown } from './types'
+
+/** UI copy for effects already resolved authoritatively by shared/game-rules. */
+export function getCombatMutationEffectDescription(effect: CombatMutationEffect): string {
+    if (effect.id === 'ELASTIC_LIMBS') return 'Arti elastici: Agilità resta disponibile.'
+    if (effect.effect === 'CORE_ARMED') return 'Nucleo adattivo caricato: il prossimo USA ottiene +1.'
+    return 'Nucleo adattivo: +1 valore round.'
+}
 
 export type RoundExplanationInput = { roundEventTitle: string | null; meWon: boolean | null; meActionType: 'USE' | 'EVOLVE' | null; opponentActionType: 'USE' | 'EVOLVE' | null; myBreakdown?: RoundValueBreakdown | null; opponentBreakdown?: RoundValueBreakdown | null }
 export function getRoundExplanation(input: RoundExplanationInput): string {

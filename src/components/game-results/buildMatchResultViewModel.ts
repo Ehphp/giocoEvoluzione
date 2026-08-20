@@ -2,7 +2,7 @@ import { TRAIT_LABELS } from '../../game/config'
 import { getRoundEventById } from '../../game/round-events'
 import { getRoundExplanation } from '../../game/round-result-explainer'
 import { getRoundEventLabel } from '../../game/ui-context'
-import type { RoundValueBreakdown, TraitType } from '../../game/types'
+import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../game/types'
 import type { GameSnapshot, RoundResultRecord } from '../../lib/game-api'
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
@@ -26,6 +26,8 @@ type PersistedResolutionData = {
     player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE' }
     player1Breakdown?: RoundValueBreakdown
     player2Breakdown?: RoundValueBreakdown
+    player1MutationEffects?: CombatMutationEffect[]
+    player2MutationEffects?: CombatMutationEffect[]
     matchEndReason?: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null
     player1RoundValueTotal?: number
     player2RoundValueTotal?: number
@@ -102,6 +104,11 @@ function getBreakdown(resolution: PersistedResolutionData, slot: 1 | 2): RoundVa
     return (slot === 1 ? resolution.player1Breakdown : resolution.player2Breakdown) ?? null
 }
 
+function getMutationEffects(resolution: PersistedResolutionData, slot: 1 | 2): CombatMutationEffect[] {
+    const effects = slot === 1 ? resolution.player1MutationEffects : resolution.player2MutationEffects
+    return Array.isArray(effects) ? effects : []
+}
+
 function buildRound(snapshot: GameSnapshot, result: RoundResultRecord): MatchResultRound {
     const me = snapshot.me!
     const opponent = snapshot.opponent
@@ -112,6 +119,7 @@ function buildRound(snapshot: GameSnapshot, result: RoundResultRecord): MatchRes
         value: me.slot === 1 ? result.player_1_value : result.player_2_value,
         points: getPoints(resolution, me.slot, result.winner_id, me.id),
         breakdown: getBreakdown(resolution, me.slot),
+        mutationEffects: getMutationEffects(resolution, me.slot),
     } satisfies ResultRoundParticipant
     const opponentSlot = opponent?.slot === 1 ? 1 : 2
     const opponentId = opponent?.id ?? ''
@@ -120,6 +128,7 @@ function buildRound(snapshot: GameSnapshot, result: RoundResultRecord): MatchRes
         value: opponentSlot === 1 ? result.player_1_value : result.player_2_value,
         points: getPoints(resolution, opponentSlot, result.winner_id, opponentId),
         breakdown: getBreakdown(resolution, opponentSlot),
+        mutationEffects: getMutationEffects(resolution, opponentSlot),
     } satisfies ResultRoundParticipant
     const outcome = getOutcome(result.winner_id, me.id)
 

@@ -1,82 +1,82 @@
 {
-  "ruleVersion": "adaptations-exhaustion-best-of-seven-v2",
+  "ruleVersion": "combat-mutations-mvp-v1",
   "seed": 1592598566,
-  "decisions": 125,
+  "decisions": 126,
   "methodology": "Heuristic is evaluated on states reached against deterministic greedy-use, param-matchup and evolve-first. Lookahead-3 receives remaining events only in this offline audit; this is not a simultaneous-game equilibrium.",
   "heuristicComponentsAverage": {
-    "immediateValue": 12.68,
-    "matchup": 0.46586666666666793,
-    "level": 0.184,
-    "conservation": -5.184,
-    "evolution": 5,
-    "remainingRounds": 6.770285714285716,
-    "scorePressure": 1.4654943925052067e-17,
-    "decisiveRound": 0.4560000000000015
+    "immediateValue": 14.968253968253968,
+    "matchup": 0.509126984126986,
+    "level": 0.18253968253968253,
+    "conservation": -8.134920634920634,
+    "evolution": 8.134920634920634,
+    "remainingRounds": 6.331065759637187,
+    "scorePressure": 0.1865079365079361,
+    "decisiveRound": 0.5714285714285733
   },
   "doubleCountCheck": "EVOLVE immediateValue is exactly EVOLVE_ROUND_VALUE; evolution is only the next-visible-event level gain. They are separate terms and not the same value counted twice.",
   "disagreement": {
     "lookahead2": {
       "USE → USE different": {
-        "frequency": 0.28,
-        "count": 35,
-        "observedRoundDelta": 11,
-        "averageObservedRoundDelta": 0.3142857142857143
+        "frequency": 0.24603174603174602,
+        "count": 31,
+        "observedRoundDelta": 18,
+        "averageObservedRoundDelta": 0.5806451612903226
       },
       "same": {
-        "frequency": 0.44,
-        "count": 55,
-        "observedRoundDelta": 38,
-        "averageObservedRoundDelta": 0.6909090909090909
+        "frequency": 0.42063492063492064,
+        "count": 53,
+        "observedRoundDelta": 50,
+        "averageObservedRoundDelta": 0.9433962264150944
       },
       "EVOLVE → USE": {
-        "frequency": 0.024,
-        "count": 3,
-        "observedRoundDelta": -6,
-        "averageObservedRoundDelta": -2
+        "frequency": 0.07142857142857142,
+        "count": 9,
+        "observedRoundDelta": -27,
+        "averageObservedRoundDelta": -3
       },
       "USE → EVOLVE": {
-        "frequency": 0.152,
-        "count": 19,
+        "frequency": 0.19047619047619047,
+        "count": 24,
         "observedRoundDelta": -10,
-        "averageObservedRoundDelta": -0.5263157894736842
+        "averageObservedRoundDelta": -0.4166666666666667
       },
       "EVOLVE → EVOLVE different": {
-        "frequency": 0.104,
-        "count": 13,
-        "observedRoundDelta": -11,
-        "averageObservedRoundDelta": -0.8461538461538461
+        "frequency": 0.07142857142857142,
+        "count": 9,
+        "observedRoundDelta": -14,
+        "averageObservedRoundDelta": -1.5555555555555556
       }
     },
     "lookahead3": {
       "USE → USE different": {
-        "frequency": 0.224,
-        "count": 28,
-        "observedRoundDelta": 17,
-        "averageObservedRoundDelta": 0.6071428571428571
+        "frequency": 0.31746031746031744,
+        "count": 40,
+        "observedRoundDelta": 28,
+        "averageObservedRoundDelta": 0.7
       },
       "USE → EVOLVE": {
-        "frequency": 0.224,
-        "count": 28,
-        "observedRoundDelta": -12,
-        "averageObservedRoundDelta": -0.42857142857142855
+        "frequency": 0.23809523809523808,
+        "count": 30,
+        "observedRoundDelta": -9,
+        "averageObservedRoundDelta": -0.3
       },
       "EVOLVE → USE": {
-        "frequency": 0.016,
-        "count": 2,
-        "observedRoundDelta": -4,
-        "averageObservedRoundDelta": -2
+        "frequency": 0.047619047619047616,
+        "count": 6,
+        "observedRoundDelta": -16,
+        "averageObservedRoundDelta": -2.6666666666666665
       },
       "same": {
-        "frequency": 0.432,
-        "count": 54,
-        "observedRoundDelta": 31,
-        "averageObservedRoundDelta": 0.5740740740740741
+        "frequency": 0.3333333333333333,
+        "count": 42,
+        "observedRoundDelta": 35,
+        "averageObservedRoundDelta": 0.8333333333333334
       },
       "EVOLVE → EVOLVE different": {
-        "frequency": 0.104,
-        "count": 13,
-        "observedRoundDelta": -10,
-        "averageObservedRoundDelta": -0.7692307692307693
+        "frequency": 0.06349206349206349,
+        "count": 8,
+        "observedRoundDelta": -21,
+        "averageObservedRoundDelta": -2.625
       }
     }
   },
@@ -98,12 +98,12 @@
       "heuristic": {
         "trait": "ARMOR",
         "actionType": "EVOLVE",
-        "reason": "Recupero e investimento futuro 1 con 4 round residui."
+        "reason": "Recupero e investimento futuro 2 con 4 round residui."
       },
       "lookahead3": {
         "trait": "SENSES",
         "actionType": "USE",
-        "reason": "Lookahead simultaneo profondita 3; stati 59."
+        "reason": "Lookahead simultaneo profondita 3; stati 74."
       },
       "heuristicEvaluations": [
         {
@@ -111,14 +111,14 @@
             "trait": "FEROCITY",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 1,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.7142857142857142,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -129,14 +129,14 @@
             "trait": "ARMOR",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 1,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.7142857142857142,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -147,15 +147,33 @@
             "trait": "AGILITY",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
-            "conservation": 1,
-            "evolution": 1,
-            "remainingRounds": 1.7142857142857142,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 1.4,
+          "reason": "Valore 2, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
             "scorePressure": 0,
             "decisiveRound": 0
           }
@@ -165,14 +183,14 @@
             "trait": "SENSES",
             "actionType": "EVOLVE"
           },
-          "score": 2.15,
-          "reason": "investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 0,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.1428571428571428,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -201,14 +219,14 @@
             "trait": "CAMOUFLAGE",
             "actionType": "EVOLVE"
           },
-          "score": 2.15,
-          "reason": "investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 0,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.1428571428571428,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -253,12 +271,12 @@
       "heuristic": {
         "trait": "ARMOR",
         "actionType": "EVOLVE",
-        "reason": "Recupero e investimento futuro 1 con 4 round residui."
+        "reason": "Recupero e investimento futuro 2 con 4 round residui."
       },
       "lookahead3": {
         "trait": "SENSES",
         "actionType": "USE",
-        "reason": "Lookahead simultaneo profondita 3; stati 65."
+        "reason": "Lookahead simultaneo profondita 3; stati 74."
       },
       "heuristicEvaluations": [
         {
@@ -266,14 +284,14 @@
             "trait": "FEROCITY",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 1,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.7142857142857142,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -284,14 +302,14 @@
             "trait": "ARMOR",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 1,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.7142857142857142,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -302,15 +320,33 @@
             "trait": "AGILITY",
             "actionType": "EVOLVE"
           },
-          "score": 2.55,
-          "reason": "Recupero e investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
-            "conservation": 1,
-            "evolution": 1,
-            "remainingRounds": 1.7142857142857142,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 1.7999999999999998,
+          "reason": "Valore 2, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.3333333333333333,
+            "level": 0,
+            "conservation": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
             "scorePressure": 0,
             "decisiveRound": 0
           }
@@ -320,14 +356,14 @@
             "trait": "SENSES",
             "actionType": "EVOLVE"
           },
-          "score": 2.15,
-          "reason": "investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 0,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.1428571428571428,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -338,11 +374,11 @@
             "trait": "SENSES",
             "actionType": "USE"
           },
-          "score": 2,
+          "score": 1.7999999999999998,
           "reason": "Valore 2, previsione matchup e costo di consumo valutati.",
           "components": {
             "immediateValue": 2,
-            "matchup": 0.5,
+            "matchup": 0.3333333333333333,
             "level": 0,
             "conservation": -3,
             "evolution": 0,
@@ -356,14 +392,14 @@
             "trait": "CAMOUFLAGE",
             "actionType": "EVOLVE"
           },
-          "score": 2.15,
-          "reason": "investimento futuro 1 con 4 round residui.",
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
           "components": {
             "immediateValue": 1,
             "matchup": 0,
             "level": 0,
             "conservation": 0,
-            "evolution": 1,
+            "evolution": 2,
             "remainingRounds": 1.1428571428571428,
             "scorePressure": 0,
             "decisiveRound": 0
@@ -390,7 +426,699 @@
       ],
       "observedRound": "1-3",
       "outcome": "left"
+    },
+    {
+      "seed": 1592598596,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "greedy-immediate-use",
+      "round": 2,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "ARMOR",
+        "actionType": "EVOLVE",
+        "reason": "Recupero e investimento futuro 2 con 6 round residui."
+      },
+      "lookahead3": {
+        "trait": "CAMOUFLAGE",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 86."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 3.4,
+          "reason": "Valore 4, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 4,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.6,
+          "reason": "Recupero e investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 2.5714285714285716,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 1.4999999999999998,
+          "reason": "Valore 2, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 2.5,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.9,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "1-4",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "NUTRIENT_COLLAPSE",
+        "VOLCANIC_ASH_WAVE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE"
+      ],
+      "opponent": "param-matchup",
+      "round": 2,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "ARMOR",
+        "actionType": "EVOLVE",
+        "reason": "Recupero e investimento futuro 2 con 6 round residui."
+      },
+      "lookahead3": {
+        "trait": "CAMOUFLAGE",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 86."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 3.4,
+          "reason": "Valore 4, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 4,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -3,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.6,
+          "reason": "Recupero e investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 2.5714285714285716,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 1.4999999999999998,
+          "reason": "Valore 2, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 2,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "USE"
+          },
+          "score": 2.5,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.1,
+          "reason": "investimento futuro 2 con 6 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "USE"
+          },
+          "score": 2.9,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0.25,
+            "level": 0,
+            "conservation": -2,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "1-4",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598621,
+      "events": [
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE"
+      ],
+      "opponent": "greedy-immediate-use",
+      "round": 4,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Recupero e investimento futuro 2 con 4 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 66."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 2.2,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3.2,
+          "reason": "Valore 4, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 4,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "1-4",
+      "outcome": "left"
+    },
+    {
+      "seed": 1592598596,
+      "events": [
+        "HEAT_SPIKE",
+        "FLASH_FLOOD",
+        "NUTRIENT_COLLAPSE",
+        "PREDATOR_PACK_MIGRATION",
+        "PROLONGED_ECLIPSE",
+        "VOLCANIC_ASH_WAVE",
+        "HEAT_SPIKE"
+      ],
+      "opponent": "param-matchup",
+      "round": 4,
+      "score": "0-0",
+      "heuristic": {
+        "trait": "SENSES",
+        "actionType": "EVOLVE",
+        "reason": "Recupero e investimento futuro 2 con 4 round residui."
+      },
+      "lookahead3": {
+        "trait": "AGILITY",
+        "actionType": "USE",
+        "reason": "Lookahead simultaneo profondita 3; stati 66."
+      },
+      "heuristicEvaluations": [
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "FEROCITY",
+            "actionType": "USE"
+          },
+          "score": 2.2,
+          "reason": "Valore 3, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 3,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "ARMOR",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "EVOLVE"
+          },
+          "score": 2.9,
+          "reason": "investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 0,
+            "evolution": 2,
+            "remainingRounds": 1.1428571428571428,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "AGILITY",
+            "actionType": "USE"
+          },
+          "score": 3.2,
+          "reason": "Valore 4, previsione matchup e costo di consumo valutati.",
+          "components": {
+            "immediateValue": 4,
+            "matchup": 0,
+            "level": 0,
+            "conservation": -4,
+            "evolution": 0,
+            "remainingRounds": 0,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "SENSES",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        },
+        {
+          "action": {
+            "trait": "CAMOUFLAGE",
+            "actionType": "EVOLVE"
+          },
+          "score": 3.3000000000000003,
+          "reason": "Recupero e investimento futuro 2 con 4 round residui.",
+          "components": {
+            "immediateValue": 1,
+            "matchup": 0,
+            "level": 0,
+            "conservation": 1,
+            "evolution": 2,
+            "remainingRounds": 1.7142857142857142,
+            "scorePressure": 0,
+            "decisiveRound": 0
+          }
+        }
+      ],
+      "observedRound": "1-4",
+      "outcome": null
     }
   ],
-  "elapsedMs": 299
+  "elapsedMs": 348
 }

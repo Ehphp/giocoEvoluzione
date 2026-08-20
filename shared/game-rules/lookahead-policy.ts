@@ -1,14 +1,16 @@
 import { TOTAL_ROUNDS } from './catalog.ts'
 import { getAdaptationRoundValue, resolveRound } from './engine.ts'
 import { getLegalBotActions, pickSeeded, type BotDecision, type BotDecisionContext, type OfflineBotPolicy, type BotRoundAction, type PrivilegedBotDecisionContext } from './bot-policies.ts'
-import type { AdaptationCollection, EnvironmentalCrisisDefinition } from './types.ts'
+import { createInitialCombatMutationState } from './state.ts'
+import type { AdaptationCollection, CombatMutationState, EnvironmentalCrisisDefinition } from './types.ts'
 
 export type EvaluationBreakdown = { terminal: number; score: number; levels: number; available: number; exhausted: number; matchupPotential: number; remaining: number; total: number }
 export type LookaheadStats = { statesVisited: number; cacheHits: number; cacheMisses: number }
 export type LookaheadOptions = { depth?: number; stats?: LookaheadStats; fullSearchLastRounds?: number; id?: string }
-type SearchState = { own: AdaptationCollection; rival: AdaptationCollection; ownScore: number; rivalScore: number; round: number }
-function canonical(adaptations: AdaptationCollection): string { return Object.values(adaptations).map((state) => `${state.level}:${Number(state.exhausted)}`).join(',') }
+type SearchState = { own: AdaptationCollection; rival: AdaptationCollection; ownCombatMutationState: CombatMutationState; rivalCombatMutationState: CombatMutationState; ownScore: number; rivalScore: number; round: number }
+function canonical(adaptations: AdaptationCollection, combatMutationState: CombatMutationState): string { return `${Object.values(adaptations).map((state) => `${state.level}:${Number(state.exhausted)}`).join(',')}|${Number(combatMutationState.elasticLimbsUsed)}:${combatMutationState.adaptiveCoreStatus}` }
 function clone(adaptations: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(adaptations).map(([key, value]) => [key, { ...value }])) as AdaptationCollection }
+function cloneCombatMutationState(state: CombatMutationState): CombatMutationState { return { ...state } }
 /** Keeps exhaustive root choices, while bounding only future opponent hypotheses. */
 function plausibleActions(adaptations: AdaptationCollection, event: EnvironmentalCrisisDefinition): BotRoundAction[] {
     const actions = getLegalBotActions(adaptations)
@@ -31,26 +33,26 @@ function decide(context: BotDecisionContext, events: readonly EnvironmentalCrisi
     const search = (state: SearchState, step: number): number => {
         const event = events[step]
         if (!event || step >= depth || state.round > TOTAL_ROUNDS) return evaluateBotState(state, Math.max(0, depth - step)).total
-        const key = `${step}|${state.round}|${state.ownScore},${state.rivalScore}|${canonical(state.own)}|${canonical(state.rival)}`
+        const key = `${step}|${state.round}|${state.ownScore},${state.rivalScore}|${canonical(state.own, state.ownCombatMutationState)}|${canonical(state.rival, state.rivalCombatMutationState)}`
         const cached = memo.get(key); if (cached !== undefined) { if (stats) stats.cacheHits += 1; return cached }
         if (stats) { stats.cacheMisses += 1; stats.statesVisited += 1 }
         let bestValue = Number.NEGATIVE_INFINITY
         for (const ownAction of plausibleActions(state.own, event)) {
             const rivalActions = plausibleActions(state.rival, event); let aggregate = 0
             for (const rivalAction of rivalActions) {
-                const resolution = resolveRound({ roundNumber: state.round, roundEvent: event, player1Id: 'own', player2Id: 'rival', player1Traits: state.own, player2Traits: state.rival, player1Action: { playerId: 'own', ...ownAction }, player2Action: { playerId: 'rival', ...rivalAction } })
-                aggregate += search({ own: resolution.player1.traits, rival: resolution.player2.traits, ownScore: state.ownScore + resolution.player1ScoreDelta, rivalScore: state.rivalScore + resolution.player2ScoreDelta, round: state.round + 1 }, step + 1)
+                const resolution = resolveRound({ roundNumber: state.round, roundEvent: event, player1Id: 'own', player2Id: 'rival', player1Traits: state.own, player2Traits: state.rival, player1CombatMutationState: state.ownCombatMutationState, player2CombatMutationState: state.rivalCombatMutationState, player1Action: { playerId: 'own', ...ownAction }, player2Action: { playerId: 'rival', ...rivalAction } })
+                aggregate += search({ own: resolution.player1.traits, rival: resolution.player2.traits, ownCombatMutationState: resolution.player1.combatMutationState, rivalCombatMutationState: resolution.player2.combatMutationState, ownScore: state.ownScore + resolution.player1ScoreDelta, rivalScore: state.rivalScore + resolution.player2ScoreDelta, round: state.round + 1 }, step + 1)
             }
             bestValue = Math.max(bestValue, aggregate / rivalActions.length)
         }
         memo.set(key, bestValue); return bestValue
     }
-    const root: SearchState = { own: clone(context.adaptations), rival: clone(context.publicOpponentAdaptations ?? context.adaptations), ownScore: context.ownScore, rivalScore: context.opponentScore, round: context.roundNumber }
+    const root: SearchState = { own: clone(context.adaptations), rival: clone(context.publicOpponentAdaptations ?? context.adaptations), ownCombatMutationState: cloneCombatMutationState(context.combatMutationState ?? createInitialCombatMutationState()), rivalCombatMutationState: cloneCombatMutationState(context.publicOpponentCombatMutationState ?? createInitialCombatMutationState()), ownScore: context.ownScore, rivalScore: context.opponentScore, round: context.roundNumber }
     const choices = context.legalActions.map((action) => {
         const rivals = plausibleActions(root.rival, context.roundEvent); let total = 0
         for (const rival of rivals) {
-            const resolution = resolveRound({ roundNumber: root.round, roundEvent: context.roundEvent, player1Id: 'own', player2Id: 'rival', player1Traits: root.own, player2Traits: root.rival, player1Action: { playerId: 'own', ...action }, player2Action: { playerId: 'rival', ...rival } })
-            total += search({ own: resolution.player1.traits, rival: resolution.player2.traits, ownScore: root.ownScore + resolution.player1ScoreDelta, rivalScore: root.rivalScore + resolution.player2ScoreDelta, round: root.round + 1 }, 1)
+            const resolution = resolveRound({ roundNumber: root.round, roundEvent: context.roundEvent, player1Id: 'own', player2Id: 'rival', player1Traits: root.own, player2Traits: root.rival, player1CombatMutationState: root.ownCombatMutationState, player2CombatMutationState: root.rivalCombatMutationState, player1Action: { playerId: 'own', ...action }, player2Action: { playerId: 'rival', ...rival } })
+            total += search({ own: resolution.player1.traits, rival: resolution.player2.traits, ownCombatMutationState: resolution.player1.combatMutationState, rivalCombatMutationState: resolution.player2.combatMutationState, ownScore: root.ownScore + resolution.player1ScoreDelta, rivalScore: root.rivalScore + resolution.player2ScoreDelta, round: root.round + 1 }, 1)
         }
         return { action, value: total / rivals.length }
     })
