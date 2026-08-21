@@ -29,7 +29,7 @@ const DOCK_ITEMS: DockItem[] = [
     { id: 'collection', label: 'Collezione', icon: <CollectionIcon /> },
     { id: 'battle', label: 'Battaglia', icon: <BattleIcon /> },
     { id: 'ranking', label: 'Classifica', icon: <RankingIcon /> },
-    { id: 'profile', label: 'Profilo', icon: <ProfileIcon /> },
+    { id: 'profile', label: 'Creatura', icon: <ProfileIcon /> },
 ]
 
 type DockProps = {

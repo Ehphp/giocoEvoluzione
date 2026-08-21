@@ -1,7 +1,7 @@
-# Audit acceptance — combat-mutations-mvp-v1
+# Audit acceptance — combat-mutations-loadout-mvp-v1
 
 {
-  "ruleVersion": "combat-mutations-mvp-v1",
+  "ruleVersion": "combat-mutations-loadout-mvp-v1",
   "seed": 1592598566,
   "methodology": "Seeded symmetric tournament using only production getLegalBotActions, resolveRound, resolveMatchOutcome and simulateMatch. Mirrored pairings share the same seed. No alternate scoring or transition model.",
   "actions": {
@@ -32,6 +32,8 @@
     "elasticActivations": 256,
     "adaptiveCoreArmed": 272,
     "adaptiveCoreBonuses": 206,
+    "armoredMemoryActivations": 0,
+    "recoverySurgeActivations": 0,
     "invalidTransitions": 0
   },
   "integrity": {

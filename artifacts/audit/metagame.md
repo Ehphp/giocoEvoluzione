@@ -1,6 +1,6 @@
 # Metagame audit
 
-- 8 policy; 3 sequenze; seed 1592598566; 480 ms.
+- 8 policy; 3 sequenze; seed 1592598566; 940 ms.
 - Tie-break: 48; pareggi fra policy diverse: 6.5%; margine finale medio: 1.81.
 - Partite decise prima dell’ultimo round: 198 (R4=20, R5=82, R6=96); matchup 528 (410 decisivi).
 - Combat Mutations: Elastic 670; Core armato 662; bonus 420; armato non consumato 242.
@@ -18,6 +18,17 @@
 | param-evolve-1 | 45.8% | 45.8 / 45.8 | 84.2 / 15.8 | 31.6% |
 | param-matchup | 35.4% | 35.4 / 35.4 | 89.3 / 10.7 | 32.0% |
 | param-evolve-behind | 39.6% | 39.6 / 39.6 | 72.3 / 27.7 | 28.4% |
+
+## Matrice loadout 2/4
+
+| Loadout | Score rate | SX/DX | Evolvi | Effetti | Azioni illegali |
+|---|---:|---:|---:|---|---:|
+| ELASTIC_LIMBS+ADAPTIVE_CORE | 56.9% | 44.4 / 44.4 | 7.1% | ELASTIC_LIMBS=72, ADAPTIVE_CORE=126 | 0 |
+| ELASTIC_LIMBS+ARMORED_MEMORY | 67.4% | 52.8 / 55.6 | 0.0% | ELASTIC_LIMBS=72, ARMORED_MEMORY=72 | 0 |
+| ELASTIC_LIMBS+RECOVERY_SURGE | 61.8% | 44.4 / 47.2 | 7.1% | ELASTIC_LIMBS=72, RECOVERY_SURGE=72 | 0 |
+| ADAPTIVE_CORE+ARMORED_MEMORY | 34.7% | 22.2 / 16.7 | 7.1% | ADAPTIVE_CORE=118, ARMORED_MEMORY=72 | 0 |
+| ADAPTIVE_CORE+RECOVERY_SURGE | 43.8% | 33.3 / 36.1 | 7.1% | ADAPTIVE_CORE=144, RECOVERY_SURGE=72 | 0 |
+| ARMORED_MEMORY+RECOVERY_SURGE | 35.4% | 22.2 / 19.4 | 7.1% | ARMORED_MEMORY=72, RECOVERY_SURGE=72 | 0 |
 
 ## Anomalie
 

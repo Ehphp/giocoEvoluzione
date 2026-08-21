@@ -113,7 +113,7 @@ describe('HomeScreen', () => {
 
         const items = [...container.querySelectorAll<HTMLButtonElement>('.ev-dock__item')]
 
-        expect(items.map((item) => item.textContent)).toEqual(['Negozio', 'Collezione', 'Battaglia', 'Classifica', 'Profilo'])
+        expect(items.map((item) => item.textContent)).toEqual(['Negozio', 'Collezione', 'Battaglia', 'Classifica', 'Creatura'])
         expect(items.find((item) => item.classList.contains('is-active'))?.textContent).toBe('Battaglia')
         expect(items.every((item) => item.disabled)).toBe(true)
     })

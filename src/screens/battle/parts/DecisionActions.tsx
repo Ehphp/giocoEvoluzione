@@ -1,4 +1,3 @@
-import { EVOLVE_ROUND_VALUE } from '../../../../shared/game-rules/catalog.ts'
 import { ActionButton } from '../../../ui/components'
 import { BoltIcon, DnaIcon } from '../../../ui/icons'
 import type { GeneActionTypeV2, GeneCardV2, WaitingStateV2 } from '../../../components/game-v2/types'
@@ -20,6 +19,7 @@ export function DecisionActions({ selectedGene, selectedAction, canUse, canEvolv
 
     const eventModifier = selectedGene.prediction?.eventModifier ?? 0
     const mutationHint = selectedGene.mutationHints?.join(' ')
+    const evolveMutationHint = selectedGene.evolveMutationHints?.join(' ')
     const evolveTitle = selectedGene.level >= 2 ? 'RECUPERA' : selectedGene.exhausted ? 'RIGENERA' : 'EVOLVI'
     const useHint = isSubmitting
         ? selectedAction === 'USE' ? 'Invio della scelta...' : 'Scelta in corso...'
@@ -49,8 +49,8 @@ export function DecisionActions({ selectedGene, selectedAction, canUse, canEvolv
             <ActionButton
                 tone="evolve"
                 title={isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : evolveTitle}
-                hint={evolveHint}
-                value={`${EVOLVE_ROUND_VALUE} PT`}
+                hint={canEvolve && !isSubmitting && evolveMutationHint ? `${evolveHint} ${evolveMutationHint}` : evolveHint}
+                value={`${selectedGene.evolvePrediction?.score ?? 1} PT`}
                 glyph={<DnaIcon />}
                 aria-pressed={selectedAction === 'EVOLVE'}
                 disabled={!canEvolve || isSubmitting}

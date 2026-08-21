@@ -3,6 +3,8 @@ import type { CombatMutationEffect, RoundValueBreakdown } from './types'
 /** UI copy for effects already resolved authoritatively by shared/game-rules. */
 export function getCombatMutationEffectDescription(effect: CombatMutationEffect): string {
     if (effect.id === 'ELASTIC_LIMBS') return 'Arti elastici: Agilità resta disponibile.'
+    if (effect.id === 'ARMORED_MEMORY') return 'Memoria corazzata: Armatura resta disponibile.'
+    if (effect.id === 'RECOVERY_SURGE') return 'Impulso di recupero: +1 valore round.'
     if (effect.effect === 'CORE_ARMED') return 'Nucleo adattivo caricato: il prossimo USA ottiene +1.'
     return 'Nucleo adattivo: +1 valore round.'
 }
@@ -11,9 +13,9 @@ export type RoundExplanationInput = { roundEventTitle: string | null; meWon: boo
 export function getRoundExplanation(input: RoundExplanationInput): string {
     const eventName = input.roundEventTitle ?? 'l evento del round'
     if (!input.myBreakdown || !input.opponentBreakdown) return 'Risultato storico: dettagli di calcolo non disponibili per questo round.'
-    if (input.meActionType === 'EVOLVE' && input.opponentActionType === 'EVOLVE') return 'Entrambi avete evoluto o recuperato un adattamento: ciascuno ottiene il valore fisso di 1.'
-    if (input.meActionType === 'EVOLVE') return 'Hai evoluto o recuperato un adattamento: il valore fisso e 1, senza affinita ambientale ne vantaggio naturale.'
-    if (input.opponentActionType === 'EVOLVE') return 'L avversario ha evoluto o recuperato un adattamento: valore fisso 1, senza affinita ambientale ne vantaggio naturale.'
+    if (input.meActionType === 'EVOLVE' && input.opponentActionType === 'EVOLVE') return 'Entrambi avete evoluto o recuperato un adattamento: il valore base e 1; eventuali effetti mutazione sono indicati nei dettagli.'
+    if (input.meActionType === 'EVOLVE') return 'Hai evoluto o recuperato un adattamento: il valore base e 1, senza affinita ambientale ne vantaggio naturale; eventuali effetti mutazione sono indicati nei dettagli.'
+    if (input.opponentActionType === 'EVOLVE') return 'L avversario ha evoluto o recuperato un adattamento: valore base 1, senza affinita ambientale ne vantaggio naturale; eventuali effetti mutazione sono indicati nei dettagli.'
     if (input.meWon === null) return 'Entrambi i geni hanno prodotto lo stesso valore.'
     const winner = input.meWon ? input.myBreakdown : input.opponentBreakdown
     const loser = input.meWon ? input.opponentBreakdown : input.myBreakdown

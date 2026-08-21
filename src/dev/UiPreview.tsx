@@ -77,10 +77,6 @@ function ProfilePreview() {
             visualUrl={PREVIEW_VISUAL_HISTORY[2].signedUrl}
             visualVersionNumber={3}
             visualTrait="Arti slanciati"
-            visualProgress={{ progress: 2, target: 3, status: 'IN_PROGRESS' }}
-            visualHistory={PREVIEW_VISUAL_HISTORY}
-            currentVisualVersionId="preview-visual-3"
-            onSelectVisualVersion={async () => undefined}
             onOpenEvolution={noop}
             onOpenBackgroundCleanup={noop}
         />

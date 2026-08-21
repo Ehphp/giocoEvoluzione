@@ -1,6 +1,8 @@
 import type { GameMode, GameStatus, PlayerType } from '../game/types'
 import type { ProgressionOutcome } from './progression'
 import { requireSupabase } from './supabase'
+import { normalizeCombatMutationLoadout } from '../../shared/game-rules/state.ts'
+import type { CombatMutationLoadout } from '../../shared/game-rules/types.ts'
 
 export type ProfileRecord = {
     id: string
@@ -26,6 +28,7 @@ export type PlayerCreatureRecord = {
     level: number
     experience: number
     progression_state: Record<string, unknown>
+    combat_mutation_loadout?: CombatMutationLoadout
     current_visual_version_id?: string | null
     created_at: string
     updated_at: string
@@ -124,10 +127,23 @@ export function mapPlayerCreatureRecord(data: Record<string, unknown>): PlayerCr
         level: Number(data.level),
         experience: Number(data.experience),
         progression_state: asRecord(data.progression_state),
+        combat_mutation_loadout: normalizeCombatMutationLoadout(data.combat_mutation_loadout),
         current_visual_version_id: typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
     }
+}
+
+export async function setMyCreatureCombatMutationLoadout(creatureId: string, loadout: CombatMutationLoadout): Promise<PlayerCreatureRecord> {
+    const { data, error } = await requireSupabase().rpc('set_my_creature_combat_mutation_loadout', {
+        p_creature_id: creatureId,
+        p_combat_mutation_loadout: [...loadout],
+    })
+
+    if (error) throw new Error(error.message)
+    if (!data || typeof data !== 'object') throw new Error('Il loadout della creatura non e stato aggiornato.')
+
+    return mapPlayerCreatureRecord(data as Record<string, unknown>)
 }
 
 function mapMatchRewardRecord(data: Record<string, unknown>): MatchRewardRecord {

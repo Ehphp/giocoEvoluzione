@@ -20,6 +20,7 @@ describe('CollectionScreen', () => {
     })
 
     it('preselects the active form and previews a previously discovered form locally', () => {
+        const onSelectVisualVersion = vi.fn().mockResolvedValue(undefined)
         act(() => {
             root.render(createElement(CollectionScreen, {
                 profile: {
@@ -54,6 +55,7 @@ describe('CollectionScreen', () => {
                     { id: 'form-1', versionNumber: 1, visualTraitId: null, conceptName: 'Forma base', signedUrl: '/assets/form-1.png' },
                     { id: 'form-3', versionNumber: 3, visualTraitId: 'AGILITY', conceptName: 'Arti slanciati', signedUrl: '/assets/form-3.png' },
                 ],
+                onSelectVisualVersion,
             }))
         })
 
@@ -81,6 +83,10 @@ describe('CollectionScreen', () => {
         expect(container.querySelector('.collection-current__copy')?.textContent).toContain('Forma base')
         expect(container.querySelector('.collection-current__copy')?.textContent).toContain('Forma selezionata')
         expect(container.querySelector('.collection-current__copy')?.textContent).not.toContain('Creatura attuale')
+
+        const setVisual = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Usa questa forma'))
+        act(() => setVisual?.click())
+        expect(onSelectVisualVersion).toHaveBeenCalledWith({ creatureId: 'creature-1', versionId: 'form-1', currentVersionId: 'form-3' })
 
         act(() => preview.dispatchEvent(new Event('error')))
         expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')

@@ -39,6 +39,7 @@ type CollectionScreenProps = {
     onSetActiveLineage?: (lineageId: string) => void
     /** Opens visual evolution for this exact lineage; it never implies a global active-lineage change. */
     onOpenEvolution?: (lineageId: string) => void
+    onSelectVisualVersion?: (input: { creatureId: string; versionId: string; currentVersionId: string }) => Promise<void>
     lineageVisuals?: Readonly<Record<string, {
         visualUrl?: string | null
         visualVersionNumber?: number | null
@@ -141,6 +142,7 @@ export function CollectionScreen({
     onDeleteLineage,
     onSetActiveLineage,
     onOpenEvolution,
+    onSelectVisualVersion,
     lineageVisuals,
 }: CollectionScreenProps) {
     const availableLineages = useMemo(() => lineages?.length ? lineages : [{
@@ -159,6 +161,8 @@ export function CollectionScreen({
     const [lineagePendingDeletion, setLineagePendingDeletion] = useState<CreatureLineageRecord | null>(null)
     const [isDeletingLineage, setIsDeletingLineage] = useState(false)
     const [lineageDeletionError, setLineageDeletionError] = useState<string | null>(null)
+    const [isSelectingVisualVersion, setIsSelectingVisualVersion] = useState(false)
+    const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
     const selectedLineage = availableLineages.find((lineage) => lineage.id === selectedLineageId) ?? availableLineages[0]!
     const selectedVisual = lineageVisuals?.[selectedLineage.id]
     const selectedCreature = selectedLineage.creature
@@ -188,6 +192,10 @@ export function CollectionScreen({
         ?? viewModel.evolutionForms.at(-1)
 
     if (!selectedForm) return null
+
+    const selectedVisualHistory = selectedVisual?.visualHistory ?? (selectedLineage.id === resolvedActiveLineageId ? visualHistory : undefined)
+    const currentSelectedVisualVersionId = selectedVisual?.currentVisualVersionId ?? (selectedLineage.id === resolvedActiveLineageId ? currentVisualVersionId : null)
+    const canSetSelectedForm = Boolean(onSelectVisualVersion && currentSelectedVisualVersionId && selectedVisualHistory?.some((entry) => entry.id === selectedForm.id) && selectedForm.id !== currentSelectedVisualVersionId)
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'battle') onBack()
@@ -224,6 +232,19 @@ export function CollectionScreen({
             setLineageDeletionError(error instanceof Error ? error.message : 'Impossibile eliminare la stirpe.')
         } finally {
             setIsDeletingLineage(false)
+        }
+    }
+
+    async function handleSelectVisualVersion() {
+        if (!onSelectVisualVersion || !canSetSelectedForm || isSelectingVisualVersion) return
+        setIsSelectingVisualVersion(true)
+        setVisualSelectionError(null)
+        try {
+            await onSelectVisualVersion({ creatureId: selectedCreature.id, versionId: selectedForm!.id, currentVersionId: currentSelectedVisualVersionId! })
+        } catch (error) {
+            setVisualSelectionError(error instanceof Error ? error.message : 'Non e stato possibile impostare questa forma.')
+        } finally {
+            setIsSelectingVisualVersion(false)
         }
     }
 
@@ -322,7 +343,9 @@ export function CollectionScreen({
                                 {selectedForm.types.map((type) => <TypeChip key={type} type={type} />)}
                             </div>
                             {onOpenEvolution ? <Button tone="evolve" onClick={() => onOpenEvolution(selectedLineage.id)}>Evolvi questa stirpe</Button> : null}
+                            {canSetSelectedForm ? <Button tone="cream" disabled={isSelectingVisualVersion} onClick={() => void handleSelectVisualVersion()}>{isSelectingVisualVersion ? 'Impostazione...' : 'Usa questa forma'}</Button> : null}
                             {selectedLineage.id !== resolvedActiveLineageId && onSetActiveLineage ? <Button tone="gold" onClick={() => onSetActiveLineage(selectedLineage.id)}>Usa questa stirpe</Button> : null}
+                            {visualSelectionError ? <Notice tone="error">{visualSelectionError}</Notice> : null}
                         </div>
                         <FormArt form={selectedForm} className="collection-current__art" />
                     </section>

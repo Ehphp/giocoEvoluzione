@@ -151,6 +151,29 @@ describe('MatchResultScreen', () => {
         expect(container.textContent).toContain('Arti elastici: Agilità resta disponibile.')
     })
 
+    it('shows Armored Memory and Recovery Surge only from persisted effects', () => {
+        render(makeViewModel({
+            lastRound: makeRound({
+                player: {
+                    action: { trait: 'ARMOR', actionType: 'EVOLVE' }, value: 2, points: 1,
+                    breakdown: { ...breakdown, actionType: 'EVOLVE', mutationBonus: 1, total: 2 },
+                    mutationEffects: [{ id: 'RECOVERY_SURGE', effect: 'EVOLVE_ROUND_BONUS', value: 1 }],
+                },
+                opponent: {
+                    action: { trait: 'ARMOR', actionType: 'USE' }, value: 3, points: 0,
+                    breakdown: { ...breakdown, total: 3 },
+                    mutationEffects: [{ id: 'ARMORED_MEMORY', effect: 'ARMOR_PRESERVED' }],
+                },
+            }),
+        }))
+
+        const details = [...container.querySelectorAll<HTMLButtonElement>('.result-side__toggle')]
+        act(() => details.forEach((detail) => detail.click()))
+
+        expect(container.textContent).toContain('Impulso di recupero: +1 valore round.')
+        expect(container.textContent).toContain('Memoria corazzata: Armatura resta disponibile.')
+    })
+
     it('keeps persisted history sorted and allows one expanded row at a time', () => {
         const roundOne = makeRound({ id: 'round-1', number: 1 })
         const roundTwo = makeRound({ id: 'round-2', number: 2 })

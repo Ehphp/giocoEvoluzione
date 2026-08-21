@@ -29,7 +29,7 @@ function player(id: string, creatureId: string): PlayerRecord {
         slot: id === 'host' ? 1 : 2,
         player_type: 'HUMAN',
         traits: {} as PlayerRecord['traits'],
-        combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' },
+        combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false },
         connected: true,
         profile_id: `${id}-profile`,
         creature_id: creatureId,

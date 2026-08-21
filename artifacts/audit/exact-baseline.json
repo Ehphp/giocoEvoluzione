@@ -1,7 +1,7 @@
 {
   "audit": "exact-domain-parity",
-  "ruleVersion": "combat-mutations-mvp-v1",
+  "ruleVersion": "combat-mutations-loadout-mvp-v1",
   "sequences": 720,
-  "elapsedMs": 3,
+  "elapsedMs": 7,
   "implementation": "shared-game-rules-only"
 }

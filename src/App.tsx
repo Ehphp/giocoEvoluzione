@@ -24,7 +24,8 @@ import type { EvolutionTargetId } from '../shared/creature-transformations/evolu
 import { hasSupabaseConfig } from './lib/supabase'
 import { GameSnapshotSync } from './lib/game-snapshot-sync'
 import { getCurrentCreatureVisual, getCreatureVisualProgress, rollbackCreatureVisualVersion } from './lib/creature-transformations-api'
-import { fetchMatchReward, fetchProfileMatchHistory, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
+import { fetchMatchReward, fetchProfileMatchHistory, setMyCreatureCombatMutationLoadout, type MatchRewardRecord, type ProfileMatchHistoryItem } from './lib/profile-api'
+import type { CombatMutationLoadout } from '../shared/game-rules/types.ts'
 import {
   acknowledgeReveal,
   advanceToNextRound,
@@ -744,15 +745,22 @@ function App() {
     await refreshProfile()
   }
 
-  async function handleSelectVisualVersion(targetVersionId: string) {
-    if (!activeCreature || !visualProgress) return
-    await rollbackCreatureVisualVersion({ operation: 'ROLLBACK_CREATURE_VISUAL_VERSION', creatureId: activeCreature.id, targetVersionId, expectedCurrentVisualVersionId: visualProgress.currentVersion.id })
-    const [visual, progression] = await Promise.all([
-      getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: activeCreature.id }),
-      getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: activeCreature.id }),
-    ])
-    setOfficialVisual(withResolvedCreatureImage(visual.visual))
-    setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history.map(withResolvedCreatureImage) })
+  async function handleSelectVisualVersion(input: { creatureId: string; targetVersionId: string; currentVersionId: string }) {
+    await rollbackCreatureVisualVersion({ operation: 'ROLLBACK_CREATURE_VISUAL_VERSION', creatureId: input.creatureId, targetVersionId: input.targetVersionId, expectedCurrentVisualVersionId: input.currentVersionId })
+    if (activeCreature?.id === input.creatureId) {
+      const [visual, progression] = await Promise.all([
+        getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: input.creatureId }),
+        getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: input.creatureId }),
+      ])
+      setOfficialVisual(withResolvedCreatureImage(visual.visual))
+      setVisualProgress({ track: progression.track, currentVersion: progression.currentVersion, history: progression.history.map(withResolvedCreatureImage) })
+    }
+    await refreshProfile()
+  }
+
+  async function handleSetCreatureCombatMutationLoadout(loadout: CombatMutationLoadout) {
+    if (!activeCreature) return
+    await setMyCreatureCombatMutationLoadout(activeCreature.id, loadout)
     await refreshProfile()
   }
 
@@ -840,10 +848,7 @@ function App() {
         visualUrl={officialVisual?.signedUrl}
         visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
         visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
-        visualProgress={visualProgress?.track}
-        visualHistory={visualProgress?.history}
-        currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
-        onSelectVisualVersion={isCreatureVisualProgressionEnabled && visualProgress ? handleSelectVisualVersion : undefined}
+        onSetCombatMutationLoadout={handleSetCreatureCombatMutationLoadout}
         onOpenEvolution={isCreatureVisualProgressionEnabled && auth.activeLineage ? () => handleOpenCreatureEvolution(auth.activeLineage!.id) : undefined}
         onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
       />
@@ -872,6 +877,7 @@ function App() {
         onDeleteLineage={(lineageId) => auth.deleteLineage(lineageId)}
         onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
         onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
+        onSelectVisualVersion={isCreatureVisualProgressionEnabled ? ({ creatureId, versionId, currentVersionId }) => handleSelectVisualVersion({ creatureId, targetVersionId: versionId, currentVersionId }) : undefined}
       />
     )
   }

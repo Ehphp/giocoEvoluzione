@@ -85,7 +85,7 @@ export function buildGuestHomeViewModel({
             { id: 'play', label: 'Gioca', available: true },
             { id: 'collection', label: 'Collezione', available: false },
             { id: 'rankings', label: 'Classifica', available: false },
-            { id: 'profile', label: 'Profilo', available: false },
+            { id: 'profile', label: 'Creatura', available: false },
         ],
         playModes: {
             nickname,

@@ -1,5 +1,5 @@
 {
-  "ruleVersion": "combat-mutations-mvp-v1",
+  "ruleVersion": "combat-mutations-loadout-mvp-v1",
   "seed": 1592598566,
   "sequences": [
     [
@@ -30,7 +30,7 @@
       "NUTRIENT_COLLAPSE"
     ]
   ],
-  "methodology": "Round-robin over deterministic production simulation. Every ordered pairing uses 3 seeded event orders × 2 seeds; lookahead assumes a uniform distribution over legal simultaneous rival actions and never receives the current secret action.",
+  "methodology": "Round-robin over deterministic production simulation. Every ordered pairing uses 3 seeded event orders × 2 seeds; the loadout matrix uses the same heuristic policy for all 6 × 6 ordered loadout pairs.",
   "policies": [
     "random",
     "greedy-immediate-use",
@@ -845,6 +845,519 @@
       "draws": 6
     }
   ],
+  "loadoutMatrix": {
+    "baseline": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+    "loadouts": [
+      "ELASTIC_LIMBS+ADAPTIVE_CORE",
+      "ELASTIC_LIMBS+ARMORED_MEMORY",
+      "ELASTIC_LIMBS+RECOVERY_SURGE",
+      "ADAPTIVE_CORE+ARMORED_MEMORY",
+      "ADAPTIVE_CORE+RECOVERY_SURGE",
+      "ARMORED_MEMORY+RECOVERY_SURGE"
+    ],
+    "summary": {
+      "ELASTIC_LIMBS+ADAPTIVE_CORE": {
+        "matches": 72,
+        "wins": 32,
+        "draws": 18,
+        "losses": 22,
+        "leftWins": 16,
+        "rightWins": 16,
+        "evolves": 72,
+        "exhaustedAfterUse": 360,
+        "tiebreaks": 11,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 72,
+          "ADAPTIVE_CORE": 126,
+          "ARMORED_MEMORY": 0,
+          "RECOVERY_SURGE": 0
+        },
+        "winRate": 0.4444444444444444,
+        "scoreRate": 0.5694444444444444,
+        "leftWinRate": 0.4444444444444444,
+        "rightWinRate": 0.4444444444444444,
+        "evolveRate": 0.07142857142857142
+      },
+      "ELASTIC_LIMBS+ARMORED_MEMORY": {
+        "matches": 72,
+        "wins": 39,
+        "draws": 19,
+        "losses": 14,
+        "leftWins": 19,
+        "rightWins": 20,
+        "evolves": 0,
+        "exhaustedAfterUse": 360,
+        "tiebreaks": 20,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 72,
+          "ADAPTIVE_CORE": 0,
+          "ARMORED_MEMORY": 72,
+          "RECOVERY_SURGE": 0
+        },
+        "winRate": 0.5416666666666666,
+        "scoreRate": 0.6736111111111112,
+        "leftWinRate": 0.5277777777777778,
+        "rightWinRate": 0.5555555555555556,
+        "evolveRate": 0
+      },
+      "ELASTIC_LIMBS+RECOVERY_SURGE": {
+        "matches": 72,
+        "wins": 33,
+        "draws": 23,
+        "losses": 16,
+        "leftWins": 16,
+        "rightWins": 17,
+        "evolves": 72,
+        "exhaustedAfterUse": 360,
+        "tiebreaks": 7,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 72,
+          "ADAPTIVE_CORE": 0,
+          "ARMORED_MEMORY": 0,
+          "RECOVERY_SURGE": 72
+        },
+        "winRate": 0.4583333333333333,
+        "scoreRate": 0.6180555555555556,
+        "leftWinRate": 0.4444444444444444,
+        "rightWinRate": 0.4722222222222222,
+        "evolveRate": 0.07142857142857142
+      },
+      "ADAPTIVE_CORE+ARMORED_MEMORY": {
+        "matches": 72,
+        "wins": 14,
+        "draws": 22,
+        "losses": 36,
+        "leftWins": 8,
+        "rightWins": 6,
+        "evolves": 72,
+        "exhaustedAfterUse": 360,
+        "tiebreaks": 7,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 0,
+          "ADAPTIVE_CORE": 118,
+          "ARMORED_MEMORY": 72,
+          "RECOVERY_SURGE": 0
+        },
+        "winRate": 0.19444444444444445,
+        "scoreRate": 0.3472222222222222,
+        "leftWinRate": 0.2222222222222222,
+        "rightWinRate": 0.16666666666666666,
+        "evolveRate": 0.07142857142857142
+      },
+      "ADAPTIVE_CORE+RECOVERY_SURGE": {
+        "matches": 72,
+        "wins": 25,
+        "draws": 13,
+        "losses": 34,
+        "leftWins": 12,
+        "rightWins": 13,
+        "evolves": 72,
+        "exhaustedAfterUse": 432,
+        "tiebreaks": 15,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 0,
+          "ADAPTIVE_CORE": 144,
+          "ARMORED_MEMORY": 0,
+          "RECOVERY_SURGE": 72
+        },
+        "winRate": 0.3472222222222222,
+        "scoreRate": 0.4375,
+        "leftWinRate": 0.3333333333333333,
+        "rightWinRate": 0.3611111111111111,
+        "evolveRate": 0.07142857142857142
+      },
+      "ARMORED_MEMORY+RECOVERY_SURGE": {
+        "matches": 72,
+        "wins": 15,
+        "draws": 21,
+        "losses": 36,
+        "leftWins": 8,
+        "rightWins": 7,
+        "evolves": 72,
+        "exhaustedAfterUse": 360,
+        "tiebreaks": 10,
+        "illegalActions": 0,
+        "activations": {
+          "ELASTIC_LIMBS": 0,
+          "ADAPTIVE_CORE": 0,
+          "ARMORED_MEMORY": 72,
+          "RECOVERY_SURGE": 72
+        },
+        "winRate": 0.20833333333333334,
+        "scoreRate": 0.3541666666666667,
+        "leftWinRate": 0.2222222222222222,
+        "rightWinRate": 0.19444444444444445,
+        "evolveRate": 0.07142857142857142
+      }
+    },
+    "headToHead": [
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 4,
+        "draws": 1,
+        "tiebreaks": 3,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 3,
+        "draws": 2,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 6,
+        "rightWins": 0,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 4,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 6,
+        "rightWins": 0,
+        "draws": 0,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 3,
+        "draws": 0,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 2,
+        "draws": 2,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 6,
+        "rightWins": 0,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 4,
+        "rightWins": 2,
+        "draws": 0,
+        "tiebreaks": 6,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 4,
+        "rightWins": 0,
+        "draws": 2,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 1,
+        "draws": 2,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 2,
+        "draws": 2,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 4,
+        "rightWins": 0,
+        "draws": 2,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 3,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 4,
+        "rightWins": 2,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 5,
+        "draws": 0,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 6,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 4,
+        "draws": 1,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 5,
+        "rightWins": 1,
+        "draws": 0,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 2,
+        "draws": 3,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 2,
+        "draws": 1,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 4,
+        "draws": 0,
+        "tiebreaks": 6,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 4,
+        "rightWins": 2,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 6,
+        "draws": 0,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 3,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ADAPTIVE_CORE",
+        "matches": 6,
+        "leftWins": 1,
+        "rightWins": 5,
+        "draws": 0,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 4,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ELASTIC_LIMBS+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 6,
+        "draws": 0,
+        "tiebreaks": 2,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+ARMORED_MEMORY",
+        "matches": 6,
+        "leftWins": 2,
+        "rightWins": 0,
+        "draws": 4,
+        "tiebreaks": 1,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ADAPTIVE_CORE+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 3,
+        "rightWins": 3,
+        "draws": 0,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      },
+      {
+        "left": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "right": "ARMORED_MEMORY+RECOVERY_SURGE",
+        "matches": 6,
+        "leftWins": 0,
+        "rightWins": 0,
+        "draws": 6,
+        "tiebreaks": 0,
+        "illegalActions": 0
+      }
+    ]
+  },
   "metrics": {
     "tiebreaks": 48,
     "endReasons": {
@@ -912,7 +1425,7 @@
       "adaptiveCoreBonuses": 420,
       "adaptiveCoreUnspentAtEnd": 242
     },
-    "elapsedMs": 480,
+    "elapsedMs": 940,
     "lookahead": {
       "statesVisited": 9068,
       "cacheHits": 0,

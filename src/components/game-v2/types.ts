@@ -18,6 +18,7 @@ export interface DuelPlayerV2 {
     roundValueTotal: number | null
     avatarUrl?: string
     creatureVisual?: CreatureVisual | null
+    combatMutationLabels?: string[]
     status: DuelPlayerStatusV2
 }
 
@@ -63,6 +64,8 @@ export interface GeneCardV2 {
         reasons: string[]
     }
     mutationHints?: string[]
+    evolvePrediction?: { score: number; mutationBonus?: number }
+    evolveMutationHints?: string[]
 }
 
 export interface WaitingStateV2 {

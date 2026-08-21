@@ -1,7 +1,8 @@
 import { normalizeTraitCollection, TRAITS } from '../game/config'
-import { normalizeCombatMutationState } from '../../shared/game-rules/state.ts'
+import { normalizeCombatMutationLoadout, normalizeCombatMutationState } from '../../shared/game-rules/state.ts'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
+    CombatMutationLoadout,
     CombatMutationState,
     GameMode,
     GameStatus,
@@ -46,6 +47,7 @@ export type PlayerRecord = {
     player_type: PlayerType
     traits: TraitCollection
     combat_mutation_state: CombatMutationState
+    combat_mutation_loadout?: CombatMutationLoadout
     connected: boolean
     profile_id?: string | null
     creature_id?: string | null
@@ -201,6 +203,7 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         player_type: (data.player_type as PlayerType) ?? 'HUMAN',
         traits: normalizeTraitCollection(data.traits as TraitCollection),
         combat_mutation_state: normalizeCombatMutationState(data.combat_mutation_state as Parameters<typeof normalizeCombatMutationState>[0]),
+        combat_mutation_loadout: normalizeCombatMutationLoadout(data.combat_mutation_loadout),
         connected: Boolean(data.connected),
         profile_id: typeof data.profile_id === 'string' ? data.profile_id : null,
         creature_id: typeof data.creature_id === 'string' ? data.creature_id : null,

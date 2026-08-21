@@ -1,6 +1,6 @@
 import type { AdaptationDefinition, AdaptationId, CombatMutationDefinition, CombatMutationId, EnvironmentalCrisisDefinition } from './types.ts'
 
-export const RULE_VERSION = 'combat-mutations-mvp-v1'
+export const RULE_VERSION = 'combat-mutations-loadout-mvp-v1'
 export const TOTAL_ROUNDS = 7
 export const WINS_TO_WIN = 4
 export const BASE_USE_VALUE = 2
@@ -19,11 +19,16 @@ export const ADAPTATION_CATALOG: Record<AdaptationId, AdaptationDefinition> = {
     CAMOUFLAGE: { id: 'CAMOUFLAGE', label: 'Mimetismo', description: 'Occultamento e confusione visiva.', assetKey: 'camouflage', displayOrder: 5 },
 }
 
-/** Fixed MVP catalog: no unlocks, loadouts, slots or visual-evolution link. */
+/** Fixed MVP catalog: all four mutations are available; there are no unlocks or levels. */
 export const COMBAT_MUTATION_CATALOG: Record<CombatMutationId, CombatMutationDefinition> = {
     ELASTIC_LIMBS: { id: 'ELASTIC_LIMBS', label: 'Arti elastici', description: 'Il primo USA Agilita del match non esaurisce il gene.' },
     ADAPTIVE_CORE: { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', description: 'Il primo EVOLVI arma +1 al successivo USA.' },
+    ARMORED_MEMORY: { id: 'ARMORED_MEMORY', label: 'Memoria corazzata', description: 'Il primo USA Corazza del match non esaurisce il gene.' },
+    RECOVERY_SURGE: { id: 'RECOVERY_SURGE', label: 'Impulso di recupero', description: 'Il primo EVOLVI su un gene esausto ottiene +1.' },
 }
+
+/** Historical default and the fixed production bot preset. */
+export const DEFAULT_COMBAT_MUTATION_LOADOUT = ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const
 
 export const NATURAL_ADVANTAGE: Record<AdaptationId, AdaptationId> = {
     FEROCITY: 'ARMOR', ARMOR: 'AGILITY', AGILITY: 'SENSES', SENSES: 'CAMOUFLAGE', CAMOUFLAGE: 'FEROCITY',

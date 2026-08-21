@@ -113,6 +113,8 @@ export function BattleScreen({
 
                 <div className="battle-screen__meta">
                     <Pill>Round <strong>{viewModel.round.current}/{viewModel.round.total}</strong></Pill>
+                    {viewModel.player.combatMutationLabels?.length ? <Pill>Tue: {viewModel.player.combatMutationLabels.join(' Â· ')}</Pill> : null}
+                    {viewModel.opponent.combatMutationLabels?.length ? <Pill>Avversario: {viewModel.opponent.combatMutationLabels.join(' Â· ')}</Pill> : null}
                 </div>
 
                 <EnvironmentCard roundEvent={viewModel.roundEvent} nextRoundEvent={viewModel.nextRoundEvent} />

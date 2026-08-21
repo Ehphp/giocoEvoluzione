@@ -31,14 +31,14 @@ describe('resolve-round pure domain adapter', () => {
             player1Score: 0, player2Score: 0,
             player1Traits: createInitialAdaptations(),
             player2Traits: createInitialAdaptations(),
-            player1CombatMutationState: { elasticLimbsUsed: false, adaptiveCoreStatus: 'ARMED' },
+            player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' },
             player2CombatMutationState: createInitialCombatMutationState(),
             player1Action: { playerId: 'p1', trait: 'AGILITY', actionType: 'USE' },
             player2Action: { playerId: 'p2', trait: 'ARMOR', actionType: 'EVOLVE' },
             startedAt: null,
         })
 
-        expect(result.resolution_data.player1CombatMutationStateAfter).toEqual({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+        expect(result.resolution_data.player1CombatMutationStateAfter).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
         expect(result.resolution_data.player1MutationEffects).toEqual([
             { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
             { id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' },

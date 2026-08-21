@@ -109,16 +109,18 @@ describe('GameSnapshotSync', () => {
     it('keeps persisted combat mutation state through a reconnect snapshot', async () => {
         const request = deferred<GameSnapshot>()
         let persistedCombatMutationState: unknown = null
-        const sync = new GameSnapshotSync({ fetchSnapshot: () => request.promise, onSnapshot: (next) => { persistedCombatMutationState = next.me?.combat_mutation_state ?? null } })
+        let persistedCombatMutationLoadout: unknown = null
+        const sync = new GameSnapshotSync({ fetchSnapshot: () => request.promise, onSnapshot: (next) => { persistedCombatMutationState = next.me?.combat_mutation_state ?? null; persistedCombatMutationLoadout = next.me?.combat_mutation_loadout ?? null } })
 
         sync.reconcile()
         await flush()
         request.resolve({
             stateRevision: 4,
-            me: { combat_mutation_state: { elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' } },
+            me: { combat_mutation_state: { elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED', armoredMemoryUsed: false, recoverySurgeUsed: false }, combat_mutation_loadout: ['ARMORED_MEMORY', 'RECOVERY_SURGE'] },
         } as unknown as GameSnapshot)
         await flush()
 
-        expect(persistedCombatMutationState).toEqual({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+        expect(persistedCombatMutationState).toEqual({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED', armoredMemoryUsed: false, recoverySurgeUsed: false })
+        expect(persistedCombatMutationLoadout).toEqual(['ARMORED_MEMORY', 'RECOVERY_SURGE'])
     })
 })

@@ -25,5 +25,6 @@ export function getValidatedAdaptationUseBreakdown(roundEvent: EnvironmentalCris
 export function getValidatedActionBreakdown(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId, actionType: ActionType, matchupBonus = 0, mutationBonus = 0): RoundValueBreakdown {
     if (actionType === 'USE') return getValidatedAdaptationUseBreakdown(roundEvent, adaptations, adaptation, matchupBonus, mutationBonus)
     const state = getValidatedAdaptationState(adaptations, adaptation)
-    return { actionType: 'EVOLVE', baseContribution: EVOLVE_ROUND_VALUE, levelContribution: 0, eventModifier: 0, matchupBonus: 0, mutationBonus: 0, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: EVOLVE_ROUND_VALUE, appliedEventEffects: [] }
+    if (!Number.isFinite(mutationBonus) || mutationBonus < 0) throw new Error('Invalid combat mutation bonus.')
+    return { actionType: 'EVOLVE', baseContribution: EVOLVE_ROUND_VALUE, levelContribution: 0, eventModifier: 0, matchupBonus: 0, mutationBonus, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: EVOLVE_ROUND_VALUE + mutationBonus, appliedEventEffects: [] }
 }

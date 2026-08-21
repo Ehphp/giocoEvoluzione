@@ -3,21 +3,14 @@ import { useMemo, useState } from 'react'
 import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
+import { COMBAT_MUTATION_CATALOG, DEFAULT_COMBAT_MUTATION_LOADOUT } from '../../../shared/game-rules/catalog.ts'
+import type { CombatMutationId, CombatMutationLoadout } from '../../../shared/game-rules/types.ts'
 import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
+import { AppShell, Button, Chip, IconButton, Notice, Overlay, Panel, ProgressBar, SectionLabel } from '../../ui/components'
 import { ChevronIcon, DnaIcon, ExitIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './ProfileScreen.css'
-
-type VisualHistoryEntry = {
-    id: string
-    versionNumber: number
-    visualTraitId: string | null
-    conceptName: string | null
-    signedUrl: string
-    expiresAt: string
-}
 
 type ProfileScreenProps = {
     profile: ProfileRecord
@@ -32,12 +25,9 @@ type ProfileScreenProps = {
     visualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
-    visualProgress?: { progress: number; target: number; status: string } | null
     onOpenEvolution?: () => void
     onOpenBackgroundCleanup?: () => void
-    visualHistory?: ReadonlyArray<VisualHistoryEntry>
-    currentVisualVersionId?: string | null
-    onSelectVisualVersion?: (versionId: string) => Promise<void>
+    onSetCombatMutationLoadout?: (loadout: CombatMutationLoadout) => Promise<void>
 }
 
 const OUTCOME_LABEL = { win: 'Vittoria', draw: 'Pareggio', loss: 'Sconfitta' } as const
@@ -72,12 +62,9 @@ export function ProfileScreen({
     visualUrl,
     visualVersionNumber,
     visualTrait,
-    visualProgress,
     onOpenEvolution,
     onOpenBackgroundCleanup,
-    visualHistory,
-    currentVisualVersionId,
-    onSelectVisualVersion,
+    onSetCombatMutationLoadout,
 }: ProfileScreenProps) {
     const experience = getExperienceProgress(creature.experience)
     const stats = useMemo(() => history.reduce((total, item) => ({
@@ -87,29 +74,26 @@ export function ProfileScreen({
         losses: total.losses + (item.outcome === 'loss' ? 1 : 0),
     }), { played: 0, wins: 0, draws: 0, losses: 0 }), [history])
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
-    const [pendingVersionId, setPendingVersionId] = useState<string | null>(null)
-    const [isSelectingVisual, setIsSelectingVisual] = useState(false)
-    const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
-    const selectedVersionId = pendingVersionId ?? currentVisualVersionId ?? null
-    const selectedVisual = visualHistory?.find((entry) => entry.id === selectedVersionId)
-    const activeVisualUrl = selectedVisual?.signedUrl ?? visualUrl ?? ASSETS.creatures.default
+    const [openMutationSlot, setOpenMutationSlot] = useState<0 | 1 | null>(null)
+    const [isUpdatingMutation, setIsUpdatingMutation] = useState(false)
+    const [mutationError, setMutationError] = useState<string | null>(null)
+    const combatMutationLoadout = creature.combat_mutation_loadout ?? DEFAULT_COMBAT_MUTATION_LOADOUT
+    const activeVisualUrl = visualUrl ?? ASSETS.creatures.default
 
-    async function selectVisualVersion(versionId: string) {
-        if (!onSelectVisualVersion || versionId === currentVisualVersionId) {
-            return
-        }
-
-        setPendingVersionId(versionId)
-        setVisualSelectionError(null)
-        setIsSelectingVisual(true)
-
+    async function selectCombatMutation(mutation: CombatMutationId) {
+        if (openMutationSlot === null || !onSetCombatMutationLoadout || isUpdatingMutation || combatMutationLoadout[1 - openMutationSlot] === mutation) return
+        const next = openMutationSlot === 0
+            ? [mutation, combatMutationLoadout[1]]
+            : [combatMutationLoadout[0], mutation]
+        setIsUpdatingMutation(true)
+        setMutationError(null)
         try {
-            await onSelectVisualVersion(versionId)
+            await onSetCombatMutationLoadout(next as unknown as CombatMutationLoadout)
+            setOpenMutationSlot(null)
         } catch (error) {
-            setPendingVersionId(null)
-            setVisualSelectionError(error instanceof Error ? error.message : 'Non e stato possibile cambiare la versione visuale.')
+            setMutationError(error instanceof Error ? error.message : 'Non e stato possibile aggiornare le mutazioni.')
         } finally {
-            setIsSelectingVisual(false)
+            setIsUpdatingMutation(false)
         }
     }
 
@@ -148,7 +132,7 @@ export function ProfileScreen({
                         <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
                     </IconButton>
                     <div className="profile-topbar__title">
-                        <span className="ev-eyebrow ev-eyebrow--light">Profilo giocatore</span>
+                        <span className="ev-eyebrow ev-eyebrow--light">Creatura attiva</span>
                         <h1 id="profile-title" className="ev-truncate">{profile.nickname}</h1>
                     </div>
                     <IconButton label="Esci dall account" variant="danger" onClick={onLogout}>
@@ -172,7 +156,7 @@ export function ProfileScreen({
                             <Chip tone="good" icon={<SparkIcon />}>Livello {creature.level}</Chip>
                             <Chip tone="info">Rating {RATING_FORMATTER.format(profile.skill_rating)}</Chip>
                             <Chip tone="info" icon={<DnaIcon />}>
-                                {selectedVisual ? `v${selectedVisual.versionNumber} · ${selectedVisual.conceptName ?? 'Forma base'}` : `v${visualVersionNumber ?? 1} · ${visualTrait ?? 'Forma base'}`}
+                                {`v${visualVersionNumber ?? 1} · ${visualTrait ?? 'Forma base'}`}
                             </Chip>
                         </div>
                         <div className="profile-hero__xp">
@@ -191,65 +175,43 @@ export function ProfileScreen({
                     <StatTile label="Win rate" value={`${winRate}%`} />
                 </div>
 
-                {onOpenEvolution || onOpenBackgroundCleanup || visualHistory?.length ? (
-                    <>
-                        <SectionLabel>Progressione visiva</SectionLabel>
-                        <Panel className="profile-evolution">
-                            {visualProgress ? (
-                                <div className="profile-evolution__track">
-                                    <div className="profile-evolution__track-copy">
-                                        <span className="ev-eyebrow">Percorso visivo</span>
-                                        <strong>
-                                            {visualProgress.status === 'READY'
-                                                ? 'Trasformazione sbloccata'
-                                                : `${visualProgress.progress} / ${visualProgress.target} vittorie`}
-                                        </strong>
-                                    </div>
-                                    <ProgressBar
-                                        current={visualProgress.status === 'READY' ? visualProgress.target : visualProgress.progress}
-                                        total={visualProgress.target}
-                                        tone="gold"
-                                        label="Avanzamento verso la prossima trasformazione"
-                                    />
-                                </div>
-                            ) : null}
+                <SectionLabel>Mutazioni di combattimento</SectionLabel>
+                <Panel className="ev-stack">
+                    <span className="ev-eyebrow">Mutazioni attive</span>
+                    {[0, 1].map((slot) => {
+                        const mutation = combatMutationLoadout[slot]!
+                        return (
+                            <Button key={slot} tone="cream" block disabled={!onSetCombatMutationLoadout || isUpdatingMutation} onClick={() => { setMutationError(null); setOpenMutationSlot(slot as 0 | 1) }}>
+                                Slot {slot + 1}: {COMBAT_MUTATION_CATALOG[mutation].label}
+                            </Button>
+                        )
+                    })}
+                    <small>Le modifiche vengono salvate subito e valgono per le prossime partite.</small>
+                    {mutationError ? <Notice tone="error">{mutationError}</Notice> : null}
+                </Panel>
 
-                            {visualHistory?.length ? (
-                                <div className="profile-evolution__versions">
-                                    <span className="ev-eyebrow">Forme sbloccate</span>
-                                    <div className="profile-evolution__chips" role="group" aria-label="Scegli la versione visuale attiva">
-                                        {visualHistory.map((entry) => (
-                                            <button
-                                                key={entry.id}
-                                                type="button"
-                                                className={`profile-version ${entry.id === currentVisualVersionId ? 'is-active' : ''}`}
-                                                aria-pressed={entry.id === currentVisualVersionId}
-                                                aria-label={`Versione ${entry.versionNumber}${entry.conceptName ? `, ${entry.conceptName}` : ''}`}
-                                                disabled={isSelectingVisual || !onSelectVisualVersion}
-                                                onClick={() => void selectVisualVersion(entry.id)}
-                                            >
-                                                v{entry.versionNumber}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
+                {onOpenEvolution || onOpenBackgroundCleanup ? (
+                    <Panel className="ev-stack">
+                        {onOpenEvolution ? (
+                            <Button tone="evolve" block onClick={onOpenEvolution}>
+                                <DnaIcon aria-hidden="true" />
+                                Evolvi creatura
+                            </Button>
+                        ) : null}
+                        {onOpenBackgroundCleanup ? <Button tone="cream" block size="sm" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</Button> : null}
+                    </Panel>
+                ) : null}
 
-                            {visualSelectionError ? <Notice tone="error">{visualSelectionError}</Notice> : null}
-
-                            <div className="profile-evolution__actions">
-                                {onOpenEvolution ? (
-                                    <Button tone="evolve" block onClick={onOpenEvolution}>
-                                        <DnaIcon aria-hidden="true" />
-                                        Evolvi creatura
-                                    </Button>
-                                ) : null}
-                                {onOpenBackgroundCleanup ? (
-                                    <Button tone="cream" block size="sm" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</Button>
-                                ) : null}
-                            </div>
+                {openMutationSlot !== null ? (
+                    <Overlay label={`Scegli mutazione per slot ${openMutationSlot + 1}`} onClose={isUpdatingMutation ? undefined : () => setOpenMutationSlot(null)}>
+                        <Panel className="ev-stack">
+                            <span className="ev-eyebrow">Scegli una mutazione</span>
+                            {Object.values(COMBAT_MUTATION_CATALOG).map((mutation) => {
+                                const selectedElsewhere = combatMutationLoadout[1 - openMutationSlot] === mutation.id
+                                return <Button key={mutation.id} tone="cream" block disabled={isUpdatingMutation || selectedElsewhere} onClick={() => void selectCombatMutation(mutation.id)}>{mutation.label}: {mutation.description}</Button>
+                            })}
                         </Panel>
-                    </>
+                    </Overlay>
                 ) : null}
 
                 <SectionLabel>Ultime partite</SectionLabel>

@@ -1,14 +1,21 @@
-import { ADAPTATION_CATALOG, MAX_ADAPTATION_LEVEL, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, TOTAL_ROUNDS } from './catalog.ts'
-import { ADAPTATION_IDS, type AdaptationCollection, type AdaptationId, type AdaptationState, type CombatMutationState, type EnvironmentalCrisisDefinition } from './types.ts'
+import { ADAPTATION_CATALOG, DEFAULT_COMBAT_MUTATION_LOADOUT, MAX_ADAPTATION_LEVEL, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, TOTAL_ROUNDS } from './catalog.ts'
+import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, type AdaptationCollection, type AdaptationId, type AdaptationState, type CombatMutationId, type CombatMutationLoadout, type CombatMutationState, type EnvironmentalCrisisDefinition } from './types.ts'
 export { ADAPTATION_IDS, TOTAL_ROUNDS, MAX_ADAPTATION_LEVEL }
 export function createInitialAdaptations(): AdaptationCollection { return Object.fromEntries(ADAPTATION_IDS.map((adaptation) => [adaptation, { level: 0, exhausted: false }])) as AdaptationCollection }
 export function normalizeAdaptationCollection(value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined): AdaptationCollection { const adaptations = createInitialAdaptations(); for (const adaptation of ADAPTATION_IDS) { const state = value?.[adaptation]; if (!state) continue; if (typeof state.level === 'number' && Number.isFinite(state.level)) adaptations[adaptation].level = Math.max(0, Math.min(MAX_ADAPTATION_LEVEL, Math.trunc(state.level))) as AdaptationState['level']; if (typeof state.exhausted === 'boolean') adaptations[adaptation].exhausted = state.exhausted } return adaptations }
-export function createInitialCombatMutationState(): CombatMutationState { return { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' } }
-export function normalizeCombatMutationState(value: Partial<{ elasticLimbsUsed: unknown; adaptiveCoreStatus: unknown }> | null | undefined): CombatMutationState {
+export function createInitialCombatMutationState(): CombatMutationState { return { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false } }
+export function normalizeCombatMutationState(value: Partial<{ elasticLimbsUsed: unknown; adaptiveCoreStatus: unknown; armoredMemoryUsed: unknown; recoverySurgeUsed: unknown }> | null | undefined): CombatMutationState {
     const state = createInitialCombatMutationState()
     if (typeof value?.elasticLimbsUsed === 'boolean') state.elasticLimbsUsed = value.elasticLimbsUsed
     if (value?.adaptiveCoreStatus === 'DORMANT' || value?.adaptiveCoreStatus === 'ARMED' || value?.adaptiveCoreStatus === 'CONSUMED') state.adaptiveCoreStatus = value.adaptiveCoreStatus
+    if (typeof value?.armoredMemoryUsed === 'boolean') state.armoredMemoryUsed = value.armoredMemoryUsed
+    if (typeof value?.recoverySurgeUsed === 'boolean') state.recoverySurgeUsed = value.recoverySurgeUsed
     return state
+}
+export function normalizeCombatMutationLoadout(value: unknown): CombatMutationLoadout {
+    if (!Array.isArray(value) || value.length !== 2 || value.some((id) => typeof id !== 'string' || !COMBAT_MUTATION_IDS.includes(id as CombatMutationId)) || value[0] === value[1]) return DEFAULT_COMBAT_MUTATION_LOADOUT
+    const selected = new Set(value as CombatMutationId[])
+    return COMBAT_MUTATION_IDS.filter((id) => selected.has(id)).slice(0, 2) as unknown as CombatMutationLoadout
 }
 export function getAdaptationLabel(adaptation: AdaptationId): string { return ADAPTATION_CATALOG[adaptation].label }
 export function getRoundEventById(eventId: string): EnvironmentalCrisisDefinition { const roundEvent = ROUND_EVENT_BY_ID[eventId]; if (!roundEvent) throw new Error(`Unknown environmental crisis "${eventId}".`); return roundEvent }
