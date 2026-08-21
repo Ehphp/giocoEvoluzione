@@ -1,5 +1,6 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
 import { COMBAT_MUTATION_CATALOG, NATURAL_ADVANTAGE } from '../../../../shared/game-rules/catalog.ts'
+import type { CombatMutationId, CombatMutationState } from '../../../../shared/game-rules/types.ts'
 import { getCombatMutationEvolvePreview, getCombatMutationUsePreview, isTraitEvolvable, isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
 import { getValidatedActionBreakdown, getValidatedTraitUseBreakdown } from '../../../game/scoring'
@@ -15,6 +16,7 @@ import {
     getGeneAssetByTrait,
 } from '../gameSelectionAssets'
 import type {
+    CombatMutationSlotV2,
     DuelPlayerStatusV2,
     GeneActionTypeV2,
     GeneAffinityV2,
@@ -95,6 +97,37 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
+function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutationState): CombatMutationSlotV2['status'] {
+    switch (id) {
+        case 'ELASTIC_LIMBS':
+            return state.elasticLimbsUsed ? 'consumed' : 'available'
+        case 'ADAPTIVE_CORE':
+            return state.adaptiveCoreStatus === 'ARMED'
+                ? 'armed'
+                : state.adaptiveCoreStatus === 'CONSUMED'
+                    ? 'consumed'
+                    : 'available'
+        case 'ARMORED_MEMORY':
+            return state.armoredMemoryUsed ? 'consumed' : 'available'
+        case 'RECOVERY_SURGE':
+            return state.recoverySurgeUsed ? 'consumed' : 'available'
+    }
+}
+
+function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: CombatMutationState): CombatMutationSlotV2[] {
+    return loadout.map((id) => {
+        const mutation = COMBAT_MUTATION_CATALOG[id]
+
+        return {
+            id,
+            label: mutation.label,
+            shortDescription: mutation.shortDescription,
+            iconKey: mutation.iconKey,
+            status: getCombatMutationVisualState(id, state),
+        }
+    })
+}
+
 export function buildRoundEventEffects(roundEvent: RoundEventDefinition, includeAll = false): RoundEventEffectV2[] {
     const effects = [...roundEvent.effects].filter((effect) => Number.isFinite(effect.modifier))
     if (includeAll) {
@@ -169,9 +202,10 @@ function mapRoundEvent(roundEvent: RoundEventDefinition, includeAllEffects = fal
 
 function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
     const roundEvent = snapshot.currentRoundEvent
-    const myTraits = snapshot.me?.traits
+    const me = snapshot.me
+    const myTraits = me?.traits
 
-    if (!myTraits) {
+    if (!myTraits || !me) {
         return []
     }
 
@@ -187,19 +221,19 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 : 0
             const usable = isTraitUsable(myTraits, traitType)
             const weakAgainst = TRAITS.find((candidate) => NATURAL_ADVANTAGE[candidate] === traitType)!
-            const combatMutationPreview = getCombatMutationUsePreview(snapshot.me?.combat_mutation_state, traitType, snapshot.me?.combat_mutation_loadout)
-            const evolveMutationPreview = getCombatMutationEvolvePreview(snapshot.me?.combat_mutation_state, myTraits, traitType, snapshot.me?.combat_mutation_loadout)
+            const combatMutationPreview = getCombatMutationUsePreview(me.combat_mutation_state, traitType, me.combat_mutation_loadout)
+            const evolveMutationPreview = getCombatMutationEvolvePreview(me.combat_mutation_state, myTraits, traitType, me.combat_mutation_loadout)
             const prediction = roundEvent
                 ? getValidatedTraitUseBreakdown(roundEvent, myTraits, traitType, 0, combatMutationPreview.mutationBonus)
                 : null
             const mutationHints = [
-                ...(combatMutationPreview.elasticLimbsWillPreserveAgility && !state.exhausted ? ['Arti elastici: il primo USA non esaurisce Agilità.'] : []),
-                ...(combatMutationPreview.armoredMemoryWillPreserveArmor && !state.exhausted ? ['Memoria corazzata: il primo USA non esaurisce Corazza.'] : []),
-                ...(combatMutationPreview.mutationBonus ? ['Nucleo adattivo pronto: +1 al prossimo USA.'] : []),
+                ...(combatMutationPreview.elasticLimbsWillPreserveAgility && !state.exhausted ? ['Agilità resta disponibile'] : []),
+                ...(combatMutationPreview.armoredMemoryWillPreserveArmor && !state.exhausted ? ['Corazza resta disponibile'] : []),
+                ...(combatMutationPreview.mutationBonus ? ['+1 Nucleo adattivo'] : []),
             ]
             const evolveMutationHints = [
-                ...(evolveMutationPreview.mutationBonus ? ['Impulso di recupero: +1 valore round.'] : []),
-                ...(evolveMutationPreview.adaptiveCoreWillArm ? ['Nucleo adattivo: il prossimo USA ottiene +1.'] : []),
+                ...(evolveMutationPreview.mutationBonus ? ['+1 Impulso di recupero'] : []),
+                ...(evolveMutationPreview.adaptiveCoreWillArm ? ['+1 al prossimo USA'] : []),
             ]
 
             return {
@@ -270,7 +304,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
                 creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
-                combatMutationLabels: [],
+                combatMutations: [],
                 status: 'choosing',
             },
             opponent: {
@@ -280,7 +314,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
                 creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
-                combatMutationLabels: [],
+                combatMutations: [],
                 status: 'choosing',
             },
             round: {
@@ -342,7 +376,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
             creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
-            combatMutationLabels: (me.combat_mutation_loadout ?? ['ELASTIC_LIMBS', 'ADAPTIVE_CORE']).map((id) => COMBAT_MUTATION_CATALOG[id].label),
+            combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state),
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
         opponent: {
@@ -352,7 +386,9 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             roundValueTotal: opponent ? getRoundValueTotal(snapshot, opponent.slot) : null,
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
             creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
-            combatMutationLabels: (opponent?.combat_mutation_loadout ?? []).map((id) => COMBAT_MUTATION_CATALOG[id].label),
+            combatMutations: opponent
+                ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state)
+                : [],
             status: resolvePlayerStatus(opponentHasSubmitted, opponent?.connected ?? false),
         },
         round: {

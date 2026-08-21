@@ -1,10 +1,10 @@
-import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, ROUND_EVENT_DEFINITIONS, createInitialAdaptations, createInitialCombatMutationState, getLegalBotActions, resolveRound, type CombatMutationLoadout } from '../shared/game-rules/index.ts'
+import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, ROUND_EVENT_DEFINITIONS, RULE_VERSION, createInitialAdaptations, createInitialCombatMutationState, getLegalBotActions, resolveRound, type CombatMutationLoadout } from '../shared/game-rules/index.ts'
 
 export function assertAuditEquivalence(): void {
     const loadouts: CombatMutationLoadout[] = COMBAT_MUTATION_IDS.flatMap((first, index) => COMBAT_MUTATION_IDS.slice(index + 1).map((second) => [first, second] as CombatMutationLoadout))
     for (const loadout of loadouts) for (const event of ROUND_EVENT_DEFINITIONS) for (const action of getLegalBotActions(createInitialAdaptations())) {
         const opponent = { trait: ADAPTATION_IDS.find((gene) => gene !== action.trait)!, actionType: 'EVOLVE' as const }
-        const resolution = resolveRound({ roundNumber: 1, roundEvent: event, player1Id: 'audit-left', player2Id: 'audit-right', player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(), player1CombatMutationLoadout: loadout, player2CombatMutationLoadout: loadout, player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' }, player2CombatMutationState: createInitialCombatMutationState(), player1Action: { playerId: 'audit-left', ...action }, player2Action: { playerId: 'audit-right', ...opponent } })
+        const resolution = resolveRound({ roundNumber: 1, roundEvent: event, player1Id: 'audit-left', player2Id: 'audit-right', player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(), ruleVersion: RULE_VERSION, player1CombatMutationLoadout: loadout, player2CombatMutationLoadout: loadout, player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' }, player2CombatMutationState: createInitialCombatMutationState(), player1Action: { playerId: 'audit-left', ...action }, player2Action: { playerId: 'audit-right', ...opponent } })
         const expectedBonus = action.actionType === 'USE' && loadout.includes('ADAPTIVE_CORE') ? 1 : 0
         if (resolution.player1.breakdown.mutationBonus !== expectedBonus) throw new Error('Combat Mutation loadout audit mismatch.')
     }

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, ROUND_EVENT_DEFINITIONS, RULE_VERSION, TOTAL_ROUNDS, createLookaheadPolicy, createParametricPolicy, createSeededRandom, evolveFirstPolicy, greedyUsePolicy, heuristicPolicy, randomPolicy, simulateMatch, type BotPolicy, type CombatMutationLoadout, type LookaheadStats } from '../shared/game-rules/index.ts'
+import { ADAPTATION_IDS, BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_IDS, ROUND_EVENT_DEFINITIONS, RULE_VERSION, TOTAL_ROUNDS, createInitialCombatMutationState, createLookaheadPolicy, createParametricPolicy, createSeededRandom, evolveFirstPolicy, greedyUsePolicy, heuristicPolicy, randomPolicy, simulateMatch, type BotPolicy, type CombatMutationLoadout, type LookaheadStats } from '../shared/game-rules/index.ts'
 
 type Outcome = { wins: number; draws: number; losses: number; leftWins: number; rightWins: number; actions: number; uses: number; evolves: number; genes: Record<string, number>; levels: number; matches: number }
 type Repro = { reason: string; seed: number; events: string[]; leftPolicy: string; rightPolicy: string; score: string }
@@ -17,6 +17,7 @@ const loadouts: CombatMutationLoadout[] = COMBAT_MUTATION_IDS.flatMap((first, in
 const loadoutKey = (loadout: CombatMutationLoadout) => loadout.join('+')
 type LoadoutOutcome = { matches: number; wins: number; draws: number; losses: number; leftWins: number; rightWins: number; evolves: number; exhaustedAfterUse: number; tiebreaks: number; illegalActions: number; activations: Record<string, number> }
 const emptyLoadoutOutcome = (): LoadoutOutcome => ({ matches: 0, wins: 0, draws: 0, losses: 0, leftWins: 0, rightWins: 0, evolves: 0, exhaustedAfterUse: 0, tiebreaks: 0, illegalActions: 0, activations: Object.fromEntries(COMBAT_MUTATION_IDS.map((mutation) => [mutation, 0])) })
+const initialMutations = (leftCombatMutationLoadout: CombatMutationLoadout = BOT_COMBAT_MUTATION_LOADOUT, rightCombatMutationLoadout: CombatMutationLoadout = BOT_COMBAT_MUTATION_LOADOUT) => ({ leftCombatMutationLoadout, rightCombatMutationLoadout, leftCombatMutationState: createInitialCombatMutationState(), rightCombatMutationState: createInitialCombatMutationState() })
 function main() {
     const started = performance.now(); const results = Object.fromEntries(policies.map((policy) => [id(policy), empty()])) as Record<string, Outcome>
     const headToHead: Record<string, { left: string; right: string; matches: number; leftWins: number; rightWins: number; draws: number }> = {}
@@ -24,7 +25,7 @@ function main() {
     const evolutionByGene: Record<string, number> = Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, 0])); const evolutionByRound: Record<string, number> = {}; const decidedByRound: Record<string, number> = {}; const endReasons: Record<string, number> = {}; const matchupDetail: Record<string, { frequency: number; decisive: number; bonusTotal: number }> = {}; let tiebreaks = 0; let decidedEarly = 0; let matchups = 0; let decisiveMatchups = 0; let distinctPolicyMatches = 0; let distinctPolicyDraws = 0; let finalMarginTotal = 0; const examples: Repro[] = []
     for (let leftIndex = 0; leftIndex < policies.length; leftIndex += 1) for (let rightIndex = 0; rightIndex < policies.length; rightIndex += 1) for (let sequenceIndex = 0; sequenceIndex < sequences.length; sequenceIndex += 1) for (let seedOffset = 0; seedOffset < 2; seedOffset += 1) {
         const left = policies[leftIndex]!; const right = policies[rightIndex]!; const pairKey = [id(left), id(right)].sort().join('|'); const matchSeed = seed ^ hash(pairKey) ^ Math.imul(sequenceIndex + 1, 101) ^ Math.imul(seedOffset + 1, 7919)
-        const report = simulateMatch({ leftPolicy: left, rightPolicy: right, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, trace: true })
+        const report = simulateMatch({ leftPolicy: left, rightPolicy: right, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, ruleVersion: RULE_VERSION, initialState: initialMutations(), trace: true })
         const key = `${id(left)}__${id(right)}`; const duel = headToHead[key] ??= { left: id(left), right: id(right), matches: 0, leftWins: 0, rightWins: 0, draws: 0 }; duel.matches += 1
         const leftResult = results[id(left)]!; const rightResult = results[id(right)]!; leftResult.matches += 1; rightResult.matches += 1
         if (report.winner === 'left') { leftResult.wins += 1; leftResult.leftWins += 1; rightResult.losses += 1; duel.leftWins += 1 } else if (report.winner === 'right') { rightResult.wins += 1; rightResult.rightWins += 1; leftResult.losses += 1; duel.rightWins += 1 } else { leftResult.draws += 1; rightResult.draws += 1; duel.draws += 1 }
@@ -58,8 +59,8 @@ function main() {
         for (let sequenceIndex = 0; sequenceIndex < sequences.length; sequenceIndex += 1) for (let seedOffset = 0; seedOffset < 2; seedOffset += 1) {
             const matchSeed = seed ^ hash(`${duel.left}|${duel.right}|${sequenceIndex}|${seedOffset}`)
             try {
-                const report = simulateMatch({ leftPolicy: heuristicPolicy, rightPolicy: heuristicPolicy, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, trace: true, initialState: { leftCombatMutationLoadout: leftLoadout, rightCombatMutationLoadout: rightLoadout } })
-                const replay = simulateMatch({ leftPolicy: heuristicPolicy, rightPolicy: heuristicPolicy, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, trace: true, initialState: { leftCombatMutationLoadout: leftLoadout, rightCombatMutationLoadout: rightLoadout } })
+                const report = simulateMatch({ leftPolicy: heuristicPolicy, rightPolicy: heuristicPolicy, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, ruleVersion: RULE_VERSION, initialState: initialMutations(leftLoadout, rightLoadout), trace: true })
+                const replay = simulateMatch({ leftPolicy: heuristicPolicy, rightPolicy: heuristicPolicy, eventSequence: sequences[sequenceIndex]!, seed: matchSeed, ruleVersion: RULE_VERSION, initialState: initialMutations(leftLoadout, rightLoadout), trace: true })
                 if (JSON.stringify(report) !== JSON.stringify(replay)) throw new Error('NON_DETERMINISTIC_LOADOUT_MATRIX')
                 duel.matches += 1
                 const left = loadoutResults[duel.left]!; const right = loadoutResults[duel.right]!

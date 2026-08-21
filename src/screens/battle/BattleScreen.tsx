@@ -7,7 +7,7 @@ import {
     getBattleBackgroundForEvent,
 } from '../../components/game-v2/gameSelectionAssets'
 import type { GeneSelectionViewModelV2 } from '../../components/game-v2/types'
-import { AppShell, Button, IconButton, Notice, Overlay, Panel, Pill } from '../../ui/components'
+import { AppShell, Button, Notice, Overlay, Panel, Pill } from '../../ui/components'
 import { CloseIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
@@ -58,17 +58,6 @@ export function BattleScreen({
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
 
-    const exitButton = (
-        <IconButton
-            label="Esci dalla partita"
-            variant="danger"
-            className="battle-screen__exit"
-            onClick={() => setIsLeaveConfirmOpen(true)}
-        >
-            <CloseIcon />
-        </IconButton>
-    )
-
     const leaveConfirm = isLeaveConfirmOpen ? (
         <Overlay label="Conferma uscita dalla partita" align="center" onClose={() => setIsLeaveConfirmOpen(false)}>
             <Panel className="battle-leave-confirm">
@@ -106,15 +95,15 @@ export function BattleScreen({
                 aria-hidden={isInteractionLocked || undefined}
                 inert={isInteractionLocked}
             >
-                <div className="battle-screen__top">
-                    <DuelHeader player={viewModel.player} opponent={viewModel.opponent} round={viewModel.round} />
-                    {exitButton}
-                </div>
+                <DuelHeader
+                    player={viewModel.player}
+                    opponent={viewModel.opponent}
+                    round={viewModel.round}
+                    onRequestLeave={() => setIsLeaveConfirmOpen(true)}
+                />
 
                 <div className="battle-screen__meta">
-                    <Pill>Round <strong>{viewModel.round.current}/{viewModel.round.total}</strong></Pill>
-                    {viewModel.player.combatMutationLabels?.length ? <Pill>Tue: {viewModel.player.combatMutationLabels.join(' Â· ')}</Pill> : null}
-                    {viewModel.opponent.combatMutationLabels?.length ? <Pill>Avversario: {viewModel.opponent.combatMutationLabels.join(' Â· ')}</Pill> : null}
+                    <Pill className="battle-screen__round">Round <strong>{viewModel.round.current}/{viewModel.round.total}</strong></Pill>
                 </div>
 
                 <EnvironmentCard roundEvent={viewModel.roundEvent} nextRoundEvent={viewModel.nextRoundEvent} />

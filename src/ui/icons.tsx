@@ -8,6 +8,7 @@ import {
     ChevronRight,
     Clock,
     Dna,
+    Eye,
     Info,
     Lock,
     Plus,
@@ -263,6 +264,7 @@ export const RankingIcon = Trophy
 export const ProfileIcon = User
 export const TrophyIcon = Trophy
 export const DnaIcon = Dna
+export const EyeIcon = Eye
 export const BoltIcon = Zap
 export const ClockIcon = Clock
 export const InfoIcon = Info

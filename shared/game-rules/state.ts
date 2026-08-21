@@ -1,21 +1,75 @@
-import { ADAPTATION_CATALOG, DEFAULT_COMBAT_MUTATION_LOADOUT, MAX_ADAPTATION_LEVEL, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, TOTAL_ROUNDS } from './catalog.ts'
+import { ADAPTATION_CATALOG, MAX_ADAPTATION_LEVEL, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, RULE_VERSION, TOTAL_ROUNDS } from './catalog.ts'
 import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, type AdaptationCollection, type AdaptationId, type AdaptationState, type CombatMutationId, type CombatMutationLoadout, type CombatMutationState, type EnvironmentalCrisisDefinition } from './types.ts'
 export { ADAPTATION_IDS, TOTAL_ROUNDS, MAX_ADAPTATION_LEVEL }
 export function createInitialAdaptations(): AdaptationCollection { return Object.fromEntries(ADAPTATION_IDS.map((adaptation) => [adaptation, { level: 0, exhausted: false }])) as AdaptationCollection }
 export function normalizeAdaptationCollection(value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined): AdaptationCollection { const adaptations = createInitialAdaptations(); for (const adaptation of ADAPTATION_IDS) { const state = value?.[adaptation]; if (!state) continue; if (typeof state.level === 'number' && Number.isFinite(state.level)) adaptations[adaptation].level = Math.max(0, Math.min(MAX_ADAPTATION_LEVEL, Math.trunc(state.level))) as AdaptationState['level']; if (typeof state.exhausted === 'boolean') adaptations[adaptation].exhausted = state.exhausted } return adaptations }
 export function createInitialCombatMutationState(): CombatMutationState { return { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false } }
-export function normalizeCombatMutationState(value: Partial<{ elasticLimbsUsed: unknown; adaptiveCoreStatus: unknown; armoredMemoryUsed: unknown; recoverySurgeUsed: unknown }> | null | undefined): CombatMutationState {
-    const state = createInitialCombatMutationState()
-    if (typeof value?.elasticLimbsUsed === 'boolean') state.elasticLimbsUsed = value.elasticLimbsUsed
-    if (value?.adaptiveCoreStatus === 'DORMANT' || value?.adaptiveCoreStatus === 'ARMED' || value?.adaptiveCoreStatus === 'CONSUMED') state.adaptiveCoreStatus = value.adaptiveCoreStatus
-    if (typeof value?.armoredMemoryUsed === 'boolean') state.armoredMemoryUsed = value.armoredMemoryUsed
-    if (typeof value?.recoverySurgeUsed === 'boolean') state.recoverySurgeUsed = value.recoverySurgeUsed
-    return state
+
+export class CombatMutationDataError extends Error {
+    readonly code: 'INVALID_COMBAT_MUTATION_LOADOUT' | 'INVALID_COMBAT_MUTATION_STATE'
+    readonly field: string
+
+    constructor(code: CombatMutationDataError['code'], field: string) {
+        super(`${code}: ${field}`)
+        this.name = 'CombatMutationDataError'
+        this.code = code
+        this.field = field
+    }
 }
-export function normalizeCombatMutationLoadout(value: unknown): CombatMutationLoadout {
-    if (!Array.isArray(value) || value.length !== 2 || value.some((id) => typeof id !== 'string' || !COMBAT_MUTATION_IDS.includes(id as CombatMutationId)) || value[0] === value[1]) return DEFAULT_COMBAT_MUTATION_LOADOUT
-    const selected = new Set(value as CombatMutationId[])
-    return COMBAT_MUTATION_IDS.filter((id) => selected.has(id)).slice(0, 2) as unknown as CombatMutationLoadout
+
+export class UnsupportedRuleVersionError extends Error {
+    readonly code = 'UNSUPPORTED_RULE_VERSION'
+    readonly ruleVersion: string
+
+    constructor(ruleVersion: string) {
+        super(`UNSUPPORTED_RULE_VERSION: ${ruleVersion}`)
+        this.name = 'UnsupportedRuleVersionError'
+        this.ruleVersion = ruleVersion
+    }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/** Exact persisted shape; production readers must fail rather than repair match data. */
+export function isCombatMutationState(value: unknown): value is CombatMutationState {
+    if (!isPlainRecord(value)) return false
+    const keys = Object.keys(value)
+    return keys.length === 4
+        && keys.every((key) => ['elasticLimbsUsed', 'adaptiveCoreStatus', 'armoredMemoryUsed', 'recoverySurgeUsed'].includes(key))
+        && typeof value.elasticLimbsUsed === 'boolean'
+        && (value.adaptiveCoreStatus === 'DORMANT' || value.adaptiveCoreStatus === 'ARMED' || value.adaptiveCoreStatus === 'CONSUMED')
+        && typeof value.armoredMemoryUsed === 'boolean'
+        && typeof value.recoverySurgeUsed === 'boolean'
+}
+
+export function parseCombatMutationState(value: unknown, field = 'combat_mutation_state'): CombatMutationState {
+    if (!isCombatMutationState(value)) throw new CombatMutationDataError('INVALID_COMBAT_MUTATION_STATE', field)
+    return { elasticLimbsUsed: value.elasticLimbsUsed, adaptiveCoreStatus: value.adaptiveCoreStatus, armoredMemoryUsed: value.armoredMemoryUsed, recoverySurgeUsed: value.recoverySurgeUsed }
+}
+
+/** Slot 1 and Slot 2 are persisted in this exact order; gameplay treats membership as a set. */
+export function isCombatMutationLoadout(value: unknown): value is CombatMutationLoadout {
+    return Array.isArray(value)
+        && value.length === 2
+        && value.every((id) => typeof id === 'string' && COMBAT_MUTATION_IDS.includes(id as CombatMutationId))
+        && value[0] !== value[1]
+}
+
+export function parseCombatMutationLoadout(value: unknown, field = 'combat_mutation_loadout'): CombatMutationLoadout {
+    if (!isCombatMutationLoadout(value)) throw new CombatMutationDataError('INVALID_COMBAT_MUTATION_LOADOUT', field)
+    return [value[0], value[1]]
+}
+
+/** Cache-only canonicalization. It never writes, displays or changes a slot order. */
+export function canonicalCombatMutationLoadoutCacheKey(loadout: CombatMutationLoadout): string {
+    return [...loadout].sort((left, right) => COMBAT_MUTATION_IDS.indexOf(left) - COMBAT_MUTATION_IDS.indexOf(right)).join(',')
+}
+
+export function isSupportedRuleVersion(value: unknown): value is typeof RULE_VERSION { return value === RULE_VERSION }
+export function assertSupportedRuleVersion(value: unknown): asserts value is typeof RULE_VERSION {
+    if (!isSupportedRuleVersion(value)) throw new UnsupportedRuleVersionError(typeof value === 'string' ? value : String(value ?? 'missing'))
 }
 export function getAdaptationLabel(adaptation: AdaptationId): string { return ADAPTATION_CATALOG[adaptation].label }
 export function getRoundEventById(eventId: string): EnvironmentalCrisisDefinition { const roundEvent = ROUND_EVENT_BY_ID[eventId]; if (!roundEvent) throw new Error(`Unknown environmental crisis "${eventId}".`); return roundEvent }

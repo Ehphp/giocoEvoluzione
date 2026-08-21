@@ -46,13 +46,14 @@ export function AppShell({ sceneryUrl, sceneryFallbackUrl, children, dock, scrol
 type PanelProps = {
     variant?: 'cream' | 'glass'
     flat?: boolean
+    compact?: boolean
     className?: string
     children: ReactNode
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'children'>
 
-export function Panel({ variant = 'cream', flat = false, className = '', children, ...rest }: PanelProps) {
+export function Panel({ variant = 'cream', flat = false, compact = false, className = '', children, ...rest }: PanelProps) {
     return (
-        <div className={`ev-panel ev-panel--${variant} ${flat ? 'ev-panel--flat' : ''} ${className}`} {...rest}>
+        <div className={`ev-panel ev-panel--${variant} ${flat ? 'ev-panel--flat' : ''} ${compact ? 'ev-panel--compact' : ''} ${className}`} {...rest}>
             {children}
         </div>
     )
@@ -116,7 +117,7 @@ type IconButtonProps = {
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 /**
- * Circular icon-only control. `danger` is the single exit/logout treatment used across the app.
+ * Circular icon-only control.
  */
 export function IconButton({ label, variant = 'glass', size = 'md', className = '', children, ...rest }: IconButtonProps) {
     return (
@@ -203,9 +204,9 @@ export function ProgressBar({ current, total, tone = 'green', label }: { current
     )
 }
 
-export function Pips({ total, filled, color, label }: { total: number; filled: number; color?: string; label: string }) {
+export function Pips({ total, filled, color, label, size = 'md' }: { total: number; filled: number; color?: string; label: string; size?: 'md' | 'compact' }) {
     return (
-        <span className="ev-pips" role="img" aria-label={label} style={color ? { ['--ev-pip-color' as string]: color } : undefined}>
+        <span className={`ev-pips ${size === 'compact' ? 'ev-pips--compact' : ''}`} role="img" aria-label={label} style={color ? { ['--ev-pip-color' as string]: color } : undefined}>
             {Array.from({ length: total }, (_, index) => (
                 <span key={index} className={`ev-pips__dot ${index < filled ? 'is-on' : ''}`} />
             ))}

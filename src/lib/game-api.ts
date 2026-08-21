@@ -1,5 +1,5 @@
 import { normalizeTraitCollection, TRAITS } from '../game/config'
-import { normalizeCombatMutationLoadout, normalizeCombatMutationState } from '../../shared/game-rules/state.ts'
+import { isSupportedRuleVersion, parseCombatMutationLoadout, parseCombatMutationState } from '../../shared/game-rules/state.ts'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
     CombatMutationLoadout,
@@ -34,6 +34,8 @@ export type GameRecord = {
     started_at: string | null
     finished_at: string | null
     rematch_count: number
+    /** Immutable shared-rules version selected when this match was created. */
+    rule_version: string
     created_at: string
     updated_at: string
     state_revision: number
@@ -47,7 +49,7 @@ export type PlayerRecord = {
     player_type: PlayerType
     traits: TraitCollection
     combat_mutation_state: CombatMutationState
-    combat_mutation_loadout?: CombatMutationLoadout
+    combat_mutation_loadout: CombatMutationLoadout
     connected: boolean
     profile_id?: string | null
     creature_id?: string | null
@@ -122,6 +124,10 @@ export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
         return false
     }
 
+    if (!isSupportedRuleVersion(snapshot.game.rule_version)) {
+        return false
+    }
+
     const traits = snapshot.me.traits
 
     if (!traits) {
@@ -166,6 +172,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
         started_at: (data.started_at as string | null) ?? null,
         finished_at: (data.finished_at as string | null) ?? null,
         rematch_count: Number(data.rematch_count ?? 0),
+        rule_version: typeof data.rule_version === 'string' ? data.rule_version : '',
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
         state_revision: Number(data.state_revision ?? 0),
@@ -202,8 +209,8 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         slot: Number(data.slot) as 1 | 2,
         player_type: (data.player_type as PlayerType) ?? 'HUMAN',
         traits: normalizeTraitCollection(data.traits as TraitCollection),
-        combat_mutation_state: normalizeCombatMutationState(data.combat_mutation_state as Parameters<typeof normalizeCombatMutationState>[0]),
-        combat_mutation_loadout: normalizeCombatMutationLoadout(data.combat_mutation_loadout),
+        combat_mutation_state: parseCombatMutationState(data.combat_mutation_state, 'snapshot.player.combat_mutation_state'),
+        combat_mutation_loadout: parseCombatMutationLoadout(data.combat_mutation_loadout, 'snapshot.player.combat_mutation_loadout'),
         connected: Boolean(data.connected),
         profile_id: typeof data.profile_id === 'string' ? data.profile_id : null,
         creature_id: typeof data.creature_id === 'string' ? data.creature_id : null,

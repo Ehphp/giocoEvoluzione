@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
-import { COMBAT_MUTATION_CATALOG, DEFAULT_COMBAT_MUTATION_LOADOUT } from '../../../shared/game-rules/catalog.ts'
+import { COMBAT_MUTATION_CATALOG } from '../../../shared/game-rules/catalog.ts'
 import type { CombatMutationId, CombatMutationLoadout } from '../../../shared/game-rules/types.ts'
 import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
@@ -38,6 +38,11 @@ function formatDate(value: string) {
     const date = new Date(value)
 
     return Number.isNaN(date.getTime()) ? 'Data non disponibile' : new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' }).format(date)
+}
+
+function requireCombatMutationLoadout(loadout: CombatMutationLoadout | undefined): CombatMutationLoadout {
+    if (!loadout) throw new Error('Loadout Combat Mutations della creatura non disponibile.')
+    return loadout
 }
 
 function StatTile({ label, value, tone = 'neutral' }: { label: string; value: string | number; tone?: 'neutral' | 'good' | 'info' | 'bad' }) {
@@ -77,7 +82,7 @@ export function ProfileScreen({
     const [openMutationSlot, setOpenMutationSlot] = useState<0 | 1 | null>(null)
     const [isUpdatingMutation, setIsUpdatingMutation] = useState(false)
     const [mutationError, setMutationError] = useState<string | null>(null)
-    const combatMutationLoadout = creature.combat_mutation_loadout ?? DEFAULT_COMBAT_MUTATION_LOADOUT
+    const combatMutationLoadout = requireCombatMutationLoadout(creature.combat_mutation_loadout)
     const activeVisualUrl = visualUrl ?? ASSETS.creatures.default
 
     async function selectCombatMutation(mutation: CombatMutationId) {

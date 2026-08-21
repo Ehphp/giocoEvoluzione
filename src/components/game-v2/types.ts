@@ -3,6 +3,17 @@ import type { CreatureVisual } from './gameSelectionAssets'
 
 export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 
+/** Presentation-only state of one equipped mutation in the battle header. */
+export type CombatMutationVisualStateV2 = 'available' | 'armed' | 'consumed'
+
+export type CombatMutationSlotV2 = {
+    id: string
+    label: string
+    shortDescription: string
+    iconKey: string
+    status: CombatMutationVisualStateV2
+}
+
 export type ModifierToneV2 = 'positive' | 'negative' | 'neutral'
 
 export type GeneAffinityV2 = 'unfavorable' | 'suitable' | 'ideal'
@@ -18,7 +29,8 @@ export interface DuelPlayerV2 {
     roundValueTotal: number | null
     avatarUrl?: string
     creatureVisual?: CreatureVisual | null
-    combatMutationLabels?: string[]
+    /** Ordered match loadout, mapped by the controller from the authoritative snapshot. */
+    combatMutations?: CombatMutationSlotV2[]
     status: DuelPlayerStatusV2
 }
 

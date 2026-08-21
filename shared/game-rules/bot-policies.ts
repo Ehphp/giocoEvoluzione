@@ -5,8 +5,8 @@ import { getAdaptationRoundValue, getCombatMutationStateAfterEvolve, getEvolutio
 export type BotRoundAction = { trait: AdaptationId; actionType: ActionType }
 export type PublicRoundHistory = { roundNumber: number; eventId: string; leftAction: BotRoundAction; rightAction: BotRoundAction; leftValue: number; rightValue: number }
 export type BotDecisionContext = {
-    roundNumber: number; ownScore: number; opponentScore: number
-    adaptations: AdaptationCollection; combatMutationState?: CombatMutationState; combatMutationLoadout?: CombatMutationLoadout; publicOpponentAdaptations?: AdaptationCollection; publicOpponentCombatMutationState?: CombatMutationState; publicOpponentCombatMutationLoadout?: CombatMutationLoadout
+    roundNumber: number; ownScore: number; opponentScore: number; ruleVersion: string
+    adaptations: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; publicOpponentAdaptations: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout
     roundEvent: EnvironmentalCrisisDefinition; nextRoundEvent?: EnvironmentalCrisisDefinition | null
     publicHistory: readonly PublicRoundHistory[]; legalActions: readonly BotRoundAction[]
     random: () => number

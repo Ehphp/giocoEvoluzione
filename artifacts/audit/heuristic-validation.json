@@ -1,5 +1,5 @@
 {
-  "ruleVersion": "combat-mutations-mvp-v1",
+  "ruleVersion": "combat-mutations-loadout-mvp-v1",
   "seed": 1592598566,
   "decisions": 126,
   "methodology": "Heuristic is evaluated on states reached against deterministic greedy-use, param-matchup and evolve-first. Lookahead-3 receives remaining events only in this offline audit; this is not a simultaneous-game equilibrium.",
@@ -1120,5 +1120,5 @@
       "outcome": null
     }
   ],
-  "elapsedMs": 348
+  "elapsedMs": 439
 }

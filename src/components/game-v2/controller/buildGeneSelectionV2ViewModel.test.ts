@@ -38,8 +38,11 @@ describe('buildRoundEventEffects', () => {
 
         expect(model.selectedGene?.mutationHints).toBeUndefined()
         expect(model.selectedGene?.evolvePrediction).toEqual({ score: 2, mutationBonus: 1 })
-        expect(model.selectedGene?.evolveMutationHints).toEqual(['Impulso di recupero: +1 valore round.'])
-        expect(model.player.combatMutationLabels).toEqual(['Memoria corazzata', 'Impulso di recupero'])
+        expect(model.selectedGene?.evolveMutationHints).toEqual(['+1 Impulso di recupero'])
+        expect(model.player.combatMutations).toEqual([
+            expect.objectContaining({ id: 'ARMORED_MEMORY', label: 'Memoria corazzata', status: 'available' }),
+            expect.objectContaining({ id: 'RECOVERY_SURGE', label: 'Impulso di recupero', status: 'available' }),
+        ])
     })
 })
 
@@ -48,12 +51,14 @@ describe('Combat Mutation battle preview', () => {
         const traits = createInitialAdaptations()
         const me = {
             id: 'me', game_id: 'game', nickname: 'Tu', slot: 1 as const, player_type: 'HUMAN' as const, traits,
-            combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'ARMED' as const }, connected: true,
+            combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'ARMED' as const, armoredMemoryUsed: false, recoverySurgeUsed: false },
+            combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const, connected: true,
             evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-08-20T00:00:00.000Z',
         }
         const opponent = {
             id: 'opponent', game_id: 'game', nickname: 'Bot', slot: 2 as const, player_type: 'BOT' as const, traits: createInitialAdaptations(),
-            combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' as const }, connected: true,
+            combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' as const, armoredMemoryUsed: false, recoverySurgeUsed: false },
+            combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const, connected: true,
             evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-08-20T00:00:00.000Z',
         }
         const snapshot = {
@@ -66,8 +71,12 @@ describe('Combat Mutation battle preview', () => {
 
         expect(model.selectedGene?.prediction).toMatchObject({ mutationBonus: 1, useScore: 4 })
         expect(model.selectedGene?.mutationHints).toEqual([
-            'Arti elastici: il primo USA non esaurisce Agilità.',
-            'Nucleo adattivo pronto: +1 al prossimo USA.',
+            'Agilità resta disponibile',
+            '+1 Nucleo adattivo',
+        ])
+        expect(model.player.combatMutations).toEqual([
+            expect.objectContaining({ id: 'ELASTIC_LIMBS', status: 'available' }),
+            expect.objectContaining({ id: 'ADAPTIVE_CORE', status: 'armed' }),
         ])
     })
 })

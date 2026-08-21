@@ -1,6 +1,6 @@
 # Metagame audit
 
-- 8 policy; 3 sequenze; seed 1592598566; 940 ms.
+- 8 policy; 3 sequenze; seed 1592598566; 627 ms.
 - Tie-break: 48; pareggi fra policy diverse: 6.5%; margine finale medio: 1.81.
 - Partite decise prima dell’ultimo round: 198 (R4=20, R5=82, R6=96); matchup 528 (410 decisivi).
 - Combat Mutations: Elastic 670; Core armato 662; bonus 420; armato non consumato 242.

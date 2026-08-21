@@ -27,12 +27,14 @@ function makeSnapshot(roundResults: RoundResultRecord[]): GameSnapshot {
         id: 'player-1', game_id: 'game', nickname: 'Naturalista', slot: 1 as const, player_type: 'HUMAN' as const,
         traits: {} as GameSnapshot['me'] extends { traits: infer Traits } ? Traits : never,
         combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' as const, armoredMemoryUsed: false, recoverySurgeUsed: false },
+        combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const,
         connected: true, evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-01-01T10:00:00.000Z',
     }
     const opponent = {
         id: 'player-2', game_id: 'game', nickname: 'Bot', slot: 2 as const, player_type: 'BOT' as const,
         traits: {} as GameSnapshot['opponent'] extends { traits: infer Traits } ? Traits : never,
         combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' as const, armoredMemoryUsed: false, recoverySurgeUsed: false },
+        combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const,
         connected: true, evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-01-01T10:00:00.000Z',
     }
 
@@ -41,7 +43,7 @@ function makeSnapshot(roundResults: RoundResultRecord[]): GameSnapshot {
             id: 'game', room_code: 'ABCDE', game_mode: 'VS_BOT', bot_difficulty: 'NORMAL', status: 'FINISHED', current_round: 2,
             world_id: 'world', round_event_sequence: ['missing-event-1', 'missing-event-2'], player_1_id: player.id, player_2_id: opponent.id,
             player_1_score: 2, player_2_score: 0, winner_id: player.id, started_at: '2026-01-01T10:00:00.000Z',
-            finished_at: '2026-01-01T10:02:00.000Z', rematch_count: 0, created_at: '2026-01-01T10:00:00.000Z', updated_at: '2026-01-01T10:02:00.000Z', state_revision: 0,
+            finished_at: '2026-01-01T10:02:00.000Z', rematch_count: 0, rule_version: 'combat-mutations-loadout-mvp-v1', created_at: '2026-01-01T10:00:00.000Z', updated_at: '2026-01-01T10:02:00.000Z', state_revision: 0,
         },
         players: [player, opponent],
         me: player,

@@ -51,18 +51,6 @@
 /* Duel header                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/* The exit control sits beside the duel cards, with real space between them. */
-.battle-screen__top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--ev-s-4);
-}
-
-.battle-screen__exit {
-    align-self: center;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Leave confirmation                                                          */
 /* -------------------------------------------------------------------------- */
@@ -103,18 +91,29 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 26px;
+    align-items: start;
+    gap: var(--ev-s-5);
+}
+
+.duel-header__competitor {
+    display: grid;
+    gap: var(--ev-s-1);
+    min-width: 0;
+}
+
+.duel-header__competitor--opponent {
+    justify-items: end;
 }
 
 .duel-card {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--ev-s-1);
     min-width: 0;
-    padding: 5px 6px 5px 5px;
+    padding: var(--ev-s-1);
     border-radius: var(--ev-r-lg);
-    border: 2px solid var(--ev-stroke-light);
+    border: var(--ev-stroke-width) solid var(--ev-stroke-light);
     box-shadow: var(--ev-shadow-md), var(--ev-lip);
 }
 
@@ -127,10 +126,91 @@
     background: var(--ev-grad-opponent);
 }
 
+.duel-card__mutations {
+    display: flex;
+    align-items: center;
+    gap: var(--ev-s-1);
+    min-height: var(--ev-mutation-slot-size);
+    padding-inline: var(--ev-s-1);
+}
+
+.duel-mutation {
+    display: grid;
+    place-items: center;
+    width: var(--ev-mutation-slot-size);
+    height: var(--ev-mutation-slot-size);
+    border-radius: var(--ev-r-md);
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-lg);
+    background: var(--ev-glass-strong);
+    border: var(--ev-stroke-width) solid var(--ev-stroke-light-soft);
+    box-shadow: var(--ev-shadow-sm), inset 0 1px 0 var(--ev-stroke-light-soft);
+}
+
+.duel-card__mutations--player .duel-mutation--available {
+    color: var(--ev-player-light);
+}
+
+.duel-card__mutations--opponent .duel-mutation--available {
+    color: var(--ev-opponent-light);
+}
+
+.duel-card__mutations--player .duel-mutation--armed {
+    color: var(--ev-on-dark);
+    background: var(--ev-grad-player);
+    border-color: var(--ev-player-light);
+    box-shadow: var(--ev-shadow-glow-player), var(--ev-lip);
+}
+
+.duel-card__mutations--opponent .duel-mutation--armed {
+    color: var(--ev-on-dark);
+    background: var(--ev-grad-opponent);
+    border-color: var(--ev-opponent-light);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip);
+}
+
+.duel-mutation--consumed {
+    color: var(--ev-on-dark-muted);
+    opacity: var(--ev-mutation-consumed-opacity);
+    filter: grayscale(var(--ev-mutation-consumed-grayscale));
+}
+
 .duel-card__portrait {
     position: relative;
     flex: 0 0 auto;
     display: block;
+}
+
+.duel-card__profile-menu {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.duel-card__profile-trigger {
+    position: relative;
+    display: block;
+    padding: 0;
+    border-radius: var(--ev-r-pill);
+    color: inherit;
+    background: transparent;
+}
+
+.duel-card__profile-trigger:focus-visible {
+    outline: var(--ev-focus-ring) solid var(--ev-cream-light);
+    outline-offset: var(--ev-s-1);
+}
+
+.duel-card__profile-popover {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + var(--ev-s-2));
+    left: calc(var(--ev-s-1) * -1);
+    width: max-content;
+    max-width: min(52vw, var(--ev-sheet-width-narrow));
+}
+
+.duel-card__profile-popover .ev-btn {
+    white-space: nowrap;
 }
 
 .duel-card__state {
@@ -201,22 +281,22 @@
 
 .duel-header__versus {
     position: absolute;
-    top: 50%;
+    top: var(--ev-s-6);
     left: 50%;
     z-index: 3;
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: var(--ev-touch-min);
+    height: var(--ev-touch-min);
     transform: translate(-50%, -50%);
     border-radius: var(--ev-r-pill);
-    color: #5a3606;
+    color: var(--ev-ink);
     font-family: var(--ev-font-display);
     font-size: var(--ev-fs-lg);
     font-weight: 800;
     font-style: italic;
     background: var(--ev-grad-gold);
-    border: 2.5px solid #fff5cf;
+    border: var(--ev-stroke-width) solid var(--ev-cream-light);
     box-shadow: var(--ev-shadow-md), var(--ev-shadow-glow-gold);
 }
 
@@ -228,7 +308,12 @@
     display: grid;
     place-items: center;
     min-height: 26px;
-    margin-top: -2px;
+    margin-top: calc(var(--ev-s-1) * -1);
+}
+
+.battle-screen__round {
+    min-width: var(--ev-battle-round-pill-min-width);
+    justify-content: center;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -427,12 +512,12 @@
      * The arena is the only elastic block: it absorbs whatever the header, briefing and
      * decision controls do not need, so safe-area insets never push the actions off screen.
      */
-    flex: 1 1 138px;
-    min-height: 48px;
+    flex: 1 1 var(--ev-battle-arena-basis);
+    min-height: var(--ev-s-6);
     /* Sized container so the sprites can bow out when the arena is squeezed. */
     container-type: size;
     /* The decision panel deliberately overlaps the arena so the creatures stand behind it. */
-    margin: 0 -6px -26px;
+    margin: 0 calc(var(--ev-s-2) * -1) calc(var(--ev-battle-decision-overlap) * -1);
 }
 
 /**
@@ -926,7 +1011,7 @@
     }
 
     .arena {
-        flex-basis: 114px;
+        flex-basis: var(--ev-battle-arena-basis-medium);
     }
 }
 
@@ -949,7 +1034,7 @@
     }
 
     .arena {
-        flex-basis: 88px;
+        flex-basis: var(--ev-battle-arena-basis-compact);
     }
 
     .gene-matchup {
@@ -972,7 +1057,12 @@
     }
 
     .arena {
-        flex-basis: 58px;
+        flex-basis: var(--ev-battle-arena-basis-tight);
+    }
+
+    .duel-mutation {
+        width: var(--ev-mutation-slot-size-compact);
+        height: var(--ev-mutation-slot-size-compact);
     }
 
     .gene-card__icon {

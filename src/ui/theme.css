@@ -200,6 +200,20 @@
     --ev-collection-catalog-art-height: 148px;
     --ev-collection-lineage-tab-width: 176px;
     --ev-home-creature-subject-fill: 1.06;
+    --ev-pips-dot-size: 8px;
+    --ev-pips-gap: 4px;
+    --ev-pips-dot-size-compact: 5px;
+    --ev-pips-gap-compact: 3px;
+    --ev-mutation-slot-size: 32px;
+    --ev-mutation-slot-size-compact: 28px;
+    --ev-mutation-consumed-opacity: .5;
+    --ev-mutation-consumed-grayscale: .85;
+    --ev-battle-round-pill-min-width: 132px;
+    --ev-battle-arena-basis: 156px;
+    --ev-battle-arena-basis-medium: 126px;
+    --ev-battle-arena-basis-compact: 102px;
+    --ev-battle-arena-basis-tight: 68px;
+    --ev-battle-decision-overlap: 22px;
     --ev-z-overlay: 10;
 
     /* Motion. */

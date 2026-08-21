@@ -45,9 +45,10 @@ scenery, a gene glyph or a biome thumbnail is a one-line change there.
 product names, plus `GeneIcon` for the five adaptations. Never use an emoji or a text character
 (`×`, `→`, `›`) as an icon — the display face does not carry all of them and they render as tofu.
 
-Exit controls share one treatment, `IconButton variant="danger"`, and two meanings:
-leaving a match uses `CloseIcon`, signing out of the account uses `ExitIcon`. Abandoning a running
-match asks for confirmation first.
+Exit controls use `IconButton variant="danger"` with `ExitIcon` when signing out of the account.
+The live Battle header exposes its lower-emphasis `BackIcon` action through the player profile menu
+while preserving the same confirmed match-abandonment flow. Abandoning a running match asks for
+confirmation first.
 
 ## Per-gene theming
 

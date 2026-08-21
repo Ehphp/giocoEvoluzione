@@ -84,9 +84,10 @@ hand-drawn `GeneIcon` for the five adaptations.
   does not carry all of them and they render as tofu — this actually shipped once.
 - Icons size from the container's `font-size` (`svg { width: 1em; height: 1em }` in `base.css`).
   Set `font-size`, never `width`/`height` on an icon.
-- Exit controls: one treatment, `IconButton variant="danger"`, two meanings —
-  `CloseIcon` for **leaving a match**, `ExitIcon` for **logging out of the account**.
-  Abandoning a running match must ask for confirmation first.
+- Exit controls use `IconButton variant="danger"` with `ExitIcon` for **logging out of the
+  account**. The live Battle header is the exception: its profile menu uses `BackIcon` while
+  retaining the same confirmed match-abandonment flow. Abandoning a running match must ask for
+  confirmation first.
 
 **Image paths come from `src/ui/assets.ts` only.** No `/assets/...` string in a component.
 Files live under `public/assets/{branding,battle,creatures,game-ui}`.

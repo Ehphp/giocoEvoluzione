@@ -30,6 +30,7 @@ function player(id: string, creatureId: string): PlayerRecord {
         player_type: 'HUMAN',
         traits: {} as PlayerRecord['traits'],
         combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false },
+        combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
         connected: true,
         profile_id: `${id}-profile`,
         creature_id: creatureId,

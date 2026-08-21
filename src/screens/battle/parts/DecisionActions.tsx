@@ -18,8 +18,8 @@ export function DecisionActions({ selectedGene, selectedAction, canUse, canEvolv
     }
 
     const eventModifier = selectedGene.prediction?.eventModifier ?? 0
-    const mutationHint = selectedGene.mutationHints?.join(' ')
-    const evolveMutationHint = selectedGene.evolveMutationHints?.join(' ')
+    const mutationHint = selectedGene.mutationHints?.join(' · ')
+    const evolveMutationHint = selectedGene.evolveMutationHints?.join(' · ')
     const evolveTitle = selectedGene.level >= 2 ? 'RECUPERA' : selectedGene.exhausted ? 'RIGENERA' : 'EVOLVI'
     const useHint = isSubmitting
         ? selectedAction === 'USE' ? 'Invio della scelta...' : 'Scelta in corso...'
@@ -39,7 +39,7 @@ export function DecisionActions({ selectedGene, selectedAction, canUse, canEvolv
             <ActionButton
                 tone="use"
                 title={isSubmitting && selectedAction === 'USE' ? 'INVIO...' : 'USA'}
-                hint={canUse && !isSubmitting && mutationHint ? `${useHint} ${mutationHint}` : useHint}
+                hint={canUse && !isSubmitting && mutationHint ? mutationHint : useHint}
                 value={selectedGene.prediction ? `${selectedGene.prediction.useScore} PT` : '— PT'}
                 glyph={<BoltIcon />}
                 aria-pressed={selectedAction === 'USE'}
@@ -49,7 +49,7 @@ export function DecisionActions({ selectedGene, selectedAction, canUse, canEvolv
             <ActionButton
                 tone="evolve"
                 title={isSubmitting && selectedAction === 'EVOLVE' ? 'INVIO...' : evolveTitle}
-                hint={canEvolve && !isSubmitting && evolveMutationHint ? `${evolveHint} ${evolveMutationHint}` : evolveHint}
+                hint={canEvolve && !isSubmitting && evolveMutationHint ? evolveMutationHint : evolveHint}
                 value={`${selectedGene.evolvePrediction?.score ?? 1} PT`}
                 glyph={<DnaIcon />}
                 aria-pressed={selectedAction === 'EVOLVE'}

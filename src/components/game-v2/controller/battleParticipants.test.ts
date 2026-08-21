@@ -12,6 +12,7 @@ function player(id: string, slot: 1 | 2): PlayerRecord {
         player_type: 'HUMAN',
         traits: {} as PlayerRecord['traits'],
         combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false },
+        combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
         connected: true,
         evolution_draft_options: [], chosen_evolution_target_id: null, created_at: '2026-08-03T00:00:00.000Z',
     }

@@ -33,8 +33,20 @@ function makeViewModel(overrides: Partial<GeneSelectionViewModelV2> = {}): GeneS
     const selectedGene = genes.find((gene) => gene.id === selectedGeneId) ?? null
 
     return {
-        player: { id: 'me', name: 'Tu', score: 3, roundValueTotal: 12, status: 'choosing' },
-        opponent: { id: 'other', name: 'Avversario', score: 3, roundValueTotal: 10, status: 'ready' },
+        player: {
+            id: 'me', name: 'Tu', score: 3, roundValueTotal: 12, status: 'choosing',
+            combatMutations: [
+                { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'available' },
+                { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'armed' },
+            ],
+        },
+        opponent: {
+            id: 'other', name: 'Avversario', score: 3, roundValueTotal: 10, status: 'ready',
+            combatMutations: [
+                { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'consumed' },
+                { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'available' },
+            ],
+        },
         round: { current: 4, total: 7 },
         roundEvent: {
             id: 'current',
@@ -115,6 +127,53 @@ describe('BattleScreen', () => {
         expect(container.querySelector('.duel-card--player')?.textContent).toContain('TB 12')
         expect(container.querySelector('.duel-card--opponent')?.textContent).toContain('TB 10')
         expect(container.querySelector('.battle-screen__meta')?.textContent).toContain('4/7')
+    })
+
+    it('integrates the ordered mutation slots under each player panel with semantic states', () => {
+        render()
+
+        const playerSlots = container.querySelectorAll('.duel-card__mutations--player .duel-mutation')
+        const opponentSlots = container.querySelectorAll('.duel-card__mutations--opponent .duel-mutation')
+
+        expect(playerSlots).toHaveLength(2)
+        expect(opponentSlots).toHaveLength(2)
+        expect(playerSlots[1]?.classList.contains('duel-mutation--armed')).toBe(true)
+        expect(opponentSlots[0]?.classList.contains('duel-mutation--consumed')).toBe(true)
+        expect(playerSlots[1]?.getAttribute('aria-label')).toContain('Nucleo adattivo, attiva')
+        expect(container.querySelectorAll('.duel-card .ev-pips--compact')).toHaveLength(2)
+    })
+
+    it('opens and closes the leave action from the player avatar without taking header space', () => {
+        render()
+
+        const trigger = container.querySelector<HTMLButtonElement>('.duel-card__profile-trigger')!
+
+        expect(container.querySelector('.battle-screen__exit')).toBeNull()
+        expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+        act(() => trigger.click())
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('true')
+        expect(container.querySelector('[role="menu"]')?.textContent).toContain('Esci dalla partita')
+
+        act(() => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })))
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('false')
+        expect(container.querySelector('[role="menu"]')).toBeNull()
+
+        act(() => trigger.click())
+        act(() => trigger.click())
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('false')
+        expect(container.querySelector('[role="menu"]')).toBeNull()
+    })
+
+    it('uses compact mutation copy on the relevant action card', () => {
+        const gene = { ...GENES[2]!, mutationHints: ['+1 Nucleo adattivo', 'Agilità resta disponibile'] }
+
+        render(makeViewModel({ genes: [gene], selectedGeneId: gene.id, selectedGene: gene }))
+
+        expect(container.querySelector('.ev-btn--use')?.textContent).toContain('+1 Nucleo adattivo · Agilità resta disponibile')
     })
 
     it('renders all five genes in stable order and selects each by tap', () => {
@@ -255,7 +314,14 @@ describe('BattleScreen', () => {
             }))
         })
 
-        act(() => container.querySelector<HTMLButtonElement>('.battle-screen__exit')!.click())
+        const requestLeave = () => {
+            const trigger = container.querySelector<HTMLButtonElement>('.duel-card__profile-trigger')!
+            act(() => trigger.click())
+            const action = container.querySelector<HTMLButtonElement>('.duel-card__profile-popover button')!
+            act(() => action.click())
+        }
+
+        requestLeave()
 
         expect(document.querySelector('.battle-leave-confirm')).not.toBeNull()
         expect(leaveCalls).toBe(0)
@@ -268,7 +334,7 @@ describe('BattleScreen', () => {
         expect(document.querySelector('.battle-leave-confirm')).toBeNull()
         expect(leaveCalls).toBe(0)
 
-        act(() => container.querySelector<HTMLButtonElement>('.battle-screen__exit')!.click())
+        requestLeave()
 
         const confirm = [...document.querySelectorAll<HTMLButtonElement>('.battle-leave-confirm button')]
             .find((button) => button.textContent?.includes('Esci dalla partita'))!

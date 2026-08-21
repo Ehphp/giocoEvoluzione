@@ -1,6 +1,6 @@
 # Heuristic validation
 
-- 126 stati, 348 ms.
+- 126 stati, 439 ms.
 - EVOLVE immediateValue is exactly EVOLVE_ROUND_VALUE; evolution is only the next-visible-event level gain. They are separate terms and not the same value counted twice.
 
 ## Heuristic vs lookahead-3

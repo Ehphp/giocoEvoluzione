@@ -99,6 +99,8 @@ describe('profile persistence mappings', () => {
             slot: 1,
             player_type: 'HUMAN',
             traits: createInitialTraits(),
+            combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false },
+            combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
             connected: true,
             created_at: profile.created_at,
         })

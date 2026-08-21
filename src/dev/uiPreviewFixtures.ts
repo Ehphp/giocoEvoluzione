@@ -27,6 +27,7 @@ export const PREVIEW_CREATURE: PlayerCreatureRecord = {
     level: 4,
     experience: 108,
     progression_state: {},
+    combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
     current_visual_version_id: 'preview-visual-3',
     created_at: '2026-01-04T10:00:00.000Z',
     updated_at: '2026-08-01T10:00:00.000Z',
@@ -109,8 +110,20 @@ export function buildPreviewBattleViewModel(selectedGeneId: string): GeneSelecti
     const selectedGene = PREVIEW_GENES.find((gene) => gene.id === selectedGeneId) ?? PREVIEW_GENES[0]!
 
     return {
-        player: { id: 'preview-me', name: 'Naturalista', score: 3, roundValueTotal: 18, status: 'choosing' },
-        opponent: { id: 'preview-opponent', name: 'Wild_Hunter', score: 2, roundValueTotal: 16, status: 'ready' },
+        player: {
+            id: 'preview-me', name: 'Naturalista', score: 3, roundValueTotal: 18, status: 'choosing',
+            combatMutations: [
+                { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'available' },
+                { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'armed' },
+            ],
+        },
+        opponent: {
+            id: 'preview-opponent', name: 'Wild_Hunter', score: 2, roundValueTotal: 16, status: 'ready',
+            combatMutations: [
+                { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'consumed' },
+                { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'available' },
+            ],
+        },
         round: { current: 5, total: 7 },
         roundEvent: {
             id: 'preview-event',

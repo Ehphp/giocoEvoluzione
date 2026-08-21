@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { resolveEdgeRound } from '../../supabase/functions/resolve-round/round-domain.ts'
-import { createInitialAdaptations, createInitialCombatMutationState, getRoundEventById } from './index.ts'
+import { BOT_COMBAT_MUTATION_LOADOUT, RULE_VERSION, createInitialAdaptations, createInitialCombatMutationState, getRoundEventById } from './index.ts'
 
 describe('resolve-round pure domain adapter', () => {
     it('delegates the persisted resolution to the shared domain', () => {
@@ -14,6 +14,11 @@ describe('resolve-round pure domain adapter', () => {
             player2Score: 0,
             player1Traits: createInitialAdaptations(),
             player2Traits: createInitialAdaptations(),
+            ruleVersion: RULE_VERSION,
+            player1CombatMutationState: createInitialCombatMutationState(),
+            player2CombatMutationState: createInitialCombatMutationState(),
+            player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+            player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
             player1Action: { playerId: 'p1', trait: 'FEROCITY', actionType: 'EVOLVE' },
             player2Action: { playerId: 'p2', trait: 'ARMOR', actionType: 'EVOLVE' },
             startedAt: null,
@@ -31,8 +36,11 @@ describe('resolve-round pure domain adapter', () => {
             player1Score: 0, player2Score: 0,
             player1Traits: createInitialAdaptations(),
             player2Traits: createInitialAdaptations(),
+            ruleVersion: RULE_VERSION,
             player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' },
             player2CombatMutationState: createInitialCombatMutationState(),
+            player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+            player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
             player1Action: { playerId: 'p1', trait: 'AGILITY', actionType: 'USE' },
             player2Action: { playerId: 'p2', trait: 'ARMOR', actionType: 'EVOLVE' },
             startedAt: null,

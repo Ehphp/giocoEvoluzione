@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildPersistedRoundResolution, createInitialAdaptations, createInitialCombatMutationState, getLegalBotActions, getRoundEventById, resolveRound, type CombatMutationState, type ResolveRoundInput } from './index.ts'
+import { BOT_COMBAT_MUTATION_LOADOUT, RULE_VERSION, buildPersistedRoundResolution, createInitialAdaptations, createInitialCombatMutationState, getLegalBotActions, getRoundEventById, resolveRound, type CombatMutationState, type ResolveRoundInput } from './index.ts'
 
 const event = getRoundEventById('HEAT_SPIKE')
 const action = (playerId: string, trait: 'FEROCITY' | 'ARMOR' | 'AGILITY' | 'SENSES' | 'CAMOUFLAGE', actionType: 'USE' | 'EVOLVE') => ({ playerId, trait, actionType })
@@ -13,8 +13,11 @@ function resolve(overrides: Partial<ResolveRoundInput> = {}) {
         player2Id: 'p2',
         player1Traits: createInitialAdaptations(),
         player2Traits: createInitialAdaptations(),
+        ruleVersion: RULE_VERSION,
         player1CombatMutationState: createInitialCombatMutationState(),
         player2CombatMutationState: createInitialCombatMutationState(),
+        player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+        player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
         player1Action: action('p1', 'AGILITY', 'USE'),
         player2Action: action('p2', 'ARMOR', 'EVOLVE'),
         ...overrides,
@@ -123,14 +126,19 @@ describe('Combat Mutations MVP', () => {
             roundEvent: event,
             player1Id: 'p1', player2Id: 'p2', player1Score: 0, player2Score: 0,
             player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(),
+            ruleVersion: RULE_VERSION,
             player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' as const },
             player2CombatMutationState: createInitialCombatMutationState(),
+            player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+            player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
             player1Action: action('p1', 'AGILITY', 'USE'), player2Action: action('p2', 'ARMOR', 'EVOLVE'),
             priorRoundValues: [], startedAt: null, now: () => '2026-08-20T00:00:00.000Z',
         }
         const persisted = buildPersistedRoundResolution(input)
 
         expect(buildPersistedRoundResolution(input)).toEqual(persisted)
+        expect(persisted.resolution_data.player1CombatMutationStateBefore).toMatchObject({ elasticLimbsUsed: false, adaptiveCoreStatus: 'ARMED' })
+        expect(persisted.resolution_data.player2CombatMutationStateBefore).toEqual(createInitialCombatMutationState())
         expect(persisted.resolution_data.player1CombatMutationStateAfter).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
         expect(persisted.resolution_data.player1MutationEffects).toEqual([
             { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },

@@ -1425,7 +1425,7 @@
       "adaptiveCoreBonuses": 420,
       "adaptiveCoreUnspentAtEnd": 242
     },
-    "elapsedMs": 940,
+    "elapsedMs": 627,
     "lookahead": {
       "statesVisited": 9068,
       "cacheHits": 0,
