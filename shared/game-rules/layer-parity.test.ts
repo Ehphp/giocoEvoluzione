@@ -19,7 +19,7 @@ import {
     type AdaptationId,
     type AdaptationLevel,
     type EnvironmentalCrisisDefinition,
-    type PlayerRoundAction,
+    type DirectPlayerRoundAction,
     type StoredRoundValue,
 } from './index.ts'
 
@@ -47,7 +47,7 @@ function eventWith(modifiers: Partial<Record<AdaptationId, 0 | 1 | 2>> = {}): En
     }
 }
 
-const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): PlayerRoundAction => ({ playerId, trait, actionType })
+const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): DirectPlayerRoundAction => ({ playerId, trait, actionType })
 
 function withState(trait: AdaptationId, level: AdaptationLevel, exhausted: boolean): AdaptationCollection {
     const adaptations = createInitialAdaptations()
@@ -61,8 +61,8 @@ type OracleScenario = {
     roundEvent: EnvironmentalCrisisDefinition
     player1Traits: AdaptationCollection
     player2Traits: AdaptationCollection
-    player1Action: PlayerRoundAction
-    player2Action: PlayerRoundAction
+    player1Action: DirectPlayerRoundAction
+    player2Action: DirectPlayerRoundAction
     player1Score: number
     player2Score: number
     priorRoundValues: StoredRoundValue[]
@@ -314,6 +314,7 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         finished_at: null,
         rematch_count: 0,
         rule_version: RULE_VERSION,
+        symbiosis_links: [],
         created_at: '2026-07-30T10:00:00.000Z',
         updated_at: '2026-07-30T10:00:00.000Z',
         state_revision: 0,

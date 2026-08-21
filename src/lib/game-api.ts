@@ -1,5 +1,5 @@
 import { normalizeTraitCollection, TRAITS } from '../game/config'
-import { isSupportedRuleVersion, parseCombatMutationLoadout, parseCombatMutationState } from '../../shared/game-rules/state.ts'
+import { isSupportedRuleVersion, parseCombatMutationLoadout, parseCombatMutationState, parseSymbiosisLinks } from '../../shared/game-rules/state.ts'
 import { getRoundEventForRound } from '../game/round-events'
 import type {
     CombatMutationLoadout,
@@ -10,6 +10,7 @@ import type {
     TraitCollection,
     TraitType,
     PlayerType,
+    SymbiosisLink,
     WorldDefinition,
 } from '../game/types'
 import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
@@ -36,6 +37,7 @@ export type GameRecord = {
     rematch_count: number
     /** Immutable shared-rules version selected when this match was created. */
     rule_version: string
+    symbiosis_links: SymbiosisLink[]
     created_at: string
     updated_at: string
     state_revision: number
@@ -61,15 +63,30 @@ export type PlayerRecord = {
     created_at: string
 }
 
-export type RoundActionRecord = {
+export type DirectRoundActionRecord = {
     id: string
     game_id: string
     round_number: number
     player_id: string
     trait: TraitType
     action_type: 'USE' | 'EVOLVE'
+    mutation_id: null
+    target_trait: null
     created_at: string
 }
+
+export type ActivateMutationRoundActionRecord = {
+    id: string
+    game_id: string
+    round_number: number
+    player_id: string
+    trait: TraitType
+    action_type: 'ACTIVATE_MUTATION'
+    mutation_id: 'SYMBIOSIS'
+    target_trait: TraitType
+    created_at: string
+}
+export type RoundActionRecord = DirectRoundActionRecord | ActivateMutationRoundActionRecord
 
 export type RoundResultRecord = {
     id: string
@@ -173,6 +190,7 @@ function mapGameRecord(data: Record<string, unknown>): GameRecord {
         finished_at: (data.finished_at as string | null) ?? null,
         rematch_count: Number(data.rematch_count ?? 0),
         rule_version: typeof data.rule_version === 'string' ? data.rule_version : '',
+        symbiosis_links: parseSymbiosisLinks(data.symbiosis_links, 'snapshot.game.symbiosis_links'),
         created_at: String(data.created_at),
         updated_at: String(data.updated_at),
         state_revision: Number(data.state_revision ?? 0),
@@ -226,14 +244,23 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
 }
 
 function mapRoundActionRecord(data: Record<string, unknown>): RoundActionRecord {
-    return {
+    const common = {
         id: String(data.id),
         game_id: String(data.game_id),
         round_number: Number(data.round_number),
         player_id: String(data.player_id),
         trait: data.trait as TraitType,
-        action_type: data.action_type as 'USE' | 'EVOLVE',
         created_at: String(data.created_at),
+    }
+    if (data.action_type === 'ACTIVATE_MUTATION' && data.mutation_id === 'SYMBIOSIS' && typeof data.target_trait === 'string') {
+        return { ...common, action_type: 'ACTIVATE_MUTATION', mutation_id: 'SYMBIOSIS', target_trait: data.target_trait as TraitType }
+    }
+    if (data.action_type !== 'USE' && data.action_type !== 'EVOLVE') throw new Error('Azione round non valida nello snapshot.')
+    return {
+        ...common,
+        action_type: data.action_type as 'USE' | 'EVOLVE',
+        mutation_id: null,
+        target_trait: null,
     }
 }
 
@@ -537,19 +564,16 @@ export async function restoreGameSession(session: {
     return snapshot
 }
 
-export async function submitRoundAction(input: {
-    gameId: string
-    roundNumber: number
-    trait: TraitType
-    actionType: 'USE' | 'EVOLVE'
-}): Promise<GameMutationResult> {
+export async function submitRoundAction(input: ({ gameId: string; roundNumber: number; trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { gameId: string; roundNumber: number; actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType })): Promise<GameMutationResult> {
     const supabase = requireSupabase()
 
     const { data, error } = await supabase.rpc('submit_game_round_action', {
         p_game_id: input.gameId,
         p_round_number: input.roundNumber,
-        p_trait: input.trait,
+        p_trait: input.actionType === 'ACTIVATE_MUTATION' ? input.sourceTrait : input.trait,
         p_action_type: input.actionType,
+        p_mutation_id: input.actionType === 'ACTIVATE_MUTATION' ? input.mutationId : null,
+        p_target_trait: input.actionType === 'ACTIVATE_MUTATION' ? input.targetTrait : null,
     })
 
     if (error) {

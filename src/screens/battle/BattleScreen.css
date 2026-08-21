@@ -147,6 +147,23 @@
     box-shadow: var(--ev-shadow-sm), inset 0 1px 0 var(--ev-stroke-light-soft);
 }
 
+.duel-mutation-wrap {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-1);
+    min-width: 0;
+}
+
+.duel-mutation__link {
+    max-width: calc(var(--ev-mutation-slot-size) * 2);
+    overflow: hidden;
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-2xs);
+    line-height: var(--ev-lh-compact);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .duel-card__mutations--player .duel-mutation--available {
     color: var(--ev-player-light);
 }
@@ -173,6 +190,12 @@
     color: var(--ev-on-dark-muted);
     opacity: var(--ev-mutation-consumed-opacity);
     filter: grayscale(var(--ev-mutation-consumed-grayscale));
+}
+
+.duel-mutation--linked {
+    color: var(--ev-gold-light);
+    border-color: var(--ev-gold-light);
+    box-shadow: var(--ev-shadow-glow-gold), var(--ev-lip);
 }
 
 .duel-card__portrait {
@@ -938,6 +961,33 @@
 .decision-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.symbiosis-picker {
+    display: grid;
+    gap: var(--ev-s-3);
+}
+
+.symbiosis-picker h2 {
+    font-size: var(--ev-fs-2xl);
+}
+
+.symbiosis-picker > p:not(.ev-section-label) {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+    line-height: var(--ev-lh-compact);
+}
+
+.symbiosis-picker__choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+}
+
+.symbiosis-picker__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     gap: var(--ev-s-2);
 }
 

@@ -46,7 +46,7 @@ select throws_ok($$ select public.set_my_creature_combat_mutation_loadout((selec
 do $$ begin perform public.create_pvp_game('combat-p1'); end $$;
 reset role;
 
-select is((select rule_version from public.games where player_1_id = 'combat-p1'), 'combat-mutations-loadout-mvp-v1', 'PvP create freezes the current rule version');
+select is((select rule_version from public.games where player_1_id = 'combat-p1'), 'combat-mutations-symbiosis-v1', 'PvP create freezes the current rule version');
 select is((select combat_mutation_loadout from public.players where id = 'combat-p1'), array['ADAPTIVE_CORE','ELASTIC_LIMBS']::text[], 'P1 loadout is snapshotted on the match player');
 
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000002', true);
@@ -55,7 +55,7 @@ do $$ begin perform public.join_pvp_game((select room_code from public.games whe
 reset role;
 
 select is((select combat_mutation_loadout from public.players where id = 'combat-p2'), array['ELASTIC_LIMBS','ADAPTIVE_CORE']::text[], 'P2 loadout is snapshotted at join');
-select is((select rule_version from public.games where player_1_id = 'combat-p1'), 'combat-mutations-loadout-mvp-v1', 'join does not choose a different rule version');
+select is((select rule_version from public.games where player_1_id = 'combat-p1'), 'combat-mutations-symbiosis-v1', 'join does not choose a different rule version');
 
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
@@ -69,7 +69,7 @@ do $$ begin perform public.create_vs_bot_game('ignored', 'combat-vs-bot-human', 
 reset role;
 select is((select combat_mutation_loadout from public.players where id = 'combat-vs-bot-human'), array['ELASTIC_LIMBS','ARMORED_MEMORY']::text[], 'VS Bot human snapshots the selected creature');
 select is((select combat_mutation_loadout from public.players where game_id = (select game_id from public.players where id = 'combat-vs-bot-human') and player_type = 'BOT'), array['ELASTIC_LIMBS','ADAPTIVE_CORE']::text[], 'VS Bot uses the explicit server bot preset');
-select is((select rule_version from public.games where id = (select game_id from public.players where id = 'combat-vs-bot-human')), 'combat-mutations-loadout-mvp-v1', 'VS Bot freezes the current rule version');
+select is((select rule_version from public.games where id = (select game_id from public.players where id = 'combat-vs-bot-human')), 'combat-mutations-symbiosis-v1', 'VS Bot freezes the current rule version');
 
 -- Simulate the persisted post-round state, then prove snapshot/reload returns it
 -- unchanged together with the frozen loadout and version.
@@ -80,7 +80,7 @@ select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001
 set local role authenticated;
 select is((select (public.get_game_snapshot((select game_id from public.players where id = 'combat-p1')) -> 'me' -> 'combat_mutation_state' ->> 'adaptiveCoreStatus')), 'CONSUMED', 'snapshot/reload preserves runtime state');
 select is((select public.get_game_snapshot((select game_id from public.players where id = 'combat-p1')) -> 'me' -> 'combat_mutation_loadout'), '["ADAPTIVE_CORE", "ELASTIC_LIMBS"]'::jsonb, 'snapshot/reload preserves ordered match loadout');
-select is((select public.get_game_snapshot((select game_id from public.players where id = 'combat-p1')) -> 'game' ->> 'rule_version'), 'combat-mutations-loadout-mvp-v1', 'snapshot/reload preserves frozen rule version');
+select is((select public.get_game_snapshot((select game_id from public.players where id = 'combat-p1')) -> 'game' ->> 'rule_version'), 'combat-mutations-symbiosis-v1', 'snapshot/reload preserves frozen rule version');
 reset role;
 
 select throws_ok($$ update public.players set combat_mutation_state = '{"adaptiveCoreStatus":"DORMANT","armoredMemoryUsed":false,"recoverySurgeUsed":false}'::jsonb where id = 'combat-p1' $$, 'players_combat_mutation_state_check', 'missing runtime key is rejected');

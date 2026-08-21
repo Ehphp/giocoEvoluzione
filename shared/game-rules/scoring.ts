@@ -1,5 +1,5 @@
 import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, NATURAL_ADVANTAGE_BONUS } from './catalog.ts'
-import type { ActionType, AdaptationCollection, AdaptationId, EnvironmentalCrisisDefinition, RoundValueBreakdown } from './types.ts'
+import type { ActionType, AdaptationCollection, AdaptationId, EnvironmentalCrisisDefinition, PlayerRoundAction, RoundValueBreakdown } from './types.ts'
 
 export function getValidatedAdaptationState(adaptations: AdaptationCollection, adaptation: AdaptationId) {
     const state = adaptations[adaptation]
@@ -7,7 +7,7 @@ export function getValidatedAdaptationState(adaptations: AdaptationCollection, a
     return state
 }
 
-export function getNaturalAdvantageBonus(ownAction: { trait: AdaptationId; actionType: ActionType }, opponentAction: { trait: AdaptationId; actionType: ActionType }): number {
+export function getNaturalAdvantageBonus(ownAction: PlayerRoundAction, opponentAction: PlayerRoundAction): number {
     return ownAction.actionType === 'USE' && opponentAction.actionType === 'USE' && NATURAL_ADVANTAGE[ownAction.trait] === opponentAction.trait ? NATURAL_ADVANTAGE_BONUS : 0
 }
 
@@ -24,6 +24,10 @@ export function getValidatedAdaptationUseBreakdown(roundEvent: EnvironmentalCris
 
 export function getValidatedActionBreakdown(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId, actionType: ActionType, matchupBonus = 0, mutationBonus = 0): RoundValueBreakdown {
     if (actionType === 'USE') return getValidatedAdaptationUseBreakdown(roundEvent, adaptations, adaptation, matchupBonus, mutationBonus)
+    if (actionType === 'ACTIVATE_MUTATION') {
+        const state = getValidatedAdaptationState(adaptations, adaptation)
+        return { actionType, baseContribution: 0, levelContribution: 0, eventModifier: 0, matchupBonus: 0, mutationBonus: 0, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: 0, appliedEventEffects: [] }
+    }
     const state = getValidatedAdaptationState(adaptations, adaptation)
     if (!Number.isFinite(mutationBonus) || mutationBonus < 0) throw new Error('Invalid combat mutation bonus.')
     return { actionType: 'EVOLVE', baseContribution: EVOLVE_ROUND_VALUE, levelContribution: 0, eventModifier: 0, matchupBonus: 0, mutationBonus, originalLevel: state.level, effectiveLevel: Math.min(state.level, MAX_ADAPTATION_LEVEL), total: EVOLVE_ROUND_VALUE + mutationBonus, appliedEventEffects: [] }

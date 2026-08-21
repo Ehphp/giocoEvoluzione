@@ -2,7 +2,7 @@ import { TRAIT_LABELS } from '../../game/config'
 import { getRoundEventById } from '../../game/round-events'
 import { getRoundExplanation } from '../../game/round-result-explainer'
 import { getRoundEventLabel } from '../../game/ui-context'
-import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../game/types'
+import type { CombatMutationEffect, PlayerRoundAction, RoundValueBreakdown } from '../../game/types'
 import type { GameSnapshot, RoundResultRecord } from '../../lib/game-api'
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
@@ -22,8 +22,8 @@ type PersistedResolutionData = {
     awardedPoints?: number
     player1PointsAwarded?: number
     player2PointsAwarded?: number
-    player1Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE' }
-    player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE' }
+    player1Action?: PlayerRoundAction
+    player2Action?: PlayerRoundAction
     player1Breakdown?: RoundValueBreakdown
     player2Breakdown?: RoundValueBreakdown
     player1MutationEffects?: CombatMutationEffect[]
@@ -97,7 +97,10 @@ function getPoints(
 function getAction(resolution: PersistedResolutionData, slot: 1 | 2): ResultAction | null {
     const action = slot === 1 ? resolution.player1Action : resolution.player2Action
 
-    return action ? { trait: action.trait, actionType: action.actionType } : null
+    if (!action) return null
+    return action.actionType === 'ACTIVATE_MUTATION'
+        ? { actionType: 'ACTIVATE_MUTATION', sourceTrait: action.sourceTrait, targetTrait: action.targetTrait }
+        : { trait: action.trait, actionType: action.actionType }
 }
 
 function getBreakdown(resolution: PersistedResolutionData, slot: 1 | 2): RoundValueBreakdown | null {
@@ -155,6 +158,7 @@ export function getResultActionLabel(action: ResultAction | null): string {
         return 'Dati azione non disponibili'
     }
 
+    if (action.actionType === 'ACTIVATE_MUTATION') return `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]} (SIMBIOSI)`
     return `${TRAIT_LABELS[action.trait]} (${action.actionType === 'USE' ? 'USA' : 'EVOLVI'})`
 }
 

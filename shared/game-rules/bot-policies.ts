@@ -1,12 +1,13 @@
-import { ADAPTATION_IDS, type ActionType, type AdaptationCollection, type AdaptationId, type CombatMutationLoadout, type CombatMutationState, type EnvironmentalCrisisDefinition } from './types.ts'
-import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, TOTAL_ROUNDS } from './catalog.ts'
+import { ADAPTATION_IDS, type AdaptationCollection, type AdaptationId, type CombatMutationLoadout, type CombatMutationState, type DirectRoundAction, type EnvironmentalCrisisDefinition, type RoundAction, type SymbiosisLink } from './types.ts'
+import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, RULE_VERSION, TOTAL_ROUNDS } from './catalog.ts'
 import { getAdaptationRoundValue, getCombatMutationStateAfterEvolve, getEvolutionRoundValue, isAdaptationEvolvable, isAdaptationUsable } from './engine.ts'
 
-export type BotRoundAction = { trait: AdaptationId; actionType: ActionType }
+/** Production bot intentionally only selects normal direct actions. */
+export type BotRoundAction = DirectRoundAction
 export type PublicRoundHistory = { roundNumber: number; eventId: string; leftAction: BotRoundAction; rightAction: BotRoundAction; leftValue: number; rightValue: number }
 export type BotDecisionContext = {
     roundNumber: number; ownScore: number; opponentScore: number; ruleVersion: string
-    adaptations: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; publicOpponentAdaptations: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout
+    adaptations: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; publicOpponentAdaptations: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout; symbiosisLinks?: readonly SymbiosisLink[]
     roundEvent: EnvironmentalCrisisDefinition; nextRoundEvent?: EnvironmentalCrisisDefinition | null
     publicHistory: readonly PublicRoundHistory[]; legalActions: readonly BotRoundAction[]
     random: () => number
@@ -33,6 +34,15 @@ export function getLegalBotActions(adaptations: AdaptationCollection): BotRoundA
         ...(isAdaptationEvolvable(adaptations, trait) ? [{ trait, actionType: 'EVOLVE' as const }] : []),
         ...(isAdaptationUsable(adaptations, trait) ? [{ trait, actionType: 'USE' as const }] : []),
     ])
+}
+/**
+ * The production bot uses getLegalBotActions. Lookahead uses this wider model
+ * for a human opponent, including every legal SYMBIOSIS payload when available.
+ */
+export function getLegalOpponentActions(input: { adaptations: AdaptationCollection; combatMutationLoadout: CombatMutationLoadout; playerId: string; opponentId: string; ruleVersion: string; symbiosisLinks: readonly SymbiosisLink[] }): RoundAction[] {
+    const direct = getLegalBotActions(input.adaptations)
+    if (input.ruleVersion !== RULE_VERSION || !input.combatMutationLoadout.includes('SYMBIOSIS') || input.symbiosisLinks.some((link) => link.ownerPlayerId === input.playerId)) return direct
+    return [...direct, ...ADAPTATION_IDS.flatMap((sourceTrait) => ADAPTATION_IDS.map((targetTrait) => ({ actionType: 'ACTIVATE_MUTATION' as const, mutationId: 'SYMBIOSIS' as const, sourceTrait, targetTrait })))]
 }
 export function createSeededRandom(seed: number): () => number {
     let state = (seed >>> 0) || 0x9e3779b9

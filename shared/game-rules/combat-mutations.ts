@@ -37,6 +37,14 @@ export const COMBAT_MUTATION_CATALOG = {
         displayOrder: 4,
         iconKey: 'recovery-surge',
     },
+    SYMBIOSIS: {
+        id: 'SYMBIOSIS',
+        label: 'Simbiosi',
+        description: 'Una volta per partita collega un tuo gene a uno avversario. I loro EVOLVI diretti condividono il livello.',
+        shortDescription: 'Collega due geni fino alla fine della partita.',
+        displayOrder: 5,
+        iconKey: 'symbiosis',
+    },
 } as const
 
 export type CombatMutationId = keyof typeof COMBAT_MUTATION_CATALOG
@@ -50,5 +58,15 @@ export type CombatMutationDefinition = {
 }
 
 export const COMBAT_MUTATION_IDS = Object.keys(COMBAT_MUTATION_CATALOG) as CombatMutationId[]
+/** Fixed matrix used by historic passive-mutation acceptance and metagame audits. */
+export const LEGACY_PASSIVE_COMBAT_MUTATION_IDS = ['ELASTIC_LIMBS', 'ADAPTIVE_CORE', 'ARMORED_MEMORY', 'RECOVERY_SURGE'] as const satisfies readonly CombatMutationId[]
+export const LEGACY_PASSIVE_COMBAT_MUTATION_LOADOUTS = [
+    ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
+    ['ELASTIC_LIMBS', 'ARMORED_MEMORY'],
+    ['ELASTIC_LIMBS', 'RECOVERY_SURGE'],
+    ['ADAPTIVE_CORE', 'ARMORED_MEMORY'],
+    ['ADAPTIVE_CORE', 'RECOVERY_SURGE'],
+    ['ARMORED_MEMORY', 'RECOVERY_SURGE'],
+] as const satisfies readonly (readonly [CombatMutationId, CombatMutationId])[]
 
 export const BOT_COMBAT_MUTATION_LOADOUT = ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'] as const

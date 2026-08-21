@@ -4,7 +4,7 @@ import type { CreatureVisual } from './gameSelectionAssets'
 export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 
 /** Presentation-only state of one equipped mutation in the battle header. */
-export type CombatMutationVisualStateV2 = 'available' | 'armed' | 'consumed'
+export type CombatMutationVisualStateV2 = 'available' | 'armed' | 'consumed' | 'linked'
 
 export type CombatMutationSlotV2 = {
     id: string
@@ -12,6 +12,7 @@ export type CombatMutationSlotV2 = {
     shortDescription: string
     iconKey: string
     status: CombatMutationVisualStateV2
+    linkLabel?: string
 }
 
 export type ModifierToneV2 = 'positive' | 'negative' | 'neutral'
@@ -19,6 +20,7 @@ export type ModifierToneV2 = 'positive' | 'negative' | 'neutral'
 export type GeneAffinityV2 = 'unfavorable' | 'suitable' | 'ideal'
 
 export type GeneActionTypeV2 = 'USE' | 'EVOLVE'
+export type SubmittedActionTypeV2 = GeneActionTypeV2 | 'ACTIVATE_MUTATION'
 
 export type GeneSelectionStatusV2 = 'loading' | 'choosing' | 'submitting' | 'waiting' | 'resolving' | 'error' | 'invalid'
 
@@ -82,7 +84,7 @@ export interface GeneCardV2 {
 
 export interface WaitingStateV2 {
     submittedGeneName: string
-    submittedAction: GeneActionTypeV2
+    submittedAction: SubmittedActionTypeV2
     submittedCountLabel: string
     opponentStatusLabel: string
     isResolving: boolean
@@ -102,6 +104,8 @@ export interface GeneSelectionViewModelV2 {
     actionsSubmitted: number
     canUse: boolean
     canEvolve: boolean
+    canActivateSymbiosis?: boolean
+    symbiosisTargets?: Array<{ id: string; name: string }>
     canSelectGenes: boolean
     errorMessage?: string
     invalidReason?: string

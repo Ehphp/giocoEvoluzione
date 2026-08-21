@@ -7,6 +7,7 @@ import {
     getBattleBackgroundForEvent,
 } from '../../components/game-v2/gameSelectionAssets'
 import type { GeneSelectionViewModelV2 } from '../../components/game-v2/types'
+import type { TraitType } from '../../game/types'
 import { AppShell, Button, Notice, Overlay, Panel, Pill } from '../../ui/components'
 import { CloseIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
@@ -22,6 +23,7 @@ type BattleScreenProps = {
     onSelectGene: (geneId: string) => void
     onUseGene: () => Promise<void>
     onEvolveGene: () => Promise<void>
+    onActivateSymbiosis?: (sourceTrait: TraitType, targetTrait: TraitType) => Promise<boolean>
     onLeaveSession: () => void
     isInteractionLocked?: boolean
 }
@@ -43,6 +45,7 @@ export function BattleScreen({
     onSelectGene,
     onUseGene,
     onEvolveGene,
+    onActivateSymbiosis,
     onLeaveSession,
     isInteractionLocked = false,
 }: BattleScreenProps) {
@@ -54,6 +57,9 @@ export function BattleScreen({
     }, [battleBackground])
 
     const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
+    const [isSymbiosisPickerOpen, setIsSymbiosisPickerOpen] = useState(false)
+    const [symbiosisSource, setSymbiosisSource] = useState<TraitType | null>(null)
+    const [symbiosisTarget, setSymbiosisTarget] = useState<TraitType | null>(null)
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
@@ -67,6 +73,38 @@ export function BattleScreen({
                 <div className="battle-leave-confirm__actions">
                     <Button tone="danger" block onClick={onLeaveSession}>Esci dalla partita</Button>
                     <Button tone="cream" block onClick={() => setIsLeaveConfirmOpen(false)}>Continua a giocare</Button>
+                </div>
+            </Panel>
+        </Overlay>
+    ) : null
+
+    const openSymbiosisPicker = () => {
+        setSymbiosisSource(null)
+        setSymbiosisTarget(null)
+        setIsSymbiosisPickerOpen(true)
+    }
+    const submitSymbiosis = async () => {
+        if (!symbiosisSource || !symbiosisTarget) return
+        const submitted = await onActivateSymbiosis?.(symbiosisSource, symbiosisTarget)
+        if (submitted) setIsSymbiosisPickerOpen(false)
+    }
+    const symbiosisPicker = isSymbiosisPickerOpen ? (
+        <Overlay label="Crea Simbiosi" align="center" scrim="scene" width="narrow" onClose={() => setIsSymbiosisPickerOpen(false)}>
+            <Panel className="symbiosis-picker">
+                <p className="ev-section-label ev-section-label--ink"><span>Simbiosi</span></p>
+                <h2>{symbiosisSource ? 'Scegli il gene avversario' : 'Scegli il tuo gene'}</h2>
+                <p>{symbiosisSource ? 'Il legame diventa attivo dal prossimo round.' : 'Puoi collegare qualunque gene, anche al massimo livello o esaurito.'}</p>
+                <div className="symbiosis-picker__choices" role="list" aria-label={symbiosisSource ? 'Geni avversari' : 'I tuoi geni'}>
+                    {(symbiosisSource ? (viewModel.symbiosisTargets ?? []) : viewModel.genes).map((gene) => {
+                        const id = gene.id as TraitType
+                        const name = gene.name
+                        const selected = symbiosisSource ? symbiosisTarget === id : symbiosisSource === id
+                        return <Button key={id} tone={selected ? 'gold' : 'cream'} size="sm" aria-pressed={selected} onClick={() => symbiosisSource ? setSymbiosisTarget(id) : setSymbiosisSource(id)}>{name}</Button>
+                    })}
+                </div>
+                <div className="symbiosis-picker__actions">
+                    <Button tone="ghost" size="sm" onClick={() => symbiosisSource ? (setSymbiosisSource(null), setSymbiosisTarget(null)) : setIsSymbiosisPickerOpen(false)}>{symbiosisSource ? 'Cambia gene' : 'Annulla'}</Button>
+                    <Button tone="use" size="sm" disabled={!symbiosisSource || !symbiosisTarget || viewModel.status === 'submitting'} onClick={() => { void submitSymbiosis() }}>Crea Simbiosi · 0 PT</Button>
                 </div>
             </Panel>
         </Overlay>
@@ -100,6 +138,7 @@ export function BattleScreen({
                     opponent={viewModel.opponent}
                     round={viewModel.round}
                     onRequestLeave={() => setIsLeaveConfirmOpen(true)}
+                    onActivateSymbiosis={viewModel.canActivateSymbiosis && isChoosing ? openSymbiosisPicker : undefined}
                 />
 
                 <div className="battle-screen__meta">
@@ -142,6 +181,7 @@ export function BattleScreen({
                 </div>
             </div>
             {leaveConfirm}
+            {symbiosisPicker}
         </AppShell>
     )
 }

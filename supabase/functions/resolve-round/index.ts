@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
-import { CombatMutationDataError, UnsupportedRuleVersionError, assertSupportedRuleVersion, getRoundEventById, normalizeAdaptationCollection, parseCombatMutationLoadout, parseCombatMutationState } from '../../../shared/game-rules/state.ts'
-import type { AdaptationCollection, AdaptationId, CombatMutationLoadout, CombatMutationState } from '../../../shared/game-rules/types.ts'
+import { ADAPTATION_IDS, CombatMutationDataError, UnsupportedRuleVersionError, assertSupportedRuleVersion, getRoundEventById, normalizeAdaptationCollection, parseCombatMutationLoadout, parseCombatMutationState, parseSymbiosisLinks } from '../../../shared/game-rules/state.ts'
+import type { AdaptationCollection, AdaptationId, CombatMutationLoadout, CombatMutationState, PlayerRoundAction } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
 import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion, recordEvolutionTargetWinFromMatchCompletion } from './visual-progression-adapter.ts'
@@ -53,14 +53,24 @@ function parseParticipantCombatMutations(player: Record<string, unknown>, partic
     }
 }
 
+function isTraitName(value: unknown): value is TraitName { return typeof value === 'string' && ADAPTATION_IDS.includes(value as TraitName) }
+/** Database stores sourceTrait in the legacy trait column; the domain never does. */
+function parseStoredRoundAction(row: Record<string, unknown>, playerId: string): PlayerRoundAction {
+    if (!isTraitName(row.trait)) throw new Error('INVALID_STORED_ACTION_TRAIT')
+    if (row.action_type === 'USE' || row.action_type === 'EVOLVE') return { playerId, trait: row.trait, actionType: row.action_type }
+    if (row.action_type === 'ACTIVATE_MUTATION' && row.mutation_id === 'SYMBIOSIS' && isTraitName(row.target_trait)) return { playerId, actionType: 'ACTIVATE_MUTATION', mutationId: 'SYMBIOSIS', sourceTrait: row.trait, targetTrait: row.target_trait }
+    throw new Error('INVALID_STORED_ACTION_PAYLOAD')
+}
+
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: ReturnType<typeof createClient>,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; ruleVersion: string; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
+    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; ruleVersion: string; symbiosisLinks: ReturnType<typeof parseSymbiosisLinks>; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
         combatMutationState: input.combatMutationState,
         combatMutationLoadout: input.combatMutationLoadout,
+        symbiosisLinks: input.symbiosisLinks,
         ruleVersion: input.ruleVersion,
         roundEvent: input.roundEvent,
         roundNumber: input.roundNumber,
@@ -177,10 +187,16 @@ Deno.serve(async (request) => {
 
         const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
         const ruleVersion = String((gameData as Record<string, unknown>).rule_version ?? '')
+        let gameSymbiosisLinks: ReturnType<typeof parseSymbiosisLinks>
         try {
             assertSupportedRuleVersion(ruleVersion)
         } catch (error) {
             return combatMutationIntegrityError(error, { gameId, participant: 'player1', ruleVersion })
+        }
+        try {
+            gameSymbiosisLinks = parseSymbiosisLinks((gameData as Record<string, unknown>).symbiosis_links, 'game.symbiosis_links')
+        } catch {
+            return json({ error: 'Dati Simbiosi della partita non validi.', code: 'INVALID_SYMBIOSIS_LINKS', gameId }, 409)
         }
         if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
             return json({ status: 'stale_round' })
@@ -236,6 +252,7 @@ Deno.serve(async (request) => {
                     traits: normalizeAdaptationCollection(botPlayer.traits as AdaptationCollection),
                     combatMutationState: botMutations.combatMutationState,
                     combatMutationLoadout: botMutations.combatMutationLoadout,
+                    symbiosisLinks: gameSymbiosisLinks,
                     roundEvent,
                     nextRoundEvent: roundNumber < TOTAL_ROUNDS ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? '')) : null,
                     publicOpponentTraits: normalizeAdaptationCollection(humanPlayer.traits as AdaptationCollection),
@@ -271,9 +288,11 @@ Deno.serve(async (request) => {
 
         let player1Mutations: ReturnType<typeof parseParticipantCombatMutations>
         let player2Mutations: ReturnType<typeof parseParticipantCombatMutations>
+        let symbiosisLinks: ReturnType<typeof parseSymbiosisLinks>
         try {
             player1Mutations = parseParticipantCombatMutations(player1 as Record<string, unknown>, 'player1')
             player2Mutations = parseParticipantCombatMutations(player2 as Record<string, unknown>, 'player2')
+            symbiosisLinks = gameSymbiosisLinks
         } catch (error) {
             return combatMutationIntegrityError(error, { gameId, participant: error instanceof CombatMutationDataError && error.field.startsWith('player2.') ? 'player2' : 'player1', ruleVersion })
         }
@@ -292,16 +311,9 @@ Deno.serve(async (request) => {
             player2CombatMutationLoadout: player2Mutations.combatMutationLoadout,
             player1CombatMutationState: player1Mutations.combatMutationState,
             player2CombatMutationState: player2Mutations.combatMutationState,
-            player1Action: {
-                playerId: String(player1.id),
-                trait: player1ActionRow.trait as TraitName,
-                actionType: player1ActionRow.action_type as 'USE' | 'EVOLVE',
-            },
-            player2Action: {
-                playerId: String(player2.id),
-                trait: player2ActionRow.trait as TraitName,
-                actionType: player2ActionRow.action_type as 'USE' | 'EVOLVE',
-            },
+            symbiosisLinks,
+            player1Action: parseStoredRoundAction(player1ActionRow as Record<string, unknown>, String(player1.id)),
+            player2Action: parseStoredRoundAction(player2ActionRow as Record<string, unknown>, String(player2.id)),
             startedAt: (gameData.started_at as string | null) ?? null,
             priorRoundValues: ((await supabaseAdmin.from('round_results').select('player_1_value, player_2_value').eq('game_id', gameId).lt('round_number', roundNumber)).data ?? []).map((result) => ({ player1Value: Number(result.player_1_value), player2Value: Number(result.player_2_value) })),
         })
@@ -316,6 +328,7 @@ Deno.serve(async (request) => {
             p_player_2_traits: normalizeAdaptationCollection(resolutionData.player2TraitsAfter as AdaptationCollection),
             p_player_1_combat_mutation_state: resolutionData.player1CombatMutationStateAfter,
             p_player_2_combat_mutation_state: resolutionData.player2CombatMutationStateAfter,
+            p_symbiosis_links: resolutionData.symbiosisLinksAfter,
             p_player_1_score: Number(resolutionData.player1ScoreAfter ?? 0),
             p_player_2_score: Number(resolutionData.player2ScoreAfter ?? 0),
             p_status: String(resolutionData.statusAfter ?? 'REVEALING'),

@@ -45,9 +45,9 @@ function requireCombatMutationLoadout(loadout: CombatMutationLoadout | undefined
     return loadout
 }
 
-function StatTile({ label, value, tone = 'neutral' }: { label: string; value: string | number; tone?: 'neutral' | 'good' | 'info' | 'bad' }) {
+function StatTile({ label, value, tone = 'neutral', emphasized = false }: { label: string; value: string | number; tone?: 'neutral' | 'good' | 'info' | 'bad'; emphasized?: boolean }) {
     return (
-        <article className={`profile-stat profile-stat--${tone}`}>
+        <article className={`profile-stat profile-stat--${tone} ${emphasized ? 'profile-stat--emphasized' : ''}`}>
             <strong>{value}</strong>
             <span>{label}</span>
         </article>
@@ -145,7 +145,7 @@ export function ProfileScreen({
                     </IconButton>
                 </header>
 
-                <Panel className="profile-hero">
+                <Panel className="profile-hero" compact>
                     <figure className="profile-hero__stage">
                         <span className="profile-hero__halo" aria-hidden="true" />
                         <img
@@ -171,40 +171,45 @@ export function ProfileScreen({
                     </div>
                 </Panel>
 
-                <SectionLabel>Statistiche</SectionLabel>
-                <div className="profile-stats">
+                <Panel className="profile-stats" flat compact aria-label="Statistiche della creatura">
                     <StatTile label="Partite" value={stats.played} />
                     <StatTile label="Vittorie" value={stats.wins} tone="good" />
                     <StatTile label="Pareggi" value={stats.draws} tone="info" />
                     <StatTile label="Sconfitte" value={stats.losses} tone="bad" />
-                    <StatTile label="Win rate" value={`${winRate}%`} />
-                </div>
+                    <StatTile label="Win rate" value={`${winRate}%`} emphasized />
+                </Panel>
 
-                <SectionLabel>Mutazioni di combattimento</SectionLabel>
-                <Panel className="ev-stack">
-                    <span className="ev-eyebrow">Mutazioni attive</span>
-                    {[0, 1].map((slot) => {
-                        const mutation = combatMutationLoadout[slot]!
-                        return (
-                            <Button key={slot} tone="cream" block disabled={!onSetCombatMutationLoadout || isUpdatingMutation} onClick={() => { setMutationError(null); setOpenMutationSlot(slot as 0 | 1) }}>
-                                Slot {slot + 1}: {COMBAT_MUTATION_CATALOG[mutation].label}
-                            </Button>
-                        )
-                    })}
-                    <small>Le modifiche vengono salvate subito e valgono per le prossime partite.</small>
+                <Panel className="profile-mutations" compact>
+                    <span className="ev-eyebrow">Mutazioni di combattimento</span>
+                    <div className="profile-mutations__slots">
+                        {[0, 1].map((slot) => {
+                            const mutation = combatMutationLoadout[slot]!
+                            return (
+                                <Button key={slot} className="profile-mutation__slot" tone="cream" block size="sm" disabled={!onSetCombatMutationLoadout || isUpdatingMutation} onClick={() => { setMutationError(null); setOpenMutationSlot(slot as 0 | 1) }}>
+                                    <DnaIcon className="profile-mutation__icon" aria-hidden="true" />
+                                    <span className="profile-mutation__copy">
+                                        <span>Slot {slot + 1}:</span>
+                                        <strong>{COMBAT_MUTATION_CATALOG[mutation].label}</strong>
+                                    </span>
+                                    <ChevronIcon aria-hidden="true" />
+                                </Button>
+                            )
+                        })}
+                    </div>
+                    <small className="profile-mutations__hint">Le modifiche vengono salvate subito e valgono per le prossime partite.</small>
                     {mutationError ? <Notice tone="error">{mutationError}</Notice> : null}
                 </Panel>
 
                 {onOpenEvolution || onOpenBackgroundCleanup ? (
-                    <Panel className="ev-stack">
+                    <div className="profile-actions">
                         {onOpenEvolution ? (
                             <Button tone="evolve" block onClick={onOpenEvolution}>
                                 <DnaIcon aria-hidden="true" />
                                 Evolvi creatura
                             </Button>
                         ) : null}
-                        {onOpenBackgroundCleanup ? <Button tone="cream" block size="sm" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</Button> : null}
-                    </Panel>
+                        {onOpenBackgroundCleanup ? <Button className="profile-actions__cleanup" tone="cream" size="sm" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</Button> : null}
+                    </div>
                 ) : null}
 
                 {openMutationSlot !== null ? (
@@ -219,7 +224,7 @@ export function ProfileScreen({
                     </Overlay>
                 ) : null}
 
-                <SectionLabel>Ultime partite</SectionLabel>
+                <SectionLabel className="profile-history-label">Ultime partite</SectionLabel>
                 {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
                 {isLoadingHistory ? (
                     <Panel className="profile-empty">Caricamento cronologia...</Panel>

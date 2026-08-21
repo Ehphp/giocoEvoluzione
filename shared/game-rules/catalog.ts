@@ -1,9 +1,13 @@
-import { BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_CATALOG } from './combat-mutations.ts'
+import { BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_CATALOG, LEGACY_PASSIVE_COMBAT_MUTATION_IDS, LEGACY_PASSIVE_COMBAT_MUTATION_LOADOUTS } from './combat-mutations.ts'
 import type { AdaptationDefinition, AdaptationId, EnvironmentalCrisisDefinition } from './types.ts'
 
-export { BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_CATALOG }
+export { BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_CATALOG, LEGACY_PASSIVE_COMBAT_MUTATION_IDS, LEGACY_PASSIVE_COMBAT_MUTATION_LOADOUTS }
 
-export const RULE_VERSION = 'combat-mutations-loadout-mvp-v1'
+/** Rules frozen on existing matches before SYMBIOSIS was introduced. */
+export const LEGACY_RULE_VERSION = 'combat-mutations-loadout-mvp-v1'
+/** Rules selected by every newly-created match. */
+export const RULE_VERSION = 'combat-mutations-symbiosis-v1'
+export const SUPPORTED_RULE_VERSIONS = [LEGACY_RULE_VERSION, RULE_VERSION] as const
 export const TOTAL_ROUNDS = 7
 export const WINS_TO_WIN = 4
 export const BASE_USE_VALUE = 2

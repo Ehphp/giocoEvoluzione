@@ -1,5 +1,5 @@
 import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
-import { COMBAT_MUTATION_CATALOG, NATURAL_ADVANTAGE } from '../../../../shared/game-rules/catalog.ts'
+import { COMBAT_MUTATION_CATALOG, NATURAL_ADVANTAGE, RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
 import type { CombatMutationId, CombatMutationState } from '../../../../shared/game-rules/types.ts'
 import { getCombatMutationEvolvePreview, getCombatMutationUsePreview, isTraitEvolvable, isTraitUsable } from '../../../game/engine'
 import { getRoundEventEffectsForTrait } from '../../../game/round-events'
@@ -36,7 +36,7 @@ type BuildGeneSelectionV2ViewModelInput = {
     isSubmitting: boolean
     submitErrorMessage: string | null
     hasLocalSubmittedAction: boolean
-    localSubmittedAction: { trait: TraitType; actionType: GeneActionTypeV2 } | null
+    localSubmittedAction: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType } | null
 }
 
 function mapAffinity(score: number): GeneAffinityV2 {
@@ -97,7 +97,7 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
-function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutationState): CombatMutationSlotV2['status'] {
+function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutationState, hasSymbiosisLink: boolean): CombatMutationSlotV2['status'] {
     switch (id) {
         case 'ELASTIC_LIMBS':
             return state.elasticLimbsUsed ? 'consumed' : 'available'
@@ -111,19 +111,23 @@ function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutatio
             return state.armoredMemoryUsed ? 'consumed' : 'available'
         case 'RECOVERY_SURGE':
             return state.recoverySurgeUsed ? 'consumed' : 'available'
+        case 'SYMBIOSIS':
+            return hasSymbiosisLink ? 'linked' : 'available'
     }
 }
 
-function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: CombatMutationState): CombatMutationSlotV2[] {
+function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: CombatMutationState, playerId: string, links: GameSnapshot['game']['symbiosis_links']): CombatMutationSlotV2[] {
     return loadout.map((id) => {
         const mutation = COMBAT_MUTATION_CATALOG[id]
+        const link = links.find((candidate) => candidate.ownerPlayerId === playerId)
 
         return {
             id,
             label: mutation.label,
             shortDescription: mutation.shortDescription,
             iconKey: mutation.iconKey,
-            status: getCombatMutationVisualState(id, state),
+            status: getCombatMutationVisualState(id, state, Boolean(link)),
+            linkLabel: id === 'SYMBIOSIS' && link ? `${TRAIT_LABELS[link.sourceTrait]} ↔ ${TRAIT_LABELS[link.targetTrait]}` : undefined,
         }
     })
 }
@@ -290,6 +294,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     const isVsBot = snapshot.game.game_mode === 'VS_BOT'
     const playability = isSnapshotPlayable(snapshot)
     const genes = buildGenes(snapshot)
+    const symbiosisLinks = snapshot.game.symbiosis_links ?? []
     const selectedGene = resolveSelectedGene(genes, input.selectedGeneId)
     const selectedGeneId = selectedGene?.id ?? null
     const myHasSubmitted = Boolean(snapshot.myCurrentAction) || input.hasLocalSubmittedAction
@@ -337,6 +342,8 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             actionsSubmitted: snapshot.actionsSubmitted,
             canUse: false,
             canEvolve: false,
+            canActivateSymbiosis: false,
+            symbiosisTargets: [],
             canSelectGenes: false,
             invalidReason: playability.reason ?? 'Sessione non valida.',
         }
@@ -361,12 +368,23 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
         && isTraitEvolvable(snapshot.me.traits, selectedGene.traitType),
     ) && (status === 'choosing' || status === 'error')
     const canUse = Boolean(selectedGene?.usable) && (status === 'choosing' || status === 'error')
+    const canActivateSymbiosis = Boolean(
+        snapshot.me?.combat_mutation_loadout.includes('SYMBIOSIS')
+        && !symbiosisLinks.some((link) => link.ownerPlayerId === snapshot.me?.id)
+        && snapshot.game.rule_version === RULE_VERSION
+        && opponent,
+    ) && (status === 'choosing' || status === 'error')
 
     const submittedAction = snapshot.myCurrentAction
-        ? { trait: snapshot.myCurrentAction.trait, actionType: snapshot.myCurrentAction.action_type }
+        ? snapshot.myCurrentAction.action_type === 'ACTIVATE_MUTATION'
+            ? { actionType: 'ACTIVATE_MUTATION' as const, sourceTrait: snapshot.myCurrentAction.trait, targetTrait: snapshot.myCurrentAction.target_trait }
+            : { trait: snapshot.myCurrentAction.trait, actionType: snapshot.myCurrentAction.action_type }
         : input.localSubmittedAction
 
-    const submittedGene = submittedAction ? genes.find((gene) => gene.traitType === submittedAction.trait) : selectedGene
+    const submittedGene = submittedAction && submittedAction.actionType !== 'ACTIVATE_MUTATION' ? genes.find((gene) => gene.traitType === submittedAction.trait) : selectedGene
+    const submittedGeneName = submittedAction?.actionType === 'ACTIVATE_MUTATION'
+        ? `${TRAIT_LABELS[submittedAction.sourceTrait]} ↔ ${TRAIT_LABELS[submittedAction.targetTrait]}`
+        : submittedGene?.name
 
     return {
         player: {
@@ -376,7 +394,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
             creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
-            combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state),
+            combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state, me.id, symbiosisLinks),
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
         opponent: {
@@ -387,7 +405,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
             creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
             combatMutations: opponent
-                ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state)
+                ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state, opponent.id, symbiosisLinks)
                 : [],
             status: resolvePlayerStatus(opponentHasSubmitted, opponent?.connected ?? false),
         },
@@ -401,17 +419,19 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             : null,
         genes,
         selectedGeneId,
-        selectedAction: submittedAction?.actionType ?? input.selectedAction,
+        selectedAction: submittedAction?.actionType === 'ACTIVATE_MUTATION' ? null : submittedAction?.actionType ?? input.selectedAction,
         selectedGene,
         status,
         actionsSubmitted: snapshot.actionsSubmitted,
         canUse,
         canEvolve,
+        canActivateSymbiosis,
+        symbiosisTargets: opponent ? TRAITS.map((trait) => ({ id: trait, name: TRAIT_LABELS[trait] })) : [],
         canSelectGenes,
         errorMessage: input.submitErrorMessage ?? undefined,
-        waitingState: submittedAction && submittedGene
+        waitingState: submittedAction && submittedGeneName
             ? {
-                submittedGeneName: submittedGene.name,
+                submittedGeneName,
                 submittedAction: submittedAction.actionType,
                 submittedCountLabel: isVsBot && myHasSubmitted
                     ? '1/1'

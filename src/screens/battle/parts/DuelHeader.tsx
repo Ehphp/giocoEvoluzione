@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
-import { Avatar, Button, Panel, Pips } from '../../../ui/components'
+import { Avatar, Button, IconButton, Panel, Pips } from '../../../ui/components'
 import { BackIcon, BoltIcon, EyeIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
 import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../../../components/game-v2/types'
 
@@ -9,6 +9,7 @@ type DuelHeaderProps = {
     opponent: DuelPlayerV2
     round: RoundInfoV2
     onRequestLeave: () => void
+    onActivateSymbiosis?: () => void
 }
 
 function statusLabel(status: DuelPlayerV2['status']): string {
@@ -32,6 +33,8 @@ function mutationStatusLabel(status: CombatMutationSlotV2['status']): string {
         return 'consumata'
     }
 
+    if (status === 'linked') return 'collegata'
+
     return 'disponibile'
 }
 
@@ -48,7 +51,7 @@ function MutationIcon({ iconKey }: { iconKey: CombatMutationSlotV2['iconKey'] })
     }
 }
 
-function MutationSlots({ mutations, side }: { mutations: CombatMutationSlotV2[]; side: 'player' | 'opponent' }) {
+function MutationSlots({ mutations, side, onActivateSymbiosis }: { mutations: CombatMutationSlotV2[]; side: 'player' | 'opponent'; onActivateSymbiosis?: () => void }) {
     if (!mutations.length) {
         return null
     }
@@ -58,15 +61,20 @@ function MutationSlots({ mutations, side }: { mutations: CombatMutationSlotV2[];
             {mutations.map((mutation) => {
                 const stateLabel = mutationStatusLabel(mutation.status)
 
+                const label = `${mutation.label}, ${stateLabel}. ${mutation.shortDescription}${mutation.linkLabel ? ` ${mutation.linkLabel}.` : ''}`
+                const canActivate = side === 'player' && mutation.id === 'SYMBIOSIS' && mutation.status === 'available' && onActivateSymbiosis
                 return (
-                    <span
-                        key={mutation.id}
-                        className={`duel-mutation duel-mutation--${mutation.status}`}
-                        role="listitem"
-                        title={`${mutation.label}: ${mutation.shortDescription}. Stato: ${stateLabel}.`}
-                        aria-label={`${mutation.label}, ${stateLabel}. ${mutation.shortDescription}`}
-                    >
-                        <MutationIcon iconKey={mutation.iconKey} />
+                    <span key={mutation.id} className="duel-mutation-wrap" role="listitem">
+                        {canActivate ? (
+                            <IconButton label={`Attiva ${mutation.label}`} className={`duel-mutation duel-mutation--${mutation.status}`} onClick={onActivateSymbiosis}>
+                                <MutationIcon iconKey={mutation.iconKey} />
+                            </IconButton>
+                        ) : (
+                            <span className={`duel-mutation duel-mutation--${mutation.status}`} title={label} aria-label={label}>
+                                <MutationIcon iconKey={mutation.iconKey} />
+                            </span>
+                        )}
+                        {mutation.linkLabel ? <small className="duel-mutation__link" title={mutation.linkLabel}>{mutation.linkLabel}</small> : null}
                     </span>
                 )
             })}
@@ -173,12 +181,12 @@ function DuelCard({ player, role, side, round, onRequestLeave }: { player: DuelP
     )
 }
 
-export function DuelHeader({ player, opponent, round, onRequestLeave }: DuelHeaderProps) {
+export function DuelHeader({ player, opponent, round, onRequestLeave, onActivateSymbiosis }: DuelHeaderProps) {
     return (
         <header className="duel-header" aria-label="Stato dello scontro">
             <div className="duel-header__competitor duel-header__competitor--player">
                 <DuelCard player={player} role="Tu" side="player" round={round} onRequestLeave={onRequestLeave} />
-                <MutationSlots mutations={player.combatMutations ?? []} side="player" />
+                <MutationSlots mutations={player.combatMutations ?? []} side="player" onActivateSymbiosis={onActivateSymbiosis} />
             </div>
             <span className="duel-header__versus" aria-hidden="true">VS</span>
             <div className="duel-header__competitor duel-header__competitor--opponent">

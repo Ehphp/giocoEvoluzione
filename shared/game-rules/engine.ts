@@ -1,10 +1,12 @@
-import { MAX_ADAPTATION_LEVEL, ROUND_WIN_POINTS, TOTAL_ROUNDS, WINS_TO_WIN } from './catalog.ts'
+import { MAX_ADAPTATION_LEVEL, ROUND_WIN_POINTS, RULE_VERSION, TOTAL_ROUNDS, WINS_TO_WIN } from './catalog.ts'
 import { getNaturalAdvantageBonus, getValidatedActionBreakdown, getValidatedAdaptationUseBreakdown } from './scoring.ts'
 import { assertSupportedRuleVersion } from './state.ts'
-import type { AdaptationCollection, AdaptationId, CombatMutationEffect, CombatMutationId, CombatMutationLoadout, CombatMutationState, PlayerRoundAction, ResolveRoundInput, EnvironmentalCrisisDefinition, RoundResolution } from './types.ts'
+import { createSymbiosisPropagationEvent, resolveSymbiosisPropagation, type DirectLevelUp } from './symbiosis.ts'
+import type { AdaptationCollection, AdaptationId, CombatMutationEffect, CombatMutationId, CombatMutationLoadout, CombatMutationState, PlayerRoundAction, ResolveRoundInput, EnvironmentalCrisisDefinition, RoundResolution, SymbiosisLink, SymbiosisRoundEvent } from './types.ts'
 
 function cloneAdaptations(adaptations: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(adaptations).map(([adaptation, state]) => [adaptation, { ...state }])) as AdaptationCollection }
 function cloneCombatMutationState(state: CombatMutationState): CombatMutationState { return { ...state } }
+function cloneSymbiosisLinks(links: readonly SymbiosisLink[]): SymbiosisLink[] { return links.map((link) => ({ ...link })) }
 export function isAdaptationUsable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { return !adaptations[adaptation].exhausted }
 export function isAdaptationEvolvable(adaptations: AdaptationCollection, adaptation: AdaptationId): boolean { const state = adaptations[adaptation]; return state.level < MAX_ADAPTATION_LEVEL || state.exhausted }
 export function getRoundPoints(roundNumber: number): number { return roundNumber >= 1 && roundNumber <= TOTAL_ROUNDS ? ROUND_WIN_POINTS : 0 }
@@ -35,15 +37,35 @@ export function getAdaptationRoundValue(roundEvent: EnvironmentalCrisisDefinitio
 export function getEvolutionRoundValue(roundEvent: EnvironmentalCrisisDefinition, adaptations: AdaptationCollection, adaptation: AdaptationId, combatMutationState: CombatMutationState, combatMutationLoadout: CombatMutationLoadout): number { return getValidatedActionBreakdown(roundEvent, adaptations, adaptation, 'EVOLVE', 0, getCombatMutationEvolvePreview(combatMutationState, adaptations, adaptation, combatMutationLoadout).mutationBonus).total }
 export function hasClinchedMatch(player1Score: number, player2Score: number): boolean { return player1Score >= WINS_TO_WIN || player2Score >= WINS_TO_WIN }
 
-function resolvePlayerAction(input: ResolveRoundInput, adaptations: AdaptationCollection, combatMutationState: CombatMutationState, combatMutationLoadout: CombatMutationLoadout, action: PlayerRoundAction, opponentAction: PlayerRoundAction) {
+type ResolvedDirectAction = {
+    roundValue: number
+    breakdown: ReturnType<typeof getValidatedActionBreakdown>
+    traits: AdaptationCollection
+    combatMutationState: CombatMutationState
+    mutationEffects: CombatMutationEffect[]
+    directLevelUp: DirectLevelUp | null
+    activationLink: SymbiosisLink | null
+}
+
+function resolvePlayerAction(input: ResolveRoundInput, playerId: string, opponentId: string, adaptations: AdaptationCollection, combatMutationState: CombatMutationState, combatMutationLoadout: CombatMutationLoadout, action: PlayerRoundAction, opponentAction: PlayerRoundAction, linksAtStart: readonly SymbiosisLink[]): ResolvedDirectAction {
+    if (action.playerId !== playerId) throw new Error('Round action player does not match its participant.')
     const nextAdaptations = cloneAdaptations(adaptations)
     const nextCombatMutationState = cloneCombatMutationState(combatMutationState)
     const mutationEffects: CombatMutationEffect[] = []
+    if (action.actionType === 'ACTIVATE_MUTATION') {
+        if (input.ruleVersion !== RULE_VERSION) throw new Error('SYMBIOSIS is unavailable under this legacy ruleset.')
+        if (action.mutationId !== 'SYMBIOSIS') throw new Error('Unsupported mutation activation.')
+        if (!isCombatMutationEquipped(combatMutationLoadout, 'SYMBIOSIS')) throw new Error('SYMBIOSIS is not equipped.')
+        if (linksAtStart.some((link) => link.ownerPlayerId === playerId)) throw new Error('SYMBIOSIS has already been activated by this player.')
+        const breakdown = getValidatedActionBreakdown(input.roundEvent, adaptations, action.sourceTrait, 'ACTIVATE_MUTATION')
+        return { roundValue: 0, breakdown, traits: nextAdaptations, combatMutationState: nextCombatMutationState, mutationEffects, directLevelUp: null, activationLink: { ownerPlayerId: playerId, sourceTrait: action.sourceTrait, targetPlayerId: opponentId, targetTrait: action.targetTrait, activatedRound: input.roundNumber } }
+    }
     if (action.actionType === 'EVOLVE') {
         if (!isAdaptationEvolvable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is already available at the maximum level; EVOLVE would produce no transition.`)
         const mutationPreview = getCombatMutationEvolvePreview(combatMutationState, adaptations, action.trait, combatMutationLoadout)
         const breakdown = getValidatedActionBreakdown(input.roundEvent, adaptations, action.trait, action.actionType, 0, mutationPreview.mutationBonus)
-        if (nextAdaptations[action.trait].level < MAX_ADAPTATION_LEVEL) nextAdaptations[action.trait].level += 1
+        const levelBefore = nextAdaptations[action.trait].level
+        if (levelBefore < MAX_ADAPTATION_LEVEL) nextAdaptations[action.trait].level += 1
         nextAdaptations[action.trait].exhausted = false
         if (mutationPreview.mutationBonus) {
             nextCombatMutationState.recoverySurgeUsed = true
@@ -52,7 +74,7 @@ function resolvePlayerAction(input: ResolveRoundInput, adaptations: AdaptationCo
         if (mutationPreview.adaptiveCoreWillArm) {
             mutationEffects.push({ id: 'ADAPTIVE_CORE', effect: 'CORE_ARMED' })
         }
-        return { roundValue: breakdown.total, breakdown, traits: nextAdaptations, combatMutationState: getCombatMutationStateAfterEvolve(nextCombatMutationState, combatMutationLoadout), mutationEffects }
+        return { roundValue: breakdown.total, breakdown, traits: nextAdaptations, combatMutationState: getCombatMutationStateAfterEvolve(nextCombatMutationState, combatMutationLoadout), mutationEffects, directLevelUp: nextAdaptations[action.trait].level > levelBefore ? { playerId, trait: action.trait } : null, activationLink: null }
     }
     if (!isAdaptationUsable(adaptations, action.trait)) throw new Error(`Adaptation ${action.trait} is exhausted and cannot be used.`)
     const matchupBonus = getNaturalAdvantageBonus(action, opponentAction)
@@ -72,17 +94,40 @@ function resolvePlayerAction(input: ResolveRoundInput, adaptations: AdaptationCo
     } else {
         nextAdaptations[action.trait].exhausted = true
     }
-    return { roundValue: breakdown.total, breakdown, traits: nextAdaptations, combatMutationState: nextCombatMutationState, mutationEffects }
+    return { roundValue: breakdown.total, breakdown, traits: nextAdaptations, combatMutationState: nextCombatMutationState, mutationEffects, directLevelUp: null, activationLink: null }
+}
+
+function validateLinksAtRoundStart(links: readonly SymbiosisLink[], player1Id: string, player2Id: string, roundNumber: number): void {
+    if (links.length > 2 || new Set(links.map((link) => link.ownerPlayerId)).size !== links.length) throw new Error('Invalid SYMBIOSIS link ownership.')
+    for (const link of links) {
+        const expectedTarget = link.ownerPlayerId === player1Id ? player2Id : link.ownerPlayerId === player2Id ? player1Id : null
+        if (!expectedTarget || link.targetPlayerId !== expectedTarget || link.activatedRound >= roundNumber) throw new Error('Invalid SYMBIOSIS link for this round.')
+    }
 }
 
 export function resolveRound(input: ResolveRoundInput): RoundResolution {
     assertSupportedRuleVersion(input.ruleVersion)
     if (input.alreadyResolved) throw new Error(`Round ${input.roundNumber} has already been resolved.`)
     if (input.roundNumber < 1 || input.roundNumber > TOTAL_ROUNDS) throw new Error(`Round ${input.roundNumber} is outside the best-of-seven match.`)
-    const player1 = resolvePlayerAction(input, input.player1Traits, input.player1CombatMutationState, input.player1CombatMutationLoadout, input.player1Action, input.player2Action)
-    const player2 = resolvePlayerAction(input, input.player2Traits, input.player2CombatMutationState, input.player2CombatMutationLoadout, input.player2Action, input.player1Action)
+    const linksAtStart = cloneSymbiosisLinks(input.symbiosisLinks ?? [])
+    validateLinksAtRoundStart(linksAtStart, input.player1Id, input.player2Id, input.roundNumber)
+    const player1 = resolvePlayerAction(input, input.player1Id, input.player2Id, input.player1Traits, input.player1CombatMutationState, input.player1CombatMutationLoadout, input.player1Action, input.player2Action, linksAtStart)
+    const player2 = resolvePlayerAction(input, input.player2Id, input.player1Id, input.player2Traits, input.player2CombatMutationState, input.player2CombatMutationLoadout, input.player2Action, input.player1Action, linksAtStart)
+    const directLevelUps = [player1.directLevelUp, player2.directLevelUp].filter((levelUp): levelUp is DirectLevelUp => Boolean(levelUp))
+    const propagationTargets = resolveSymbiosisPropagation(linksAtStart, directLevelUps)
+    const symbiosisEvents: SymbiosisRoundEvent[] = []
+    for (const target of propagationTargets) {
+        const traits = target.targetPlayerId === input.player1Id ? player1.traits : target.targetPlayerId === input.player2Id ? player2.traits : null
+        if (!traits) throw new Error('SYMBIOSIS propagation target is not a participant.')
+        const event = createSymbiosisPropagationEvent(target, traits[target.targetTrait].level)
+        traits[target.targetTrait].level = event.levelAfter
+        symbiosisEvents.push(event)
+    }
+    const activatedLinks = [player1.activationLink, player2.activationLink].filter((link): link is SymbiosisLink => Boolean(link))
+    const symbiosisLinks = [...linksAtStart, ...activatedLinks]
+    for (const link of activatedLinks) symbiosisEvents.push({ effect: 'LINK_ACTIVATED', link })
     const player1Won = player1.roundValue > player2.roundValue
     const player2Won = player2.roundValue > player1.roundValue
     const awardedPoints = player1Won || player2Won ? getRoundPoints(input.roundNumber) : 0
-    return { roundNumber: input.roundNumber, roundEvent: input.roundEvent, player1: { ...input.player1Action, ...player1 }, player2: { ...input.player2Action, ...player2 }, winnerId: player1Won ? input.player1Id : player2Won ? input.player2Id : null, awardedPoints, player1ScoreDelta: player1Won ? awardedPoints : 0, player2ScoreDelta: player2Won ? awardedPoints : 0 }
+    return { roundNumber: input.roundNumber, roundEvent: input.roundEvent, player1: { ...input.player1Action, roundValue: player1.roundValue, breakdown: player1.breakdown, traits: player1.traits, combatMutationState: player1.combatMutationState, mutationEffects: player1.mutationEffects }, player2: { ...input.player2Action, roundValue: player2.roundValue, breakdown: player2.breakdown, traits: player2.traits, combatMutationState: player2.combatMutationState, mutationEffects: player2.mutationEffects }, winnerId: player1Won ? input.player1Id : player2Won ? input.player2Id : null, awardedPoints, player1ScoreDelta: player1Won ? awardedPoints : 0, player2ScoreDelta: player2Won ? awardedPoints : 0, symbiosisLinks, symbiosisEvents }
 }

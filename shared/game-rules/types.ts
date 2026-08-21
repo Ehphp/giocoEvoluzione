@@ -1,5 +1,5 @@
 export const ADAPTATION_IDS = ['FEROCITY', 'ARMOR', 'AGILITY', 'SENSES', 'CAMOUFLAGE'] as const
-export const ACTION_TYPES = ['USE', 'EVOLVE'] as const
+export const ACTION_TYPES = ['USE', 'EVOLVE', 'ACTIVATE_MUTATION'] as const
 export const GAME_STATUSES = ['WAITING', 'CHOOSING', 'REVEALING', 'ROUND_RESULT', 'FINISHED'] as const
 export const GAME_MODES = ['PVP', 'VS_BOT'] as const
 export const PLAYER_TYPES = ['HUMAN', 'BOT'] as const
@@ -51,7 +51,40 @@ export type RoundValueBreakdown = {
     appliedEventEffects: Array<EnvironmentalCrisisEffect & { contribution: number }>
 }
 
-export type PlayerRoundAction = { playerId: string; trait: AdaptationId; actionType: ActionType }
+export type DirectPlayerRoundAction = { playerId: string; actionType: 'USE' | 'EVOLVE'; trait: AdaptationId }
+export type ActivateMutationRoundAction = {
+    playerId: string
+    actionType: 'ACTIVATE_MUTATION'
+    mutationId: 'SYMBIOSIS'
+    sourceTrait: AdaptationId
+    targetTrait: AdaptationId
+}
+export type PlayerRoundAction = DirectPlayerRoundAction | ActivateMutationRoundAction
+export type DirectRoundAction = Omit<DirectPlayerRoundAction, 'playerId'>
+export type ActivateMutationAction = Omit<ActivateMutationRoundAction, 'playerId'>
+export type RoundAction = DirectRoundAction | ActivateMutationAction
+
+/** Match-scoped state: ownership also proves that its owner's SYMBIOSIS is consumed. */
+export type SymbiosisLink = {
+    ownerPlayerId: string
+    sourceTrait: AdaptationId
+    targetPlayerId: string
+    targetTrait: AdaptationId
+    activatedRound: number
+}
+export type SymbiosisActivationEvent = { effect: 'LINK_ACTIVATED'; link: SymbiosisLink }
+export type SymbiosisPropagationEvent = {
+    effect: 'LEVEL_REFLECTED'
+    targetPlayerId: string
+    targetTrait: AdaptationId
+    sourceLevelUps: Array<{ playerId: string; trait: AdaptationId }>
+    pairKeys: string[]
+    requestedLevels: number
+    appliedLevels: number
+    levelBefore: AdaptationLevel
+    levelAfter: AdaptationLevel
+}
+export type SymbiosisRoundEvent = SymbiosisActivationEvent | SymbiosisPropagationEvent
 export type ResolvedPlayerRound = PlayerRoundAction & { roundValue: number; breakdown: RoundValueBreakdown; traits: AdaptationCollection; combatMutationState: CombatMutationState; mutationEffects: CombatMutationEffect[] }
 export type ResolveRoundInput = {
     roundNumber: number; roundEvent: EnvironmentalCrisisDefinition; player1Id: string; player2Id: string
@@ -60,9 +93,13 @@ export type ResolveRoundInput = {
     ruleVersion: string
     player1CombatMutationState: CombatMutationState; player2CombatMutationState: CombatMutationState
     player1CombatMutationLoadout: CombatMutationLoadout; player2CombatMutationLoadout: CombatMutationLoadout
+    /** Required by persisted matches; optional only for compatibility with legacy pure callers. */
+    symbiosisLinks?: readonly SymbiosisLink[]
     player1Action: PlayerRoundAction; player2Action: PlayerRoundAction; alreadyResolved?: boolean
 }
 export type RoundResolution = {
     roundNumber: number; roundEvent: EnvironmentalCrisisDefinition; player1: ResolvedPlayerRound; player2: ResolvedPlayerRound
     winnerId: string | null; awardedPoints: number; player1ScoreDelta: number; player2ScoreDelta: number
+    symbiosisLinks: SymbiosisLink[]
+    symbiosisEvents: SymbiosisRoundEvent[]
 }

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { ADAPTATION_IDS, BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_IDS, ROUND_EVENT_DEFINITIONS, RULE_VERSION, TOTAL_ROUNDS, createInitialCombatMutationState, createLookaheadPolicy, createParametricPolicy, createSeededRandom, evolveFirstPolicy, greedyUsePolicy, heuristicPolicy, randomPolicy, simulateMatch, type BotPolicy, type CombatMutationLoadout, type LookaheadStats } from '../shared/game-rules/index.ts'
+import { ADAPTATION_IDS, BOT_COMBAT_MUTATION_LOADOUT, LEGACY_PASSIVE_COMBAT_MUTATION_IDS, LEGACY_PASSIVE_COMBAT_MUTATION_LOADOUTS, ROUND_EVENT_DEFINITIONS, RULE_VERSION, TOTAL_ROUNDS, createInitialCombatMutationState, createLookaheadPolicy, createParametricPolicy, createSeededRandom, evolveFirstPolicy, greedyUsePolicy, heuristicPolicy, randomPolicy, simulateMatch, type BotPolicy, type CombatMutationLoadout, type LookaheadStats } from '../shared/game-rules/index.ts'
 
 type Outcome = { wins: number; draws: number; losses: number; leftWins: number; rightWins: number; actions: number; uses: number; evolves: number; genes: Record<string, number>; levels: number; matches: number }
 type Repro = { reason: string; seed: number; events: string[]; leftPolicy: string; rightPolicy: string; score: string }
@@ -13,10 +13,10 @@ const id = (policy: BotPolicy) => policy.id
 const hash = (value: string) => { let result = 2166136261; for (let index = 0; index < value.length; index += 1) { result ^= value.charCodeAt(index); result = Math.imul(result, 16777619) } return result >>> 0 }
 const empty = (): Outcome => ({ wins: 0, draws: 0, losses: 0, leftWins: 0, rightWins: 0, actions: 0, uses: 0, evolves: 0, genes: Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, 0])), levels: 0, matches: 0 })
 const addAction = (outcome: Outcome, action: { trait: string; actionType: string }) => { outcome.actions += 1; outcome.genes[action.trait] += 1; if (action.actionType === 'USE') outcome.uses += 1; else outcome.evolves += 1 }
-const loadouts: CombatMutationLoadout[] = COMBAT_MUTATION_IDS.flatMap((first, index) => COMBAT_MUTATION_IDS.slice(index + 1).map((second) => [first, second] as CombatMutationLoadout))
+const loadouts: CombatMutationLoadout[] = LEGACY_PASSIVE_COMBAT_MUTATION_LOADOUTS.map((loadout) => [...loadout] as CombatMutationLoadout)
 const loadoutKey = (loadout: CombatMutationLoadout) => loadout.join('+')
 type LoadoutOutcome = { matches: number; wins: number; draws: number; losses: number; leftWins: number; rightWins: number; evolves: number; exhaustedAfterUse: number; tiebreaks: number; illegalActions: number; activations: Record<string, number> }
-const emptyLoadoutOutcome = (): LoadoutOutcome => ({ matches: 0, wins: 0, draws: 0, losses: 0, leftWins: 0, rightWins: 0, evolves: 0, exhaustedAfterUse: 0, tiebreaks: 0, illegalActions: 0, activations: Object.fromEntries(COMBAT_MUTATION_IDS.map((mutation) => [mutation, 0])) })
+const emptyLoadoutOutcome = (): LoadoutOutcome => ({ matches: 0, wins: 0, draws: 0, losses: 0, leftWins: 0, rightWins: 0, evolves: 0, exhaustedAfterUse: 0, tiebreaks: 0, illegalActions: 0, activations: Object.fromEntries(LEGACY_PASSIVE_COMBAT_MUTATION_IDS.map((mutation) => [mutation, 0])) })
 const initialMutations = (leftCombatMutationLoadout: CombatMutationLoadout = BOT_COMBAT_MUTATION_LOADOUT, rightCombatMutationLoadout: CombatMutationLoadout = BOT_COMBAT_MUTATION_LOADOUT) => ({ leftCombatMutationLoadout, rightCombatMutationLoadout, leftCombatMutationState: createInitialCombatMutationState(), rightCombatMutationState: createInitialCombatMutationState() })
 function main() {
     const started = performance.now(); const results = Object.fromEntries(policies.map((policy) => [id(policy), empty()])) as Record<string, Outcome>

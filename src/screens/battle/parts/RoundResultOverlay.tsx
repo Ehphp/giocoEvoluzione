@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { PRODUCTION_CATALOG_AUDIT, RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
+import { RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
+import { isSupportedRuleVersion } from '../../../../shared/game-rules/state.ts'
 import { TOTAL_ROUNDS, TRAIT_LABELS } from '../../../game/config'
 import { getCombatMutationEffectDescription, getRoundExplanation } from '../../../game/round-result-explainer'
 import { getRoundEventLabel } from '../../../game/ui-context'
-import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../../game/types'
+import type { CombatMutationEffect, PlayerRoundAction, RoundValueBreakdown } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { Button, Chip, Notice, Overlay, Panel } from '../../../ui/components'
 import { GeneIcon } from '../../../ui/icons'
@@ -15,8 +16,8 @@ export type RoundResolutionData = {
     awardedPoints?: number
     player1PointsAwarded?: number
     player2PointsAwarded?: number
-    player1Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
-    player2Action?: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string }
+    player1Action?: PlayerRoundAction
+    player2Action?: PlayerRoundAction
     player1Breakdown?: RoundValueBreakdown
     player2Breakdown?: RoundValueBreakdown
     player1MutationEffects?: CombatMutationEffect[]
@@ -36,7 +37,7 @@ type RoundResultOverlayProps = {
 
 type BreakdownCardProps = {
     title: string
-    action: { trait: TraitType; actionType: 'USE' | 'EVOLVE'; playerId: string } | undefined
+    action: PlayerRoundAction | undefined
     breakdown: RoundValueBreakdown | undefined
     mutationEffects: CombatMutationEffect[]
     total: number
@@ -59,29 +60,35 @@ function BreakdownCard({
     showTotal,
     isMe = false,
 }: BreakdownCardProps) {
-    const actionLabel = action ? (action.actionType === 'USE' ? 'USA' : 'EVOLVI') : 'N/D'
+    const actionLabel = action ? (action.actionType === 'USE' ? 'USA' : action.actionType === 'EVOLVE' ? 'EVOLVI' : 'SIMBIOSI') : 'N/D'
+    const sourceTrait = action?.actionType === 'ACTIVATE_MUTATION' ? action.sourceTrait : action?.trait
+    const actionTitle = action?.actionType === 'ACTIVATE_MUTATION'
+        ? `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]}`
+        : action ? TRAIT_LABELS[action.trait] : 'N/D'
 
     return (
         <article
             className={`round-breakdown ${isMe ? 'round-breakdown--me' : ''}`}
-            data-gene={action?.trait}
+            data-gene={sourceTrait}
         >
             <header className="round-breakdown__header">
                 <span className="round-breakdown__glyph" aria-hidden="true">
-                    {action ? <GeneIcon trait={action.trait} /> : null}
+                    {sourceTrait ? <GeneIcon trait={sourceTrait} /> : null}
                 </span>
                 <div>
                     <span className="ev-eyebrow">{title}</span>
-                    <strong>{action ? TRAIT_LABELS[action.trait] : 'N/D'}</strong>
+                    <strong>{actionTitle}</strong>
                 </div>
-                <Chip tone={action?.actionType === 'EVOLVE' ? 'info' : 'good'}>{actionLabel}</Chip>
+                <Chip tone={action?.actionType === 'ACTIVATE_MUTATION' ? 'warn' : action?.actionType === 'EVOLVE' ? 'info' : 'good'}>{actionLabel}</Chip>
             </header>
 
             {breakdown ? (
                 <details className={`round-breakdown__details ${showContributions ? '' : 'is-hidden'}`}>
                     <summary>Dettaglio calcolo</summary>
                     <div className="round-breakdown__math">
-                        {action?.actionType === 'EVOLVE' ? (
+                        {action?.actionType === 'ACTIVATE_MUTATION' ? (
+                            <p>SIMBIOSI: il round vale 0. Il legame sara attivo dal prossimo round.</p>
+                        ) : action?.actionType === 'EVOLVE' ? (
                             <p>EVOLVI: valore fisso {breakdown.total}; evoluzione e recupero ignorano affinita e matchup.</p>
                         ) : (
                             <>
@@ -125,8 +132,10 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
     const player2Breakdown = resolutionData?.player2Breakdown
     const player1MutationEffects = resolutionData?.player1MutationEffects ?? []
     const player2MutationEffects = resolutionData?.player2MutationEffects ?? []
-    const hasCurrentRuleVersion = resolutionData?.ruleVersion === RULE_VERSION
-        && resolutionData.catalogSignature === PRODUCTION_CATALOG_AUDIT.catalogSignature
+    const hasCurrentRuleVersion = Boolean(resolutionData?.ruleVersion)
+        && resolutionData?.ruleVersion === snapshot.game.rule_version
+        && isSupportedRuleVersion(resolutionData?.ruleVersion)
+        && (resolutionData.ruleVersion !== RULE_VERSION || resolutionData.catalogSignature === RULE_VERSION)
     const myResolvedAction = player1Action?.playerId === snapshot.me?.id ? player1Action : player2Action
     const opponentResolvedAction = player1Action?.playerId === snapshot.opponent?.id ? player1Action : player2Action
     const myBreakdown = iAmPlayer1 ? player1Breakdown : player2Breakdown

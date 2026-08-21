@@ -9,10 +9,13 @@ export function getCombatMutationEffectDescription(effect: CombatMutationEffect)
     return 'Nucleo adattivo: +1 valore round.'
 }
 
-export type RoundExplanationInput = { roundEventTitle: string | null; meWon: boolean | null; meActionType: 'USE' | 'EVOLVE' | null; opponentActionType: 'USE' | 'EVOLVE' | null; myBreakdown?: RoundValueBreakdown | null; opponentBreakdown?: RoundValueBreakdown | null }
+export type RoundExplanationInput = { roundEventTitle: string | null; meWon: boolean | null; meActionType: 'USE' | 'EVOLVE' | 'ACTIVATE_MUTATION' | null; opponentActionType: 'USE' | 'EVOLVE' | 'ACTIVATE_MUTATION' | null; myBreakdown?: RoundValueBreakdown | null; opponentBreakdown?: RoundValueBreakdown | null }
 export function getRoundExplanation(input: RoundExplanationInput): string {
     const eventName = input.roundEventTitle ?? 'l evento del round'
     if (!input.myBreakdown || !input.opponentBreakdown) return 'Risultato storico: dettagli di calcolo non disponibili per questo round.'
+    if (input.meActionType === 'ACTIVATE_MUTATION' && input.opponentActionType === 'ACTIVATE_MUTATION') return 'Entrambi avete creato una Simbiosi: i legami saranno attivi dal prossimo round.'
+    if (input.meActionType === 'ACTIVATE_MUTATION') return 'Hai creato una Simbiosi: questo round vale 0 punti, ma il legame sara attivo dal prossimo round.'
+    if (input.opponentActionType === 'ACTIVATE_MUTATION') return 'L avversario ha creato una Simbiosi: il suo legame sara attivo dal prossimo round.'
     if (input.meActionType === 'EVOLVE' && input.opponentActionType === 'EVOLVE') return 'Entrambi avete evoluto o recuperato un adattamento: il valore base e 1; eventuali effetti mutazione sono indicati nei dettagli.'
     if (input.meActionType === 'EVOLVE') return 'Hai evoluto o recuperato un adattamento: il valore base e 1, senza affinita ambientale ne vantaggio naturale; eventuali effetti mutazione sono indicati nei dettagli.'
     if (input.opponentActionType === 'EVOLVE') return 'L avversario ha evoluto o recuperato un adattamento: valore base 1, senza affinita ambientale ne vantaggio naturale; eventuali effetti mutazione sono indicati nei dettagli.'

@@ -56,6 +56,7 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 }
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
+type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
 type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
 
 const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
@@ -625,8 +626,8 @@ function App() {
     }
   }
 
-  async function handleSubmitAction(actionType: 'USE' | 'EVOLVE', trait: TraitType): Promise<boolean> {
-    if (!snapshot?.me || !trait) {
+  async function handleSubmitAction(action: BattleSubmitAction): Promise<boolean> {
+    if (!snapshot?.me) {
       return false
     }
 
@@ -635,12 +636,9 @@ function App() {
     setStatusMessage(null)
 
     try {
-      const mutation = await submitRoundAction({
-        gameId: snapshot.game.id,
-        roundNumber: snapshot.game.current_round,
-        trait,
-        actionType,
-      })
+      const mutation = await submitRoundAction(action.actionType === 'ACTIVATE_MUTATION'
+        ? { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action, mutationId: 'SYMBIOSIS' }
+        : { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action })
 
       snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')
       if (mutation.resolveRequired) {
@@ -970,7 +968,7 @@ type ConnectedBattleScreenProps = {
   snapshot: GameSnapshot
   myScore: number
   opponentScore: number
-  onSubmitAction: (actionType: 'USE' | 'EVOLVE', trait: TraitType) => Promise<boolean>
+  onSubmitAction: (action: BattleSubmitAction) => Promise<boolean>
   onChooseEvolutionTarget: (evolutionTargetId: EvolutionTargetId) => Promise<void>
   onLeaveSession: () => void
   resolutionData: RoundResolutionData | undefined
@@ -996,13 +994,11 @@ function ConnectedBattleScreen({
   playerVisual,
   opponentVisual,
 }: ConnectedBattleScreenProps) {
-  const { viewModel, onSelectGene, onUseGene, onEvolveGene } = useGeneSelectionV2Controller({
+  const { viewModel, onSelectGene, onUseGene, onEvolveGene, onActivateSymbiosis } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
     opponentScore,
-    onSubmitAction: async (trait, actionType) => {
-      return onSubmitAction(actionType, trait)
-    },
+    onSubmitAction,
   })
   const isResolutionOpen = snapshot.game.status === 'REVEALING' || snapshot.game.status === 'ROUND_RESULT'
   // The draft blocks the first round: the server must know which counter a win credits.
@@ -1020,6 +1016,7 @@ function ConnectedBattleScreen({
         onSelectGene={onSelectGene}
         onUseGene={onUseGene}
         onEvolveGene={onEvolveGene}
+        onActivateSymbiosis={onActivateSymbiosis}
         onLeaveSession={onLeaveSession}
         isInteractionLocked={isResolutionOpen || isDraftOpen}
       />

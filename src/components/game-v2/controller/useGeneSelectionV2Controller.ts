@@ -9,8 +9,9 @@ type UseGeneSelectionV2ControllerInput = {
     snapshot: GameSnapshot
     myScore: number
     opponentScore: number
-    onSubmitAction: (trait: TraitType, actionType: GeneActionTypeV2) => Promise<boolean>
+    onSubmitAction: (action: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }) => Promise<boolean>
 }
+type LocalSubmittedAction = { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
 
 function getInitialTraitId(snapshot: GameSnapshot): string | null {
     return getInitialTraitIdForSnapshot(snapshot)
@@ -21,7 +22,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
     const [selectedAction, setSelectedAction] = useState<GeneActionTypeV2 | null>(null)
     const [submitErrorMessage, setSubmitErrorMessage] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [localSubmittedAction, setLocalSubmittedAction] = useState<{ trait: TraitType; actionType: GeneActionTypeV2 } | null>(null)
+    const [localSubmittedAction, setLocalSubmittedAction] = useState<LocalSubmittedAction | null>(null)
     const submittingRef = useRef(false)
     const previousRoundRef = useRef<number>(input.snapshot.game.current_round)
     const previousGameRef = useRef<string>(input.snapshot.game.id)
@@ -119,7 +120,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         setSubmitErrorMessage(null)
 
         const trait = viewModel.selectedGene.traitType
-        const submitted = await input.onSubmitAction(trait, actionType)
+        const submitted = await input.onSubmitAction({ trait, actionType })
 
         if (submitted) {
             setLocalSubmittedAction({ trait, actionType })
@@ -142,11 +143,30 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         await handleSubmit('EVOLVE')
     }, [handleSubmit])
 
+    const handleActivateSymbiosis = useCallback(async (sourceTrait: TraitType, targetTrait: TraitType) => {
+        if (submittingRef.current || !viewModel.canActivateSymbiosis || viewModel.status === 'invalid') return false
+        submittingRef.current = true
+        setIsSubmitting(true)
+        setSubmitErrorMessage(null)
+        const submitted = await input.onSubmitAction({ actionType: 'ACTIVATE_MUTATION', sourceTrait, targetTrait })
+        if (submitted) {
+            setLocalSubmittedAction({ actionType: 'ACTIVATE_MUTATION', sourceTrait, targetTrait })
+            setIsSubmitting(false)
+            submittingRef.current = false
+            return true
+        }
+        setIsSubmitting(false)
+        submittingRef.current = false
+        setSubmitErrorMessage('Invio Simbiosi non riuscito. Riprova.')
+        return false
+    }, [input, viewModel.canActivateSymbiosis, viewModel.status])
+
     return {
         viewModel,
         onSelectGene: handleSelectGene,
         onUseGene: handleUseGene,
         onEvolveGene: handleEvolveGene,
+        onActivateSymbiosis: handleActivateSymbiosis,
     }
 }
 

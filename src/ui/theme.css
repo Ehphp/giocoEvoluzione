@@ -170,6 +170,7 @@
     --ev-fs-xl: 1.1875rem;
     --ev-fs-2xl: 1.5rem;
     --ev-fs-3xl: 2rem;
+    --ev-lh-compact: 1.35;
     --ev-track-label: .14em;
 
     /* Spacing. */

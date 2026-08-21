@@ -44,6 +44,6 @@ describe('Combat Mutations production contracts', () => {
             player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT, player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
             player1Action: { playerId: 'p1', trait: 'FEROCITY', actionType: 'USE' }, player2Action: { playerId: 'p2', trait: 'ARMOR', actionType: 'EVOLVE' },
         })).toThrow('UNSUPPORTED_RULE_VERSION')
-        expect(RULE_VERSION).toBe('combat-mutations-loadout-mvp-v1')
+        expect(RULE_VERSION).toBe('combat-mutations-symbiosis-v1')
     })
 })

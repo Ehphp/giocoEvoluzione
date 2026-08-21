@@ -57,6 +57,7 @@ function BattlePreview() {
             onSelectGene={setSelectedGeneId}
             onUseGene={asyncNoop}
             onEvolveGene={asyncNoop}
+            onActivateSymbiosis={async () => false}
             onLeaveSession={noop}
         />
     )
