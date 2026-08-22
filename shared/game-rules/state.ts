@@ -1,5 +1,5 @@
-import { ADAPTATION_CATALOG, MAX_ADAPTATION_LEVEL, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, SUPPORTED_RULE_VERSIONS, TOTAL_ROUNDS } from './catalog.ts'
-import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, type AdaptationCollection, type AdaptationId, type AdaptationState, type CombatMutationId, type CombatMutationLoadout, type CombatMutationState, type EnvironmentalCrisisDefinition, type SymbiosisLink } from './types.ts'
+import { ADAPTATION_CATALOG, MAX_ADAPTATION_LEVEL, MAX_SCHEDULED_ROUNDS, ROUND_EVENT_BY_ID, ROUND_EVENT_DEFINITIONS, SUPPORTED_RULE_VERSIONS, TOTAL_ROUNDS } from './catalog.ts'
+import { ADAPTATION_IDS, COMBAT_MUTATION_IDS, type AdaptationCollection, type AdaptationId, type AdaptationState, type CombatMutationId, type CombatMutationLoadout, type CombatMutationState, type EnvironmentalCrisisDefinition, type FineDelMondoActivation, type SymbiosisLink } from './types.ts'
 export { ADAPTATION_IDS, TOTAL_ROUNDS, MAX_ADAPTATION_LEVEL }
 export function createInitialAdaptations(): AdaptationCollection { return Object.fromEntries(ADAPTATION_IDS.map((adaptation) => [adaptation, { level: 0, exhausted: false }])) as AdaptationCollection }
 export function normalizeAdaptationCollection(value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined): AdaptationCollection { const adaptations = createInitialAdaptations(); for (const adaptation of ADAPTATION_IDS) { const state = value?.[adaptation]; if (!state) continue; if (typeof state.level === 'number' && Number.isFinite(state.level)) adaptations[adaptation].level = Math.max(0, Math.min(MAX_ADAPTATION_LEVEL, Math.trunc(state.level))) as AdaptationState['level']; if (typeof state.exhausted === 'boolean') adaptations[adaptation].exhausted = state.exhausted } return adaptations }
@@ -86,6 +86,26 @@ export function parseSymbiosisLinks(value: unknown, field = 'symbiosis_links'): 
     return value.map((link) => ({ ...link }))
 }
 
+export function isFineDelMondoActivation(value: unknown): value is FineDelMondoActivation {
+    if (!isPlainRecord(value)) return false
+    const keys = Object.keys(value)
+    return keys.length === 3
+        && keys.every((key) => ['ownerPlayerId', 'activatedRound', 'outcome'].includes(key))
+        && typeof value.ownerPlayerId === 'string' && value.ownerPlayerId.length > 0
+        && typeof value.activatedRound === 'number' && Number.isInteger(value.activatedRound) && value.activatedRound >= 3 && value.activatedRound <= 10
+        && (value.outcome === 'FINE_DEL_MONDO' || value.outcome === 'ERA_PROSPERA')
+}
+export function isFineDelMondoActivations(value: unknown): value is FineDelMondoActivation[] {
+    return Array.isArray(value)
+        && value.length <= 2
+        && value.every(isFineDelMondoActivation)
+        && new Set(value.map((activation) => activation.ownerPlayerId)).size === value.length
+}
+export function parseFineDelMondoActivations(value: unknown, field = 'fine_del_mondo_activations'): FineDelMondoActivation[] {
+    if (!isFineDelMondoActivations(value)) throw new Error(`INVALID_FINE_DEL_MONDO_ACTIVATIONS: ${field}`)
+    return value.map((activation) => ({ ...activation }))
+}
+
 /** Cache-only canonicalization. It never writes, displays or changes a slot order. */
 export function canonicalCombatMutationLoadoutCacheKey(loadout: CombatMutationLoadout): string {
     return [...loadout].sort((left, right) => COMBAT_MUTATION_IDS.indexOf(left) - COMBAT_MUTATION_IDS.indexOf(right)).join(',')
@@ -98,4 +118,5 @@ export function assertSupportedRuleVersion(value: unknown): asserts value is (ty
 export function getAdaptationLabel(adaptation: AdaptationId): string { return ADAPTATION_CATALOG[adaptation].label }
 export function getRoundEventById(eventId: string): EnvironmentalCrisisDefinition { const roundEvent = ROUND_EVENT_BY_ID[eventId]; if (!roundEvent) throw new Error(`Unknown environmental crisis "${eventId}".`); return roundEvent }
 export function getRoundEventForRound(sequence: string[], roundNumber: number): EnvironmentalCrisisDefinition | null { const eventId = sequence[roundNumber - 1]; return eventId ? getRoundEventById(eventId) : null }
-export function generateRoundEventSequence(random: () => number = Math.random): string[] { const ids = ROUND_EVENT_DEFINITIONS.map((roundEvent) => roundEvent.id); for (let index = ids.length - 1; index > 0; index -= 1) { const swap = Math.floor(random() * (index + 1)); [ids[index], ids[swap]] = [ids[swap]!, ids[index]!] } return Array.from({ length: TOTAL_ROUNDS }, (_, index) => ids[index % ids.length]!) }
+/** Persist enough events for the largest legal schedule; match state chooses the live prefix. */
+export function generateRoundEventSequence(random: () => number = Math.random): string[] { const ids = ROUND_EVENT_DEFINITIONS.map((roundEvent) => roundEvent.id); for (let index = ids.length - 1; index > 0; index -= 1) { const swap = Math.floor(random() * (index + 1)); [ids[index], ids[swap]] = [ids[swap]!, ids[index]!] } return Array.from({ length: MAX_SCHEDULED_ROUNDS }, (_, index) => ids[index % ids.length]!) }

@@ -44,7 +44,6 @@ import {
 } from './lib/game-api'
 import { clearStoredSession, createPlayerId, loadStoredSession, saveStoredSession } from './lib/storage'
 import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
-import { TOTAL_ROUNDS } from './game/config'
 import { withResolvedCreatureImage } from './ui/assets'
 
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
@@ -56,7 +55,7 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 }
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
-type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
+type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' }
 type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
 
 const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
@@ -455,7 +454,7 @@ function App() {
     const currentRoundResultId = snapshot?.currentRoundResult?.id
     const currentRound = snapshot?.game.current_round ?? 0
 
-    if (!gameId || !playerId || currentStatus !== 'REVEALING' || !currentRoundResultId || currentRound >= TOTAL_ROUNDS) {
+    if (!gameId || !playerId || currentStatus !== 'REVEALING' || !currentRoundResultId || currentRound >= (snapshot?.game.scheduled_rounds ?? 0)) {
       return
     }
 
@@ -473,7 +472,7 @@ function App() {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [snapshot?.game.id, snapshot?.game.status, snapshot?.currentRoundResult?.id, snapshot?.game.current_round, snapshot?.me?.id])
+  }, [snapshot?.game.id, snapshot?.game.status, snapshot?.currentRoundResult?.id, snapshot?.game.current_round, snapshot?.game.scheduled_rounds, snapshot?.me?.id])
 
   useEffect(() => {
     const gameStatus = snapshot?.game.status
@@ -637,7 +636,7 @@ function App() {
 
     try {
       const mutation = await submitRoundAction(action.actionType === 'ACTIVATE_MUTATION'
-        ? { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action, mutationId: 'SYMBIOSIS' }
+        ? { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action }
         : { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action })
 
       snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')
@@ -994,7 +993,7 @@ function ConnectedBattleScreen({
   playerVisual,
   opponentVisual,
 }: ConnectedBattleScreenProps) {
-  const { viewModel, onSelectGene, onUseGene, onEvolveGene, onActivateSymbiosis } = useGeneSelectionV2Controller({
+  const { viewModel, onSelectGene, onUseGene, onEvolveGene, onActivateSymbiosis, onActivateFineDelMondo } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
     opponentScore,
@@ -1017,6 +1016,7 @@ function ConnectedBattleScreen({
         onUseGene={onUseGene}
         onEvolveGene={onEvolveGene}
         onActivateSymbiosis={onActivateSymbiosis}
+        onActivateFineDelMondo={onActivateFineDelMondo}
         onLeaveSession={onLeaveSession}
         isInteractionLocked={isResolutionOpen || isDraftOpen}
       />

@@ -9,7 +9,7 @@ import {
 import type { GeneSelectionViewModelV2 } from '../../components/game-v2/types'
 import type { TraitType } from '../../game/types'
 import { AppShell, Button, Notice, Overlay, Panel, Pill } from '../../ui/components'
-import { CloseIcon } from '../../ui/icons'
+import { CloseIcon, MeteorIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
 import { DuelHeader } from './parts/DuelHeader'
@@ -24,6 +24,7 @@ type BattleScreenProps = {
     onUseGene: () => Promise<void>
     onEvolveGene: () => Promise<void>
     onActivateSymbiosis?: (sourceTrait: TraitType, targetTrait: TraitType) => Promise<boolean>
+    onActivateFineDelMondo?: () => Promise<boolean>
     onLeaveSession: () => void
     isInteractionLocked?: boolean
 }
@@ -46,6 +47,7 @@ export function BattleScreen({
     onUseGene,
     onEvolveGene,
     onActivateSymbiosis,
+    onActivateFineDelMondo,
     onLeaveSession,
     isInteractionLocked = false,
 }: BattleScreenProps) {
@@ -58,6 +60,7 @@ export function BattleScreen({
 
     const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
     const [isSymbiosisPickerOpen, setIsSymbiosisPickerOpen] = useState(false)
+    const [isFineDelMondoConfirmOpen, setIsFineDelMondoConfirmOpen] = useState(false)
     const [symbiosisSource, setSymbiosisSource] = useState<TraitType | null>(null)
     const [symbiosisTarget, setSymbiosisTarget] = useState<TraitType | null>(null)
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
@@ -88,6 +91,10 @@ export function BattleScreen({
         const submitted = await onActivateSymbiosis?.(symbiosisSource, symbiosisTarget)
         if (submitted) setIsSymbiosisPickerOpen(false)
     }
+    const submitFineDelMondo = async () => {
+        const submitted = await onActivateFineDelMondo?.()
+        if (submitted) setIsFineDelMondoConfirmOpen(false)
+    }
     const symbiosisPicker = isSymbiosisPickerOpen ? (
         <Overlay label="Crea Simbiosi" align="center" scrim="scene" width="narrow" onClose={() => setIsSymbiosisPickerOpen(false)}>
             <Panel className="symbiosis-picker">
@@ -105,6 +112,20 @@ export function BattleScreen({
                 <div className="symbiosis-picker__actions">
                     <Button tone="ghost" size="sm" onClick={() => symbiosisSource ? (setSymbiosisSource(null), setSymbiosisTarget(null)) : setIsSymbiosisPickerOpen(false)}>{symbiosisSource ? 'Cambia gene' : 'Annulla'}</Button>
                     <Button tone="use" size="sm" disabled={!symbiosisSource || !symbiosisTarget || viewModel.status === 'submitting'} onClick={() => { void submitSymbiosis() }}>Crea Simbiosi · 0 PT</Button>
+                </div>
+            </Panel>
+        </Overlay>
+    ) : null
+    const fineDelMondoConfirm = isFineDelMondoConfirmOpen ? (
+        <Overlay label="Attiva Fine del mondo" align="center" scrim="scene" width="narrow" onClose={() => setIsFineDelMondoConfirmOpen(false)}>
+            <Panel className="symbiosis-picker">
+                <p className="ev-section-label ev-section-label--ink"><span>Fine del mondo</span></p>
+                <MeteorIcon aria-hidden="true" />
+                <h2>Alterare la durata della partita?</h2>
+                <p>Il sorteggio server puo accorciare la partita di 2 round oppure estenderla di 3. La mutazione vale 0 punti e verra consumata.</p>
+                <div className="symbiosis-picker__actions">
+                    <Button tone="ghost" size="sm" onClick={() => setIsFineDelMondoConfirmOpen(false)}>Annulla</Button>
+                    <Button tone="use" size="sm" disabled={viewModel.status === 'submitting'} onClick={() => { void submitFineDelMondo() }}>Attiva Fine del mondo · 0 PT</Button>
                 </div>
             </Panel>
         </Overlay>
@@ -139,6 +160,7 @@ export function BattleScreen({
                     round={viewModel.round}
                     onRequestLeave={() => setIsLeaveConfirmOpen(true)}
                     onActivateSymbiosis={viewModel.canActivateSymbiosis && isChoosing ? openSymbiosisPicker : undefined}
+                    onActivateFineDelMondo={viewModel.canActivateFineDelMondo && isChoosing ? () => setIsFineDelMondoConfirmOpen(true) : undefined}
                 />
 
                 <div className="battle-screen__meta">
@@ -182,6 +204,7 @@ export function BattleScreen({
             </div>
             {leaveConfirm}
             {symbiosisPicker}
+            {fineDelMondoConfirm}
         </AppShell>
     )
 }

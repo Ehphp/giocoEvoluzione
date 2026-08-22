@@ -105,6 +105,7 @@ export interface GeneSelectionViewModelV2 {
     canUse: boolean
     canEvolve: boolean
     canActivateSymbiosis?: boolean
+    canActivateFineDelMondo?: boolean
     symbiosisTargets?: Array<{ id: string; name: string }>
     canSelectGenes: boolean
     errorMessage?: string

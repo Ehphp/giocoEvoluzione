@@ -1,4 +1,4 @@
-import { TOTAL_ROUNDS, TRAIT_LABELS, TRAITS } from '../../../game/config'
+import { TRAIT_LABELS, TRAITS } from '../../../game/config'
 import { COMBAT_MUTATION_CATALOG, NATURAL_ADVANTAGE, RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
 import type { CombatMutationId, CombatMutationState } from '../../../../shared/game-rules/types.ts'
 import { getCombatMutationEvolvePreview, getCombatMutationUsePreview, isTraitEvolvable, isTraitUsable } from '../../../game/engine'
@@ -36,7 +36,7 @@ type BuildGeneSelectionV2ViewModelInput = {
     isSubmitting: boolean
     submitErrorMessage: string | null
     hasLocalSubmittedAction: boolean
-    localSubmittedAction: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType } | null
+    localSubmittedAction: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' } | null
 }
 
 function mapAffinity(score: number): GeneAffinityV2 {
@@ -97,7 +97,7 @@ function resolvePlayerStatus(hasSubmitted: boolean, connected: boolean): DuelPla
     return hasSubmitted ? 'ready' : 'choosing'
 }
 
-function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutationState, hasSymbiosisLink: boolean): CombatMutationSlotV2['status'] {
+function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutationState, hasSymbiosisLink: boolean, hasFineDelMondoActivation: boolean): CombatMutationSlotV2['status'] {
     switch (id) {
         case 'ELASTIC_LIMBS':
             return state.elasticLimbsUsed ? 'consumed' : 'available'
@@ -113,10 +113,12 @@ function getCombatMutationVisualState(id: CombatMutationId, state: CombatMutatio
             return state.recoverySurgeUsed ? 'consumed' : 'available'
         case 'SYMBIOSIS':
             return hasSymbiosisLink ? 'linked' : 'available'
+        case 'FINE_DEL_MONDO':
+            return hasFineDelMondoActivation ? 'consumed' : 'available'
     }
 }
 
-function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: CombatMutationState, playerId: string, links: GameSnapshot['game']['symbiosis_links']): CombatMutationSlotV2[] {
+function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: CombatMutationState, playerId: string, links: GameSnapshot['game']['symbiosis_links'], fineDelMondoActivations: GameSnapshot['game']['fine_del_mondo_activations']): CombatMutationSlotV2[] {
     return loadout.map((id) => {
         const mutation = COMBAT_MUTATION_CATALOG[id]
         const link = links.find((candidate) => candidate.ownerPlayerId === playerId)
@@ -126,7 +128,7 @@ function buildCombatMutationSlots(loadout: readonly CombatMutationId[], state: C
             label: mutation.label,
             shortDescription: mutation.shortDescription,
             iconKey: mutation.iconKey,
-            status: getCombatMutationVisualState(id, state, Boolean(link)),
+            status: getCombatMutationVisualState(id, state, Boolean(link), fineDelMondoActivations.some((activation) => activation.ownerPlayerId === playerId)),
             linkLabel: id === 'SYMBIOSIS' && link ? `${TRAIT_LABELS[link.sourceTrait]} ↔ ${TRAIT_LABELS[link.targetTrait]}` : undefined,
         }
     })
@@ -295,6 +297,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     const playability = isSnapshotPlayable(snapshot)
     const genes = buildGenes(snapshot)
     const symbiosisLinks = snapshot.game.symbiosis_links ?? []
+    const fineDelMondoActivations = snapshot.game.fine_del_mondo_activations ?? []
     const selectedGene = resolveSelectedGene(genes, input.selectedGeneId)
     const selectedGeneId = selectedGene?.id ?? null
     const myHasSubmitted = Boolean(snapshot.myCurrentAction) || input.hasLocalSubmittedAction
@@ -324,7 +327,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             },
             round: {
                 current: snapshot.game.current_round,
-                total: TOTAL_ROUNDS,
+                total: snapshot.game.scheduled_rounds,
             },
             roundEvent: {
                 id: 'unknown-event',
@@ -343,6 +346,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             canUse: false,
             canEvolve: false,
             canActivateSymbiosis: false,
+            canActivateFineDelMondo: false,
             symbiosisTargets: [],
             canSelectGenes: false,
             invalidReason: playability.reason ?? 'Sessione non valida.',
@@ -374,16 +378,27 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
         && snapshot.game.rule_version === RULE_VERSION
         && opponent,
     ) && (status === 'choosing' || status === 'error')
+    const canActivateFineDelMondo = Boolean(
+        snapshot.me?.combat_mutation_loadout.includes('FINE_DEL_MONDO')
+        && !fineDelMondoActivations.some((activation) => activation.ownerPlayerId === snapshot.me?.id)
+        && snapshot.game.rule_version === RULE_VERSION
+        && snapshot.game.current_round >= 3
+        && snapshot.game.current_round <= snapshot.game.scheduled_rounds - 2,
+    ) && (status === 'choosing' || status === 'error')
 
     const submittedAction = snapshot.myCurrentAction
         ? snapshot.myCurrentAction.action_type === 'ACTIVATE_MUTATION'
-            ? { actionType: 'ACTIVATE_MUTATION' as const, sourceTrait: snapshot.myCurrentAction.trait, targetTrait: snapshot.myCurrentAction.target_trait }
+            ? snapshot.myCurrentAction.mutation_id === 'FINE_DEL_MONDO'
+                ? { actionType: 'ACTIVATE_MUTATION' as const, mutationId: 'FINE_DEL_MONDO' as const }
+                : { actionType: 'ACTIVATE_MUTATION' as const, mutationId: 'SYMBIOSIS' as const, sourceTrait: snapshot.myCurrentAction.trait, targetTrait: snapshot.myCurrentAction.target_trait }
             : { trait: snapshot.myCurrentAction.trait, actionType: snapshot.myCurrentAction.action_type }
         : input.localSubmittedAction
 
     const submittedGene = submittedAction && submittedAction.actionType !== 'ACTIVATE_MUTATION' ? genes.find((gene) => gene.traitType === submittedAction.trait) : selectedGene
     const submittedGeneName = submittedAction?.actionType === 'ACTIVATE_MUTATION'
-        ? `${TRAIT_LABELS[submittedAction.sourceTrait]} ↔ ${TRAIT_LABELS[submittedAction.targetTrait]}`
+        ? submittedAction.mutationId === 'FINE_DEL_MONDO'
+            ? 'Fine del mondo'
+            : `${TRAIT_LABELS[submittedAction.sourceTrait]} ↔ ${TRAIT_LABELS[submittedAction.targetTrait]}`
         : submittedGene?.name
 
     return {
@@ -394,7 +409,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
             creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
-            combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state, me.id, symbiosisLinks),
+            combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state, me.id, symbiosisLinks, fineDelMondoActivations),
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
         opponent: {
@@ -405,13 +420,13 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
             creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
             combatMutations: opponent
-                ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state, opponent.id, symbiosisLinks)
+                ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state, opponent.id, symbiosisLinks, fineDelMondoActivations)
                 : [],
             status: resolvePlayerStatus(opponentHasSubmitted, opponent?.connected ?? false),
         },
         round: {
             current: snapshot.game.current_round,
-            total: TOTAL_ROUNDS,
+            total: snapshot.game.scheduled_rounds,
         },
         roundEvent: mapRoundEvent(snapshot.currentRoundEvent!, true),
         nextRoundEvent: snapshot.nextRoundEvent
@@ -426,6 +441,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
         canUse,
         canEvolve,
         canActivateSymbiosis,
+        canActivateFineDelMondo,
         symbiosisTargets: opponent ? TRAITS.map((trait) => ({ id: trait, name: TRAIT_LABELS[trait] })) : [],
         canSelectGenes,
         errorMessage: input.submitErrorMessage ?? undefined,

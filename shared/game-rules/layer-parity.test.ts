@@ -315,6 +315,8 @@ function snapshotFor(scenario: OracleScenario): GameSnapshot {
         rematch_count: 0,
         rule_version: RULE_VERSION,
         symbiosis_links: [],
+        scheduled_rounds: 7,
+        fine_del_mondo_activations: [],
         created_at: '2026-07-30T10:00:00.000Z',
         updated_at: '2026-07-30T10:00:00.000Z',
         state_revision: 0,

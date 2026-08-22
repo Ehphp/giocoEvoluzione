@@ -5,10 +5,17 @@ export { BOT_COMBAT_MUTATION_LOADOUT, COMBAT_MUTATION_CATALOG, LEGACY_PASSIVE_CO
 
 /** Rules frozen on existing matches before SYMBIOSIS was introduced. */
 export const LEGACY_RULE_VERSION = 'combat-mutations-loadout-mvp-v1'
+/** Rules frozen on matches created with SYMBIOSIS but before dynamic duration. */
+export const SYMBIOSIS_RULE_VERSION = 'combat-mutations-symbiosis-v1'
 /** Rules selected by every newly-created match. */
-export const RULE_VERSION = 'combat-mutations-symbiosis-v1'
-export const SUPPORTED_RULE_VERSIONS = [LEGACY_RULE_VERSION, RULE_VERSION] as const
-export const TOTAL_ROUNDS = 7
+export const RULE_VERSION = 'combat-mutations-fine-del-mondo-v1'
+export const SUPPORTED_RULE_VERSIONS = [LEGACY_RULE_VERSION, SYMBIOSIS_RULE_VERSION, RULE_VERSION] as const
+export const STANDARD_SCHEDULED_ROUNDS = 7
+export const MIN_SCHEDULED_ROUNDS = 5
+export const MAX_SCHEDULED_ROUNDS = 10
+/** @deprecated Use STANDARD_SCHEDULED_ROUNDS for the default, never as a match limit. */
+export const TOTAL_ROUNDS = STANDARD_SCHEDULED_ROUNDS
+/** @deprecated Runtime clinch is derived from scheduled rounds and current score. */
 export const WINS_TO_WIN = 4
 export const BASE_USE_VALUE = 2
 /** Fixed round value of EVOLVE; event and matchup modifiers never apply. */

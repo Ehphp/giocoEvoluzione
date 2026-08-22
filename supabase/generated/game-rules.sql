@@ -57,12 +57,9 @@ returns jsonb language sql as $$
       'FLASH_FLOOD'
     ]::text[]) event_id order by random()) randomized
   )
-  select jsonb_agg(event_id order by position)
-  from (
-    select event_id, position from shuffled
-    union all
-    select event_id, 7 as position from shuffled where position = 1
-  ) best_of_seven;
+  select jsonb_agg(shuffled.event_id order by rounds.round_number)
+  from generate_series(1, 10) as rounds(round_number)
+  join shuffled on shuffled.position = ((rounds.round_number - 1) % 6) + 1;
 $$;
 
 -- Bot game creation is structural and lives in supabase/schema.sql.

@@ -143,6 +143,36 @@ describe('BattleScreen', () => {
         expect(container.querySelectorAll('.duel-card .ev-pips--compact')).toHaveLength(2)
     })
 
+    it('confirms FINE_DEL_MONDO before submitting its zero-point activation', async () => {
+        let activations = 0
+        const viewModel = makeViewModel({
+            player: {
+                id: 'me', name: 'Tu', score: 3, roundValueTotal: 12, status: 'choosing',
+                combatMutations: [{ id: 'FINE_DEL_MONDO', label: 'Fine del mondo', shortDescription: 'Casualmente -2 o +3 round.', iconKey: 'fine-del-mondo', status: 'available' }],
+            },
+            canActivateFineDelMondo: true,
+        })
+        act(() => {
+            root.render(createElement(BattleScreen, {
+                viewModel,
+                onSelectGene: () => undefined,
+                onUseGene: async () => undefined,
+                onEvolveGene: async () => undefined,
+                onActivateFineDelMondo: async () => { activations += 1; return true },
+                onLeaveSession: () => undefined,
+            }))
+        })
+
+        act(() => container.querySelector<HTMLButtonElement>('[aria-label="Attiva Fine del mondo"]')!.click())
+        expect(document.body.textContent).toContain('Alterare la durata della partita?')
+
+        await act(async () => {
+            ;[...document.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Attiva Fine del mondo'))!.click()
+        })
+        expect(activations).toBe(1)
+        expect(document.body.textContent).not.toContain('Alterare la durata della partita?')
+    })
+
     it('opens and closes the leave action from the player avatar without taking header space', () => {
         render()
 

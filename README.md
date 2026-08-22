@@ -41,7 +41,11 @@ Assumendo di avere la CLI Supabase installata e il progetto linkato:
 supabase functions deploy resolve-round
 ```
 
-La funzione usa automaticamente `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` nel runtime Supabase.
+La funzione usa automaticamente `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` nel runtime Supabase. Prima del deploy imposta anche un segreto lungo e casuale per il sorteggio server-authoritative delle Combat Mutations:
+
+```bash
+supabase secrets set COMBAT_MUTATION_RNG_SECRET='<segreto-lungo-casuale>'
+```
 
 ## Avvio locale
 
@@ -62,7 +66,7 @@ Apri l indirizzo di rete mostrato da Vite sui due telefoni collegati alla stessa
 4. Entrambi vedono round, punteggio, evento corrente e prossimo evento.
 5. Ognuno seleziona un tratto e poi `Usa` oppure `Evolvi`.
 6. Dopo la seconda conferma, il round viene risolto contemporaneamente.
-7. La partita termina alla quarta vittoria oppure, al piu tardi, dopo sette round.
+7. La partita termina quando il punteggio e matematicamente irraggiungibile oppure alla durata programmata: 7 round di default, variabile tra 5 e 10 con Fine del mondo.
 8. Un refresh prova a ripristinare la partita tramite `localStorage`.
 
 ## Note operative

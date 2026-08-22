@@ -1,4 +1,4 @@
--- Generated migration for adaptations-exhaustion-best-of-seven-v2. Do not edit manually.
+-- Generated migration for adaptations-exhaustion-dynamic-duration-v2. Do not edit manually.
 -- Development games are intentionally invalidated; structural tables remain intact.
 begin;
 delete from public.games;
@@ -62,12 +62,9 @@ returns jsonb language sql as $$
       'FLASH_FLOOD'
     ]::text[]) event_id order by random()) randomized
   )
-  select jsonb_agg(event_id order by position)
-  from (
-    select event_id, position from shuffled
-    union all
-    select event_id, 7 as position from shuffled where position = 1
-  ) best_of_seven;
+  select jsonb_agg(shuffled.event_id order by rounds.round_number)
+  from generate_series(1, 10) as rounds(round_number)
+  join shuffled on shuffled.position = ((rounds.round_number - 1) % 6) + 1;
 $$;
 
 -- Bot game creation is structural and lives in supabase/schema.sql.
