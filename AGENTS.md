@@ -1,11 +1,16 @@
 # AGENTS.md — working on the Evori interface
 
 Rules for anyone (human or agent) touching the UI. They exist so the interface stays coherent
-after the rebuild from `concept.JPG`. The reasoning behind them is in
+as rebuilt from the original concept artwork. The reasoning behind them is in
 [`docs/ui-design-system.md`](docs/ui-design-system.md); this file is the operating manual.
 
 Read this before writing UI code. If a rule blocks something the product needs, change the rule
 here in the same commit — do not quietly work around it.
+
+**Anything that has to be done on the Supabase project** — deploying an Edge Function, adding or
+removing a secret, dropping a database object, changing auth config — goes in
+[`TODO_SUPABASE.md`](TODO_SUPABASE.md). Do not leave it only in a conversation: that work cannot be
+done from the repository, so it needs a written home.
 
 ---
 
@@ -21,7 +26,7 @@ The refactor rewired the presentation; it did not change the game. **Keep it tha
 | View models / controllers | `src/components/game-v2/{controller,types.ts}`, `src/components/game-results/{buildMatchResultViewModel,types}.ts`, `src/screens/home/{buildHomeViewModel,types}.ts` | **read and re-wire, do not re-derive** |
 | Presentation config | `src/components/game-v2/gameSelectionAssets.ts`, `src/components/game-v2/components/creatureOrientation.ts` | tune sizing/paths only |
 | Game rules & data | `shared/**`, `src/game/**`, `src/lib/**`, `src/auth/**`, `supabase/**`, `tools/**` | **do not touch for UI work** |
-| Internal tools (flag-gated) | `creature-transformation-lab`, `visual-background-cleanup` | keep functional; they wear the design system too (see §3) |
+| Evolution screen (flag-gated) | `src/components/creature-visual-progression/**` | keep functional; it wears the design system too (see §3) |
 
 If a screen needs a value the view model does not expose, **add it in the view model**, do not
 recompute rules in a component. Scores, affinities, predictions and labels all come from the
@@ -179,7 +184,6 @@ npm run audit:mobile -- battle safe-area
 npm run audit:mobile -- battle landscape
 npm run audit:mobile -- battle "sheet:.environment-card__main"
 npm run audit:mobile -- draft            # the battle-start overlay
-npm run audit:mobile -- lab              # the transformation lab
 ```
 
 Routes: `/` (auth), `home`, `battle`, `profile`, `evolution`.
@@ -189,22 +193,29 @@ Modes: *(none)* · `safe-area` · `landscape` · `sheet:<css-selector>`.
 modes, plus any overlay it can open.**
 
 Inspect screens without a backend session with
-`?ui-preview=home|battle|profile|evolution|draft|lab` (development only, fixtures in
-`src/dev/uiPreviewFixtures.ts`). `draft` is the battle-start overlay over a live battle screen;
-`lab` is the transformation lab. The `evolution` and `lab` routes still call the transformation
-API — stub `**/functions/v1/**` to reach their later states.
+`?ui-preview=home|battle|collection|profile|ranking|evolution|draft` (development only, fixtures
+in `src/dev/uiPreviewFixtures.ts`). `draft` is the battle-start overlay over a live battle screen.
+The `evolution` route still calls the transformation API — stub `**/functions/v1/**` to reach its
+later states.
+
+To capture every preview route headless in one pass (Chromium, no session needed):
+
+```bash
+npm run dev &                            # or any port, then set PREVIEW_URL
+npm run preview:shots                    # writes artifacts/preview/<route>.png
+```
+
+It fails the run on any console error or uncaught exception, so a route that renders but throws
+is not a passing route.
 
 ### Known pre-existing failures
 
-Three tests across two files fail on a clean checkout. Confirm with `git stash` before assuming
-your change caused one.
+One test fails on a clean checkout. Confirm with `git stash` before assuming your change caused it.
 
 - `supabase/functions/generate-creature-transformation/security-hardening.test.ts` fails on
-  `expect(authProvider).not.toContain('.auth.signUp(')`. It lives in auth logic, not the UI.
-  Leave it; do not "fix" it by editing the UI.
-- `FluxEvolutionChainSimulator.test.tsx` (2) fails in its `window.localStorage.clear()` helper on
-  environments where the jsdom `localStorage` is unavailable (containers without
-  `--localstorage-file`). It is an environment limitation, not a component failure.
+  `expect(authProvider).not.toContain('.auth.signUp(')`. `AuthProvider` does call `signUp`, and
+  the login screen offers "Registrati" — so either the guard is stale or public signup came back
+  unintentionally. It is an auth-policy decision, not a UI bug: do not "fix" it by editing the UI.
 
 ---
 

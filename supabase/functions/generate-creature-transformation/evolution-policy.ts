@@ -1,14 +1,13 @@
 import { readCreatureVisualProgressionWinsRequired } from '../../../shared/creature-transformations/visual-progression.ts'
-import { DEFAULT_FAL_FLUX_MODEL, FAL_SEEDREAM_IMAGE_SIZE, FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
-import type { FluxPromptTemplateVersion } from './flux-image-generation-service.ts'
+import { FAL_SEEDREAM_IMAGE_SIZE, FAL_SEEDREAM_MODEL } from './fal-flux-image-provider.ts'
 
 /**
- * Server-side policy of the FLUX evolution pipeline.
+ * Server-side policy of the creature evolution pipeline.
  *
- * There is one production pipeline, so there is no pipeline switch here. What the policy still
- * owns is access (who may spend money), the cost and quota envelope, and whether the structural
- * `BODY_PLAN_MUTATION` capability may be used at all — off by default, so normal gameplay can
- * never produce one.
+ * There is one production pipeline — Seedream for the image, an LLM micro-concept for the prompt —
+ * so there is no pipeline switch here. What the policy owns is access (who may spend money), the
+ * cost and quota envelope, and whether the structural `BODY_PLAN_MUTATION` capability may be used
+ * at all — off by default, so normal gameplay can never produce one.
  */
 
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 300
@@ -21,22 +20,17 @@ const DEFAULT_DAILY_REAL_IMAGE_LIMIT = 3
 const DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT = 10
 const DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT = 2
 const DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS = 60
-const DEFAULT_FLUX_TIMEOUT_MS = 30_000
+const DEFAULT_FAL_TIMEOUT_MS = 30_000
 const DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS = 3_600
 
-export type FluxPipelinePolicy = Readonly<{
+/**
+ * The prompt is written by an LLM before the image provider is called, so its credentials are a
+ * hard requirement of the pipeline rather than an optional enrichment.
+ */
+export type MicroConceptPolicy = Readonly<{
     apiKey: string | null
-    model: string
-    timeoutMs: number
-    submissionSourceUrlTtlSeconds: number
-    promptTemplateVersion: FluxPromptTemplateVersion
-    estimatedCostUsd: number | null
-    maxEstimatedCostUsd: number | null
-    microConceptApiKey: string | null
-    microConceptModel: string | null
+    model: string | null
 }>
-
-export type CreatureEvolutionImagePipeline = 'flux' | 'seedream'
 
 /**
  * The production Seedream contract is deliberately smaller than the Lab contract:
@@ -57,8 +51,7 @@ export type SeedreamPipelinePolicy = Readonly<{
     }>
 }>
 
-export type CreatureTransformationLabPolicy = Readonly<{
-    enabled: boolean
+export type CreatureEvolutionPolicy = Readonly<{
     signedUrlTtlSeconds: number
     dailyRequestLimit: number
     dailyBudgetUsd: number
@@ -69,11 +62,7 @@ export type CreatureTransformationLabPolicy = Readonly<{
     realImageCooldownSeconds: number
     /** Profiles allowed to spend on image generation, beside the `can_generate_images` flag. */
     paidGenerationProfileIds: ReadonlySet<string>
-    /** Profiles allowed to reach the internal Lab operations. A VITE flag is never sufficient. */
-    labProfileIds: ReadonlySet<string>
-    /** Defaults to FLUX so Seedream remains opt-in until production validation is complete. */
-    imagePipeline: CreatureEvolutionImagePipeline
-    flux: FluxPipelinePolicy
+    microConcept: MicroConceptPolicy
     seedream: SeedreamPipelinePolicy
     /** Structural topology changes. Disabled in production gameplay by default. */
     bodyPlanMutation: Readonly<{ enabled: boolean }>
@@ -81,7 +70,6 @@ export type CreatureTransformationLabPolicy = Readonly<{
         enabled: boolean
         productionGenerationEnabled: boolean
         adoptionEnabled: boolean
-        backgroundCleanupEnabled: boolean
         allowedProfileIds: ReadonlySet<string>
         winsRequired: number
     }>
@@ -111,23 +99,10 @@ function readProfileIdSet(value: string | undefined): ReadonlySet<string> {
     )
 }
 
-function readFluxPolicy(readEnvironment: (name: string) => string | undefined): FluxPipelinePolicy {
-    const configuredPromptTemplateVersion = readEnvironment('FLUX_PROMPT_TEMPLATE_VERSION')
-    const promptTemplateVersion: FluxPromptTemplateVersion = configuredPromptTemplateVersion === 'flux-minimal-v1'
-        ? 'flux-minimal-v1'
-        : configuredPromptTemplateVersion === 'flux-micro-v5'
-            ? 'flux-micro-v5'
-            : configuredPromptTemplateVersion === 'flux-micro-v6' ? 'flux-micro-v6' : 'flux-micro-v7'
+function readMicroConceptPolicy(readEnvironment: (name: string) => string | undefined): MicroConceptPolicy {
     return Object.freeze({
-        apiKey: readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
-        model: readEnvironment('FAL_FLUX_MODEL')?.trim() || DEFAULT_FAL_FLUX_MODEL,
-        timeoutMs: readBoundedInteger(readEnvironment('FAL_FLUX_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
-        submissionSourceUrlTtlSeconds: readBoundedInteger(readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'), DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS, 300, 86_400),
-        promptTemplateVersion,
-        estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_ESTIMATED_COST_USD')),
-        maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('FAL_FLUX_MAX_ESTIMATED_COST_USD')),
-        microConceptApiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
-        microConceptModel: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
+        apiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
+        model: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
     })
 }
 
@@ -135,9 +110,9 @@ function readSeedreamPolicy(readEnvironment: (name: string) => string | undefine
     return Object.freeze({
         apiKey: readEnvironment('FAL_SEEDREAM_API_KEY')?.trim() || readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
         model: FAL_SEEDREAM_MODEL,
-        timeoutMs: readBoundedInteger(readEnvironment('FAL_SEEDREAM_TIMEOUT_MS'), DEFAULT_FLUX_TIMEOUT_MS, 1_000, 180_000),
+        timeoutMs: readBoundedInteger(readEnvironment('FAL_SEEDREAM_TIMEOUT_MS'), DEFAULT_FAL_TIMEOUT_MS, 1_000, 180_000),
         submissionSourceUrlTtlSeconds: readBoundedInteger(readEnvironment('FAL_SEEDREAM_SUBMISSION_SOURCE_URL_TTL_SECONDS') ?? readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'), DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS, 300, 86_400),
-        // Seedream has its own billing envelope. Never borrow the FLUX estimate here.
+        // Seedream owns its billing envelope: these two variables are required, never defaulted.
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_ESTIMATED_COST_PER_GENERATION')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION')),
         structuralMutationsEnabled: readEnvironment('SEEDREAM_STRUCTURAL_MUTATIONS_ENABLED') === 'true',
@@ -150,16 +125,13 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         enabled: readEnvironment('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true',
         productionGenerationEnabled: readEnvironment('CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED') === 'true',
         adoptionEnabled: readEnvironment('CREATURE_VISUAL_ADOPTION_ENABLED') === 'true',
-        backgroundCleanupEnabled: readEnvironment('CREATURE_VISUAL_BACKGROUND_CLEANUP_ENABLED') === 'true',
         allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_VISUAL_PRODUCTION_PROFILE_IDS')),
         winsRequired: readCreatureVisualProgressionWinsRequired(readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED')),
     })
 }
 
-export function readCreatureTransformationLabPolicy(readEnvironment: (name: string) => string | undefined): CreatureTransformationLabPolicy {
-    const configuredImagePipeline = readEnvironment('CREATURE_EVOLUTION_IMAGE_PIPELINE')?.trim().toLowerCase()
+export function readCreatureEvolutionPolicy(readEnvironment: (name: string) => string | undefined): CreatureEvolutionPolicy {
     return Object.freeze({
-        enabled: readEnvironment('CREATURE_TRANSFORMATION_LAB_ENABLED') === 'true',
         signedUrlTtlSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'), DEFAULT_SIGNED_URL_TTL_SECONDS, 60, 3600),
         dailyRequestLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'), DEFAULT_DAILY_REQUEST_LIMIT, 1, 1000),
         dailyBudgetUsd: readBoundedUsd(readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'), DEFAULT_DAILY_BUDGET_USD, 10000),
@@ -169,10 +141,7 @@ export function readCreatureTransformationLabPolicy(readEnvironment: (name: stri
         globalConcurrentRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100),
         realImageCooldownSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400),
         paidGenerationProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS')),
-        // The deployed variable is still the one that gated the internal experiments.
-        labProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_LAB_PROFILE_IDS') ?? readEnvironment('CREATURE_TRANSFORMATION_LINEAGE_EXPERIMENT_PROFILE_IDS')),
-        imagePipeline: configuredImagePipeline === 'seedream' ? 'seedream' : 'flux',
-        flux: readFluxPolicy(readEnvironment),
+        microConcept: readMicroConceptPolicy(readEnvironment),
         seedream: readSeedreamPolicy(readEnvironment),
         bodyPlanMutation: Object.freeze({ enabled: readEnvironment('CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED') === 'true' }),
         visualProgression: readVisualProgressionPolicy(readEnvironment),

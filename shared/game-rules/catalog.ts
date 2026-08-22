@@ -44,4 +44,3 @@ export const ROUND_EVENT_DEFINITIONS: EnvironmentalCrisisDefinition[] = [
     crisis('FLASH_FLOOD', 'Inondazione lampo', 'Canali rapidi e terreno allagato.', 'ECOLOGICAL', { FEROCITY: 0, ARMOR: 0, AGILITY: 1, SENSES: 1, CAMOUFLAGE: 2 }, { SENSES: 'I sensi leggono la corrente.', CAMOUFLAGE: 'Il mimetismo sfrutta il fondale.' }),
 ]
 export const ROUND_EVENT_BY_ID = Object.fromEntries(ROUND_EVENT_DEFINITIONS.map((definition) => [definition.id, definition])) as Record<string, EnvironmentalCrisisDefinition>
-export const PRODUCTION_CATALOG_AUDIT = { ruleVersion: RULE_VERSION, fitnessVersion: RULE_VERSION, candidateId: 'natural-advantage-cycle-v1', catalogSignature: RULE_VERSION, auditSeed: 1592598566, validatedSequences: 720 } as const

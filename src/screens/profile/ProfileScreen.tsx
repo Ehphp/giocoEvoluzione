@@ -26,7 +26,6 @@ type ProfileScreenProps = {
     visualVersionNumber?: number | null
     visualTrait?: string | null
     onOpenEvolution?: () => void
-    onOpenBackgroundCleanup?: () => void
     onSetCombatMutationLoadout?: (loadout: CombatMutationLoadout) => Promise<void>
 }
 
@@ -68,7 +67,6 @@ export function ProfileScreen({
     visualVersionNumber,
     visualTrait,
     onOpenEvolution,
-    onOpenBackgroundCleanup,
     onSetCombatMutationLoadout,
 }: ProfileScreenProps) {
     const experience = getExperienceProgress(creature.experience)
@@ -200,15 +198,12 @@ export function ProfileScreen({
                     {mutationError ? <Notice tone="error">{mutationError}</Notice> : null}
                 </Panel>
 
-                {onOpenEvolution || onOpenBackgroundCleanup ? (
+                {onOpenEvolution ? (
                     <div className="profile-actions">
-                        {onOpenEvolution ? (
-                            <Button tone="evolve" block onClick={onOpenEvolution}>
-                                <DnaIcon aria-hidden="true" />
-                                Evolvi creatura
-                            </Button>
-                        ) : null}
-                        {onOpenBackgroundCleanup ? <Button className="profile-actions__cleanup" tone="cream" size="sm" onClick={onOpenBackgroundCleanup}>Ripulisci visuali</Button> : null}
+                        <Button tone="evolve" block onClick={onOpenEvolution}>
+                            <DnaIcon aria-hidden="true" />
+                            Evolvi creatura
+                        </Button>
                     </div>
                 ) : null}
 

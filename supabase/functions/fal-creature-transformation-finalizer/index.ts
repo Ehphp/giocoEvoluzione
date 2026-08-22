@@ -3,19 +3,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import { getBodyPlan, resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
-import { CURRENT_CREATURE_RENDER_SPECIFICATION } from '../../../shared/creature-transformations/render-specifications.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from '../generate-creature-transformation/supabase-creature-identity-resolver.ts'
 import { SupabaseCreatureTransformationStorageAdapter, type CreatureTransformationStorageClient } from '../generate-creature-transformation/supabase-creature-transformation-storage.ts'
 import { SupabaseCreatureTransformationRequestRepository, type CreatureTransformationRequestRepositoryClient, type CreatureTransformationRequestRecord } from '../generate-creature-transformation/creature-transformation-request-repository.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from '../generate-creature-transformation/creature-visual-progression-repository.ts'
-import { FalFluxImageProvider, FAL_SEEDREAM_MODEL, type FalQueuedImage } from '../generate-creature-transformation/fal-flux-image-provider.ts'
+import { FalFluxImageProvider, type FalQueuedImage } from '../generate-creature-transformation/fal-flux-image-provider.ts'
 import { appendFalWebhookCallbackToken } from '../generate-creature-transformation/fal-webhook-callback-token.ts'
 import { FLUX_MAX_CROP_RETRIES, FLUX_SUBJECT_MARGIN_RATIO, FluxImageGenerationServiceError } from '../generate-creature-transformation/flux-image-generation-service.ts'
-import { composeFluxQueuePrompt, composeSeedreamQueuePrompt, fluxMicroConceptFromSnapshot } from '../generate-creature-transformation/fal-queue-submission-service.ts'
+import { composeSeedreamQueuePrompt, fluxMicroConceptFromSnapshot } from '../generate-creature-transformation/fal-queue-submission-service.ts'
 import { parseFalQueueWorkflow } from '../generate-creature-transformation/fal-queue-workflow.ts'
-import { readCreatureTransformationLabPolicy } from '../generate-creature-transformation/lab-policy.ts'
-import { FluxMicroConceptGenerator } from '../generate-creature-transformation/flux-micro-concept-generator.ts'
-import { prepareSeedreamDiagnosticPrompt } from '../generate-creature-transformation/seedream-diagnostic-service.ts'
+import { readCreatureEvolutionPolicy } from '../generate-creature-transformation/evolution-policy.ts'
 import { redactErrorMessage, redactSensitiveText } from '../generate-creature-transformation/secret-redaction.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, shouldRejectSeedreamCenterFacing, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
@@ -152,114 +149,6 @@ async function failRequest(repository: SupabaseCreatureTransformationRequestRepo
         : 'La finalizzazione Fal non e riuscita.'
     try { await repository.markFailed({ requestId: record.id, profileId: record.profileId, errorCode: code, errorMessage: message }) } catch { /* terminal/duplicate requests are already safe */ }
     await restoreTrack(visualRepository, record)
-}
-
-async function retryCroppedFlux(input: {
-    record: CreatureTransformationRequestRecord
-    provider: FalFluxImageProvider
-    storage: SupabaseCreatureTransformationStorageAdapter
-    repository: SupabaseCreatureTransformationRequestRepository
-    resolver: SupabaseCreatureIdentityResolver
-    webhookUrl: string
-    sourceUrlTtlSeconds: number
-    bodyPlanMutationEnabled: boolean
-}) {
-    const workflow = parseFalQueueWorkflow(input.record.falWorkflow)
-    const concept = fluxMicroConceptFromSnapshot(input.record.conceptSnapshot)
-    if (!workflow || workflow.kind !== 'FLUX' || !concept || !input.record.providerRequestId || !input.record.promptTemplateVersion) {
-        throw new FluxImageGenerationServiceError('FLUX_RESULT_IMAGE_INVALID', 'I metadati della submission FLUX non sono disponibili per il retry di framing.')
-    }
-    const source = await input.resolver.resolve({ profileId: input.record.profileId, creatureId: input.record.creatureId })
-    const bodyPlan = source.bodyPlan ?? resolveCanonicalBodyPlan({ baseCreatureKey: source.identity.baseCreatureKey, adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds })
-    if (!bodyPlan || !input.record.evolutionTargetId) throw new FluxImageGenerationServiceError('FLUX_BODY_PLAN_UNSUPPORTED', 'La topologia della richiesta FLUX non e disponibile per il retry.')
-    const plan = buildFluxEvolutionPlan({
-        bodyPlan,
-        evolutionTargetId: input.record.evolutionTargetId,
-        previousTransformations: source.previousTransformations,
-        seed: input.record.idempotencyKey,
-        bodyPlanMutationEnabled: input.bodyPlanMutationEnabled,
-        adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds,
-    })
-    const sourceUrl = (await input.storage.createVisualVersionSignedUrl({ assetPath: workflow.source.path, isBaseVersion: workflow.source.isBaseVersion, expiresInSeconds: input.sourceUrlTtlSeconds })).signedUrl
-    const nextAttempt = input.record.attemptCount
-    const prompt = await composeFluxQueuePrompt({ identity: source.identity, plan, concept, promptTemplateVersion: input.record.promptTemplateVersion as never, framingAttempt: nextAttempt })
-    const submission = await input.provider.submitFlux({ prompt: prompt.prompt, sourceUrl, webhookUrl: input.webhookUrl })
-    await input.repository.updateRunningFalSubmission({
-        requestId: input.record.id,
-        profileId: input.record.profileId,
-        data: {
-            provider: submission.provider,
-            model: submission.model,
-            providerRequestId: submission.providerRequestId,
-            promptTemplateVersion: input.record.promptTemplateVersion,
-            promptSha256: prompt.promptSha256,
-            promptText: prompt.prompt,
-            expectedProviderRequestId: input.record.providerRequestId,
-            incrementAttempt: true,
-        },
-    })
-}
-
-async function finalizeFlux(input: {
-    record: CreatureTransformationRequestRecord
-    image: FalQueuedImage
-    provider: FalFluxImageProvider
-    repository: SupabaseCreatureTransformationRequestRepository
-    storage: SupabaseCreatureTransformationStorageAdapter
-    visualRepository: SupabaseCreatureVisualProgressionRepository
-    resolver: SupabaseCreatureIdentityResolver
-    policy: ReturnType<typeof readCreatureTransformationLabPolicy>
-}) {
-    if (!input.record.providerRequestId || !input.record.sourceSha256) throw new FluxImageGenerationServiceError('FLUX_RESULT_IMAGE_INVALID', 'Metadati FLUX incompleti per la finalizzazione.')
-    const downloaded = await input.provider.downloadQueuedImage(input.image)
-    const png = await input.provider.normalizeQueuedImage(downloaded)
-    const validation = await new ImageValidator().validate({
-        bytes: png,
-        mimeType: 'image/png',
-        renderSpecification: CURRENT_CREATURE_RENDER_SPECIFICATION,
-        maxBytes: 10 * 1024 * 1024,
-        sourceSha256: input.record.sourceSha256,
-        requireAlpha: false,
-        requireSubjectMargin: FLUX_SUBJECT_MARGIN_RATIO,
-    })
-    if (!validation.valid) {
-        const cropFailure = validation.problems.some((problem) => problem.code === 'FLUX_SUBJECT_CROPPED' || problem.code === 'PNG_FOREGROUND_DETECTION_FAILED')
-        if (cropFailure && input.record.attemptCount <= FLUX_MAX_CROP_RETRIES) {
-            await retryCroppedFlux({
-                record: input.record,
-                provider: input.provider,
-                storage: input.storage,
-                repository: input.repository,
-                resolver: input.resolver,
-                webhookUrl: falWebhookUrl(),
-                sourceUrlTtlSeconds: input.policy.flux.submissionSourceUrlTtlSeconds,
-                bodyPlanMutationEnabled: input.policy.bodyPlanMutation.enabled,
-            })
-            return
-        }
-        const cropped = validation.problems.some((problem) => problem.code === 'FLUX_SUBJECT_CROPPED')
-        throw new FluxImageGenerationServiceError(cropped ? 'FLUX_SUBJECT_CROPPED' : 'FLUX_RESULT_IMAGE_INVALID', cropped ? 'Il soggetto FLUX resta troppo vicino al bordo dopo i retry di framing.' : 'Il PNG raw FLUX non ha superato i controlli tecnici.', validation.problems)
-    }
-    await input.storage.saveRawResult({ profileId: input.record.profileId, idempotencyKey: input.record.idempotencyKey, image: png })
-    const completed = await input.repository.markSucceeded({
-        requestId: input.record.id,
-        profileId: input.record.profileId,
-        data: {
-            provider: 'fal.ai',
-            model: input.record.model ?? input.policy.flux.model,
-            providerRequestId: input.record.providerRequestId,
-            sourceSha256: input.record.sourceSha256,
-            resultSha256: validation.metadata.sha256,
-            resultPath: await input.storage.createRawResultObjectPath(input.record.profileId, input.record.idempotencyKey),
-            resultMimeType: 'image/png',
-            resultWidth: validation.metadata.width,
-            resultHeight: validation.metadata.height,
-            generationLatencyMs: 0,
-            assetReadiness: 'EXPERIMENT_ONLY',
-            validationWarnings: ['BACKGROUND_REMOVAL_PENDING_CLIENT'],
-        },
-    })
-    if (completed.visualProgressTrackId) await input.visualRepository.markBackgroundRemovalPending({ profileId: completed.profileId, trackId: completed.visualProgressTrackId, requestId: completed.id })
 }
 
 async function retryCroppedSeedream(input: {
@@ -481,103 +370,6 @@ async function finalizeSeedreamProduction(input: {
     }
     if (completed.visualProgressTrackId) await input.visualRepository.markBackgroundRemovalPending({ profileId: completed.profileId, trackId: completed.visualProgressTrackId, requestId: completed.id })
 }
-
-async function finalizeSeedream(input: {
-    record: CreatureTransformationRequestRecord
-    image: FalQueuedImage
-    provider: FalFluxImageProvider
-    repository: SupabaseCreatureTransformationRequestRepository
-    storage: SupabaseCreatureTransformationStorageAdapter
-    resolver: SupabaseCreatureIdentityResolver
-    microConceptGenerator: FluxMicroConceptGenerator | null
-    sourceUrlTtlSeconds: number
-}) {
-    const workflow = parseFalQueueWorkflow(input.record.falWorkflow)
-    if (!workflow || workflow.kind !== 'SEEDREAM_DIAGNOSTIC' || !input.record.providerRequestId) throw new FluxImageGenerationServiceError('FLUX_RESULT_IMAGE_INVALID', 'Metadati Seedream incompleti per la finalizzazione.')
-    console.info('fal.finalizer.seedream_started', { providerRequestId: input.record.providerRequestId, chainStep: workflow.chainStep, chainMode: workflow.chainMode })
-    if (workflow.chainStep === 1 && workflow.chainMode !== 'NONE') {
-        let sourceUrl = input.image.url
-        if (workflow.chainMode === 'NORMALIZED_PROJECT_CHAIN') {
-            const downloaded = await input.provider.downloadQueuedImage(input.image)
-            console.info('fal.finalizer.image_downloaded', { providerRequestId: input.record.providerRequestId, mimeType: downloaded.mimeType, bytes: downloaded.bytes.byteLength })
-            seedreamImageDimensions(downloaded)
-            await input.storage.saveRawResult({ profileId: input.record.profileId, idempotencyKey: input.record.idempotencyKey, image: downloaded.bytes, mimeType: downloaded.mimeType })
-            sourceUrl = (await input.storage.createResultSignedUrl(await input.storage.createRawResultObjectPath(input.record.profileId, input.record.idempotencyKey, downloaded.mimeType), input.sourceUrlTtlSeconds)).signedUrl
-        }
-        let prompt = input.record.promptText
-        let refreshedPrompt: { promptTemplateVersion: string, promptSha256: string, conceptSnapshot?: NonNullable<CreatureTransformationRequestRecord['conceptSnapshot']> } | null = null
-        if (workflow.conceptSource === 'dynamic') {
-            if (!input.microConceptGenerator || !input.record.evolutionTargetId) throw new FluxImageGenerationServiceError('FLUX_CONCEPT_NOT_CONFIGURED', 'Il generatore del micro-concept Seedream non e configurato.')
-            const source = await input.resolver.resolve({ profileId: input.record.profileId, creatureId: input.record.creatureId })
-            const bodyPlan = source.bodyPlan ?? resolveCanonicalBodyPlan({ baseCreatureKey: source.identity.baseCreatureKey, adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds })
-            if (!bodyPlan) throw new FluxImageGenerationServiceError('FLUX_BODY_PLAN_UNSUPPORTED', 'La topologia Seedream non e disponibile.')
-            const plan = buildFluxEvolutionPlan({
-                bodyPlan,
-                evolutionTargetId: input.record.evolutionTargetId,
-                previousTransformations: source.previousTransformations,
-                seed: input.record.idempotencyKey,
-                bodyPlanMutationEnabled: false,
-                adoptedBodyPlanMutationIds: source.adoptedBodyPlanMutationIds,
-            })
-            const prepared = await prepareSeedreamDiagnosticPrompt({
-                experimentMode: workflow.experimentMode,
-                identity: source.identity,
-                plan,
-                microConceptGenerator: input.microConceptGenerator,
-            })
-            prompt = prepared.prompt
-            refreshedPrompt = {
-                promptTemplateVersion: prepared.promptTemplateVersion,
-                promptSha256: prepared.promptSha256,
-                ...(prepared.conceptSnapshot ? { conceptSnapshot: prepared.conceptSnapshot } : {}),
-            }
-        }
-        if (!prompt) throw new FluxImageGenerationServiceError('FLUX_RESULT_IMAGE_INVALID', 'Il prompt Seedream non e disponibile per il secondo passaggio.')
-        const submission = await input.provider.submitSeedreamDiagnostic({
-            prompt,
-            sourceUrl,
-            parameters: workflow.parameters,
-            webhookUrl: falWebhookUrl(),
-        })
-        await input.repository.updateRunningFalSubmission({
-            requestId: input.record.id,
-            profileId: input.record.profileId,
-            data: {
-                provider: submission.provider,
-                model: submission.model,
-                providerRequestId: submission.providerRequestId,
-                falWorkflow: { ...workflow, chainStep: 2 },
-                expectedProviderRequestId: input.record.providerRequestId,
-                incrementAttempt: true,
-                ...(refreshedPrompt ? refreshedPrompt : {}),
-            },
-        })
-        return
-    }
-    const downloaded = await input.provider.downloadQueuedImage(input.image)
-    console.info('fal.finalizer.image_downloaded', { providerRequestId: input.record.providerRequestId, mimeType: downloaded.mimeType, bytes: downloaded.bytes.byteLength })
-    const dimensions = seedreamImageDimensions(downloaded)
-    await input.storage.saveRawResult({ profileId: input.record.profileId, idempotencyKey: input.record.idempotencyKey, image: downloaded.bytes, mimeType: downloaded.mimeType })
-    await input.repository.markSucceeded({
-        requestId: input.record.id,
-        profileId: input.record.profileId,
-        data: {
-            provider: 'fal.ai',
-            model: FAL_SEEDREAM_MODEL,
-            providerRequestId: input.record.providerRequestId,
-            sourceSha256: input.record.sourceSha256 ?? undefined,
-            resultSha256: await sha256Hex(downloaded.bytes),
-            resultPath: await input.storage.createRawResultObjectPath(input.record.profileId, input.record.idempotencyKey, downloaded.mimeType),
-            resultMimeType: downloaded.mimeType,
-            resultWidth: dimensions.width,
-            resultHeight: dimensions.height,
-            generationLatencyMs: 0,
-            assetReadiness: 'EXPERIMENT_ONLY',
-            validationWarnings: ['SEEDREAM_DIAGNOSTIC', `chain:${workflow.chainMode}`, ...(downloaded.mimeType === 'image/jpeg' ? ['SEEDREAM_PROVIDER_JPEG'] : [])],
-        },
-    })
-}
-
 Deno.serve(async (request) => {
     if (request.method !== 'POST') return json(405)
     const requiredSecret = Deno.env.get('FAL_FINALIZER_SHARED_SECRET')?.trim()
@@ -591,7 +383,7 @@ Deno.serve(async (request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) return json(500)
-    const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
+    const policy = readCreatureEvolutionPolicy((name) => Deno.env.get(name))
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
     const repository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
     const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
@@ -605,7 +397,7 @@ Deno.serve(async (request) => {
         return json(202)
     }
     console.info('fal.finalizer.claimed', { providerRequestId, kind: workflow.kind })
-    const providerPolicy = workflow.kind === 'FLUX' ? policy.flux : policy.seedream
+    const providerPolicy = policy.seedream
     if (!providerPolicy.apiKey) {
         await failRequest(repository, visualRepository, record, new FluxImageGenerationServiceError('FAL_FLUX_NOT_CONFIGURED', 'La chiave del provider persistito non e configurata.'))
         return json(202)
@@ -618,25 +410,16 @@ Deno.serve(async (request) => {
     })
     try {
         const resolver = new SupabaseCreatureIdentityResolver(createPlayerRepository(supabaseAdmin))
-        if (workflow.kind === 'FLUX') {
-            await finalizeFlux({ record, image, provider, repository, storage, visualRepository, resolver, policy })
-        } else if (workflow.kind === 'SEEDREAM_PRODUCTION') {
-            await finalizeSeedreamProduction({
-                record,
-                image,
-                provider,
-                repository,
-                storage,
-                visualRepository,
-                resolver,
-                sourceUrlTtlSeconds: policy.seedream.submissionSourceUrlTtlSeconds,
-            })
-        } else {
-            const microConceptGenerator = workflow.conceptSource === 'dynamic'
-                ? new FluxMicroConceptGenerator({ apiKey: policy.flux.microConceptApiKey ?? '', model: policy.flux.microConceptModel ?? '' })
-                : null
-            await finalizeSeedream({ record, image, provider, repository, storage, resolver, microConceptGenerator, sourceUrlTtlSeconds: policy.seedream.submissionSourceUrlTtlSeconds })
-        }
+        await finalizeSeedreamProduction({
+            record,
+            image,
+            provider,
+            repository,
+            storage,
+            visualRepository,
+            resolver,
+            sourceUrlTtlSeconds: policy.seedream.submissionSourceUrlTtlSeconds,
+        })
     } catch (error) {
         console.error('fal.finalizer.failed', {
             providerRequestId,

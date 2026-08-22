@@ -28,7 +28,7 @@ export const ASSETS = {
     creatures: {
         default: DEFAULT_CREATURE_IMAGE,
         player: DEFAULT_CREATURE_IMAGE,
-        opponent: '/assets/battle/creatures/newCreaturaViola.png',
+        opponent: '/assets/battle/creatures/amethyst-hatchling.png',
         base: DEFAULT_CREATURE_IMAGE,
     },
 

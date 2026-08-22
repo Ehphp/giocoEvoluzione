@@ -1,10 +1,8 @@
 import type { EvolutionTargetId } from './evolution-targets.ts'
 import type { BodyPlanId } from './flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId, EvolutionCapability } from './flux-evolution/body-plan-mutations.ts'
-import type { FluxMicroConcept } from './flux-evolution/micro-concept.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
 import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
-import type { SeedreamDiagnosticConceptSource, SeedreamDiagnosticPromptStrategy, SeedreamDiagnosticVariantId } from './seedream-diagnostic-variants.ts'
 import type { CurrentCreatureVisualResponse, CreatureVisualVersion, SelectableCreatureVisualVersion } from './creature-visual-versions.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
@@ -38,27 +36,6 @@ export type SubmitBackgroundRemovalCandidateResponse = {
         height: number
         warnings: string[]
     }
-}
-
-export type ListVisualBackgroundCleanupResponse = {
-    success: true
-    requestId: string
-    entries: Array<{
-        visualVersionId: string
-        creatureId: string
-        profileId: string
-        versionNumber: number
-        signedUrl: string
-        expiresAt: string
-    }>
-}
-
-export type SubmitVisualBackgroundCleanupResponse = {
-    success: true
-    requestId: string
-    visualVersionId: string
-    creatureId: string
-    versionNumber: number
 }
 
 export type CreatureVisualProgressResponse = Readonly<{
@@ -116,20 +93,10 @@ export type TransformationRequestStatusResponse = {
         estimatedCostUsd?: number
         actualCostUsd?: number
     }
-    /** Available only for experimental Lab requests owned by the authenticated profile. */
+    /** Available only to the authenticated owner of the request. */
     prompt?: {
         text: string
         sha256: string
-    }
-    /** Full metadata for an isolated Seedream diagnostic, stored with its result. */
-    diagnostic?: {
-        variantId: SeedreamDiagnosticVariantId
-        conceptSource: SeedreamDiagnosticConceptSource
-        promptStrategy: SeedreamDiagnosticPromptStrategy
-        target: EvolutionTargetId
-        concept: FluxMicroConcept | null
-        /** Requested Seedream seed, when the diagnostic supplied one. */
-        seed?: number
     }
     result?: {
         signedUrl: string
@@ -173,57 +140,13 @@ export type TransformationRequestStatusResponse = {
     }
 }
 
-export type CreatureTransformationLabUsageResponse = Readonly<{
-    success: true
-    requestId: string
-    usage: {
-        requestCount: number
-        requestLimit: number
-        realImageCount: number
-        realImageLimit: number
-        globalRealImageCount: number
-        globalRealImageLimit: number
-        spentUsd: number
-        budgetUsd: number
-    }
-}>
-
-export type GeneratedImageCatalogResponse = Readonly<{
-    success: true
-    requestId: string
-    page: number
-    hasMore: boolean
-    entries: readonly {
-        transformationRequestId: string
-        creatureId: string
-        createdAt: string
-        completedAt: string | null
-        provider: string | null
-        model: string | null
-        promptTemplateVersion: string | null
-        assetReadiness: CreatureTransformationAssetReadiness | null
-        prompt: { text: string, sha256: string | null } | null
-        result: {
-            signedUrl: string
-            expiresAt: string
-            mimeType: 'image/png' | 'image/jpeg'
-            width: number
-            height: number
-            sha256: string
-        }
-    }[]
-}>
 
 export type GenerateImageApiResponse = GenerateImageAcceptedResponse | CreatureTransformationErrorResponse
 
 export type CreatureTransformationApiResponse =
     | GenerateImageApiResponse
     | TransformationRequestStatusResponse
-    | CreatureTransformationLabUsageResponse
-    | GeneratedImageCatalogResponse
     | SubmitBackgroundRemovalCandidateResponse
-    | ListVisualBackgroundCleanupResponse
-    | SubmitVisualBackgroundCleanupResponse
     | CreatureVisualProgressResponse
     | CurrentCreatureVisualApiResponse
     | GameCreatureVisualsResponse

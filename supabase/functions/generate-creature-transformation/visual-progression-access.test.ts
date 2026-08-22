@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { mapVisualVersion, type StoredVisualVersion, type SupabaseCreatureVisualProgressionRepository } from './creature-visual-progression-repository.ts'
 import { orchestrateGenerateUnlockedTransformation, orchestrateGetCreatureVisualProgress, orchestrateGetCurrentCreatureVisual, orchestrateGetGameCreatureVisuals } from './edge-orchestration.ts'
-import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
+import { readCreatureEvolutionPolicy } from './evolution-policy.ts'
 import { createTestResolver } from './test-creature-fixtures.ts'
 
 const OPEN_PROFILE = 'friend-profile'
@@ -10,7 +10,7 @@ const PILOT_PROFILE = 'pilot-profile'
 const CREATURE_ID = '00000000-0000-4000-8000-000000000001'
 const OPPONENT_CREATURE_ID = '00000000-0000-4000-8000-000000000002'
 
-const policy = readCreatureTransformationLabPolicy((name) => ({
+const policy = readCreatureEvolutionPolicy((name) => ({
     CREATURE_VISUAL_PROGRESSION_ENABLED: 'true',
     CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED: 'true',
     CREATURE_VISUAL_ADOPTION_ENABLED: 'true',

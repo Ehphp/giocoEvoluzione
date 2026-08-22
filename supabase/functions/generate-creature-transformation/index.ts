@@ -5,7 +5,7 @@ import type { VisualTraitId } from '../../../shared/creature-transformations/vis
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { parseVisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { SupabaseCreatureIdentityResolver, type PlayerCreatureRepository } from './supabase-creature-identity-resolver.ts'
-import { readCreatureTransformationLabPolicy } from './lab-policy.ts'
+import { readCreatureEvolutionPolicy } from './evolution-policy.ts'
 import { getCreatureTransformationFailureStatus, orchestrateCreatureTransformation } from './edge-orchestration.ts'
 import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
 import {
@@ -141,7 +141,7 @@ Deno.serve(async (request) => {
     } catch {
         return errorResponse(requestId, 'INVALID_REQUEST', 'Il body deve essere JSON valido.', 400)
     }
-    const policy = readCreatureTransformationLabPolicy((name) => Deno.env.get(name))
+    const policy = readCreatureEvolutionPolicy((name) => Deno.env.get(name))
     const falWebhookBaseUrl = Deno.env.get('FAL_CREATURE_TRANSFORMATION_WEBHOOK_URL')?.trim()
         || `${supabaseUrl}/functions/v1/fal-creature-transformation-webhook`
     const falWebhookCallbackToken = Deno.env.get('FAL_WEBHOOK_CALLBACK_TOKEN')?.trim()
@@ -179,22 +179,11 @@ Deno.serve(async (request) => {
         resolver,
         storage,
         createFluxMicroConceptGenerator: () => new FluxMicroConceptGenerator({
-            apiKey: policy.flux.microConceptApiKey ?? '',
-            model: policy.flux.microConceptModel ?? '',
-        }),
-        createFalFluxImageProvider: () => new FalFluxImageProvider({
-            apiKey: policy.flux.apiKey ?? '', model: policy.flux.model,
-            timeoutMs: policy.flux.timeoutMs,
-            estimatedCostUsd: policy.flux.estimatedCostUsd ?? undefined,
+            apiKey: policy.microConcept.apiKey ?? '',
+            model: policy.microConcept.model ?? '',
         }),
         createSeedreamEvolutionProvider: () => new FalFluxImageProvider({
             apiKey: policy.seedream.apiKey ?? '', model: policy.seedream.model,
-            timeoutMs: policy.seedream.timeoutMs,
-            estimatedCostUsd: policy.seedream.estimatedCostUsd ?? undefined,
-        }),
-        createSeedreamDiagnosticProvider: () => new FalFluxImageProvider({
-            apiKey: policy.seedream.apiKey ?? '',
-            model: policy.seedream.model,
             timeoutMs: policy.seedream.timeoutMs,
             estimatedCostUsd: policy.seedream.estimatedCostUsd ?? undefined,
         }),

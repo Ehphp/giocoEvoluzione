@@ -1,6 +1,6 @@
 # UI design system — "candy arena"
 
-The interface was rebuilt from `concept.JPG`. This document records *why* the new UI looks and
+The interface was rebuilt from the original concept artwork. This document records *why* the UI looks and
 behaves as it does. For the working rules — what to do and what never to do when changing UI code
 — see [`AGENTS.md`](../AGENTS.md) at the repository root.
 

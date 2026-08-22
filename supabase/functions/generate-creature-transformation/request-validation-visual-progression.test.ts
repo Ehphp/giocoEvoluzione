@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCreatureTransformationRequest, parseGenerateFluxEvolutionChainStepRequest, parseGenerateUnlockedTransformationRequest, parseListVisualBackgroundCleanupRequest, parseRollbackCreatureVisualVersionRequest, parseSelectCreatureVisualProgressTrackRequest, parseSubmitVisualBackgroundCleanupRequest } from './request-validation.ts'
-import { parseRunSeedreamDiagnosticRequest } from './request-validation.ts'
+import { parseCreatureTransformationRequest, parseGenerateUnlockedTransformationRequest, parseRollbackCreatureVisualVersionRequest } from './request-validation.ts'
 
 const TRACK_ID = '4f083244-18b0-4d1f-93c6-16742388d0a1'
 const CURRENT_VERSION_ID = 'a62b2b0a-0aa9-4c3c-884a-ddd26785c504'
@@ -12,67 +11,9 @@ describe('visual progression request validation', () => {
         expect(parseGenerateUnlockedTransformationRequest({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: 'creature', progressTrackId: TRACK_ID, idempotencyKey: 'key', model: 'client-controlled' })).toMatchObject({ valid: false })
         // Production generation can never carry a structural mutation from the client.
         expect(parseGenerateUnlockedTransformationRequest({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: 'creature', progressTrackId: TRACK_ID, idempotencyKey: 'key', bodyPlanMutationId: 'ADD_LIMB_PAIR' })).toMatchObject({ valid: false })
-    })
-
-    it('requires exactly one valid evolution target when a track is selected', () => {
-        expect(parseSelectCreatureVisualProgressTrackRequest({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: 'creature', evolutionTargetId: 'DORSAL_STRUCTURES' })).toMatchObject({ valid: true })
-        expect(parseSelectCreatureVisualProgressTrackRequest({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: 'creature' })).toMatchObject({ valid: false, code: 'INVALID_EVOLUTION_TARGET' })
-        // Legacy taxonomy and legacy trait selection are both refused.
-        expect(parseSelectCreatureVisualProgressTrackRequest({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: 'creature', evolutionTargetId: 'TORSO_AND_BACK' })).toMatchObject({ valid: false })
-        expect(parseSelectCreatureVisualProgressTrackRequest({ operation: 'SELECT_VISUAL_PROGRESS_TRACK', creatureId: 'creature', visualTraitId: 'IMPACT_ADAPTATION' })).toMatchObject({ valid: false })
-    })
-
-    it('accepts a structural mutation only from the Lab chain contract and only from the catalogue', () => {
-        const base = { operation: 'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', creatureId: 'creature', evolutionTargetId: 'LIMBS_AND_FEET', previousStepRequestIds: [], idempotencyKey: 'key' }
-        ;(base as { promptTemplateVersion?: string }).promptTemplateVersion = 'flux-micro-v7'
-
-        expect(parseGenerateFluxEvolutionChainStepRequest(base)).toMatchObject({ valid: true })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: undefined })).toMatchObject({ valid: false, message: 'Il Lab richiede una versione del prompt FLUX esplicita.' })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v7' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v7' } })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v6' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v6' } })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-micro-v5' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-micro-v5' } })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-minimal-v1' })).toMatchObject({ valid: true, request: { promptTemplateVersion: 'flux-minimal-v1' } })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, promptTemplateVersion: 'flux-minimal-v2' })).toMatchObject({ valid: false })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'ADD_LIMB_PAIR' })).toMatchObject({ valid: true, request: { bodyPlanMutationId: 'ADD_LIMB_PAIR' } })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, bodyPlanMutationId: 'GROW_EXTRA_HEAD' })).toMatchObject({ valid: false })
-        expect(parseGenerateFluxEvolutionChainStepRequest({ ...base, prompt: 'client instructions' })).toMatchObject({ valid: false })
-    })
-
-    it('accepts fixed prompts only in the isolated Seedream diagnostic contract', () => {
-        const base = {
-            operation: 'RUN_SEEDREAM_DIAGNOSTIC',
-            creatureId: 'creature',
-            evolutionTargetId: 'DORSAL_STRUCTURES',
-            idempotencyKey: 'seedream-diagnostic',
-            experimentMode: 'FIXED_FULL_PROMPT',
-            chainMode: 'NONE',
-            source: { base64: 'aGVsbG8=', mimeType: 'image/png' },
-            seedream: { imageSize: 'auto_4K', numImages: 1, maxImages: 1, seed: 42, enableSafetyChecker: true },
-            fixedFullPrompt: 'EXACT PLAYGROUND PROMPT',
-        }
-        expect(parseRunSeedreamDiagnosticRequest(base)).toMatchObject({ valid: true, request: { experimentMode: 'FIXED_FULL_PROMPT' } })
-        expect(parseCreatureTransformationRequest(base)).toMatchObject({ valid: true, request: { operation: 'RUN_SEEDREAM_DIAGNOSTIC' } })
-        expect(parseRunSeedreamDiagnosticRequest({ ...base, fixedFullPrompt: undefined })).toMatchObject({ valid: false })
-        expect(parseRunSeedreamDiagnosticRequest({ ...base, experimentMode: 'REAL_MICRO_CONCEPT' })).toMatchObject({ valid: false })
+        // Prompts are server-owned: no client-supplied prompt or template selection is accepted.
         expect(parseGenerateUnlockedTransformationRequest({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: 'creature', progressTrackId: TRACK_ID, idempotencyKey: 'key', fixedFullPrompt: 'forbidden' })).toMatchObject({ valid: false })
-
-        const locked = {
-            ...base,
-            evolutionTargetId: 'HEAD_AND_CROWN',
-            experimentMode: 'fixed-concept-locked-prompt',
-            fixedFullPrompt: undefined,
-        }
-        expect(parseRunSeedreamDiagnosticRequest(locked)).toMatchObject({ valid: true, request: { experimentMode: 'fixed-concept-locked-prompt', evolutionTargetId: 'HEAD_AND_CROWN' } })
-        expect(parseRunSeedreamDiagnosticRequest({ ...locked, experimentMode: 'dynamic-concept-locked-prompt' })).toMatchObject({ valid: true, request: { experimentMode: 'dynamic-concept-locked-prompt' } })
-        expect(parseRunSeedreamDiagnosticRequest({ ...locked, evolutionTargetId: 'DORSAL_STRUCTURES' })).toMatchObject({ valid: false, code: 'INVALID_EVOLUTION_TARGET' })
-        expect(parseRunSeedreamDiagnosticRequest({ ...locked, fixedMicroConcept: { conceptName: 'Client override', mutationIdea: 'non consentito', visualDetails: ['dettaglio'] } })).toMatchObject({ valid: false })
-    })
-
-    it('accepts only the bounded contracts for visual background cleanup', () => {
-        expect(parseListVisualBackgroundCleanupRequest({ operation: 'LIST_VISUAL_BACKGROUND_CLEANUP' })).toMatchObject({ valid: true })
-        expect(parseListVisualBackgroundCleanupRequest({ operation: 'LIST_VISUAL_BACKGROUND_CLEANUP', profileId: 'client-controlled' })).toMatchObject({ valid: false })
-        expect(parseSubmitVisualBackgroundCleanupRequest({ operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId: TRACK_ID, candidatePngBase64: 'aGVsbG8=' })).toMatchObject({ valid: true })
-        expect(parseSubmitVisualBackgroundCleanupRequest({ operation: 'SUBMIT_VISUAL_BACKGROUND_CLEANUP', visualVersionId: TRACK_ID, candidatePngBase64: '' })).toMatchObject({ valid: false })
+        expect(parseGenerateUnlockedTransformationRequest({ operation: 'GENERATE_UNLOCKED_TRANSFORMATION', creatureId: 'creature', progressTrackId: TRACK_ID, idempotencyKey: 'key', promptTemplateVersion: 'flux-minimal-v1' })).toMatchObject({ valid: false })
     })
 
     it('accepts only the visual version rollback contract', () => {
@@ -87,8 +28,28 @@ describe('visual progression request validation', () => {
         expect(parseRollbackCreatureVisualVersionRequest({ ...request, reason: 'OWNER_CONFIRMED' })).toMatchObject({ valid: false })
     })
 
-    it('no longer implements any legacy concept or image operation', () => {
-        for (const operation of ['GENERATE_CONCEPT', 'GENERATE_IMAGE', 'GENERATE_LINEAGE_FIRST_EXPERIMENT', 'GENERATE_CURRENT_PIPELINE_EXPERIMENT', 'GET_BENCHMARK_RESULTS', 'SUBMIT_EXPERIMENT_REVIEW', 'SUBMIT_LINEAGE_COMPARISON_REVIEW', 'GET_LINEAGE_COMPARISON_REVIEWS']) {
+    it('implements only the operations the game actually calls', () => {
+        const implemented = ['GET_REQUEST_STATUS', 'GENERATE_UNLOCKED_TRANSFORMATION', 'SUBMIT_BACKGROUND_REMOVAL_CANDIDATE', 'GET_VISUAL_PROGRESS', 'GET_CURRENT_VISUAL', 'GET_GAME_VISUALS', 'ADOPT_CREATURE_TRANSFORMATION', 'ROLLBACK_CREATURE_VISUAL_VERSION']
+
+        for (const operation of implemented) {
+            // A bare body is rejected on its own contract, never as an unknown operation.
+            expect(parseCreatureTransformationRequest({ operation }), operation).not.toMatchObject({ code: 'OPERATION_NOT_IMPLEMENTED' })
+        }
+    })
+
+    it('no longer implements the retired lab, diagnostic and legacy operations', () => {
+        const retired = [
+            // Retired with the transformation lab and the background-cleanup screen.
+            'GENERATE_FLUX_EVOLUTION_CHAIN_STEP', 'RUN_SEEDREAM_DIAGNOSTIC', 'GET_LAB_USAGE', 'GET_GENERATED_IMAGE_CATALOG',
+            'LIST_VISUAL_BACKGROUND_CLEANUP', 'SUBMIT_VISUAL_BACKGROUND_CLEANUP',
+            // Superseded by the `open_evolution_track_from_ready_target` database routine.
+            'SELECT_VISUAL_PROGRESS_TRACK',
+            // Legacy concept and image operations.
+            'GENERATE_CONCEPT', 'GENERATE_IMAGE', 'GENERATE_LINEAGE_FIRST_EXPERIMENT', 'GENERATE_CURRENT_PIPELINE_EXPERIMENT',
+            'GET_BENCHMARK_RESULTS', 'SUBMIT_EXPERIMENT_REVIEW', 'SUBMIT_LINEAGE_COMPARISON_REVIEW', 'GET_LINEAGE_COMPARISON_REVIEWS',
+        ]
+
+        for (const operation of retired) {
             expect(parseCreatureTransformationRequest({ operation, creatureId: 'creature', idempotencyKey: 'key' }), operation)
                 .toMatchObject({ valid: false, code: 'OPERATION_NOT_IMPLEMENTED' })
         }

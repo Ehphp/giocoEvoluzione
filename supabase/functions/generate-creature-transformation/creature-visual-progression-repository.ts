@@ -1,5 +1,4 @@
-import type { CreatureVisualVersion, PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
-import { readBodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import type { CreatureVisualVersion } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { CreatureVisualProgressTrack } from '../../../shared/creature-transformations/visual-progression.ts'
 import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
@@ -94,13 +93,6 @@ export function mapVisualVersion(value: unknown): StoredVisualVersion {
 
 export class SupabaseCreatureVisualProgressionRepository {
     constructor(private readonly client: CreatureVisualProgressionRepositoryClient) { }
-
-    async selectTrack(input: { profileId: string; creatureId: string; evolutionTargetId: EvolutionTargetId; target: number }): Promise<CreatureVisualProgressTrack> {
-        return mapProgressTrack(await this.rpc('select_creature_visual_progress_track', {
-            p_profile_id: input.profileId, p_creature_id: input.creatureId, p_visual_trait_id: null, p_evolution_target_id: input.evolutionTargetId, p_target: input.target,
-        }))
-    }
-
     async getTrack(input: { profileId: string; creatureId: string }): Promise<CreatureVisualProgressTrack | null> {
         const { data, error } = await this.client.from('creature_visual_progress_tracks').select('*').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('started_at', { ascending: false }).limit(1).maybeSingle()
         if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare la track visuale.', { cause: error })
@@ -125,51 +117,10 @@ export class SupabaseCreatureVisualProgressionRepository {
             : null
     }
 
-    async listActiveVisualsForCleanup(): Promise<StoredVisualVersion[]> {
-        const { data, error } = await this.client.from('creature_visual_versions').select('*').eq('status', 'ACTIVE').order('created_at', { ascending: true }).limit(100)
-        if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_TRACK_STATE_CONFLICT', 'Impossibile recuperare le visuali da ripulire.', { cause: error })
-        return (Array.isArray(data) ? data : []).map(mapVisualVersion)
-    }
-
-    async promoteCleanedVisual(input: { visualVersionId: string; assetPath: string; assetSha256: string; width: number; height: number; displayAsset?: { path: string; sha256: string; width: number; height: number } }): Promise<StoredVisualVersion> {
-        return mapVisualVersion(await this.rpc('promote_cleaned_creature_visual', {
-            p_visual_version_id: input.visualVersionId, p_asset_path: input.assetPath,
-            p_asset_sha256: input.assetSha256, p_width: input.width, p_height: input.height,
-            p_display_asset_path: input.displayAsset?.path ?? null, p_display_asset_sha256: input.displayAsset?.sha256 ?? null,
-            p_display_mime_type: input.displayAsset ? 'image/webp' : null, p_display_width: input.displayAsset?.width ?? null, p_display_height: input.displayAsset?.height ?? null,
-        }))
-    }
-
     async getCurrentVersion(input: { profileId: string; creatureId: string }): Promise<StoredVisualVersion | null> {
         const { data, error } = await this.client.from('creature_visual_versions').select('*').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).eq('status', 'ACTIVE').maybeSingle()
         if (error) throw new CreatureVisualProgressionRepositoryError('CURRENT_VISUAL_UNAVAILABLE', 'Impossibile recuperare la visuale corrente.', { cause: error })
         return data ? mapVisualVersion(data) : null
-    }
-
-    async getVersion(input: { profileId: string; creatureId: string; versionId: string }): Promise<StoredVisualVersion | null> {
-        const { data, error } = await this.client.from('creature_visual_versions').select('*').eq('id', input.versionId).eq('profile_id', input.profileId).eq('creature_id', input.creatureId).maybeSingle()
-        if (error) throw new CreatureVisualProgressionRepositoryError('VISUAL_VERSION_NOT_FOUND', 'Impossibile recuperare la versione visuale.', { cause: error })
-        return data ? mapVisualVersion(data) : null
-    }
-
-    async listHistory(input: { profileId: string; creatureId: string }): Promise<PreviousCreatureTransformationSummary[]> {
-        const { data, error } = await this.client.from('creature_visual_versions').select('version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot').eq('profile_id', input.profileId).eq('creature_id', input.creatureId).order('version_number', { ascending: true }).limit(8)
-        if (error) throw new CreatureVisualProgressionRepositoryError('CURRENT_VISUAL_UNAVAILABLE', 'Impossibile recuperare lo storico visuale.', { cause: error })
-        const rows = Array.isArray(data) ? data : data ? [data] : []
-        return rows.flatMap((row) => {
-            const item = record(row)
-            if (!item || !string(item.visual_trait_id) || !string(item.concept_name)) return []
-            const snapshot = record(item.concept_snapshot)
-            const bodyPlanMutationId = readBodyPlanMutationId(snapshot)
-            return [{
-                versionNumber: number(item.version_number), visualTraitId: string(item.visual_trait_id)! as VisualTraitId,
-                conceptName: string(item.concept_name)!,
-                evolutionTargetId: nullableString(item.evolution_target_id) as EvolutionTargetId | null,
-                evolutionFunction: nullableString(item.evolution_function) as EvolutionFunctionId | null,
-                ...(snapshot && typeof snapshot.mutationIdea === 'string' ? { mutationIdea: snapshot.mutationIdea } : {}),
-                ...(bodyPlanMutationId ? { bodyPlanMutationId } : {}),
-            }]
-        })
     }
 
     async listVisualHistory(input: { profileId: string; creatureId: string }): Promise<StoredVisualVersion[]> {

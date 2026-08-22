@@ -15,10 +15,7 @@ import { useGameCreatureVisualResource } from './components/game-v2/controller/u
 import { ProfileScreen } from './screens/profile/ProfileScreen'
 import { CollectionScreen } from './screens/collection/CollectionScreen'
 import { LeaderboardScreen } from './screens/ranking/LeaderboardScreen'
-import { CreatureTransformationLab } from './components/creature-transformation-lab/CreatureTransformationLab'
-import { CREATURE_TRANSFORMATION_LAB_HASH } from './components/creature-transformation-lab/lab-route'
 import { CreatureVisualProgressionScreen } from './components/creature-visual-progression/CreatureVisualProgressionScreen'
-import { VisualBackgroundCleanupScreen } from './components/visual-background-cleanup/VisualBackgroundCleanupScreen'
 import { type TraitType } from './game/types'
 import type { EvolutionTargetId } from '../shared/creature-transformations/evolution-targets.ts'
 import { hasSupabaseConfig } from './lib/supabase'
@@ -57,13 +54,10 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 
 type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
-type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-transformation-lab' | 'creature-evolution' | 'visual-background-cleanup'
+type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-evolution'
 
-const isCreatureTransformationLabEnabled = import.meta.env.VITE_CREATURE_TRANSFORMATION_LAB_ENABLED === 'true'
 const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
-const isVisualBackgroundCleanupEnabled = import.meta.env.VITE_CREATURE_VISUAL_BACKGROUND_CLEANUP_ENABLED === 'true'
 const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
-const VISUAL_BACKGROUND_CLEANUP_HASH = '#visual-background-cleanup'
 
 type EvolutionRouteTarget = Readonly<{ lineageId: string; creatureId: string }>
 
@@ -81,9 +75,7 @@ function creatureEvolutionHash(target: EvolutionRouteTarget): string {
 }
 
 function getInitialScreen(): CurrentScreen {
-  if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) return 'creature-transformation-lab'
   if (isCreatureVisualProgressionEnabled && evolutionTargetFromHash()) return 'creature-evolution'
-  if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) return 'visual-background-cleanup'
   return 'home'
 }
 
@@ -197,28 +189,16 @@ function App() {
   }, [authStatus])
 
   useEffect(() => {
-    if (!isCreatureTransformationLabEnabled && !isCreatureVisualProgressionEnabled && !isVisualBackgroundCleanupEnabled) {
+    if (!isCreatureVisualProgressionEnabled) {
       return
     }
 
     const syncTechnicalRoute = () => {
       const target = evolutionTargetFromHash()
 
-      if (isCreatureTransformationLabEnabled && window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) {
-        setEvolutionTarget(null)
-        setCurrentScreen('creature-transformation-lab')
-        return
-      }
-
-      if (isCreatureVisualProgressionEnabled && target) {
+      if (target) {
         setEvolutionTarget(target)
         setCurrentScreen('creature-evolution')
-        return
-      }
-
-      if (isVisualBackgroundCleanupEnabled && window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) {
-        setEvolutionTarget(null)
-        setCurrentScreen('visual-background-cleanup')
         return
       }
 
@@ -697,26 +677,12 @@ function App() {
     setStatusMessage(null)
   }
 
-  function handleLeaveCreatureTransformationLab() {
-    if (window.location.hash === CREATURE_TRANSFORMATION_LAB_HASH) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    }
-    setCurrentScreen('home')
-  }
-
   function handleLeaveCreatureEvolution() {
     if (window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
     }
     setEvolutionTarget(null)
     setCurrentScreen('home')
-  }
-
-  function handleLeaveVisualBackgroundCleanup() {
-    if (window.location.hash === VISUAL_BACKGROUND_CLEANUP_HASH) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    }
-    setCurrentScreen('profile')
   }
 
   function handleOpenCreatureEvolution(lineageId: string) {
@@ -730,12 +696,6 @@ function App() {
     setEvolutionTarget(evolutionTarget)
     window.location.hash = creatureEvolutionHash(evolutionTarget)
     setCurrentScreen('creature-evolution')
-  }
-
-  function handleOpenVisualBackgroundCleanup() {
-    if (!isVisualBackgroundCleanupEnabled) return
-    window.location.hash = VISUAL_BACKGROUND_CLEANUP_HASH
-    setCurrentScreen('visual-background-cleanup')
   }
 
   async function handleVisualChanged() {
@@ -808,24 +768,11 @@ function App() {
     )
   }
 
-  if (!snapshot && currentScreen === 'creature-transformation-lab' && isCreatureTransformationLabEnabled && auth.profile && activeCreature) {
-    return <CreatureTransformationLab creature={activeCreature} onBack={handleLeaveCreatureTransformationLab} />
-  }
-
   if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && evolutionCreature) {
     return (
       <CreatureVisualProgressionScreen
         creature={evolutionCreature}
         onBack={handleLeaveCreatureEvolution}
-        onVisualChanged={handleVisualChanged}
-      />
-    )
-  }
-
-  if (!snapshot && currentScreen === 'visual-background-cleanup' && isVisualBackgroundCleanupEnabled) {
-    return (
-      <VisualBackgroundCleanupScreen
-        onBack={handleLeaveVisualBackgroundCleanup}
         onVisualChanged={handleVisualChanged}
       />
     )
@@ -848,7 +795,6 @@ function App() {
         visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
         onSetCombatMutationLoadout={handleSetCreatureCombatMutationLoadout}
         onOpenEvolution={isCreatureVisualProgressionEnabled && auth.activeLineage ? () => handleOpenCreatureEvolution(auth.activeLineage!.id) : undefined}
-        onOpenBackgroundCleanup={isVisualBackgroundCleanupEnabled ? handleOpenVisualBackgroundCleanup : undefined}
       />
     )
   }

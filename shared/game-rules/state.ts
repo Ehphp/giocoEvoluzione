@@ -4,7 +4,6 @@ export { ADAPTATION_IDS, TOTAL_ROUNDS, MAX_ADAPTATION_LEVEL }
 export function createInitialAdaptations(): AdaptationCollection { return Object.fromEntries(ADAPTATION_IDS.map((adaptation) => [adaptation, { level: 0, exhausted: false }])) as AdaptationCollection }
 export function normalizeAdaptationCollection(value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined): AdaptationCollection { const adaptations = createInitialAdaptations(); for (const adaptation of ADAPTATION_IDS) { const state = value?.[adaptation]; if (!state) continue; if (typeof state.level === 'number' && Number.isFinite(state.level)) adaptations[adaptation].level = Math.max(0, Math.min(MAX_ADAPTATION_LEVEL, Math.trunc(state.level))) as AdaptationState['level']; if (typeof state.exhausted === 'boolean') adaptations[adaptation].exhausted = state.exhausted } return adaptations }
 export function createInitialCombatMutationState(): CombatMutationState { return { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT', armoredMemoryUsed: false, recoverySurgeUsed: false } }
-export function createInitialSymbiosisLinks(): SymbiosisLink[] { return [] }
 
 export class CombatMutationDataError extends Error {
     readonly code: 'INVALID_COMBAT_MUTATION_LOADOUT' | 'INVALID_COMBAT_MUTATION_STATE'

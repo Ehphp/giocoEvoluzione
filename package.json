@@ -15,6 +15,7 @@
     "rules:generate": "node --experimental-strip-types tools/generate-game-rules-sql.ts && node --experimental-strip-types tools/generate-supabase-reset.ts",
     "rules:check": "node --experimental-strip-types tools/generate-game-rules-sql.ts --check && node --experimental-strip-types tools/generate-supabase-reset.ts --check",
     "audit:mobile": "node artifacts/mobile-overflow-audit.mjs",
+    "preview:shots": "node tools/preview-screenshots.mjs",
     "audit:secrets": "node tools/scan-secrets.mjs",
     "audit:core": "node --experimental-strip-types tools/audit-core-check.ts",
     "audit:exact": "node --experimental-strip-types tools/audit-exact.ts",
