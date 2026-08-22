@@ -26,7 +26,7 @@ export type FalWebhookEvent = Readonly<{
     image: FalQueuedImage | null
     seed?: number
 }>
-export type FalFluxImageProviderErrorCode = 'FAL_FLUX_NOT_CONFIGURED' | 'FAL_FLUX_TIMEOUT' | 'FAL_FLUX_RATE_LIMITED' | 'FAL_FLUX_BAD_REQUEST' | 'FAL_FLUX_PROVIDER_ERROR' | 'FAL_FLUX_RESPONSE_INVALID' | 'FAL_SEEDREAM_MODEL_REQUIRED' | 'FAL_IMAGE_MIME_INVALID'
+export type FalFluxImageProviderErrorCode = 'FAL_FLUX_NOT_CONFIGURED' | 'FAL_FLUX_TIMEOUT' | 'FAL_FLUX_RATE_LIMITED' | 'FAL_FLUX_BAD_REQUEST' | 'FAL_FLUX_PROVIDER_ERROR' | 'FAL_FLUX_RESPONSE_INVALID' | 'FAL_SEEDREAM_MODEL_REQUIRED'
 
 export class FalFluxImageProviderError extends Error {
     constructor(readonly code: FalFluxImageProviderErrorCode, message: string, options?: { cause?: unknown, providerStatus?: number, providerErrorCode?: string | null }) {
@@ -133,7 +133,7 @@ function jpegDimensions(bytes: Uint8Array): { width: number, height: number } | 
     return null
 }
 
-async function readLimitedResponseBytes(response: Response, maximumBytes: number): Promise<Uint8Array> {
+async function readLimitedResponseBytes(response: Response, maximumBytes: number): Promise<Uint8Array<ArrayBuffer>> {
     const contentLength = response.headers.get('content-length')
     const declaredLength = contentLength === null ? null : Number(contentLength)
     if (declaredLength !== null && (!Number.isSafeInteger(declaredLength) || declaredLength < 1 || declaredLength > maximumBytes)) {
@@ -215,7 +215,7 @@ export class FalFluxImageProvider {
     }
 
     /** Downloads exactly one final media representation. Callers own validation and persistence. */
-    async downloadQueuedImage(input: FalQueuedImage): Promise<Readonly<{ bytes: Uint8Array, mimeType: FalImageMimeType }>> {
+    async downloadQueuedImage(input: FalQueuedImage): Promise<Readonly<{ bytes: Uint8Array<ArrayBuffer>, mimeType: FalImageMimeType }>> {
         const profile = falImageModelProfile()
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), this.timeoutMs)

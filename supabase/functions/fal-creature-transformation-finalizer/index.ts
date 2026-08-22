@@ -15,9 +15,19 @@ import { parseFalQueueWorkflow } from '../generate-creature-transformation/fal-q
 import { readCreatureEvolutionPolicy } from '../generate-creature-transformation/evolution-policy.ts'
 import { redactErrorMessage, redactSensitiveText } from '../generate-creature-transformation/secret-redaction.ts'
 import { isFluxEvolutionSnapshot, readBodyPlanMutationId, readFluxSnapshotCapability } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import type { VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
+import type { EvolutionFunctionId, EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { applyHorizontalMirrorCorrection, decideHorizontalMirrorCorrection, parseVisualInspection, shouldRejectSeedreamCenterFacing, type VisualInspection, visualRepairBrief } from '../../../shared/creature-transformations/visual-inspection.ts'
 import { GeminiVisualInspectionService, readGeminiVisualInspectionConfiguration } from './gemini-visual-inspection-service.ts'
 import { flipImageHorizontallyToPng } from '../generate-creature-transformation/edge-image-codec.ts'
+
+/**
+ * This function deliberately carries no generated database types: every row that crosses a
+ * boundary is narrowed by hand in `createPlayerRepository` and in the repositories it delegates
+ * to. Declaring the schema as `any` states that intent, and keeps the type checker seeing row
+ * objects rather than `never`.
+ */
+type SupabaseAdminClient = ReturnType<typeof createClient<any>>
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -45,8 +55,10 @@ function imageDimensions(bytes: Uint8Array): { width: number, height: number } |
     return width > 0 && height > 0 ? { width, height } : null
 }
 
-function createPlayerRepository(supabaseAdmin: ReturnType<typeof createClient>): PlayerCreatureRepository {
-    const repository = {
+function createPlayerRepository(supabaseAdmin: SupabaseAdminClient): PlayerCreatureRepository {
+    // Annotated rather than cast at the end: the interface then supplies the parameter types, so
+    // a signature drifting from `PlayerCreatureRepository` is a compile error instead of an `any`.
+    const repository: PlayerCreatureRepository = {
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin.from('player_creatures').select('id, profile_id, base_creature_key, current_visual_version_id').eq('id', creatureId).maybeSingle()
             if (error) throw error
@@ -67,14 +79,14 @@ function createPlayerRepository(supabaseAdmin: ReturnType<typeof createClient>):
         async listPreviousTransformations(creatureId) {
             const { data, error } = await supabaseAdmin.from('creature_visual_versions').select('version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot').eq('creature_id', creatureId).not('visual_trait_id', 'is', null).in('status', ['ACTIVE', 'SUPERSEDED']).order('version_number', { ascending: false })
             if (error) throw error
+            // The identifier columns are constrained database-side; the casts mirror the sibling
+            // repository in generate-creature-transformation/index.ts.
             return [...(data ?? [])].reverse().flatMap((entry) => typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
-                ? [{ versionNumber: Number(entry.version_number), visualTraitId: entry.visual_trait_id, conceptName: entry.concept_name, evolutionTargetId: typeof entry.evolution_target_id === 'string' ? entry.evolution_target_id : null, evolutionFunction: typeof entry.evolution_function === 'string' ? entry.evolution_function : null, ...(entry.concept_snapshot && typeof entry.concept_snapshot === 'object' && typeof (entry.concept_snapshot as { mutationIdea?: unknown }).mutationIdea === 'string' ? { mutationIdea: (entry.concept_snapshot as { mutationIdea: string }).mutationIdea } : {}) }]
+                ? [{ versionNumber: Number(entry.version_number), visualTraitId: entry.visual_trait_id as VisualTraitId, conceptName: entry.concept_name, evolutionTargetId: typeof entry.evolution_target_id === 'string' ? entry.evolution_target_id as EvolutionTargetId : null, evolutionFunction: typeof entry.evolution_function === 'string' ? entry.evolution_function as EvolutionFunctionId : null, ...(entry.concept_snapshot && typeof entry.concept_snapshot === 'object' && typeof (entry.concept_snapshot as { mutationIdea?: unknown }).mutationIdea === 'string' ? { mutationIdea: (entry.concept_snapshot as { mutationIdea: string }).mutationIdea } : {}) }]
                 : [])
         },
     }
-    // Database rows are narrowed inside each method. The Supabase generated client is intentionally
-    // untyped in an Edge Function, so retain the resolver's stricter boundary here.
-    return repository as unknown as PlayerCreatureRepository
+    return repository
 }
 
 function falWebhookUrl(): string {
@@ -202,7 +214,7 @@ async function retryCroppedSeedream(input: {
 
 async function inspectSeedreamVisual(input: {
     record: CreatureTransformationRequestRecord
-    image: Uint8Array
+    image: Uint8Array<ArrayBuffer>
     mimeType: 'image/png' | 'image/jpeg'
     resolver: SupabaseCreatureIdentityResolver
 }): Promise<Readonly<{
@@ -298,7 +310,9 @@ async function finalizeSeedreamProduction(input: {
         mimeType: downloaded.mimeType,
         resolver: input.resolver,
     })
-    if (shouldRejectSeedreamCenterFacing(visualInspection?.inspection)) {
+    // `shouldRejectSeedreamCenterFacing` is false for a missing inspection, so guarding on the
+    // inspection itself keeps the same behaviour while making the reads below provably safe.
+    if (visualInspection && shouldRejectSeedreamCenterFacing(visualInspection.inspection)) {
         console.warn('fal.finalizer.seedream_orientation_rejected', {
             providerRequestId: input.record.providerRequestId,
             facing: 'CENTER',
@@ -339,7 +353,8 @@ async function finalizeSeedreamProduction(input: {
         profileId: input.record.profileId,
         data: {
             provider: 'fal.ai',
-            model: input.record.model,
+            // The transition payload uses optional fields; the record uses nullable columns.
+            model: input.record.model ?? undefined,
             providerRequestId: input.record.providerRequestId,
             sourceSha256: input.record.sourceSha256,
             resultSha256,
@@ -384,7 +399,7 @@ Deno.serve(async (request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) return json(500)
     const policy = readCreatureEvolutionPolicy((name) => Deno.env.get(name))
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+    const supabaseAdmin = createClient<any>(supabaseUrl, serviceRoleKey)
     const repository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
     const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
     const storage = new SupabaseCreatureTransformationStorageAdapter(supabaseAdmin.storage as unknown as CreatureTransformationStorageClient, { signedUrlTtlSeconds: policy.signedUrlTtlSeconds })

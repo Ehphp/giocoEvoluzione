@@ -160,7 +160,7 @@ export class GeminiVisualInspectionService {
     }
 
     async inspect(input: {
-        image: Uint8Array
+        image: Uint8Array<ArrayBuffer>
         mimeType: 'image/png' | 'image/jpeg'
         bodyPlan: CreatureBodyPlan
         generation: number
@@ -193,7 +193,7 @@ export class GeminiVisualInspectionService {
         }
     }
 
-    private async uploadFile(image: Uint8Array, mimeType: 'image/png' | 'image/jpeg'): Promise<GeminiFile | null> {
+    private async uploadFile(image: Uint8Array<ArrayBuffer>, mimeType: 'image/png' | 'image/jpeg'): Promise<GeminiFile | null> {
         const apiKey = this.configuration.apiKey!
         let start: Response
         try {

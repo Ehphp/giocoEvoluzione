@@ -18,8 +18,12 @@ const seedreamFinalizer = finalizer.slice(
 
 describe('Fal webhook and finalization boundary', () => {
     it('verifies the raw signed webhook before any persistence client is created', () => {
+        // Matched with a regex, not `indexOf('createClient(')`: the call carries a type argument
+        // (`createClient<any>(...)`), and a literal match would silently become -1 and pass.
+        const clientConstruction = webhook.search(/createClient(?:<[^>]*>)?\(/)
+        expect(clientConstruction).toBeGreaterThan(-1)
         expect(webhook.indexOf('verifyFalWebhookSignature')).toBeGreaterThan(-1)
-        expect(webhook.indexOf('verifyFalWebhookSignature')).toBeLessThan(webhook.indexOf('createClient('))
+        expect(webhook.indexOf('verifyFalWebhookSignature')).toBeLessThan(clientConstruction)
         expect(webhook).toContain('hasFalWebhookCallbackToken')
         expect(webhook).toContain("fal.webhook.callback_token_authorized")
         expect(webhook).toContain('new Uint8Array(await request.arrayBuffer())')

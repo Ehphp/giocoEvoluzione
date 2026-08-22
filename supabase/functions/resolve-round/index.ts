@@ -10,6 +10,13 @@ import { readEvolutionTargetWinsRequired } from '../../../shared/creature-transf
 // Pure game rules and persisted resolution mapping are shared with the frontend.
 // Only persistence and idempotent resolution orchestration remain local here.
 
+/**
+ * This function deliberately carries no generated database types: every row that crosses a
+ * boundary is narrowed by hand below. Declaring the schema as `any` states that intent, and keeps
+ * the type checker seeing row objects rather than `never`.
+ */
+type SupabaseAdminClient = ReturnType<typeof createClient<any>>
+
 type TraitName = AdaptationId
 
 // Keep the production function's Deno-compatible rule manifest explicit.
@@ -63,7 +70,7 @@ function parseStoredRoundAction(row: Record<string, unknown>, playerId: string):
 }
 
 async function ensureEdgeBotRoundAction(
-    supabaseAdmin: ReturnType<typeof createClient>,
+    supabaseAdmin: SupabaseAdminClient,
     input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; ruleVersion: string; symbiosisLinks: ReturnType<typeof parseSymbiosisLinks>; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
 ) {
     const botAction = selectEdgeBotAction({
@@ -128,13 +135,13 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get('authorization') ?? ''
     if (!authorization) return json({ error: 'Authentication required.' }, 401)
 
-    const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+    const authenticatedClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authorization } },
     })
     const { data: authData, error: authError } = await authenticatedClient.auth.getUser()
     if (authError || !authData.user) return json({ error: 'Authentication required.' }, 401)
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const supabaseAdmin = createClient<any>(supabaseUrl, supabaseServiceRoleKey)
 
     try {
         const body = await request.json()

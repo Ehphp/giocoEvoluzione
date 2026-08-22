@@ -15,14 +15,14 @@ function hex(bytes: Uint8Array): string {
     return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-function hexBytes(value: string): Uint8Array | null {
+function hexBytes(value: string): Uint8Array<ArrayBuffer> | null {
     if (!/^[a-fA-F0-9]{128}$/.test(value)) return null
     const bytes = new Uint8Array(value.length / 2)
     for (let index = 0; index < bytes.length; index += 1) bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16)
     return bytes
 }
 
-function base64UrlBytes(value: string): Uint8Array | null {
+function base64UrlBytes(value: string): Uint8Array<ArrayBuffer> | null {
     if (!/^[A-Za-z0-9_-]{43,44}$/.test(value)) return null
     try {
         const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4)

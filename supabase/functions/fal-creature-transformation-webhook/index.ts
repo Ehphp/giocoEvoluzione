@@ -45,28 +45,27 @@ Deno.serve(async (request) => {
     })
     // New submissions carry the secret in the callback URL, avoiding a blocking remote JWKS
     // dependency. Legacy callbacks continue to require Fal's Ed25519 signature.
-    const verified = callbackTokenAuthorized
+    //
+    // `null` means "authorized by callback token, signature not consulted". Every later read
+    // guards on the value itself rather than on `callbackTokenAuthorized`, so the "not
+    // token-authorized implies a signature verdict" invariant is the type, not a convention.
+    const signature = callbackTokenAuthorized
         ? null
         : await verifyFalWebhookSignature({
             headers: request.headers,
             rawBody,
             fallbackJwksJson: Deno.env.get('FAL_WEBHOOK_JWKS_JSON'),
         })
-    if (!callbackTokenAuthorized && !verified.valid) {
-        const hintedRequestId = request.headers.get('x-fal-webhook-request-id')?.trim()
-        console.warn('fal.webhook.signature_rejected', {
-            reason: verified.reason,
-            ...(hintedRequestId && /^[A-Za-z0-9-]{1,256}$/.test(hintedRequestId) ? { providerRequestId: hintedRequestId } : {}),
-        })
+    const hintedRequestId = request.headers.get('x-fal-webhook-request-id')?.trim()
+    const safeHintedRequestId = hintedRequestId && /^[A-Za-z0-9-]{1,256}$/.test(hintedRequestId) ? { providerRequestId: hintedRequestId } : {}
+    if (signature && !signature.valid) {
+        console.warn('fal.webhook.signature_rejected', { reason: signature.reason, ...safeHintedRequestId })
         return json(401)
     }
-    const hintedRequestId = request.headers.get('x-fal-webhook-request-id')?.trim()
-    if (callbackTokenAuthorized) {
-        console.warn('fal.webhook.callback_token_authorized', {
-            ...(hintedRequestId && /^[A-Za-z0-9-]{1,256}$/.test(hintedRequestId) ? { providerRequestId: hintedRequestId } : {}),
-        })
-    } else if (verified.jwksSource === 'fallback') {
-        console.warn('fal.webhook.jwks_fallback_used', { providerRequestId: verified.providerRequestId })
+    if (!signature) {
+        console.warn('fal.webhook.callback_token_authorized', { ...safeHintedRequestId })
+    } else if (signature.jwksSource === 'fallback') {
+        console.warn('fal.webhook.jwks_fallback_used', { providerRequestId: signature.providerRequestId })
     }
     let payload: unknown
     try {
@@ -75,12 +74,12 @@ Deno.serve(async (request) => {
         return json(400)
     }
     const event = parseFalWebhookEvent(payload)
-    if (!event || (verified && event.providerRequestId !== verified.providerRequestId)) return json(400)
+    if (!event || (signature && event.providerRequestId !== signature.providerRequestId)) return json(400)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const finalizerSecret = Deno.env.get('FAL_FINALIZER_SHARED_SECRET')?.trim()
     if (!supabaseUrl || !serviceRoleKey || !finalizerSecret) return json(503)
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+    const supabaseAdmin = createClient<any>(supabaseUrl, serviceRoleKey)
     const repository = new SupabaseCreatureTransformationRequestRepository(supabaseAdmin as unknown as CreatureTransformationRequestRepositoryClient)
     const visualRepository = new SupabaseCreatureVisualProgressionRepository(supabaseAdmin as unknown as CreatureVisualProgressionRepositoryClient)
     const record = await repository.getByProviderRequestId({ providerRequestId: event.providerRequestId })

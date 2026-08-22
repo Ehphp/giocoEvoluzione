@@ -134,28 +134,32 @@ Va deciso quale delle due è la verità:
 
 Non l'ho deciso io: è una scelta di prodotto, non di refactor.
 
-## 6. Nota: le Edge Function non passano da `tsc`
+## 6. Typecheck delle Edge Function — FATTO, ma non ripetibile
 
-`tsconfig.app.json` include solo `src` e `shared`, quindi `supabase/functions/**` non è
-typechecked: oggi quel codice è coperto solo dai test.
+`tsconfig.app.json` include solo `src` e `shared`, quindi `supabase/functions/**` non è coperto da
+`npm run build`. Il 2026-08-22 ho installato Deno temporaneamente, eseguito
+`deno check` sui quattro entrypoint, corretto tutti gli errori e **rimosso Deno** (scelta esplicita:
+serviva come strumento una volta sola). `package.json` e `package-lock.json` sono invariati.
 
-Durante il refactor ho costruito un harness temporaneo (`tsc` sulle sole edge function, con i
-globali `Deno.*`/`EdgeRuntime` stubbati e `https://esm.sh/@supabase/supabase-js` mappato sul
-pacchetto locale) e l'ho confrontato con lo stesso check su `HEAD`. Ha trovato **2 bug reali** che
-compilazione, lint e test non avevano visto:
+Risultato: **81 → 0 errori**. Le correzioni sono nel commit successivo al refactor.
 
-- `createSeedreamDiagnosticProvider` passato a un input che non ha più quel campo (`index.ts`);
-- un blocco `diagnostic` in `orchestrateGetTransformationRequestStatus` che leggeva
-  `workflow.variantId` / `conceptSource` / `promptStrategy` / `parameters.seed` su un workflow che
-  ora può essere solo `SEEDREAM_PRODUCTION` — su un percorso **vivo** (`GET_REQUEST_STATUS`).
+Cosa ha trovato, che compilazione, lint e 485 test non avevano visto:
 
-Entrambi corretti. Dopo la correzione: zero regressioni rispetto a `HEAD`, e 38 errori invece di 45.
+| Problema | Dove | Natura |
+|---|---|---|
+| Blocco `diagnostic` che leggeva `variantId`/`conceptSource`/`promptStrategy`/`parameters.seed` su un workflow ormai solo `SEEDREAM_PRODUCTION` | `edge-orchestration.ts`, `GET_REQUEST_STATUS` | **bug su percorso vivo** |
+| `createSeedreamDiagnosticProvider` passato a un input che non ha più quel campo | `generate-creature-transformation/index.ts` | riferimento morto |
+| `RequestReservationResult` con `'CREATED' \| 'EXISTING'` in un solo membro: non si restringe, il gestore di fallimento riceveva la forma di successo | `creature-transformation-request-repository.ts` | unione non discriminabile |
+| `select().eq().eq()` perdeva `order`/`range` (metodo su intersezione risolve alla prima firma) | idem | tipizzazione client |
+| `FAL_SEEDREAM_MODEL_REQUIRED` rilanciato ma assente dall'unione del servizio → cadeva nello status HTTP di default | `fal-queue-submission-service.ts` | codice non mappato (ora 503) |
+| `mimeType` del candidato dichiarato `'image/png'` ma alimentato da un campo che può essere JPEG | `edge-orchestration.ts` | contratto vs realtà |
+| `verified` letto dopo un guard su un booleano correlato, non sul valore | webhook, verifica firma | invariante non dimostrabile |
+| `visualInspection` letto dopo `shouldRejectSeedreamCenterFacing(x?.y)` | finalizer | idem |
 
-**Non ho aggiunto l'harness al repo**: restano 38-39 errori preesistenti (nullability non gestita
-nel webhook e nel finalizer, `fetch` con body `Uint8Array` che Deno accetta ma la lib DOM no, e il
-mio shim di `esm.sh` che non riesporta `createClient`). Uno script `npm` che falla sempre sarebbe
-peggio di nessuno script.
+Nessuna di queste correzioni cambia il comportamento a runtime, tranne due che rendono *verificato*
+ciò che prima era assunto (il formato del candidato e l'invariante della firma).
 
-Da fare: installare Deno e usare `deno check supabase/functions/**/*.ts` con i tipi veri — così i
-falsi positivi da lib DOM e da shim spariscono e resta solo la nullability da triagiare. Poi
-agganciarlo a `npm run lint`.
+**Il check non è più eseguibile.** Se serve di nuovo: `npm i --no-save deno` e
+`node_modules/.bin/deno check --no-lock supabase/functions/<funzione>/index.ts` per ognuno dei
+quattro entrypoint, poi `npm uninstall --no-save deno`. Da valutare se renderlo permanente e
+agganciarlo a `npm run lint`, ora che la baseline è zero e una regressione salterebbe subito.

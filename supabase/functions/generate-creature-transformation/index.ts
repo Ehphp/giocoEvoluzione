@@ -21,6 +21,14 @@ import { appendFalWebhookCallbackToken } from './fal-webhook-callback-token.ts'
 import { FluxMicroConceptGenerator } from './flux-micro-concept-generator.ts'
 import { SupabaseCreatureVisualProgressionRepository, type CreatureVisualProgressionRepositoryClient } from './creature-visual-progression-repository.ts'
 
+/**
+ * This function deliberately carries no generated database types: every row that crosses a
+ * boundary is narrowed by hand in `createRepository` and in the repositories it delegates to.
+ * Declaring the schema as `any` states that intent, and keeps the type checker seeing row objects
+ * rather than `never`.
+ */
+type SupabaseAdminClient = ReturnType<typeof createClient<any>>
+
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -42,7 +50,7 @@ function errorResponse(requestId: string, code: string, message: string, status:
     } satisfies CreatureTransformationErrorResponse, status)
 }
 
-function createRepository(supabaseAdmin: ReturnType<typeof createClient>, requestId: string): PlayerCreatureRepository {
+function createRepository(supabaseAdmin: SupabaseAdminClient, requestId: string): PlayerCreatureRepository {
     return {
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin
@@ -129,7 +137,7 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get('authorization') ?? ''
     if (!authorization) return errorResponse(requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.', 401)
 
-    const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+    const authenticatedClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authorization } },
     })
     const { data: authData, error: authError } = await authenticatedClient.auth.getUser()
@@ -152,7 +160,7 @@ Deno.serve(async (request) => {
         console.error('Creature transformation configuration error', { requestId, code: 'FAL_WEBHOOK_CALLBACK_TOKEN_INVALID' })
         return errorResponse(requestId, 'INTERNAL_ERROR', 'Configurazione callback Fal non disponibile.', 500)
     }
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const supabaseAdmin = createClient<any>(supabaseUrl, supabaseServiceRoleKey)
     const { data: authorizationProfile, error: authorizationProfileError } = await supabaseAdmin
         .from('profiles')
         .select('can_generate_images')

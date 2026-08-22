@@ -97,7 +97,9 @@ export function getCreatureTransformationFailureStatus(code: string): number {
     if (code === 'CREATURE_NOT_OWNED' || code === 'IMAGE_GENERATION_NOT_ALLOWED' || code === 'VISUAL_PROGRESSION_DISABLED' || code === 'VISUAL_PRODUCTION_GENERATION_DISABLED' || code === 'VISUAL_ADOPTION_DISABLED' || code === 'BODY_PLAN_MUTATION_NOT_AUTHORIZED' || code === 'OPPONENT_VISUAL_NOT_AUTHORIZED') return 403
     if (code === 'CREATURE_NOT_FOUND' || code === 'SOURCE_IMAGE_NOT_FOUND' || code === 'REQUEST_NOT_FOUND' || code === 'VISUAL_TRACK_NOT_FOUND' || code === 'VISUAL_VERSION_NOT_FOUND' || code === 'CURRENT_VISUAL_UNAVAILABLE') return 404
     if (code === 'DAILY_LIMIT_REACHED' || code === 'DAILY_BUDGET_REACHED' || code === 'REAL_IMAGE_USER_LIMIT_REACHED' || code === 'REAL_IMAGE_USER_CONCURRENCY_REACHED' || code === 'REAL_IMAGE_COOLDOWN_ACTIVE' || code === 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' || code === 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED' || code === 'FAL_FLUX_RATE_LIMITED') return 429
-    if (code === 'FAL_FLUX_NOT_CONFIGURED' || code === 'FLUX_CONCEPT_NOT_CONFIGURED') return 503
+    // FAL_SEEDREAM_MODEL_REQUIRED means the configured provider model is not the pinned Seedream
+    // edit model: a server misconfiguration, like the two beside it.
+    if (code === 'FAL_FLUX_NOT_CONFIGURED' || code === 'FLUX_CONCEPT_NOT_CONFIGURED' || code === 'FAL_SEEDREAM_MODEL_REQUIRED') return 503
     if (code === 'OPERATION_NOT_IMPLEMENTED') return 501
     if (code === 'FAL_FLUX_TIMEOUT' || code === 'FLUX_CONCEPT_TIMEOUT') return 504
     if (code === 'REQUEST_ALREADY_IN_PROGRESS' || code === 'IDEMPOTENT_REQUEST_ALREADY_COMPLETED' || code === 'IDEMPOTENCY_KEY_REUSED' || code === 'REQUEST_PREVIOUSLY_FAILED' || code === 'REQUEST_STALE' || code === 'REQUEST_STATE_CONFLICT' || code === 'VISUAL_TRACK_ALREADY_ACTIVE' || code === 'VISUAL_TRACK_NOT_READY' || code === 'VISUAL_TRACK_STATE_CONFLICT' || code === 'VISUAL_GENERATION_ALREADY_RUNNING' || code === 'CREATURE_VISUAL_VERSION_CONFLICT' || code === 'CREATURE_VISUAL_ALREADY_ADOPTED' || code === 'VISUAL_GENERATION_NOT_ADOPTABLE' || code === 'BACKGROUND_CLEANUP_VERSION_CONFLICT') return 409
@@ -476,9 +478,12 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Creatur
     // The candidate submission can be retried when its first HTTP response was
     // lost. Returning the already-final record also absorbs any duplicate from
     // a browser render that began before the in-flight guard was introduced.
+    // A finalized candidate is always the validated PNG: `resultMimeType` still holds the raw
+    // generation format (Seedream can return JPEG) until candidate finalization overwrites it, so
+    // the format is checked here rather than assumed — an unfinalized record falls through below.
     if (record.assetReadiness === 'FINAL_ASSET'
         && record.resultSha256
-        && record.resultMimeType
+        && record.resultMimeType === 'image/png'
         && record.resultWidth
         && record.resultHeight) {
         return {
@@ -509,7 +514,9 @@ export async function orchestrateSubmitBackgroundRemovalCandidate(input: Creatur
         })
         return {
             success: true, requestId: input.requestId, requestPersistence: toPersistence(finalized, 'CREATED'),
-            candidate: { assetReadiness: 'FINAL_ASSET', sha256: validation.metadata.sha256, mimeType: validation.metadata.mimeType, width: validation.metadata.width, height: validation.metadata.height, warnings: validation.warnings },
+            // The validator above was given `image/png` and enforced alpha coverage, so the
+            // response states the format the candidate was validated against.
+            candidate: { assetReadiness: 'FINAL_ASSET', sha256: validation.metadata.sha256, mimeType: 'image/png', width: validation.metadata.width, height: validation.metadata.height, warnings: validation.warnings },
         }
     } catch (error) {
         const details = mapThrownError(error)

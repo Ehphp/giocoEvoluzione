@@ -59,7 +59,10 @@ export async function flipImageHorizontallyToPng(input: { bytes: Uint8Array, mim
     const decoded = input.mimeType === 'image/jpeg'
         ? await decodeJpeg(asArrayBuffer(input.bytes))
         : await decodePng(asArrayBuffer(input.bytes))
-    const mirrored = flipRgbaImageHorizontally({ data: decoded.data, width: decoded.width, height: decoded.height })
+    // `ImageData.data` is typed as `ImageDataArray`, which now also covers the Float16 buffers of
+    // an HDR canvas. The @jsquash PNG and JPEG decoders only ever produce 8-bit RGBA.
+    const rgba = decoded.data as Uint8ClampedArray
+    const mirrored = flipRgbaImageHorizontally({ data: rgba, width: decoded.width, height: decoded.height })
     return Object.freeze({
         bytes: new Uint8Array(await encodePng(mirrored as ImageData)),
         mimeType: 'image/png',

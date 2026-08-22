@@ -58,8 +58,13 @@ export type CreatureTransformationRequestRecord = Readonly<{
 }>
 
 export type RequestReservationOutcome = 'CREATED' | 'EXISTING' | 'DAILY_LIMIT_REACHED' | 'DAILY_BUDGET_REACHED' | 'CREATURE_NOT_OWNED' | 'IDEMPOTENCY_KEY_REUSED' | 'REAL_IMAGE_USER_LIMIT_REACHED' | 'REAL_IMAGE_USER_CONCURRENCY_REACHED' | 'REAL_IMAGE_COOLDOWN_ACTIVE' | 'REAL_IMAGE_GLOBAL_LIMIT_REACHED' | 'REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED'
+/**
+ * One literal discriminant per member: a single `'CREATED' | 'EXISTING'` member cannot be narrowed
+ * away by excluding both values, which left the failure handler receiving the success shape.
+ */
 export type RequestReservationResult =
-    | { outcome: 'CREATED' | 'EXISTING'; record: CreatureTransformationRequestRecord }
+    | { outcome: 'CREATED'; record: CreatureTransformationRequestRecord }
+    | { outcome: 'EXISTING'; record: CreatureTransformationRequestRecord }
     | { outcome: Exclude<RequestReservationOutcome, 'CREATED' | 'EXISTING'> }
 
 export type CreatureTransformationDailyUsage = Readonly<{
@@ -153,19 +158,22 @@ export interface CreatureTransformationRequestRepository {
 }
 
 type DatabaseError = { message?: string } | null
-type RequestReadQuery = {
-    eq(column: string, value: string): RequestReadQuery
+
+/**
+ * One query type rather than a read/list intersection: calling a method on an intersection
+ * resolves to the first matching signature, so `select().eq().eq()` used to narrow away to the
+ * read shape and lose `order`/`range` — which the completed-image listing needs.
+ */
+type RequestQuery = {
+    eq(column: string, value: string): RequestQuery
+    order(column: string, options: { ascending: boolean }): RequestQuery
     maybeSingle(): Promise<{ data: unknown; error: DatabaseError }>
-}
-type RequestListQuery = {
-    eq(column: string, value: string): RequestListQuery
-    order(column: string, options: { ascending: boolean }): RequestListQuery
     range(from: number, to: number): Promise<{ data: unknown; error: DatabaseError }>
 }
 export interface CreatureTransformationRequestRepositoryClient {
     rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: DatabaseError }>
     from(table: string): {
-        select(columns: string): RequestReadQuery & RequestListQuery
+        select(columns: string): RequestQuery
     }
 }
 
