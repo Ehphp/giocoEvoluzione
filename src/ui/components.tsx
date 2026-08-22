@@ -2,6 +2,7 @@ import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 're
 import { createPortal } from 'react-dom'
 
 import { CloseIcon } from './icons'
+import { useIsScreenLeaving } from './screen-leaving'
 
 import './components.css'
 
@@ -234,7 +235,13 @@ type OverlayProps = {
     width?: 'app' | 'narrow'
 }
 
-/** Modal layer rendered into the document body, with Escape and backdrop dismissal. */
+/**
+ * Modal layer rendered into the document body, with Escape and backdrop dismissal.
+ *
+ * An overlay belongs to the screen that opened it. Because it portals to the body it sits outside
+ * that screen's animating layer, so it cannot leave with it — it would hang at full opacity over
+ * the arriving screen and then blink out. It therefore closes the moment its screen starts leaving.
+ */
 export function Overlay({
     label,
     onClose,
@@ -245,8 +252,11 @@ export function Overlay({
     width = 'app',
 }: OverlayProps) {
     const contentRef = useRef<HTMLDivElement>(null)
+    const isScreenLeaving = useIsScreenLeaving()
 
     useEffect(() => {
+        if (isScreenLeaving) return
+
         const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
         contentRef.current?.focus()
@@ -264,7 +274,11 @@ export function Overlay({
             document.body.style.overflow = previousOverflow
             document.removeEventListener('keydown', handleKeyDown)
         }
-    }, [onClose])
+    }, [isScreenLeaving, onClose])
+
+    if (isScreenLeaving) {
+        return null
+    }
 
     return createPortal(
         <div

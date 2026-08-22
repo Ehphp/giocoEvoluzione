@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 
 import { hasSupabaseConfig } from './lib/supabase'
 
@@ -27,6 +27,10 @@ import { isCreatureVisualProgressionEnabled, useEvolutionRoute } from './app/use
 import { useCreatureVisuals } from './app/use-creature-visuals'
 import { useProfileActivity } from './app/use-profile-activity'
 import { useMatchSession, type BattleSubmitAction } from './app/use-match-session'
+import { ScreenTransition } from './ui/ScreenTransition'
+import { SCREEN_DEPTH, type ScreenId } from './app/screen-depth'
+
+type ResolvedScreen = Readonly<{ id: ScreenId; node: ReactNode }>
 
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
   if (!player) {
@@ -158,164 +162,206 @@ function App() {
     }
   }
 
-  if (isLoading || auth.status === 'loading' || auth.status === 'initializing') {
-    return <BootScreen />
+  /**
+   * Picks the screen to show. Returns it with its identity rather than rendering it directly, so
+   * the transition layer can tell a genuine screen change from an ordinary re-render.
+   */
+  function resolveScreen(): ResolvedScreen {
+    if (isLoading || auth.status === 'loading' || auth.status === 'initializing') {
+      return { id: 'boot', node: <BootScreen /> }
+    }
+
+    if (!hasSupabaseConfig) {
+      return { id: 'missing-config', node: <MissingConfigScreen /> }
+    }
+
+    if (!snapshot && (auth.status !== 'ready' || !auth.profile || !activeCreature)) {
+      return {
+        id: 'auth',
+        node: (
+          <AuthScreen
+            initialError={auth.error}
+            onSignIn={auth.signIn}
+            onSignUp={auth.signUp}
+          />
+        ),
+      }
+    }
+
+    if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && evolutionCreature) {
+      return {
+        id: 'creature-evolution',
+        node: (
+          <CreatureVisualProgressionScreen
+            creature={evolutionCreature}
+            onBack={leaveEvolution}
+            onVisualChanged={onVisualChanged}
+          />
+        ),
+      }
+    }
+
+    if (!snapshot && currentScreen === 'profile' && auth.profile && activeCreature) {
+      return {
+        id: 'profile',
+        node: (
+          <ProfileScreen
+            profile={auth.profile}
+            creature={activeCreature}
+            history={history}
+            isLoadingHistory={isLoadingHistory}
+            errorMessage={historyError}
+            onBack={() => setCurrentScreen('home')}
+            onOpenCollection={() => setCurrentScreen('collection')}
+            onOpenRanking={() => setCurrentScreen('ranking')}
+            onLogout={() => void handleLogout()}
+            visualUrl={officialVisual?.signedUrl}
+            visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
+            visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
+            onSetCombatMutationLoadout={handleSetCreatureCombatMutationLoadout}
+            onOpenEvolution={isCreatureVisualProgressionEnabled && auth.activeLineage ? () => handleOpenCreatureEvolution(auth.activeLineage!.id) : undefined}
+          />
+        ),
+      }
+    }
+
+    if (!snapshot && currentScreen === 'collection' && auth.profile && activeCreature) {
+      return {
+        id: 'collection',
+        node: (
+          <CollectionScreen
+            profile={auth.profile}
+            creature={activeCreature}
+            isOnline={isOnline}
+            onBack={() => setCurrentScreen('home')}
+            onOpenProfile={() => setCurrentScreen('profile')}
+            onOpenRanking={() => setCurrentScreen('ranking')}
+            onLogout={() => void handleLogout()}
+            visualUrl={officialVisual?.signedUrl}
+            visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
+            visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
+            visualHistory={visualProgress?.history}
+            currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
+            lineages={auth.lineages}
+            activeLineageId={auth.activeLineage?.id}
+            lineageVisuals={lineageVisuals}
+            onCreateLineage={() => auth.createLineage()}
+            onDeleteLineage={(lineageId) => auth.deleteLineage(lineageId)}
+            onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
+            onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
+            onSelectVisualVersion={isCreatureVisualProgressionEnabled ? ({ creatureId, versionId, currentVersionId }) => selectVisualVersion({ creatureId, targetVersionId: versionId, currentVersionId }) : undefined}
+          />
+        ),
+      }
+    }
+
+    if (!snapshot && currentScreen === 'ranking' && auth.profile) {
+      return {
+        id: 'ranking',
+        node: (
+          <LeaderboardScreen
+            onBack={() => setCurrentScreen('home')}
+            onOpenCollection={() => setCurrentScreen('collection')}
+            onOpenProfile={() => setCurrentScreen('profile')}
+            onLogout={() => void handleLogout()}
+          />
+        ),
+      }
+    }
+
+    if (!snapshot) {
+      return {
+        id: 'home',
+        node: (
+          <HomeScreen
+            viewModel={homeViewModel}
+            actions={{
+              onNicknameChange: setNickname,
+              onRoomCodeChange: (value) => setRoomCode(value.toUpperCase()),
+              onBotDifficultyChange: setBotDifficulty,
+              onCreateGame: () => void session.createPvpGame(),
+              onCreateBotGame: () => void session.createBotGame(),
+              onJoinGame: () => void session.joinRoom(),
+              onLeaveSession: session.leaveSession,
+              onOpenProfile: () => setCurrentScreen('profile'),
+              onOpenCollection: () => setCurrentScreen('collection'),
+              onOpenRanking: () => setCurrentScreen('ranking'),
+              onLogout: () => void handleLogout(),
+            }}
+          />
+        ),
+      }
+    }
+
+    if (snapshot.game.status === 'WAITING') {
+      return {
+        id: 'waiting',
+        node: (
+          <WaitingRoomScreen
+            roomCode={snapshot.game.room_code}
+            nickname={snapshot.me?.nickname ?? 'Il tuo profilo'}
+            isOnline={isOnline}
+            errorMessage={errorMessage}
+            statusMessage={statusMessage}
+            onCopyRoomCode={() => void handleCopyRoomCode()}
+            onLeaveSession={session.leaveSession}
+          />
+        ),
+      }
+    }
+
+    // One identity for the whole duel: the rounds inside it are not screen changes.
+    if (isGameScreen) {
+      return {
+        id: 'battle',
+        node: (
+          <ConnectedBattleScreen
+            snapshot={snapshot}
+            myScore={myScore}
+            opponentScore={opponentScore}
+            onSubmitAction={session.submitAction}
+            onChooseEvolutionTarget={session.chooseEvolutionTarget}
+            onLeaveSession={session.leaveSession}
+            resolutionData={resolutionData}
+            onContinue={() => void session.advanceRound()}
+            isBusy={isBusy}
+            errorMessage={errorMessage}
+            playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 } : undefined}
+            opponentVisual={gameVisualResource.opponent.visual
+              ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 }
+              : gameVisualResource.opponent.status === 'loading' ? null : undefined}
+          />
+        ),
+      }
+    }
+
+    if (resultViewModel) {
+      return {
+        id: 'result',
+        node: (
+          <MatchResultScreen
+            viewModel={resultViewModel}
+            onLeaveSession={session.leaveSession}
+            onNewGame={() => void session.newMatch()}
+            isBusy={isBusy}
+            errorMessage={errorMessage}
+            reward={matchReward}
+            creature={activeCreature}
+          />
+        ),
+      }
+    }
+
+    return { id: 'missing-result', node: <MissingResultScreen onLeaveSession={session.leaveSession} /> }
   }
 
-  if (!hasSupabaseConfig) {
-    return <MissingConfigScreen />
-  }
+  const screen = resolveScreen()
 
-  if (!snapshot && (auth.status !== 'ready' || !auth.profile || !activeCreature)) {
-    return (
-      <AuthScreen
-        initialError={auth.error}
-        onSignIn={auth.signIn}
-        onSignUp={auth.signUp}
-      />
-    )
-  }
-
-  if (!snapshot && currentScreen === 'creature-evolution' && isCreatureVisualProgressionEnabled && evolutionCreature) {
-    return (
-      <CreatureVisualProgressionScreen
-        creature={evolutionCreature}
-        onBack={leaveEvolution}
-        onVisualChanged={onVisualChanged}
-      />
-    )
-  }
-
-  if (!snapshot && currentScreen === 'profile' && auth.profile && activeCreature) {
-    return (
-      <ProfileScreen
-        profile={auth.profile}
-        creature={activeCreature}
-        history={history}
-        isLoadingHistory={isLoadingHistory}
-        errorMessage={historyError}
-        onBack={() => setCurrentScreen('home')}
-        onOpenCollection={() => setCurrentScreen('collection')}
-        onOpenRanking={() => setCurrentScreen('ranking')}
-        onLogout={() => void handleLogout()}
-        visualUrl={officialVisual?.signedUrl}
-        visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
-        visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
-        onSetCombatMutationLoadout={handleSetCreatureCombatMutationLoadout}
-        onOpenEvolution={isCreatureVisualProgressionEnabled && auth.activeLineage ? () => handleOpenCreatureEvolution(auth.activeLineage!.id) : undefined}
-      />
-    )
-  }
-
-  if (!snapshot && currentScreen === 'collection' && auth.profile && activeCreature) {
-    return (
-      <CollectionScreen
-        profile={auth.profile}
-        creature={activeCreature}
-        isOnline={isOnline}
-        onBack={() => setCurrentScreen('home')}
-        onOpenProfile={() => setCurrentScreen('profile')}
-        onOpenRanking={() => setCurrentScreen('ranking')}
-        onLogout={() => void handleLogout()}
-        visualUrl={officialVisual?.signedUrl}
-        visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
-        visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
-        visualHistory={visualProgress?.history}
-        currentVisualVersionId={visualProgress?.currentVersion.id ?? officialVisual?.versionId}
-        lineages={auth.lineages}
-        activeLineageId={auth.activeLineage?.id}
-        lineageVisuals={lineageVisuals}
-        onCreateLineage={() => auth.createLineage()}
-        onDeleteLineage={(lineageId) => auth.deleteLineage(lineageId)}
-        onSetActiveLineage={(lineageId) => void auth.setActiveLineage(lineageId)}
-        onOpenEvolution={isCreatureVisualProgressionEnabled ? handleOpenCreatureEvolution : undefined}
-        onSelectVisualVersion={isCreatureVisualProgressionEnabled ? ({ creatureId, versionId, currentVersionId }) => selectVisualVersion({ creatureId, targetVersionId: versionId, currentVersionId }) : undefined}
-      />
-    )
-  }
-
-  if (!snapshot && currentScreen === 'ranking' && auth.profile) {
-    return (
-      <LeaderboardScreen
-        onBack={() => setCurrentScreen('home')}
-        onOpenCollection={() => setCurrentScreen('collection')}
-        onOpenProfile={() => setCurrentScreen('profile')}
-        onLogout={() => void handleLogout()}
-      />
-    )
-  }
-
-  if (!snapshot) {
-    return (
-      <HomeScreen
-        viewModel={homeViewModel}
-        actions={{
-          onNicknameChange: setNickname,
-          onRoomCodeChange: (value) => setRoomCode(value.toUpperCase()),
-          onBotDifficultyChange: setBotDifficulty,
-          onCreateGame: () => void session.createPvpGame(),
-          onCreateBotGame: () => void session.createBotGame(),
-          onJoinGame: () => void session.joinRoom(),
-          onLeaveSession: session.leaveSession,
-          onOpenProfile: () => setCurrentScreen('profile'),
-          onOpenCollection: () => setCurrentScreen('collection'),
-          onOpenRanking: () => setCurrentScreen('ranking'),
-          onLogout: () => void handleLogout(),
-        }}
-      />
-    )
-  }
-
-  if (snapshot.game.status === 'WAITING') {
-    return (
-      <WaitingRoomScreen
-        roomCode={snapshot.game.room_code}
-        nickname={snapshot.me?.nickname ?? 'Il tuo profilo'}
-        isOnline={isOnline}
-        errorMessage={errorMessage}
-        statusMessage={statusMessage}
-        onCopyRoomCode={() => void handleCopyRoomCode()}
-        onLeaveSession={session.leaveSession}
-      />
-    )
-  }
-
-  if (isGameScreen) {
-    return (
-      <ConnectedBattleScreen
-        snapshot={snapshot}
-        myScore={myScore}
-        opponentScore={opponentScore}
-        onSubmitAction={session.submitAction}
-        onChooseEvolutionTarget={session.chooseEvolutionTarget}
-        onLeaveSession={session.leaveSession}
-        resolutionData={resolutionData}
-        onContinue={() => void session.advanceRound()}
-        isBusy={isBusy}
-        errorMessage={errorMessage}
-        playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 } : undefined}
-        opponentVisual={gameVisualResource.opponent.visual
-          ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 }
-          : gameVisualResource.opponent.status === 'loading' ? null : undefined}
-      />
-    )
-  }
-
-  if (resultViewModel) {
-    return (
-      <MatchResultScreen
-        viewModel={resultViewModel}
-        onLeaveSession={session.leaveSession}
-        onNewGame={() => void session.newMatch()}
-        isBusy={isBusy}
-        errorMessage={errorMessage}
-        reward={matchReward}
-        creature={activeCreature}
-      />
-    )
-  }
-
-  return <MissingResultScreen onLeaveSession={session.leaveSession} />
+  return (
+    <ScreenTransition screenKey={screen.id} depth={SCREEN_DEPTH[screen.id]}>
+      {screen.node}
+    </ScreenTransition>
+  )
 }
 
 type ConnectedBattleScreenProps = {

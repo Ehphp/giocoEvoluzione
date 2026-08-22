@@ -222,6 +222,25 @@
     --ev-dur-fast: 120ms;
     --ev-dur-base: 220ms;
     --ev-dur-slow: 420ms;
+
+    /*
+     * Screen changes.
+     *
+     * `--ev-ease` is deliberately front-loaded — it snaps, which is what a 46px button wants. A
+     * whole screen crossing 390px wants the opposite: it is done 82% of the way through 30% of
+     * `--ev-ease`, so the move would flick and then sit still for the rest of its duration. This
+     * curve spreads the travel across the whole 300ms instead, which is what makes it read as one
+     * surface moving rather than a cut.
+     *
+     * Both layers share it, so a push stays rigid: two curves would visibly shear them apart.
+     */
+    --ev-ease-screen: cubic-bezier(.25, .46, .45, .94);
+    --ev-dur-screen: 300ms;
+    /* The arriving screen travels; the departing one only drifts, and that gap reads as depth. */
+    --ev-screen-shift: 15%;
+    --ev-screen-shift-parallax: 5%;
+    /* How far a cross-fading screen blooms up from. Small: the dock must not appear to move. */
+    --ev-screen-bloom: .985;
 }
 
 /** Per-gene theming: set `data-gene` on any element to expose its hue as local tokens. */
@@ -260,5 +279,10 @@
         --ev-dur-fast: 1ms;
         --ev-dur-base: 1ms;
         --ev-dur-slow: 1ms;
+        --ev-dur-screen: 1ms;
+        /* Collapse the travel too: a 1ms slide is a jump, a 1ms cut is a cut. */
+        --ev-screen-shift: 0%;
+        --ev-screen-shift-parallax: 0%;
+        --ev-screen-bloom: 1;
     }
 }

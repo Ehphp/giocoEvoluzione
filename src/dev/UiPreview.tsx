@@ -7,6 +7,9 @@ import { CollectionScreen } from '../screens/collection/CollectionScreen'
 import { LeaderboardScreen } from '../screens/ranking/LeaderboardScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
+import { ScreenTransition } from '../ui/ScreenTransition'
+import { Button } from '../ui/components'
+import { SCREEN_DEPTH, type ScreenId } from '../app/screen-depth'
 import type { UiPreviewRoute } from './ui-preview-route'
 import {
     PREVIEW_CREATURE,
@@ -18,6 +21,8 @@ import {
     buildPreviewBattleViewModel,
     buildPreviewHomeViewModel,
 } from './ui-preview-fixtures'
+
+import './ui-preview.css'
 
 const noop = () => undefined
 const asyncNoop = async () => undefined
@@ -143,6 +148,47 @@ function EvolutionPreview() {
     )
 }
 
+const TRANSITION_STOPS = [
+    { id: 'home', label: 'Home', render: () => <HomePreview /> },
+    { id: 'collection', label: 'Collezione', render: () => <CollectionPreview /> },
+    { id: 'profile', label: 'Creatura', render: () => <ProfilePreview /> },
+    { id: 'ranking', label: 'Classifica', render: () => <RankingPreview /> },
+    { id: 'creature-evolution', label: 'Evoluzione', render: () => <EvolutionPreview /> },
+    { id: 'battle', label: 'Battaglia', render: () => <BattlePreview /> },
+] as const satisfies ReadonlyArray<{ id: ScreenId; label: string; render: () => React.JSX.Element }>
+
+/**
+ * The motion layer on its own.
+ *
+ * The real transitions all sit behind authentication, so this is the only place the three moves can
+ * be watched side by side: cross-fade between the dock's destinations, push into the evolution
+ * screen or a battle, pop back out.
+ */
+function TransitionsPreview() {
+    const [stopId, setStopId] = useState<ScreenId>('home')
+    const stop = TRANSITION_STOPS.find((candidate) => candidate.id === stopId) ?? TRANSITION_STOPS[0]
+
+    return (
+        <>
+            <ScreenTransition screenKey={stop.id} depth={SCREEN_DEPTH[stop.id]}>
+                {stop.render()}
+            </ScreenTransition>
+            <nav className="ev-preview-moves" aria-label="Anteprima transizioni">
+                {TRANSITION_STOPS.map((candidate) => (
+                    <Button
+                        key={candidate.id}
+                        tone={candidate.id === stopId ? 'gold' : 'cream'}
+                        size="sm"
+                        onClick={() => setStopId(candidate.id)}
+                    >
+                        {`${candidate.label} · ${SCREEN_DEPTH[candidate.id]}`}
+                    </Button>
+                ))}
+            </nav>
+        </>
+    )
+}
+
 /** Development-only rendering of the product screens, used for design iteration. */
 export function UiPreview({ route }: { route: UiPreviewRoute }) {
     if (route === 'battle') {
@@ -167,6 +213,10 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
 
     if (route === 'draft') {
         return <DraftPreview />
+    }
+
+    if (route === 'transitions') {
+        return <TransitionsPreview />
     }
 
     return <HomePreview />

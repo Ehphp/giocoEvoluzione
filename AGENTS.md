@@ -119,6 +119,9 @@ on a container and use `var(--gene-color)`, `var(--gene-color-strong)`, `var(--g
 `AppShell` · `Panel` · `Button` · `ActionButton` · `IconButton` · `Chip` · `Pill` · `Badge` ·
 `SectionLabel` · `Avatar` · `ProgressBar` · `Pips` · `Overlay` · `SheetHeader` · `Notice`
 
+`ScreenTransition` is a primitive too, but it lives in its own file because it wraps whole screens
+rather than sitting inside one — see §5.
+
 - Build screens out of these. A screen stylesheet may lay them out; it must not repaint them.
 - Need a new visual behaviour? Add a **variant to the primitive**, not an override in a screen.
 - `Button` tones: `use` · `evolve` · `gold` · `info` · `cream` · `ghost` · `danger`.
@@ -136,9 +139,73 @@ their markup is deliberately dense; the result must still be indistinguishable i
 the scene stays visible and readable behind. Reach for `--ev-scrim-focus` and
 `--ev-shadow-text-on-scene` to give loose copy contrast without reintroducing a card edge.
 
+An overlay belongs to the screen that opened it, and withdraws by itself when that screen starts
+leaving — it portals to the body, so no transform on the outgoing layer could carry it away.
+
 ---
 
-## 5. Icons and assets
+## 5. Motion
+
+There are exactly two ways something new can appear, and the first question is always which one
+this is.
+
+**A layer opens on top of the screen.** It rises from the bottom over a blurred scrim
+(`.ev-sheet` / `.ev-overlay`, `--ev-dur-base`). That is the `Overlay` primitive of §4 and it needs
+no decision: sheets, confirmations, the round result, the evolution draft are all layers.
+
+**A screen replaces another.** It moves horizontally, or cross-fades. Never both, never vertically —
+vertical is spoken for by layers, and reusing it would make a screen change read as a sheet.
+
+Screens never cut. `App.tsx` resolves *which* screen to show and hands it to `ScreenTransition`
+(`src/ui/ScreenTransition.tsx`) with its identity and its depth; the transition layer animates the
+swap. Two layers are on stage for 300ms — the screen arriving, and the one it replaced.
+
+**Adding a screen means adding it to `src/app/screen-depth.ts`.** The depth is not decoration: it
+picks the move, and it is the only input.
+
+| Depth change | Move | Reads as |
+| --- | --- | --- |
+| deeper | `push` | the new screen slides in over the old one, which drifts back |
+| shallower | `pop` | the old screen slides away and uncovers the one beneath |
+| equal | `fade` | a cross-fade |
+
+Two invariants the depth table has to satisfy, both pinned by `screen-depth.test.ts`:
+
+- **Every destination reachable from the dock shares depth 1.** The dock is rendered *inside* each
+  screen, so a slide would drag it along; a cross-fade of two near-identical docks reads as the dock
+  standing still while only the active tab changes. Do not give a dock destination its own depth
+  unless you have first hoisted the dock out of the screens.
+- **Nothing pops on the way *into* something.** A depth table can read perfectly as a stack and
+  still send a route backwards. The result screen did: one level deeper than the battle it followed,
+  which turned "nuova partita" into a pop, because a rematch restarts from the result screen without
+  passing through the home screen. It sits level with the battle instead — the duel resolving, not a
+  further place inside it.
+
+`screen-depth.test.ts` enumerates every screen change the app can perform and asserts its move. Add
+the rows for a new screen there; that table, not the depth numbers, is what says the criterion still
+holds.
+
+Rules that keep it honest:
+
+- **`transform` and `opacity` only.** Anything else animates off the compositor and drops frames on
+  a mid-range Android.
+- **Two stacked layers must never both pass through half opacity** — the ground shows between them
+  and the screen dips. Whichever layer is underneath holds opaque until the one above covers it.
+- **Durations and curves are tokens** (`--ev-dur-*`, `--ev-ease*`). `--ev-ease` is front-loaded and
+  right for a 46px control; a full-screen move uses `--ev-ease-screen`, which spreads the travel
+  across the whole duration instead of flicking and then sitting still.
+- **`prefers-reduced-motion` is handled once**, in `theme.css`, by collapsing the duration *and*
+  the travel tokens. A 1ms slide is a jump; a 1ms cut is a cut. Never add a motion value that
+  bypasses those tokens.
+- The outgoing screen is re-rendered, not re-mounted, so its scroll position and state survive the
+  exit. Do not restructure the layers in a way that changes that — see the test for what it costs.
+
+Watch all three moves with `?ui-preview=transitions`, which is the only place they are reachable
+without a session.
+
+---
+
+## 6. Icons and assets
 
 **Icons come from `src/ui/icons.tsx` only.** It re-exports Lucide under product names, plus the
 hand-drawn `GeneIcon` for the five adaptations.
@@ -159,7 +226,7 @@ Environment illustrations are drawn **16:9** and framed 16:9 everywhere.
 
 ---
 
-## 6. Mobile is the target, and the real viewport is smaller than you think
+## 7. Mobile is the target, and the real viewport is smaller than you think
 
 A 390×844 iPhone reports about **390×664** to the page once browser chrome is up, and a notch adds
 47px top + 34px bottom of safe-area inset. Design against that, never against the nominal size.
@@ -183,7 +250,7 @@ overscroll-behavior-y: contain`. Otherwise its content becomes unreachable.
 
 ---
 
-## 7. Overflow is a bug
+## 8. Overflow is a bug
 
 Nothing may be clipped, hidden or pushed off screen. Deliberate truncation is fine **only** when
 the user sees it: `text-overflow: ellipsis` or `-webkit-line-clamp`, plus the full text in `title`
@@ -213,7 +280,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 8. Language and accessibility
+## 9. Language and accessibility
 
 - UI copy is **Italian**. Match the existing register: short, concrete, no exclamation marks
   outside result screens.
@@ -225,7 +292,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 9. Before you call it done
+## 10. Before you call it done
 
 ```bash
 npm run dev                      # required by the audit below
@@ -252,8 +319,10 @@ Modes: *(none)* · `safe-area` · `landscape` · `sheet:<css-selector>`.
 modes, plus any overlay it can open.**
 
 Inspect screens without a backend session with
-`?ui-preview=home|battle|collection|profile|ranking|evolution|draft` (development only, fixtures
-in `src/dev/uiPreviewFixtures.ts`). `draft` is the battle-start overlay over a live battle screen.
+`?ui-preview=home|battle|collection|profile|ranking|evolution|draft|transitions` (development only,
+fixtures in `src/dev/ui-preview-fixtures.ts`). `draft` is the battle-start overlay over a live
+battle screen; `transitions` is the motion layer of §5, and the only way to watch a screen change
+without logging in.
 The `evolution` route still calls the transformation API — stub `**/functions/v1/**` to reach its
 later states.
 
@@ -278,13 +347,15 @@ One test fails on a clean checkout. Confirm with `git stash` before assuming you
 
 ---
 
-## 10. Checklist
+## 11. Checklist
 
 - [ ] No hex, px radius or raw spacing in a component — tokens only.
 - [ ] Built from `src/ui` primitives; no primitive restyled from a screen.
 - [ ] Icons from `src/ui/icons.tsx`; no emoji or text glyphs.
 - [ ] Image paths from `src/ui/assets.ts`.
 - [ ] No game rule recomputed in a component.
+- [ ] A new screen is registered in `src/app/screen-depth.ts`; motion animates `transform`/`opacity`
+      only, off tokens, with `prefers-reduced-motion` covered by collapsing them.
 - [ ] Touch targets ≥ 40×40; accessible names present.
 - [ ] The screen's only elastic block is decorative.
 - [ ] The surface owns its scrolling; the document still cannot scroll.
