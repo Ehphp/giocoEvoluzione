@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import { NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
+import { playCue } from '../../../ui/feedback/feedback'
 import { ArrowDownIcon, ArrowUpIcon, GeneIcon, InfoIcon } from '../../../ui/icons'
 import type { GeneCardV2 } from '../controller/types'
 
@@ -147,6 +148,8 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
         }
 
         setDetailGeneId(null)
+        // `select`, not `tap`: moving the carousel is not a commitment, and it fires in bursts.
+        playCue('select')
         onSelectGene(gene.id)
     }
 

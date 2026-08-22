@@ -8,7 +8,9 @@ import type { CombatMutationId, CombatMutationLoadout } from '../../../shared/ga
 import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Button, Chip, IconButton, Notice, Overlay, Panel, ProgressBar, SectionLabel } from '../../ui/components'
-import { ChevronIcon, DnaIcon, ExitIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
+import { playCue } from '../../ui/feedback/feedback'
+import { useFeedbackPreference } from '../../ui/feedback/use-feedback'
+import { ChevronIcon, DnaIcon, ExitIcon, FeedbackOffIcon, FeedbackOnIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './ProfileScreen.css'
 
@@ -84,6 +86,17 @@ export function ProfileScreen({
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
     const combatMutationLoadout = requireCombatMutationLoadout(creature.combat_mutation_loadout)
     const activeVisualUrl = visualUrl ?? ASSETS.creatures.default
+    const { isEnabled: isFeedbackEnabled, toggle: toggleFeedback } = useFeedbackPreference()
+
+    /**
+     * Confirms with the cue only when switching *on*. `playCue` reads the preference straight from
+     * the module rather than from React state, so by this line it already holds the new value: turning
+     * feedback on announces itself, turning it off goes quiet, and neither needs a branch here.
+     */
+    function handleToggleFeedback() {
+        toggleFeedback()
+        playCue('confirm')
+    }
 
     async function selectCombatMutation(mutation: CombatMutationId) {
         if (openMutationSlot === null || !onSetCombatMutationLoadout || isUpdatingMutation || combatMutationLoadout[1 - openMutationSlot] === mutation) return
@@ -140,9 +153,19 @@ export function ProfileScreen({
                         <span className="ev-eyebrow ev-eyebrow--light">Creatura attiva</span>
                         <h1 id="profile-title" className="ev-truncate">{profile.nickname}</h1>
                     </div>
-                    <IconButton label="Esci dall account" variant="danger" onClick={onLogout}>
-                        <ExitIcon />
-                    </IconButton>
+                    <div className="profile-topbar__actions">
+                        <IconButton
+                            label={isFeedbackEnabled ? 'Disattiva audio e vibrazione' : 'Attiva audio e vibrazione'}
+                            aria-pressed={isFeedbackEnabled}
+                            cue={null}
+                            onClick={handleToggleFeedback}
+                        >
+                            {isFeedbackEnabled ? <FeedbackOnIcon /> : <FeedbackOffIcon />}
+                        </IconButton>
+                        <IconButton label="Esci dall account" variant="danger" onClick={onLogout}>
+                            <ExitIcon />
+                        </IconButton>
+                    </div>
                 </header>
 
                 <Panel className="profile-hero" compact>

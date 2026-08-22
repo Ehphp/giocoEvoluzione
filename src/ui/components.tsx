@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 
 import { CloseIcon } from './icons'
 import { useIsScreenLeaving } from './screen-leaving'
+import { playCue } from './feedback/feedback'
+import type { Cue } from './feedback/cues'
 
 import './components.css'
 
@@ -66,18 +68,42 @@ export function Panel({ variant = 'cream', flat = false, compact = false, classN
 
 export type ButtonTone = 'use' | 'evolve' | 'gold' | 'info' | 'cream' | 'ghost' | 'danger'
 
+/**
+ * What a press sounds like, read off the tone the button already carries.
+ *
+ * Tone is not decoration here — it is what the button *means* (§4), so it is also the right source
+ * for the cue. A call site that needs something else passes `cue`; `cue={null}` presses in silence.
+ */
+const TONE_CUES: Readonly<Record<ButtonTone, Cue>> = {
+    use: 'confirm',
+    gold: 'confirm',
+    evolve: 'evolve',
+    danger: 'alert',
+    info: 'tap',
+    cream: 'tap',
+    ghost: 'tap',
+}
+
 type ButtonProps = {
     tone?: ButtonTone
     block?: boolean
     size?: 'md' | 'sm'
     className?: string
+    /** Overrides the cue the tone implies. `null` presses silently. */
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
-export function Button({ tone = 'use', block = false, size = 'md', className = '', type = 'button', children, ...rest }: ButtonProps) {
+export function Button({ tone = 'use', block = false, size = 'md', className = '', type = 'button', cue, onClick, children, ...rest }: ButtonProps) {
+    const resolvedCue = cue === undefined ? TONE_CUES[tone] : cue
+
     return (
         <button
             type={type}
             className={`ev-btn ev-btn--${tone} ${block ? 'ev-btn--block' : ''} ${size === 'sm' ? 'ev-btn--sm' : ''} ${className}`}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
             {...rest}
         >
             {children}
@@ -92,12 +118,23 @@ type ActionButtonProps = {
     value?: string
     glyph: ReactNode
     className?: string
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 /** Large two-line call to action used for the round decision. */
-export function ActionButton({ tone, title, hint, value, glyph, className = '', ...rest }: ActionButtonProps) {
+export function ActionButton({ tone, title, hint, value, glyph, className = '', cue, onClick, ...rest }: ActionButtonProps) {
+    const resolvedCue = cue === undefined ? TONE_CUES[tone] : cue
+
     return (
-        <button type="button" className={`ev-btn ev-btn--${tone} ev-action-btn ${className}`} {...rest}>
+        <button
+            type="button"
+            className={`ev-btn ev-btn--${tone} ev-action-btn ${className}`}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
+            {...rest}
+        >
             <span className="ev-action-btn__glyph" aria-hidden="true">{glyph}</span>
             <span className="ev-action-btn__copy">
                 <span className="ev-action-btn__title">{title}</span>
@@ -115,18 +152,25 @@ type IconButtonProps = {
     variant?: 'glass' | 'cream' | 'danger'
     size?: 'md' | 'lg'
     className?: string
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 /**
  * Circular icon-only control.
  */
-export function IconButton({ label, variant = 'glass', size = 'md', className = '', children, ...rest }: IconButtonProps) {
+export function IconButton({ label, variant = 'glass', size = 'md', className = '', cue, onClick, children, ...rest }: IconButtonProps) {
+    const resolvedCue = cue === undefined ? (variant === 'danger' ? 'alert' : 'tap') : cue
+
     return (
         <button
             type="button"
             className={`ev-icon-btn ${variant === 'glass' ? '' : `ev-icon-btn--${variant}`} ${size === 'lg' ? 'ev-icon-btn--lg' : ''} ${className}`}
             aria-label={label}
             title={label}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
             {...rest}
         >
             {children}

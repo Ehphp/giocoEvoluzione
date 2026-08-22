@@ -8,6 +8,7 @@ import { getRoundEventLabel } from '../../../game/ui-context'
 import type { CombatMutationEffect, FineDelMondoActivation, PlayerRoundAction, RoundValueBreakdown } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { Button, Chip, Notice, Overlay, Panel } from '../../../ui/components'
+import { playCue } from '../../../ui/feedback/feedback'
 import { GeneIcon, MeteorIcon } from '../../../ui/icons'
 
 export type RoundResolutionData = {
@@ -203,6 +204,22 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
             window.clearTimeout(step3)
         }
     }, [snapshot.game.status, snapshot.currentRoundResult?.id])
+
+    /*
+     * Sound follows the staged reveal above, not the mount: the clash lands on phase 2, where the
+     * two values meet. Deliberately no win/lose cue per round — those belong to the match result,
+     * and a verdict fanfare seven times in a duel stops meaning anything. An evolution is the one
+     * exception, because it is an event rather than a score.
+     */
+    useEffect(() => {
+        if (snapshot.game.status !== 'REVEALING') return
+
+        if (animationPhase === 2) {
+            playCue('impact')
+        } else if (animationPhase === 3 && outcome === 'evolve') {
+            playCue('evolve')
+        }
+    }, [animationPhase, outcome, snapshot.game.status])
 
     useEffect(() => {
         contentRef.current?.focus()

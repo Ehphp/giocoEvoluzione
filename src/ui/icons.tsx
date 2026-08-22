@@ -22,6 +22,8 @@ import {
     Swords,
     Trophy,
     User,
+    Volume2,
+    VolumeX,
     X,
     Zap,
 } from 'lucide-react'
@@ -281,3 +283,6 @@ export const VenomIcon = Skull
 export const FireIcon = Flame
 export const MeteorIcon = Rocket
 export const AddIcon = Plus
+/** Sound *and* vibration: one preference covers both — see `src/ui/feedback/feedback.ts`. */
+export const FeedbackOnIcon = Volume2
+export const FeedbackOffIcon = VolumeX

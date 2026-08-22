@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { TRAIT_LABELS } from '../../game/config'
 import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
@@ -8,6 +8,7 @@ import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, Result
 import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
 import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
+import { playCue } from '../../ui/feedback/feedback'
 import { ChevronIcon, CloseIcon, GeneIcon, MeteorIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './MatchResultScreen.css'
@@ -163,6 +164,19 @@ export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy
     const outcome = OUTCOME_COPY[viewModel.outcome]
     const opponentLabel = OUTCOME_COPY[opposingOutcome(viewModel.outcome)].label
     const [openRoundId, setOpenRoundId] = useState<string | null>(null)
+
+    /*
+     * The one place the verdict fanfares play. The outcome never changes under a mounted result
+     * screen — a rematch unmounts it, since the new game passes through the battle or the waiting
+     * room first — so this fires exactly once per match. A draw stays quiet: nothing to announce.
+     */
+    useEffect(() => {
+        if (viewModel.outcome === 'win') {
+            playCue('win')
+        } else if (viewModel.outcome === 'loss') {
+            playCue('lose')
+        }
+    }, [viewModel.outcome])
 
     return (
         <AppShell sceneryUrl={viewModel.background} sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback} scroll>

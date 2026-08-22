@@ -203,6 +203,36 @@ Rules that keep it honest:
 Watch all three moves with `?ui-preview=transitions`, which is the only place they are reachable
 without a session.
 
+### Sound and vibration
+
+One vocabulary, in `src/ui/feedback/cues.ts`: `tap` · `select` · `back` · `confirm` · `evolve` ·
+`impact` · `win` · `lose` · `alert`. A cue name owns **both** a sound recipe and a vibration pattern,
+so the two can never drift apart. `playCue('confirm')` fires both, or neither if the player has
+switched feedback off.
+
+**Feedback is wired into the primitives, not into screens.** `Button` and `ActionButton` read their
+cue off the `tone` they already carry — tone *is* what the button means (§4), so it is also the right
+source for the sound. `IconButton` follows its variant. Pass `cue` to override, `cue={null}` for
+silence. Do not add a `playCue` next to an `onClick` that a primitive already covers; the reason the
+whole app has feedback from one change is that no call site has to remember.
+
+A screen only plays a cue for something that is not a press: the round clash, an evolution, the
+match verdict. Those live where the moment is (`RoundResultOverlay`, `MatchResultScreen`).
+
+- **Nothing plays unprompted.** Every cue answers a player action. The `AudioContext` is built on the
+  first cue, never at import: one created outside a user gesture stays suspended forever on iOS, so
+  the failure is silent and permanent. Never construct one eagerly.
+- **Silence is an acceptable outcome.** No Web Audio, refused resume, storage unavailable — all
+  degrade quietly. A game that cannot make a noise still plays.
+- **`navigator.vibrate` does not exist on iOS Safari and will not.** Haptics there need the native
+  layer once the app is wrapped for the stores; the swap point is `haptics.ts`, not the call sites.
+- **Verdict cues are for the match, not the round.** Seven fanfares in a duel stop meaning anything.
+- New cue? Add it to *both* tables in `cues.ts` — `cues.test.ts` fails until you do, and also holds
+  the length, gain and vibration budgets.
+
+The sounds are synthesised, not sampled: no assets, no download, works offline. That is a starting
+point. Authored samples replace `SOUND_RECIPES` alone — the cue names are the contract.
+
 ---
 
 ## 6. Icons and assets
@@ -356,6 +386,8 @@ One test fails on a clean checkout. Confirm with `git stash` before assuming you
 - [ ] No game rule recomputed in a component.
 - [ ] A new screen is registered in `src/app/screen-depth.ts`; motion animates `transform`/`opacity`
       only, off tokens, with `prefers-reduced-motion` covered by collapsing them.
+- [ ] Presses get their cue from the primitive, not from a `playCue` beside the `onClick`; no
+      `AudioContext` is built before a player acts.
 - [ ] Touch targets ≥ 40×40; accessible names present.
 - [ ] The screen's only elastic block is decorative.
 - [ ] The surface owns its scrolling; the document still cannot scroll.
