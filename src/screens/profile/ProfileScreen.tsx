@@ -249,7 +249,7 @@ export function ProfileScreen({
                 {isLoadingHistory ? (
                     <Panel className="profile-empty">Caricamento cronologia...</Panel>
                 ) : history.length ? (
-                    <ol className="profile-history">
+                    <ol className="profile-history ev-stagger">
                         {history.slice(0, 10).map((item) => (
                             <li key={item.gameId}>
                                 <Panel className={`profile-match profile-match--${item.outcome}`} flat>

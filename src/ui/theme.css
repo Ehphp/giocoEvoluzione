@@ -160,6 +160,12 @@
     /* Chunky "toy" lip under pressable surfaces. */
     --ev-lip: inset 0 -4px 0 rgba(0, 0, 0, .22), inset 0 2px 0 rgba(255, 255, 255, .38);
     --ev-lip-cream: inset 0 -3px 0 rgba(160, 138, 92, .28), inset 0 2px 0 rgba(255, 255, 255, .9);
+    /*
+     * The same lip, compressed. A pressed control sinks *into* its own edge — moving the whole thing
+     * down, lip included, reads as sliding rather than depressing.
+     */
+    --ev-lip-pressed: inset 0 -1px 0 rgba(0, 0, 0, .26), inset 0 1px 0 rgba(255, 255, 255, .28);
+    --ev-lip-cream-pressed: inset 0 -1px 0 rgba(160, 138, 92, .34), inset 0 1px 0 rgba(255, 255, 255, .7);
 
     /* Type scale. */
     --ev-fs-2xs: .625rem;
@@ -236,6 +242,25 @@
      */
     --ev-ease-screen: cubic-bezier(.25, .46, .45, .94);
     --ev-dur-screen: 300ms;
+
+    /*
+     * Presses. A control goes down fast and comes back slowly, and the return overshoots — that
+     * asymmetry is the whole difference between a button that responds and one that feels sprung.
+     * Both halves are needed: the press-in timing lives on `:active`, the release on the base rule.
+     */
+    --ev-ease-spring: cubic-bezier(.34, 1.5, .64, 1);
+    --ev-dur-press: 80ms;
+    --ev-dur-release: 260ms;
+    --ev-press-sink: 3px;
+    --ev-press-scale: .972;
+
+    /*
+     * Lists assemble instead of appearing. `--ev-stagger-max` caps the cascade: past it every
+     * remaining row shares one delay, so a long list never keeps the player waiting for its tail.
+     */
+    --ev-stagger-step: 34ms;
+    --ev-stagger-max: 340ms;
+    --ev-stagger-rise: 10px;
     /* The arriving screen travels; the departing one only drifts, and that gap reads as depth. */
     --ev-screen-shift: 15%;
     --ev-screen-shift-parallax: 5%;
@@ -284,5 +309,18 @@
         --ev-screen-shift: 0%;
         --ev-screen-shift-parallax: 0%;
         --ev-screen-bloom: 1;
+
+        /*
+         * The press keeps its sink and its scale. Those are not decoration — they are how a control
+         * says it registered the touch — and direct manipulation is what reduced motion exempts.
+         * What goes is the spring: the timings collapse, so the state changes without travelling.
+         */
+        --ev-dur-press: 1ms;
+        --ev-dur-release: 1ms;
+
+        /* The cascade goes entirely: a list appears at once. */
+        --ev-stagger-step: 0ms;
+        --ev-stagger-max: 0ms;
+        --ev-stagger-rise: 0px;
     }
 }

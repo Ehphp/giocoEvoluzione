@@ -658,7 +658,15 @@
     background: linear-gradient(180deg, #fffdf6 0%, var(--gene-color-soft, #f1e7cd) 100%);
     border: 2px solid rgba(255, 255, 255, .85);
     box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
-    transition: transform var(--ev-dur-base) var(--ev-ease), scale var(--ev-dur-base) var(--ev-ease), box-shadow var(--ev-dur-base) var(--ev-ease);
+    /*
+     * Selecting is not pressing: the card is claiming focus, so it springs into place rather than
+     * settling. `scale` is its own property here, separate from the `translateY`, so both need the
+     * curve — otherwise the lift overshoots while the growth does not, and they visibly disagree.
+     */
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        scale var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-base) var(--ev-ease);
 }
 
 .gene-card.is-selected {
@@ -1463,11 +1471,18 @@
     background: var(--ev-grad-cream);
     border: 2px solid var(--ev-stroke-light);
     box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
-    transition: transform var(--ev-dur-fast) var(--ev-ease);
+    /* Not an `ev-btn`, but it has to press like one — same release spring, same compressing lip. */
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-release) var(--ev-ease);
 }
 
 .evolution-draft__option:active:not(:disabled) {
-    transform: translateY(2px);
+    transition:
+        transform var(--ev-dur-press) var(--ev-ease),
+        box-shadow var(--ev-dur-press) var(--ev-ease);
+    transform: translateY(var(--ev-press-sink)) scale(var(--ev-press-scale));
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream-pressed);
 }
 
 .evolution-draft__option:disabled {

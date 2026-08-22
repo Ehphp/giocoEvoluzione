@@ -125,7 +125,15 @@
     font-weight: 800;
     text-shadow: 0 2px 3px rgba(0, 0, 0, .28);
     box-shadow: var(--ev-shadow-md), var(--ev-lip);
-    transition: transform var(--ev-dur-fast) var(--ev-ease), filter var(--ev-dur-fast) var(--ev-ease);
+    /*
+     * This is the *release*. The press-in timing is on `:active` below, because a single transition
+     * cannot bend one way going down and another coming up — and that asymmetry is the point: down
+     * is quick and flat, up is slower and overshoots.
+     */
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-release) var(--ev-ease),
+        filter var(--ev-dur-fast) var(--ev-ease);
 }
 
 .ev-btn::before {
@@ -138,8 +146,14 @@
 }
 
 .ev-btn:active:not(:disabled) {
-    transform: translateY(2px);
-    filter: brightness(.95);
+    transition:
+        transform var(--ev-dur-press) var(--ev-ease),
+        box-shadow var(--ev-dur-press) var(--ev-ease),
+        filter var(--ev-dur-press) var(--ev-ease);
+    /* Sinks and squashes together: the lip compresses under it rather than travelling with it. */
+    transform: translateY(var(--ev-press-sink)) scale(var(--ev-press-scale));
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-pressed);
+    filter: brightness(.96);
 }
 
 .ev-btn:disabled {
@@ -182,6 +196,19 @@
 
 .ev-btn--ghost::before {
     border-color: var(--ev-stroke-light-soft);
+}
+
+/*
+ * Tones that carry their own elevation need their own pressed elevation, or the base `:active` rule
+ * hands them the wrong lip. These must stay after it — same specificity, so order decides.
+ */
+.ev-btn--cream:active:not(:disabled) {
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream-pressed);
+}
+
+/* Glass has no lip to compress; it dims and squashes instead. */
+.ev-btn--ghost:active:not(:disabled) {
+    box-shadow: none;
 }
 
 .ev-btn--danger {
@@ -266,11 +293,18 @@
     background: var(--ev-glass-strong);
     border: 1.5px solid var(--ev-stroke-light-soft);
     box-shadow: var(--ev-shadow-sm);
-    transition: transform var(--ev-dur-fast) var(--ev-ease);
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-release) var(--ev-ease);
 }
 
+/* No sink: a circle has no lip to sink into, so it reads as pressed by squashing alone. */
 .ev-icon-btn:active:not(:disabled) {
-    transform: scale(.94);
+    transition:
+        transform var(--ev-dur-press) var(--ev-ease),
+        box-shadow var(--ev-dur-press) var(--ev-ease);
+    transform: scale(.9);
+    box-shadow: none;
 }
 
 .ev-icon-btn--cream {
@@ -563,7 +597,7 @@
     font-size: var(--ev-fs-2xs);
     font-weight: 700;
     letter-spacing: .01em;
-    transition: transform var(--ev-dur-fast) var(--ev-ease);
+    transition: transform var(--ev-dur-release) var(--ev-ease-spring);
 }
 
 .ev-dock__item span:last-child {
@@ -592,7 +626,8 @@
 }
 
 .ev-dock__item:active:not(:disabled):not(.is-active) {
-    transform: translateY(2px);
+    transition: transform var(--ev-dur-press) var(--ev-ease);
+    transform: translateY(var(--ev-press-sink)) scale(.94);
 }
 
 .ev-dock__badge {
@@ -770,6 +805,40 @@
 /* -------------------------------------------------------------------------- */
 /* Utilities                                                                   */
 /* -------------------------------------------------------------------------- */
+
+/*
+ * Staggered entry. Put `ev-stagger` on a list container and its direct children cascade in.
+ *
+ * The delays are enumerated by position rather than fed in from the call site, so adopting this is
+ * one class on a container and nothing at all in the markup of the rows — the same reason feedback
+ * lives in the primitives. Rows past the enumerated ones inherit `--ev-stagger-max`, so a long list
+ * assembles its head and then arrives all at once instead of trickling.
+ *
+ * `backwards` and not `both`: a row must be free of its transform once it lands, or every row in the
+ * list stays a containing block for anything positioned against the viewport.
+ */
+.ev-stagger > * {
+    animation: ev-stagger-in var(--ev-dur-base) var(--ev-ease) backwards;
+    animation-delay: var(--ev-stagger-max);
+}
+
+.ev-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.ev-stagger > *:nth-child(2) { animation-delay: calc(var(--ev-stagger-step) * 1); }
+.ev-stagger > *:nth-child(3) { animation-delay: calc(var(--ev-stagger-step) * 2); }
+.ev-stagger > *:nth-child(4) { animation-delay: calc(var(--ev-stagger-step) * 3); }
+.ev-stagger > *:nth-child(5) { animation-delay: calc(var(--ev-stagger-step) * 4); }
+.ev-stagger > *:nth-child(6) { animation-delay: calc(var(--ev-stagger-step) * 5); }
+.ev-stagger > *:nth-child(7) { animation-delay: calc(var(--ev-stagger-step) * 6); }
+.ev-stagger > *:nth-child(8) { animation-delay: calc(var(--ev-stagger-step) * 7); }
+.ev-stagger > *:nth-child(9) { animation-delay: calc(var(--ev-stagger-step) * 8); }
+.ev-stagger > *:nth-child(10) { animation-delay: calc(var(--ev-stagger-step) * 9); }
+
+@keyframes ev-stagger-in {
+    from {
+        opacity: 0;
+        transform: translateY(var(--ev-stagger-rise));
+    }
+}
 
 .ev-stack {
     display: grid;

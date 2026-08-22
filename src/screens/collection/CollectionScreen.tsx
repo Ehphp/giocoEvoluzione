@@ -98,7 +98,7 @@ function LineageTimeline({ forms, selectedFormId, onSelectForm }: FormSelectionP
 
 function FormCatalog({ forms, selectedFormId, onSelectForm }: FormSelectionProps) {
     return (
-        <section className="collection-catalog" aria-label="Catalogo delle forme sbloccate">
+        <section className="collection-catalog ev-stagger" aria-label="Catalogo delle forme sbloccate">
             {forms.map((form) => {
                 const isSelected = form.id === selectedFormId
 

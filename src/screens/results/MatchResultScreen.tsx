@@ -240,7 +240,7 @@ export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy
                 {viewModel.rounds.length ? (
                     <>
                         <SectionLabel>Andamento round</SectionLabel>
-                        <ol className="result-history">
+                        <ol className="result-history ev-stagger">
                             {viewModel.rounds.map((round) => (
                                 <HistoryRow
                                     key={round.id}

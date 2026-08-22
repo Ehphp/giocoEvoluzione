@@ -187,8 +187,10 @@ holds.
 
 Rules that keep it honest:
 
-- **`transform` and `opacity` only.** Anything else animates off the compositor and drops frames on
-  a mid-range Android.
+- **Full-screen motion is `transform` and `opacity` only.** Anything else repaints, and repainting
+  the whole viewport drops frames on a mid-range Android. A *control* may transition `box-shadow` or
+  `filter` — that is how the lip compresses under a press — because the repaint is 46px wide. The
+  test is the area, not the property.
 - **Two stacked layers must never both pass through half opacity** — the ground shows between them
   and the screen dips. Whichever layer is underneath holds opaque until the one above covers it.
 - **Durations and curves are tokens** (`--ev-dur-*`, `--ev-ease*`). `--ev-ease` is front-loaded and
@@ -232,6 +234,29 @@ match verdict. Those live where the moment is (`RoundResultOverlay`, `MatchResul
 
 The sounds are synthesised, not sampled: no assets, no download, works offline. That is a starting
 point. Authored samples replace `SOUND_RECIPES` alone — the cue names are the contract.
+
+### Presses and lists
+
+**A press is asymmetric.** Down is fast and flat (`--ev-dur-press` with `--ev-ease`); up is slower
+and overshoots (`--ev-dur-release` with `--ev-ease-spring`). One transition cannot bend both ways, so
+the release timing lives on the base rule and the press timing on `:active`. Getting this backwards —
+one shared timing — is exactly what makes a button feel dead.
+
+**The lip compresses; it does not travel.** A pressed control sinks *into* its own edge:
+`--ev-lip` becomes `--ev-lip-pressed` while the surface moves down by `--ev-press-sink`. Moving the
+whole thing down, lip included, reads as sliding. A tone that carries its own elevation
+(`--ev-btn--cream`, `--ev-btn--ghost`) needs its own pressed elevation, placed *after* the base
+`:active` rule — same specificity, so order decides.
+
+Anything pressable that is not an `ev-btn` — the draft options, the gene cards — wears the same
+curves off the same tokens. A second press feel is a second visual system.
+
+**Lists assemble.** Put `ev-stagger` on a container and its direct children cascade in. The delays
+are enumerated by position in `components.css`, so adopting it is one class on the container and
+nothing in the rows — the same reason feedback lives in the primitives. Rows past the enumerated ones
+share `--ev-stagger-max`, so a long list arrives instead of trickling. Keep the animation
+`backwards`, never `both`: a row still holding a transform is a containing block for every
+`position: fixed` inside it.
 
 ---
 

@@ -87,7 +87,7 @@ export function LeaderboardScreen({ onBack, onOpenCollection, onOpenProfile, onL
                 {isLoading ? <Panel className="leaderboard-empty">Caricamento classifica...</Panel> : null}
                 {!isLoading && !errorMessage && !entries.length ? <Panel className="leaderboard-empty">Nessun rating competitivo disponibile.</Panel> : null}
                 {!isLoading && !errorMessage && entries.length ? (
-                    <ol className="leaderboard-list">
+                    <ol className="leaderboard-list ev-stagger">
                         {entries.map((entry) => (
                             <li key={`${entry.position}-${entry.nickname}`}>
                                 <Panel flat className="leaderboard-row">
