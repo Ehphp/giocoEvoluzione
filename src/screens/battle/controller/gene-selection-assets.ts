@@ -1,5 +1,5 @@
-import type { TraitType } from '../../game/types'
-import { ASSETS, type GeneAssetKey } from '../../ui/assets'
+import type { TraitType } from '../../../game/types'
+import { ASSETS, type GeneAssetKey } from '../../../ui/assets'
 
 export type CreatureVisual = {
     src: string

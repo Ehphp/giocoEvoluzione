@@ -4,8 +4,8 @@ import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
     DEFAULT_BATTLE_PLAYER_CREATURE,
     type CreatureVisual,
-} from '../../../components/game-v2/gameSelectionAssets'
-import { shouldMirrorCreature, type CreatureFacing } from '../../../components/game-v2/components/creatureOrientation'
+} from '../controller/gene-selection-assets'
+import { shouldMirrorCreature, type CreatureFacing } from '../controller/creature-orientation'
 
 type BattleArenaProps = {
     playerCreature: CreatureVisual | null

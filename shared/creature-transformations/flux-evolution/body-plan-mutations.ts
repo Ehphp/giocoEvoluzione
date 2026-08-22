@@ -45,7 +45,8 @@ export const BODY_PLAN_MUTATIONS = Object.freeze([
         id: 'ADD_LIMB_PAIR',
         label: 'Nuovo paio di arti',
         evolutionTargetId: 'LIMBS_AND_FEET',
-        structuralChange: 'Grow one additional symmetrical pair of limbs, integrated into the existing limb system and consistent with it in material, proportion and articulation.',
+        structuralChange:
+            'Grow one additional symmetrical pair of limbs, integrated into the existing limb system and consistent with it in material, proportion and articulation.',
         structuralGuardrails: [
             'The new pair is symmetrical, plausibly attached to the trunk and clearly readable as belonging to this creature.',
             'Existing limbs keep their attachment points.',
@@ -55,7 +56,8 @@ export const BODY_PLAN_MUTATIONS = Object.freeze([
         id: 'BIPEDAL_TRANSITION',
         label: 'Transizione bipede',
         evolutionTargetId: 'BODY_SHAPE',
-        structuralChange: 'Rebuild the posture into an upright bipedal stance: the hind limbs become the weight-bearing legs, the trunk rotates towards vertical and the forelimbs become free arms.',
+        structuralChange:
+            'Rebuild the posture into an upright bipedal stance: the hind limbs become the weight-bearing legs, the trunk rotates towards vertical and the forelimbs become free arms.',
         structuralGuardrails: [
             'Keep the same number of limbs; only their role, orientation and proportion change.',
             'Keep the head, face and tail recognisable on the new posture.',
@@ -65,7 +67,8 @@ export const BODY_PLAN_MUTATIONS = Object.freeze([
         id: 'FORELIMBS_TO_WINGS',
         label: 'Arti anteriori in ali',
         evolutionTargetId: 'LIMBS_AND_FEET',
-        structuralChange: 'Convert the front limb pair into a pair of wings: the limb skeleton stretches into wing spars carrying a continuous membrane or feathered surface.',
+        structuralChange:
+            'Convert the front limb pair into a pair of wings: the limb skeleton stretches into wing spars carrying a continuous membrane or feathered surface.',
         structuralGuardrails: [
             'The wings replace that limb pair at its original attachment points; no extra pair appears.',
             'Remaining limbs, head and tail keep their current structure.',
@@ -75,7 +78,8 @@ export const BODY_PLAN_MUTATIONS = Object.freeze([
         id: 'TAIL_SPLIT',
         label: 'Coda biforcata',
         evolutionTargetId: 'TAIL',
-        structuralChange: 'Split the tail into two tails that separate from a shared base and develop as a matched pair.',
+        structuralChange:
+            'Split the tail into two tails that separate from a shared base and develop as a matched pair.',
         structuralGuardrails: [
             'Both tails start from the original tail attachment point.',
             'No other appendage is duplicated.',
@@ -84,7 +88,10 @@ export const BODY_PLAN_MUTATIONS = Object.freeze([
 ] as const)
 
 export const BODY_PLAN_MUTATION_BY_ID: Readonly<Record<BodyPlanMutationId, BodyPlanMutationDefinition>> = Object.freeze(
-    Object.fromEntries(BODY_PLAN_MUTATIONS.map((mutation) => [mutation.id, mutation])) as Record<BodyPlanMutationId, BodyPlanMutationDefinition>,
+    Object.fromEntries(BODY_PLAN_MUTATIONS.map((mutation) => [mutation.id, mutation])) as Record<
+        BodyPlanMutationId,
+        BodyPlanMutationDefinition
+    >,
 )
 
 export function isBodyPlanMutationId(value: unknown): value is BodyPlanMutationId {

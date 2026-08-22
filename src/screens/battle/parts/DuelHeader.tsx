@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 import { Avatar, Button, IconButton, Panel, Pips } from '../../../ui/components'
 import { BackIcon, BoltIcon, EyeIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
-import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../../../components/game-v2/types'
+import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../controller/types'
 
 type DuelHeaderProps = {
     player: DuelPlayerV2

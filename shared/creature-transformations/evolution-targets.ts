@@ -27,7 +27,14 @@ export type EvolutionTargetId = (typeof EVOLUTION_TARGET_IDS)[number]
  * Lineage grouping. Two targets in the same family describe the same anatomical system, so an
  * evolution of one continues the state established by the other instead of contradicting it.
  */
-export const EVOLUTION_TARGET_FAMILIES = Object.freeze(['TAIL', 'LIMBS', 'HEAD', 'BODY_VOLUME', 'DORSAL', 'COVERING'] as const)
+export const EVOLUTION_TARGET_FAMILIES = Object.freeze([
+    'TAIL',
+    'LIMBS',
+    'HEAD',
+    'BODY_VOLUME',
+    'DORSAL',
+    'COVERING',
+] as const)
 
 export type EvolutionTargetFamily = (typeof EVOLUTION_TARGET_FAMILIES)[number]
 
@@ -54,16 +61,17 @@ export type PersistedEvolutionFunctionId = EvolutionFunctionId | (typeof DEPRECA
  * evolution happens; it must not preselect a morphology before the Concept sees the target and
  * lineage. Older visual-trait ids remain valid historical metadata.
  */
-export const EVOLUTION_FUNCTION_VISUAL_TRAITS: Readonly<Record<EvolutionFunctionId, readonly VisualTraitId[]>> = Object.freeze({
-    BALANCE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    PROPULSION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    GRIP: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    DEFENSE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    PERCEPTION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    THERMOREGULATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    ENERGY_STORAGE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-    AQUATIC_ADAPTATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
-})
+export const EVOLUTION_FUNCTION_VISUAL_TRAITS: Readonly<Record<EvolutionFunctionId, readonly VisualTraitId[]>> =
+    Object.freeze({
+        BALANCE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        PROPULSION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        GRIP: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        DEFENSE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        PERCEPTION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        THERMOREGULATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        ENERGY_STORAGE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        AQUATIC_ADAPTATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+    })
 
 export type EvolutionTargetDefinition = Readonly<{
     id: EvolutionTargetId
@@ -116,7 +124,12 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the existing limbs and feet, treated as one system',
         primaryBodyAreas: ['FORELIMBS', 'HIND_LIMBS'],
         supportingBodyAreas: ['CHEST', 'BACK', 'SKIN_SURFACE'],
-        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'LOCOMOTION_ADAPTATION', 'IMPACT_ADAPTATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: [
+            'ANATOMICAL_EVOLUTION',
+            'LOCOMOTION_ADAPTATION',
+            'IMPACT_ADAPTATION',
+            'AQUATIC_MORPHOLOGY',
+        ],
     }),
     defineTarget({
         id: 'HEAD_AND_CROWN',
@@ -156,7 +169,14 @@ export const EVOLUTION_TARGETS = Object.freeze([
         promptRegion: 'the skin and body covering across the existing anatomy',
         primaryBodyAreas: ['SKIN_SURFACE'],
         supportingBodyAreas: ['TAIL', 'FORELIMBS', 'HIND_LIMBS', 'NECK', 'BACK', 'CHEST'],
-        compatibleVisualTraits: ['ANATOMICAL_EVOLUTION', 'IMPACT_ADAPTATION', 'LOCOMOTION_ADAPTATION', 'SENSORY_EXPANSION', 'ENERGY_REGULATION', 'AQUATIC_MORPHOLOGY'],
+        compatibleVisualTraits: [
+            'ANATOMICAL_EVOLUTION',
+            'IMPACT_ADAPTATION',
+            'LOCOMOTION_ADAPTATION',
+            'SENSORY_EXPANSION',
+            'ENERGY_REGULATION',
+            'AQUATIC_MORPHOLOGY',
+        ],
     }),
     defineTarget({
         id: 'WINGS',
@@ -181,7 +201,10 @@ export const EVOLUTION_TARGETS = Object.freeze([
 ] as const)
 
 export const EVOLUTION_TARGET_BY_ID: Readonly<Record<EvolutionTargetId, EvolutionTargetDefinition>> = Object.freeze(
-    Object.fromEntries(EVOLUTION_TARGETS.map((target) => [target.id, target])) as Record<EvolutionTargetId, EvolutionTargetDefinition>,
+    Object.fromEntries(EVOLUTION_TARGETS.map((target) => [target.id, target])) as Record<
+        EvolutionTargetId,
+        EvolutionTargetDefinition
+    >,
 )
 
 export function isEvolutionTargetId(value: unknown): value is EvolutionTargetId {
@@ -222,14 +245,28 @@ export function resolveEvolutionDirection(input: {
     previousTransformations?: readonly EvolutionTargetHistoryEntry[]
     seed?: string
 }): ResolvedEvolutionDirection | null {
-    const compatible = EVOLUTION_FUNCTION_IDS.flatMap((evolutionFunction) => EVOLUTION_FUNCTION_VISUAL_TRAITS[evolutionFunction]
-        .filter((visualTraitId) => isGeneratableEvolutionDirection({ evolutionTargetId: input.evolutionTargetId, visualTraitId, evolutionFunction }))
-        .map((visualTraitId) => ({ visualTraitId, evolutionFunction })))
-    const unused = compatible.filter(({ visualTraitId, evolutionFunction }) => !input.previousTransformations?.some((previous) => (
-        previous.evolutionTargetId === input.evolutionTargetId
-        && previous.visualTraitId === visualTraitId
-        && previous.evolutionFunction === evolutionFunction
-    )))
+    const compatible = EVOLUTION_FUNCTION_IDS.flatMap((evolutionFunction) =>
+        EVOLUTION_FUNCTION_VISUAL_TRAITS[evolutionFunction]
+            .filter((visualTraitId) =>
+                isGeneratableEvolutionDirection({
+                    evolutionTargetId: input.evolutionTargetId,
+                    visualTraitId,
+                    evolutionFunction,
+                }),
+            )
+            .map((visualTraitId) => ({ visualTraitId, evolutionFunction })),
+    )
+    const unused = compatible.filter(
+        ({ visualTraitId, evolutionFunction }) =>
+            !input.previousTransformations?.some(
+                (previous) =>
+                    previous.evolutionTargetId === input.evolutionTargetId &&
+                    previous.visualTraitId === visualTraitId &&
+                    previous.evolutionFunction === evolutionFunction,
+            ),
+    )
     const candidates = unused.length ? unused : compatible
-    return candidates.length ? candidates[stableIndex(`${input.evolutionTargetId}:${input.seed ?? ''}`, candidates.length)]! : null
+    return candidates.length
+        ? candidates[stableIndex(`${input.evolutionTargetId}:${input.seed ?? ''}`, candidates.length)]!
+        : null
 }

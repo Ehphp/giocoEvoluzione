@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { GameSnapshot, PlayerRecord } from '../../../lib/game-api'
 import { getGameCreatureVisuals } from '../../../lib/creature-transformations-api'
 import { withResolvedCreatureImage } from '../../../ui/assets'
-import { buildBattleParticipants } from './battleParticipants'
+import { buildBattleParticipants } from './battle-participants'
 
 export type GameCreatureVisual = Readonly<{
     signedUrl: string

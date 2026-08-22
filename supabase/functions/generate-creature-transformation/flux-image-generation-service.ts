@@ -19,10 +19,32 @@ export const FLUX_SUBJECT_MARGIN_RATIO = 0.06
  * generation failure verbatim — the code reaches the client and the HTTP status mapper, so a code
  * missing here would silently fall through to the default status.
  */
-export type FluxImageGenerationServiceErrorCode = 'FLUX_BODY_PLAN_UNSUPPORTED' | 'FLUX_SOURCE_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_INVALID' | 'FLUX_RESULT_IMAGE_UNCHANGED' | 'FLUX_SUBJECT_CROPPED' | 'FLUX_CONCEPT_NOT_CONFIGURED' | 'FLUX_CONCEPT_TIMEOUT' | 'FLUX_CONCEPT_PROVIDER_ERROR' | 'FLUX_CONCEPT_RESPONSE_INVALID' | 'SEEDREAM_CENTER_FACING' | 'FAL_FLUX_NOT_CONFIGURED' | 'FAL_FLUX_TIMEOUT' | 'FAL_FLUX_RATE_LIMITED' | 'FAL_FLUX_BAD_REQUEST' | 'FAL_FLUX_PROVIDER_ERROR' | 'FAL_FLUX_RESPONSE_INVALID' | 'FAL_SEEDREAM_MODEL_REQUIRED'
+export type FluxImageGenerationServiceErrorCode =
+    | 'FLUX_BODY_PLAN_UNSUPPORTED'
+    | 'FLUX_SOURCE_IMAGE_INVALID'
+    | 'FLUX_RESULT_IMAGE_INVALID'
+    | 'FLUX_RESULT_IMAGE_UNCHANGED'
+    | 'FLUX_SUBJECT_CROPPED'
+    | 'FLUX_CONCEPT_NOT_CONFIGURED'
+    | 'FLUX_CONCEPT_TIMEOUT'
+    | 'FLUX_CONCEPT_PROVIDER_ERROR'
+    | 'FLUX_CONCEPT_RESPONSE_INVALID'
+    | 'SEEDREAM_CENTER_FACING'
+    | 'FAL_FLUX_NOT_CONFIGURED'
+    | 'FAL_FLUX_TIMEOUT'
+    | 'FAL_FLUX_RATE_LIMITED'
+    | 'FAL_FLUX_BAD_REQUEST'
+    | 'FAL_FLUX_PROVIDER_ERROR'
+    | 'FAL_FLUX_RESPONSE_INVALID'
+    | 'FAL_SEEDREAM_MODEL_REQUIRED'
 
 export class FluxImageGenerationServiceError extends Error {
-    constructor(readonly code: FluxImageGenerationServiceErrorCode, message: string, readonly problems?: ImageValidationProblem[], options?: { cause?: unknown }) {
+    constructor(
+        readonly code: FluxImageGenerationServiceErrorCode,
+        message: string,
+        readonly problems?: ImageValidationProblem[],
+        options?: { cause?: unknown },
+    ) {
         super(message, options)
         this.name = 'FluxImageGenerationServiceError'
     }

@@ -5,7 +5,7 @@ import { AppShell, Avatar, Button, IconButton, Notice, Overlay, Panel, Pill, Pro
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
 import { ASSETS } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
-import { measureCreatureSubject, type CreatureSubject } from './creatureSubjectFit'
+import { measureCreatureSubject, type CreatureSubject } from './creature-subject-fit'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
 
 import './HomeScreen.css'

@@ -23,25 +23,41 @@ async function runningFalRequest() {
 describe('Fal Queue request lifecycle', () => {
     it('keeps the request running after submission and atomically replaces an id for crop retry', async () => {
         const { persistence, running } = await runningFalRequest()
-        const workflow = { version: 1, kind: 'FLUX', source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true } }
+        const workflow = {
+            version: 1,
+            kind: 'FLUX',
+            source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true },
+        }
         const first = await persistence.repository.updateRunningFalSubmission({
             requestId: running.id,
             profileId: PROFILE_ID,
-            data: { provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', providerRequestId: 'fal-first', falWorkflow: workflow },
+            data: {
+                provider: 'fal.ai',
+                model: 'fal-ai/flux-2-klein/9b/edit',
+                providerRequestId: 'fal-first',
+                falWorkflow: workflow,
+            },
         })
         const retried = await persistence.repository.updateRunningFalSubmission({
             requestId: first.id,
             profileId: PROFILE_ID,
             data: {
-                provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', providerRequestId: 'fal-retry',
-                expectedProviderRequestId: 'fal-first', incrementAttempt: true,
+                provider: 'fal.ai',
+                model: 'fal-ai/flux-2-klein/9b/edit',
+                providerRequestId: 'fal-retry',
+                expectedProviderRequestId: 'fal-first',
+                incrementAttempt: true,
             },
         })
 
         expect(first.status).toBe('RUNNING')
         expect(retried).toMatchObject({ status: 'RUNNING', providerRequestId: 'fal-retry', attemptCount: 2 })
-        await expect(persistence.repository.getByProviderRequestId({ providerRequestId: 'fal-first' })).resolves.toBeNull()
-        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'fal-first' })).resolves.toEqual({ outcome: 'UNKNOWN' })
+        await expect(
+            persistence.repository.getByProviderRequestId({ providerRequestId: 'fal-first' }),
+        ).resolves.toBeNull()
+        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'fal-first' })).resolves.toEqual({
+            outcome: 'UNKNOWN',
+        })
     })
 
     it('collapses duplicate finalizer invocations and rejects a terminal request', async () => {
@@ -49,12 +65,32 @@ describe('Fal Queue request lifecycle', () => {
         const submitted = await persistence.repository.updateRunningFalSubmission({
             requestId: running.id,
             profileId: PROFILE_ID,
-            data: { provider: 'fal.ai', model: 'fal-ai/flux-2-klein/9b/edit', providerRequestId: 'fal-final', falWorkflow: { version: 1, kind: 'FLUX', source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true } } },
+            data: {
+                provider: 'fal.ai',
+                model: 'fal-ai/flux-2-klein/9b/edit',
+                providerRequestId: 'fal-final',
+                falWorkflow: {
+                    version: 1,
+                    kind: 'FLUX',
+                    source: { kind: 'CANONICAL', path: 'verdant-hatchling-v1.png', isBaseVersion: true },
+                },
+            },
         })
-        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' })).resolves.toMatchObject({ outcome: 'CLAIMED' })
-        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' })).resolves.toMatchObject({ outcome: 'IN_PROGRESS' })
-        await persistence.repository.markFailed({ requestId: submitted.id, profileId: PROFILE_ID, errorCode: 'FAL_FLUX_PROVIDER_ERROR', errorMessage: 'provider error' })
-        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' })).resolves.toMatchObject({ outcome: 'TERMINAL' })
+        await expect(
+            persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' }),
+        ).resolves.toMatchObject({ outcome: 'CLAIMED' })
+        await expect(
+            persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' }),
+        ).resolves.toMatchObject({ outcome: 'IN_PROGRESS' })
+        await persistence.repository.markFailed({
+            requestId: submitted.id,
+            profileId: PROFILE_ID,
+            errorCode: 'FAL_FLUX_PROVIDER_ERROR',
+            errorMessage: 'provider error',
+        })
+        await expect(
+            persistence.repository.claimFalFinalization({ providerRequestId: 'fal-final' }),
+        ).resolves.toMatchObject({ outcome: 'TERMINAL' })
     })
 
     it('keeps a persisted Seedream workflow through a bounded framing retry', async () => {
@@ -68,21 +104,33 @@ describe('Fal Queue request lifecycle', () => {
         const first = await persistence.repository.updateRunningFalSubmission({
             requestId: running.id,
             profileId: PROFILE_ID,
-            data: { provider: 'fal.ai', model: 'fal-ai/bytedance/seedream/v4.5/edit', providerRequestId: 'seedream-first', falWorkflow: workflow },
+            data: {
+                provider: 'fal.ai',
+                model: 'fal-ai/bytedance/seedream/v4.5/edit',
+                providerRequestId: 'seedream-first',
+                falWorkflow: workflow,
+            },
         })
         const retried = await persistence.repository.updateRunningFalSubmission({
             requestId: first.id,
             profileId: PROFILE_ID,
             data: {
-                provider: 'fal.ai', model: 'fal-ai/bytedance/seedream/v4.5/edit', providerRequestId: 'seedream-retry',
-                expectedProviderRequestId: 'seedream-first', incrementAttempt: true,
+                provider: 'fal.ai',
+                model: 'fal-ai/bytedance/seedream/v4.5/edit',
+                providerRequestId: 'seedream-retry',
+                expectedProviderRequestId: 'seedream-first',
+                incrementAttempt: true,
             },
         })
 
         expect(retried).toMatchObject({
-            status: 'RUNNING', providerRequestId: 'seedream-retry', attemptCount: 2,
+            status: 'RUNNING',
+            providerRequestId: 'seedream-retry',
+            attemptCount: 2,
             falWorkflow: workflow,
         })
-        await expect(persistence.repository.claimFalFinalization({ providerRequestId: 'seedream-first' })).resolves.toEqual({ outcome: 'UNKNOWN' })
+        await expect(
+            persistence.repository.claimFalFinalization({ providerRequestId: 'seedream-first' }),
+        ).resolves.toEqual({ outcome: 'UNKNOWN' })
     })
 })

@@ -1,10 +1,37 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-import { BASE_USE_VALUE, EVOLVE_ROUND_VALUE, LEVEL_BONUS, MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS, TOTAL_ROUNDS } from '../../../shared/game-rules/catalog.ts'
-import { ADAPTATION_IDS, CombatMutationDataError, UnsupportedRuleVersionError, assertSupportedRuleVersion, getRoundEventById, normalizeAdaptationCollection, parseCombatMutationLoadout, parseCombatMutationState, parseSymbiosisLinks } from '../../../shared/game-rules/state.ts'
-import type { AdaptationCollection, AdaptationId, CombatMutationLoadout, CombatMutationState, PlayerRoundAction } from '../../../shared/game-rules/types.ts'
+import {
+    BASE_USE_VALUE,
+    EVOLVE_ROUND_VALUE,
+    LEVEL_BONUS,
+    MAX_ADAPTATION_LEVEL,
+    NATURAL_ADVANTAGE_BONUS,
+    TOTAL_ROUNDS,
+} from '../../../shared/game-rules/catalog.ts'
+import {
+    ADAPTATION_IDS,
+    CombatMutationDataError,
+    UnsupportedRuleVersionError,
+    assertSupportedRuleVersion,
+    getRoundEventById,
+    normalizeAdaptationCollection,
+    parseCombatMutationLoadout,
+    parseCombatMutationState,
+    parseSymbiosisLinks,
+} from '../../../shared/game-rules/state.ts'
+import type {
+    AdaptationCollection,
+    AdaptationId,
+    CombatMutationLoadout,
+    CombatMutationState,
+    PlayerRoundAction,
+} from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
-import { createMatchCompletionEvents, recordCreatureVisualProgressFromMatchCompletion, recordEvolutionTargetWinFromMatchCompletion } from './visual-progression-adapter.ts'
+import {
+    createMatchCompletionEvents,
+    recordCreatureVisualProgressFromMatchCompletion,
+    recordEvolutionTargetWinFromMatchCompletion,
+} from './visual-progression-adapter.ts'
 import { readEvolutionTargetWinsRequired } from '../../../shared/creature-transformations/evolution-draft.ts'
 
 // Pure game rules and persisted resolution mapping are shared with the frontend.
@@ -28,7 +55,13 @@ const EDGE_MAX_ADAPTATION_LEVEL = 2
 const EDGE_LEVEL_BONUS = [0, 1, 2] as const
 const EDGE_NATURAL_ADVANTAGE_BONUS = 2
 
-if (EDGE_BASE_USE_VALUE !== BASE_USE_VALUE || EDGE_EVOLVE_ROUND_VALUE !== EVOLVE_ROUND_VALUE || EDGE_MAX_ADAPTATION_LEVEL !== MAX_ADAPTATION_LEVEL || EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',') || EDGE_NATURAL_ADVANTAGE_BONUS !== NATURAL_ADVANTAGE_BONUS) {
+if (
+    EDGE_BASE_USE_VALUE !== BASE_USE_VALUE ||
+    EDGE_EVOLVE_ROUND_VALUE !== EVOLVE_ROUND_VALUE ||
+    EDGE_MAX_ADAPTATION_LEVEL !== MAX_ADAPTATION_LEVEL ||
+    EDGE_LEVEL_BONUS.join(',') !== LEVEL_BONUS.join(',') ||
+    EDGE_NATURAL_ADVANTAGE_BONUS !== NATURAL_ADVANTAGE_BONUS
+) {
     throw new Error('Scoring rule mismatch between Edge and shared game rules.')
 }
 
@@ -46,32 +79,93 @@ function json(body: unknown, status = 200) {
     })
 }
 
-function combatMutationIntegrityError(error: unknown, context: { gameId: string; participant: 'player1' | 'player2' | 'bot' | 'human'; ruleVersion: string }) {
-    const code = error instanceof CombatMutationDataError || error instanceof UnsupportedRuleVersionError ? error.code : 'INVALID_COMBAT_MUTATION_MATCH_DATA'
-    const field = error instanceof CombatMutationDataError ? error.field : error instanceof UnsupportedRuleVersionError ? 'rule_version' : 'combat_mutation_data'
-    console.error('Combat mutation match integrity failure', { gameId: context.gameId, participant: context.participant, field, ruleVersion: context.ruleVersion, code })
-    return json({ error: 'Dati Combat Mutations della partita non validi.', code, gameId: context.gameId, participant: context.participant, field, ruleVersion: context.ruleVersion }, 409)
+function combatMutationIntegrityError(
+    error: unknown,
+    context: { gameId: string; participant: 'player1' | 'player2' | 'bot' | 'human'; ruleVersion: string },
+) {
+    const code =
+        error instanceof CombatMutationDataError || error instanceof UnsupportedRuleVersionError
+            ? error.code
+            : 'INVALID_COMBAT_MUTATION_MATCH_DATA'
+    const field =
+        error instanceof CombatMutationDataError
+            ? error.field
+            : error instanceof UnsupportedRuleVersionError
+              ? 'rule_version'
+              : 'combat_mutation_data'
+    console.error('Combat mutation match integrity failure', {
+        gameId: context.gameId,
+        participant: context.participant,
+        field,
+        ruleVersion: context.ruleVersion,
+        code,
+    })
+    return json(
+        {
+            error: 'Dati Combat Mutations della partita non validi.',
+            code,
+            gameId: context.gameId,
+            participant: context.participant,
+            field,
+            ruleVersion: context.ruleVersion,
+        },
+        409,
+    )
 }
 
-function parseParticipantCombatMutations(player: Record<string, unknown>, participant: 'player1' | 'player2' | 'bot' | 'human') {
+function parseParticipantCombatMutations(
+    player: Record<string, unknown>,
+    participant: 'player1' | 'player2' | 'bot' | 'human',
+) {
     return {
-        combatMutationState: parseCombatMutationState(player.combat_mutation_state, `${participant}.combat_mutation_state`),
-        combatMutationLoadout: parseCombatMutationLoadout(player.combat_mutation_loadout, `${participant}.combat_mutation_loadout`),
+        combatMutationState: parseCombatMutationState(
+            player.combat_mutation_state,
+            `${participant}.combat_mutation_state`,
+        ),
+        combatMutationLoadout: parseCombatMutationLoadout(
+            player.combat_mutation_loadout,
+            `${participant}.combat_mutation_loadout`,
+        ),
     }
 }
 
-function isTraitName(value: unknown): value is TraitName { return typeof value === 'string' && ADAPTATION_IDS.includes(value as TraitName) }
+function isTraitName(value: unknown): value is TraitName {
+    return typeof value === 'string' && ADAPTATION_IDS.includes(value as TraitName)
+}
 /** Database stores sourceTrait in the legacy trait column; the domain never does. */
 function parseStoredRoundAction(row: Record<string, unknown>, playerId: string): PlayerRoundAction {
     if (!isTraitName(row.trait)) throw new Error('INVALID_STORED_ACTION_TRAIT')
-    if (row.action_type === 'USE' || row.action_type === 'EVOLVE') return { playerId, trait: row.trait, actionType: row.action_type }
-    if (row.action_type === 'ACTIVATE_MUTATION' && row.mutation_id === 'SYMBIOSIS' && isTraitName(row.target_trait)) return { playerId, actionType: 'ACTIVATE_MUTATION', mutationId: 'SYMBIOSIS', sourceTrait: row.trait, targetTrait: row.target_trait }
+    if (row.action_type === 'USE' || row.action_type === 'EVOLVE')
+        return { playerId, trait: row.trait, actionType: row.action_type }
+    if (row.action_type === 'ACTIVATE_MUTATION' && row.mutation_id === 'SYMBIOSIS' && isTraitName(row.target_trait))
+        return {
+            playerId,
+            actionType: 'ACTIVATE_MUTATION',
+            mutationId: 'SYMBIOSIS',
+            sourceTrait: row.trait,
+            targetTrait: row.target_trait,
+        }
     throw new Error('INVALID_STORED_ACTION_PAYLOAD')
 }
 
 async function ensureEdgeBotRoundAction(
     supabaseAdmin: SupabaseAdminClient,
-    input: { gameId: string; roundNumber: number; playerId: string; traits: AdaptationCollection; combatMutationState: CombatMutationState; combatMutationLoadout: CombatMutationLoadout; ruleVersion: string; symbiosisLinks: ReturnType<typeof parseSymbiosisLinks>; roundEvent: ReturnType<typeof getRoundEventById>; nextRoundEvent?: ReturnType<typeof getRoundEventById> | null; publicOpponentTraits: AdaptationCollection; publicOpponentCombatMutationState: CombatMutationState; publicOpponentCombatMutationLoadout: CombatMutationLoadout; difficulty?: 'EASY' | 'NORMAL' | 'HARD' },
+    input: {
+        gameId: string
+        roundNumber: number
+        playerId: string
+        traits: AdaptationCollection
+        combatMutationState: CombatMutationState
+        combatMutationLoadout: CombatMutationLoadout
+        ruleVersion: string
+        symbiosisLinks: ReturnType<typeof parseSymbiosisLinks>
+        roundEvent: ReturnType<typeof getRoundEventById>
+        nextRoundEvent?: ReturnType<typeof getRoundEventById> | null
+        publicOpponentTraits: AdaptationCollection
+        publicOpponentCombatMutationState: CombatMutationState
+        publicOpponentCombatMutationLoadout: CombatMutationLoadout
+        difficulty?: 'EASY' | 'NORMAL' | 'HARD'
+    },
 ) {
     const botAction = selectEdgeBotAction({
         traits: input.traits,
@@ -172,7 +266,9 @@ Deno.serve(async (request) => {
             return json({ error: playersError.message }, 400)
         }
 
-        const isParticipant = (playersData ?? []).some((player) => player.profile_id === authData.user.id && player.player_type === 'HUMAN')
+        const isParticipant = (playersData ?? []).some(
+            (player) => player.profile_id === authData.user.id && player.player_type === 'HUMAN',
+        )
         if (!isParticipant) return json({ error: 'Game participant required.' }, 403)
 
         if (!playersData || playersData.length < 2) {
@@ -201,11 +297,21 @@ Deno.serve(async (request) => {
             return combatMutationIntegrityError(error, { gameId, participant: 'player1', ruleVersion })
         }
         try {
-            gameSymbiosisLinks = parseSymbiosisLinks((gameData as Record<string, unknown>).symbiosis_links, 'game.symbiosis_links')
+            gameSymbiosisLinks = parseSymbiosisLinks(
+                (gameData as Record<string, unknown>).symbiosis_links,
+                'game.symbiosis_links',
+            )
         } catch {
-            return json({ error: 'Dati Simbiosi della partita non validi.', code: 'INVALID_SYMBIOSIS_LINKS', gameId }, 409)
+            return json(
+                { error: 'Dati Simbiosi della partita non validi.', code: 'INVALID_SYMBIOSIS_LINKS', gameId },
+                409,
+            )
         }
-        if (String(gameData.status) === 'FINISHED' || roundNumber > TOTAL_ROUNDS || roundNumber !== Number(gameData.current_round)) {
+        if (
+            String(gameData.status) === 'FINISHED' ||
+            roundNumber > TOTAL_ROUNDS ||
+            roundNumber !== Number(gameData.current_round)
+        ) {
             return json({ status: 'stale_round' })
         }
 
@@ -238,8 +344,12 @@ Deno.serve(async (request) => {
 
         const roundEvent = getRoundEventById(roundEventId)
         if (gameMode === 'VS_BOT') {
-            const botPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT')
-            const humanPlayer = playersData.find((player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'HUMAN')
+            const botPlayer = playersData.find(
+                (player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'BOT',
+            )
+            const humanPlayer = playersData.find(
+                (player) => String((player as Record<string, unknown>).player_type ?? 'HUMAN') === 'HUMAN',
+            )
 
             if (botPlayer && (!actionsData || !actionsData.some((action) => action.player_id === botPlayer.id))) {
                 if (!humanPlayer) return json({ error: 'VS_BOT_HUMAN_PLAYER_MISSING' }, 409)
@@ -249,7 +359,14 @@ Deno.serve(async (request) => {
                     botMutations = parseParticipantCombatMutations(botPlayer as Record<string, unknown>, 'bot')
                     humanMutations = parseParticipantCombatMutations(humanPlayer as Record<string, unknown>, 'human')
                 } catch (error) {
-                    return combatMutationIntegrityError(error, { gameId, participant: error instanceof CombatMutationDataError && error.field.startsWith('human.') ? 'human' : 'bot', ruleVersion })
+                    return combatMutationIntegrityError(error, {
+                        gameId,
+                        participant:
+                            error instanceof CombatMutationDataError && error.field.startsWith('human.')
+                                ? 'human'
+                                : 'bot',
+                        ruleVersion,
+                    })
                 }
                 await ensureEdgeBotRoundAction(supabaseAdmin, {
                     gameId,
@@ -261,11 +378,18 @@ Deno.serve(async (request) => {
                     combatMutationLoadout: botMutations.combatMutationLoadout,
                     symbiosisLinks: gameSymbiosisLinks,
                     roundEvent,
-                    nextRoundEvent: roundNumber < TOTAL_ROUNDS ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? '')) : null,
+                    nextRoundEvent:
+                        roundNumber < TOTAL_ROUNDS
+                            ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? ''))
+                            : null,
                     publicOpponentTraits: normalizeAdaptationCollection(humanPlayer.traits as AdaptationCollection),
                     publicOpponentCombatMutationState: humanMutations.combatMutationState,
                     publicOpponentCombatMutationLoadout: humanMutations.combatMutationLoadout,
-                    difficulty: (['EASY', 'NORMAL', 'HARD'].includes(String((gameData as Record<string, unknown>).bot_difficulty)) ? String((gameData as Record<string, unknown>).bot_difficulty) : 'NORMAL') as 'EASY' | 'NORMAL' | 'HARD',
+                    difficulty: (['EASY', 'NORMAL', 'HARD'].includes(
+                        String((gameData as Record<string, unknown>).bot_difficulty),
+                    )
+                        ? String((gameData as Record<string, unknown>).bot_difficulty)
+                        : 'NORMAL') as 'EASY' | 'NORMAL' | 'HARD',
                 })
 
                 const { data: refreshedActionsData, error: refreshedActionsError } = await supabaseAdmin
@@ -301,7 +425,14 @@ Deno.serve(async (request) => {
             player2Mutations = parseParticipantCombatMutations(player2 as Record<string, unknown>, 'player2')
             symbiosisLinks = gameSymbiosisLinks
         } catch (error) {
-            return combatMutationIntegrityError(error, { gameId, participant: error instanceof CombatMutationDataError && error.field.startsWith('player2.') ? 'player2' : 'player1', ruleVersion })
+            return combatMutationIntegrityError(error, {
+                gameId,
+                participant:
+                    error instanceof CombatMutationDataError && error.field.startsWith('player2.')
+                        ? 'player2'
+                        : 'player1',
+                ruleVersion,
+            })
         }
 
         const resolution = resolveEdgeRound({
@@ -322,7 +453,18 @@ Deno.serve(async (request) => {
             player1Action: parseStoredRoundAction(player1ActionRow as Record<string, unknown>, String(player1.id)),
             player2Action: parseStoredRoundAction(player2ActionRow as Record<string, unknown>, String(player2.id)),
             startedAt: (gameData.started_at as string | null) ?? null,
-            priorRoundValues: ((await supabaseAdmin.from('round_results').select('player_1_value, player_2_value').eq('game_id', gameId).lt('round_number', roundNumber)).data ?? []).map((result) => ({ player1Value: Number(result.player_1_value), player2Value: Number(result.player_2_value) })),
+            priorRoundValues: (
+                (
+                    await supabaseAdmin
+                        .from('round_results')
+                        .select('player_1_value, player_2_value')
+                        .eq('game_id', gameId)
+                        .lt('round_number', roundNumber)
+                ).data ?? []
+            ).map((result) => ({
+                player1Value: Number(result.player_1_value),
+                player2Value: Number(result.player_2_value),
+            })),
         })
 
         const resolutionData = resolution.resolution_data as Record<string, unknown>
@@ -348,34 +490,54 @@ Deno.serve(async (request) => {
         })
         if (commitError) return json({ error: commitError.message }, 400)
 
-        const commit = committed && typeof committed === 'object' ? committed as Record<string, unknown> : {}
+        const commit = committed && typeof committed === 'object' ? (committed as Record<string, unknown>) : {}
         const outcome = String(commit.outcome ?? 'UNKNOWN')
-        if (outcome === 'APPLIED' && Deno.env.get('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true' && String(resolutionData.statusAfter) === 'FINISHED' && resolutionData.finishedAt) {
+        if (
+            outcome === 'APPLIED' &&
+            Deno.env.get('CREATURE_VISUAL_PROGRESSION_ENABLED') === 'true' &&
+            String(resolutionData.statusAfter) === 'FINISHED' &&
+            resolutionData.finishedAt
+        ) {
             const events = createMatchCompletionEvents({
                 gameId,
                 winnerPlayerId: (resolutionData.winnerIdAfter as string | null) ?? null,
                 completedAt: String(resolutionData.finishedAt),
                 participants: visualParticipants,
             })
-            const evolutionTargetWinsRequired = readEvolutionTargetWinsRequired(Deno.env.get('EVOLUTION_TARGET_WINS_REQUIRED'))
+            const evolutionTargetWinsRequired = readEvolutionTargetWinsRequired(
+                Deno.env.get('EVOLUTION_TARGET_WINS_REQUIRED'),
+            )
             for (const event of events) {
                 try {
                     await recordCreatureVisualProgressFromMatchCompletion(supabaseAdmin, event)
                 } catch (error) {
-                    console.error('Creature visual progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
+                    console.error('Creature visual progression recording failed', {
+                        gameId,
+                        profileId: event.profileId,
+                        code: error instanceof Error ? error.message.slice(0, 80) : 'unknown',
+                    })
                 }
                 try {
                     await recordEvolutionTargetWinFromMatchCompletion(supabaseAdmin, event, evolutionTargetWinsRequired)
                 } catch (error) {
-                    console.error('Evolution target progression recording failed', { gameId, profileId: event.profileId, code: error instanceof Error ? error.message.slice(0, 80) : 'unknown' })
+                    console.error('Evolution target progression recording failed', {
+                        gameId,
+                        profileId: event.profileId,
+                        code: error instanceof Error ? error.message.slice(0, 80) : 'unknown',
+                    })
                 }
             }
         }
 
-        return json({ status: outcome.toLowerCase(), result: commit.result ?? null, stateRevision: commit.stateRevision ?? null })
+        return json({
+            status: outcome.toLowerCase(),
+            result: commit.result ?? null,
+            stateRevision: commit.stateRevision ?? null,
+        })
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error.'
-        const isInvalidAction = /exhausted|no transition|maximum level|invalid adaptation state|unknown adaptation/i.test(message)
+        const isInvalidAction =
+            /exhausted|no transition|maximum level|invalid adaptation state|unknown adaptation/i.test(message)
 
         return json({ error: message }, isInvalidAction ? 400 : 500)
     }

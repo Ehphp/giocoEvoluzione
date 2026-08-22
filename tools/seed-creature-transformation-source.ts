@@ -66,5 +66,7 @@ const { error: uploadError } = await bucket.upload(sourceObject, sourceBytes, {
 })
 if (uploadError) throw new Error(`Aggiornamento sorgente non riuscito: ${uploadError.message}`)
 const manifest = await syncCanonicalManifest(false)
-console.log(`Sorgente canonica aggiornata: ${SOURCE_BUCKET}/${sourceObject} (${sourceMetadata.width}x${sourceMetadata.height}, sha256 ${sourceSha256}).`)
+console.log(
+    `Sorgente canonica aggiornata: ${SOURCE_BUCKET}/${sourceObject} (${sourceMetadata.width}x${sourceMetadata.height}, sha256 ${sourceSha256}).`,
+)
 console.log(`Manifest e versioni base sincronizzati: ${JSON.stringify(manifest)}`)

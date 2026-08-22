@@ -47,7 +47,7 @@ export type SeedreamPipelinePolicy = Readonly<{
     /** Explicit production-test switch. Defaults off even when body-plan mutations are enabled globally. */
     structuralMutationsEnabled: boolean
     parameters: Readonly<{
-        imageSize: Readonly<{ width: number, height: number }>
+        imageSize: Readonly<{ width: number; height: number }>
     }>
 }>
 
@@ -102,16 +102,34 @@ function readProfileIdSet(value: string | undefined): ReadonlySet<string> {
 function readMicroConceptPolicy(readEnvironment: (name: string) => string | undefined): MicroConceptPolicy {
     return Object.freeze({
         apiKey: readEnvironment('OPENAI_API_KEY')?.trim() || null,
-        model: readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() || readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() || null,
+        model:
+            readEnvironment('FLUX_MICRO_CONCEPT_MODEL')?.trim() ||
+            readEnvironment('OPENAI_CONCEPT_MODEL')?.trim() ||
+            null,
     })
 }
 
 function readSeedreamPolicy(readEnvironment: (name: string) => string | undefined): SeedreamPipelinePolicy {
     return Object.freeze({
-        apiKey: readEnvironment('FAL_SEEDREAM_API_KEY')?.trim() || readEnvironment('FAL_FLUX_API_KEY')?.trim() || readEnvironment('FAL_KEY')?.trim() || null,
+        apiKey:
+            readEnvironment('FAL_SEEDREAM_API_KEY')?.trim() ||
+            readEnvironment('FAL_FLUX_API_KEY')?.trim() ||
+            readEnvironment('FAL_KEY')?.trim() ||
+            null,
         model: FAL_SEEDREAM_MODEL,
-        timeoutMs: readBoundedInteger(readEnvironment('FAL_SEEDREAM_TIMEOUT_MS'), DEFAULT_FAL_TIMEOUT_MS, 1_000, 180_000),
-        submissionSourceUrlTtlSeconds: readBoundedInteger(readEnvironment('FAL_SEEDREAM_SUBMISSION_SOURCE_URL_TTL_SECONDS') ?? readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'), DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS, 300, 86_400),
+        timeoutMs: readBoundedInteger(
+            readEnvironment('FAL_SEEDREAM_TIMEOUT_MS'),
+            DEFAULT_FAL_TIMEOUT_MS,
+            1_000,
+            180_000,
+        ),
+        submissionSourceUrlTtlSeconds: readBoundedInteger(
+            readEnvironment('FAL_SEEDREAM_SUBMISSION_SOURCE_URL_TTL_SECONDS') ??
+                readEnvironment('FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS'),
+            DEFAULT_FAL_SUBMISSION_SOURCE_URL_TTL_SECONDS,
+            300,
+            86_400,
+        ),
         // Seedream owns its billing envelope: these two variables are required, never defaulted.
         estimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_ESTIMATED_COST_PER_GENERATION')),
         maxEstimatedCostUsd: readRequiredPositiveUsd(readEnvironment('SEEDREAM_MAX_ESTIMATED_COST_PER_GENERATION')),
@@ -126,24 +144,71 @@ function readVisualProgressionPolicy(readEnvironment: (name: string) => string |
         productionGenerationEnabled: readEnvironment('CREATURE_VISUAL_PRODUCTION_GENERATION_ENABLED') === 'true',
         adoptionEnabled: readEnvironment('CREATURE_VISUAL_ADOPTION_ENABLED') === 'true',
         allowedProfileIds: readProfileIdSet(readEnvironment('CREATURE_VISUAL_PRODUCTION_PROFILE_IDS')),
-        winsRequired: readCreatureVisualProgressionWinsRequired(readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED')),
+        winsRequired: readCreatureVisualProgressionWinsRequired(
+            readEnvironment('CREATURE_VISUAL_PROGRESSION_WINS_REQUIRED'),
+        ),
     })
 }
 
-export function readCreatureEvolutionPolicy(readEnvironment: (name: string) => string | undefined): CreatureEvolutionPolicy {
+export function readCreatureEvolutionPolicy(
+    readEnvironment: (name: string) => string | undefined,
+): CreatureEvolutionPolicy {
     return Object.freeze({
-        signedUrlTtlSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'), DEFAULT_SIGNED_URL_TTL_SECONDS, 60, 3600),
-        dailyRequestLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'), DEFAULT_DAILY_REQUEST_LIMIT, 1, 1000),
-        dailyBudgetUsd: readBoundedUsd(readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'), DEFAULT_DAILY_BUDGET_USD, 10000),
-        staleRequestSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS'), DEFAULT_STALE_REQUEST_SECONDS, 60, 86400),
-        dailyRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_DAILY_REAL_IMAGE_LIMIT, 1, 1000),
-        globalDailyRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT, 1, 1000),
-        globalConcurrentRealImageLimit: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'), DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT, 1, 100),
-        realImageCooldownSeconds: readBoundedInteger(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'), DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS, 0, 86400),
-        paidGenerationProfileIds: readProfileIdSet(readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS')),
+        signedUrlTtlSeconds: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_SIGNED_URL_TTL_SECONDS'),
+            DEFAULT_SIGNED_URL_TTL_SECONDS,
+            60,
+            3600,
+        ),
+        dailyRequestLimit: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_DAILY_REQUEST_LIMIT'),
+            DEFAULT_DAILY_REQUEST_LIMIT,
+            1,
+            1000,
+        ),
+        dailyBudgetUsd: readBoundedUsd(
+            readEnvironment('CREATURE_TRANSFORMATION_DAILY_BUDGET_USD'),
+            DEFAULT_DAILY_BUDGET_USD,
+            10000,
+        ),
+        staleRequestSeconds: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_STALE_REQUEST_SECONDS'),
+            DEFAULT_STALE_REQUEST_SECONDS,
+            60,
+            86400,
+        ),
+        dailyRealImageLimit: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_DAILY_REAL_IMAGE_LIMIT'),
+            DEFAULT_DAILY_REAL_IMAGE_LIMIT,
+            1,
+            1000,
+        ),
+        globalDailyRealImageLimit: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_DAILY_REAL_IMAGE_LIMIT'),
+            DEFAULT_GLOBAL_DAILY_REAL_IMAGE_LIMIT,
+            1,
+            1000,
+        ),
+        globalConcurrentRealImageLimit: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT'),
+            DEFAULT_GLOBAL_CONCURRENT_REAL_IMAGE_LIMIT,
+            1,
+            100,
+        ),
+        realImageCooldownSeconds: readBoundedInteger(
+            readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_COOLDOWN_SECONDS'),
+            DEFAULT_REAL_IMAGE_COOLDOWN_SECONDS,
+            0,
+            86400,
+        ),
+        paidGenerationProfileIds: readProfileIdSet(
+            readEnvironment('CREATURE_TRANSFORMATION_REAL_IMAGE_ALLOWED_PROFILE_IDS'),
+        ),
         microConcept: readMicroConceptPolicy(readEnvironment),
         seedream: readSeedreamPolicy(readEnvironment),
-        bodyPlanMutation: Object.freeze({ enabled: readEnvironment('CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED') === 'true' }),
+        bodyPlanMutation: Object.freeze({
+            enabled: readEnvironment('CREATURE_EVOLUTION_BODY_PLAN_MUTATION_ENABLED') === 'true',
+        }),
         visualProgression: readVisualProgressionPolicy(readEnvironment),
     })
 }

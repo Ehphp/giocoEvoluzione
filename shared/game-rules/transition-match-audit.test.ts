@@ -42,7 +42,11 @@ function eventWith(modifiers: Partial<Record<AdaptationId, 0 | 1 | 2>> = {}): En
     }
 }
 
-const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): PlayerRoundAction => ({ playerId, trait, actionType })
+const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): PlayerRoundAction => ({
+    playerId,
+    trait,
+    actionType,
+})
 
 function resolve(overrides: Partial<ResolveRoundInput> = {}) {
     return resolveRound({
@@ -70,17 +74,20 @@ function withState(trait: AdaptationId, level: AdaptationLevel, exhausted: boole
 }
 
 describe('adaptation transition matrix', () => {
-    it.each([0, 1, 2] as const)('USE preserves level %s, exhausts only the selected gene, and never mutates its input', (level) => {
-        const input = withState('FEROCITY', level, false)
-        const before = structuredClone(input)
-        const result = resolve({ player1Traits: input })
+    it.each([0, 1, 2] as const)(
+        'USE preserves level %s, exhausts only the selected gene, and never mutates its input',
+        (level) => {
+            const input = withState('FEROCITY', level, false)
+            const before = structuredClone(input)
+            const result = resolve({ player1Traits: input })
 
-        expect(input).toEqual(before)
-        expect(result.player1.traits.FEROCITY).toEqual({ level, exhausted: true })
-        for (const trait of ADAPTATION_IDS.filter((candidate) => candidate !== 'FEROCITY')) {
-            expect(result.player1.traits[trait]).toEqual(before[trait])
-        }
-    })
+            expect(input).toEqual(before)
+            expect(result.player1.traits.FEROCITY).toEqual({ level, exhausted: true })
+            for (const trait of ADAPTATION_IDS.filter((candidate) => candidate !== 'FEROCITY')) {
+                expect(result.player1.traits[trait]).toEqual(before[trait])
+            }
+        },
+    )
 
     it('rejects exhausted USE without mutating either input or exposing a partial resolution', () => {
         const player1Traits = withState('FEROCITY', 1, true)
@@ -100,27 +107,28 @@ describe('adaptation transition matrix', () => {
         expect(result.player1.traits.ARMOR).toEqual({ level: 1, exhausted: true })
     })
 
-    it.each(
-        ([0, 1] as const).flatMap((level) => [false, true].map((exhausted) => ({ level, exhausted }))),
-    )('EVOLVE increments and makes available from level $level/exhausted=$exhausted', ({ level, exhausted }) => {
-        const input = withState('FEROCITY', level, exhausted)
-        const before = structuredClone(input)
-        const result = resolve({
-            player1Traits: input,
-            player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
-        })
+    it.each(([0, 1] as const).flatMap((level) => [false, true].map((exhausted) => ({ level, exhausted }))))(
+        'EVOLVE increments and makes available from level $level/exhausted=$exhausted',
+        ({ level, exhausted }) => {
+            const input = withState('FEROCITY', level, exhausted)
+            const before = structuredClone(input)
+            const result = resolve({
+                player1Traits: input,
+                player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
+            })
 
-        expect(input).toEqual(before)
-        expect(result.player1.roundValue).toBe(1)
-        expect(result.player1.breakdown).toMatchObject({
-            total: 1,
-            baseContribution: 1,
-            levelContribution: 0,
-            eventModifier: 0,
-            matchupBonus: 0,
-        })
-        expect(result.player1.traits.FEROCITY).toEqual({ level: level + 1, exhausted: false })
-    })
+            expect(input).toEqual(before)
+            expect(result.player1.roundValue).toBe(1)
+            expect(result.player1.breakdown).toMatchObject({
+                total: 1,
+                baseContribution: 1,
+                levelContribution: 0,
+                eventModifier: 0,
+                matchupBonus: 0,
+            })
+            expect(result.player1.traits.FEROCITY).toEqual({ level: level + 1, exhausted: false })
+        },
+    )
 
     it('EVOLVE recovers an exhausted max-level gene without increasing its level', () => {
         const result = resolve({
@@ -136,10 +144,12 @@ describe('adaptation transition matrix', () => {
         const input = withState('FEROCITY', 2, false)
         const before = structuredClone(input)
 
-        expect(() => resolve({
-            player1Traits: input,
-            player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
-        })).toThrow('no transition')
+        expect(() =>
+            resolve({
+                player1Traits: input,
+                player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
+            }),
+        ).toThrow('no transition')
         expect(input).toEqual(before)
     })
 
@@ -149,23 +159,26 @@ describe('adaptation transition matrix', () => {
                 ([0, 1, 2] as const).map((level) => ({ roundNumber, affinity, level })),
             ),
         ),
-    )('keeps EVOLVE at one for round $roundNumber, affinity $affinity, and level $level', ({ roundNumber, affinity, level }) => {
-        const result = resolve({
-            roundNumber,
-            roundEvent: eventWith({ FEROCITY: affinity }),
-            player1Traits: withState('FEROCITY', level, level === 2),
-            player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
-            player2Action: action('p2', 'ARMOR', roundNumber === 1 ? 'USE' : 'EVOLVE'),
-        })
+    )(
+        'keeps EVOLVE at one for round $roundNumber, affinity $affinity, and level $level',
+        ({ roundNumber, affinity, level }) => {
+            const result = resolve({
+                roundNumber,
+                roundEvent: eventWith({ FEROCITY: affinity }),
+                player1Traits: withState('FEROCITY', level, level === 2),
+                player1Action: action('p1', 'FEROCITY', 'EVOLVE'),
+                player2Action: action('p2', 'ARMOR', roundNumber === 1 ? 'USE' : 'EVOLVE'),
+            })
 
-        expect(result.player1.roundValue).toBe(1)
-        expect(result.player1.breakdown.total).toBe(
-            result.player1.breakdown.baseContribution
-            + result.player1.breakdown.eventModifier
-            + result.player1.breakdown.levelContribution
-            + result.player1.breakdown.matchupBonus,
-        )
-    })
+            expect(result.player1.roundValue).toBe(1)
+            expect(result.player1.breakdown.total).toBe(
+                result.player1.breakdown.baseContribution +
+                    result.player1.breakdown.eventModifier +
+                    result.player1.breakdown.levelContribution +
+                    result.player1.breakdown.matchupBonus,
+            )
+        },
+    )
 })
 
 describe('round resolution matrix', () => {
@@ -217,13 +230,28 @@ describe('round resolution matrix', () => {
 
         expect(result.player1.breakdown).toMatchObject({ levelContribution: 1, eventModifier: 0, total: 3 })
         expect(result.player2.breakdown).toMatchObject({ levelContribution: 0, eventModifier: 1, total: 3 })
-        expect([result.winnerId, result.awardedPoints, result.player1ScoreDelta, result.player2ScoreDelta]).toEqual([null, 0, 0, 0])
+        expect([result.winnerId, result.awardedPoints, result.player1ScoreDelta, result.player2ScoreDelta]).toEqual([
+            null,
+            0,
+            0,
+            0,
+        ])
     })
 
     it.each([
-        { name: 'overturns the environmental leader', armorAffinity: 1 as const, armorLevel: 0 as const, expected: [4, 3, 'p1'] },
+        {
+            name: 'overturns the environmental leader',
+            armorAffinity: 1 as const,
+            armorLevel: 0 as const,
+            expected: [4, 3, 'p1'],
+        },
         { name: 'creates a tie', armorAffinity: 2 as const, armorLevel: 0 as const, expected: [4, 4, null] },
-        { name: 'does not change the environmental leader', armorAffinity: 2 as const, armorLevel: 1 as const, expected: [4, 5, 'p2'] },
+        {
+            name: 'does not change the environmental leader',
+            armorAffinity: 2 as const,
+            armorLevel: 1 as const,
+            expected: [4, 5, 'p2'],
+        },
     ])('$name through the natural matchup exactly once', ({ armorAffinity, armorLevel, expected }) => {
         const result = resolve({
             roundEvent: eventWith({ ARMOR: armorAffinity }),
@@ -262,14 +290,16 @@ describe('match completion matrix', () => {
         [4, 1],
         [4, 2],
     ])('clinches immediately at %s-%s', (player1Score, player2Score) => {
-        expect(resolveMatchOutcome({
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score,
-            player2Score,
-            resolvedRoundNumber: player1Score + player2Score,
-            storedRoundValues: [],
-        })).toMatchObject({ finished: true, winnerId: 'p1', reason: 'CLINCH' })
+        expect(
+            resolveMatchOutcome({
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score,
+                player2Score,
+                resolvedRoundNumber: player1Score + player2Score,
+                storedRoundValues: [],
+            }),
+        ).toMatchObject({ finished: true, winnerId: 'p1', reason: 'CLINCH' })
     })
 
     it('persists a newly clinched match with coherent terminal metadata', () => {
@@ -403,13 +433,15 @@ describe('match completion matrix', () => {
         const incomplete: StoredRoundValue = { player1Value: 2, player2Value: 1 }
         Reflect.deleteProperty(incomplete, 'player1Value')
 
-        expect(() => resolveMatchOutcome({
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score: 3,
-            player2Score: 3,
-            resolvedRoundNumber: 7,
-            storedRoundValues: [incomplete],
-        })).toThrow('stored round value')
+        expect(() =>
+            resolveMatchOutcome({
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score: 3,
+                player2Score: 3,
+                resolvedRoundNumber: 7,
+                storedRoundValues: [incomplete],
+            }),
+        ).toThrow('stored round value')
     })
 })

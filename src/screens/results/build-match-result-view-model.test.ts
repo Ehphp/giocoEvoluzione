@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { GameSnapshot, RoundResultRecord } from '../../lib/game-api'
-import { buildMatchResultViewModel } from './buildMatchResultViewModel'
+import { buildMatchResultViewModel } from './build-match-result-view-model'
 
 function makeResult(roundNumber: number, overrides: Partial<RoundResultRecord> = {}): RoundResultRecord {
     return {

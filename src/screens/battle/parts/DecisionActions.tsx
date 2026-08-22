@@ -1,6 +1,6 @@
 import { ActionButton } from '../../../ui/components'
 import { BoltIcon, DnaIcon } from '../../../ui/icons'
-import type { GeneActionTypeV2, GeneCardV2, WaitingStateV2 } from '../../../components/game-v2/types'
+import type { GeneActionTypeV2, GeneCardV2, WaitingStateV2 } from '../controller/types'
 
 type DecisionActionsProps = {
     selectedGene: GeneCardV2 | null

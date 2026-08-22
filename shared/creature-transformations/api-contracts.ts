@@ -3,7 +3,11 @@ import type { BodyPlanId } from './flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId, EvolutionCapability } from './flux-evolution/body-plan-mutations.ts'
 import type { ImageValidationProblem } from './image-validator.ts'
 import type { TransformationRequestPersistence, TransformationRequestStatusPersistence } from './request-persistence.ts'
-import type { CurrentCreatureVisualResponse, CreatureVisualVersion, SelectableCreatureVisualVersion } from './creature-visual-versions.ts'
+import type {
+    CurrentCreatureVisualResponse,
+    CreatureVisualVersion,
+    SelectableCreatureVisualVersion,
+} from './creature-visual-versions.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
 
 export type CreatureTransformationAssetReadiness = 'FINAL_ASSET' | 'EXPERIMENT_ONLY'
@@ -44,10 +48,11 @@ export type CreatureVisualProgressResponse = Readonly<{
     track: CreatureVisualProgressTrack | null
     lastExperiment: { requestId: string; warnings: string[] } | null
     lastFailure: { requestId: string; code: string; message: string } | null
-    currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'> & Readonly<{
-        /** Derived from the current version's persisted visual inspection; absent for legacy versions. */
-        shortDescription?: string | null
-    }>
+    currentVersion: Pick<CreatureVisualVersion, 'id' | 'versionNumber' | 'visualTraitId' | 'conceptName'> &
+        Readonly<{
+            /** Derived from the current version's persisted visual inspection; absent for legacy versions. */
+            shortDescription?: string | null
+        }>
     history: readonly SelectableCreatureVisualVersion[]
     /** Canonical anatomical state and the targets it offers. */
     bodyPlan: {
@@ -139,7 +144,6 @@ export type TransformationRequestStatusResponse = {
         resultBodyPlanId?: BodyPlanId
     }
 }
-
 
 export type GenerateImageApiResponse = GenerateImageAcceptedResponse | CreatureTransformationErrorResponse
 

@@ -6,7 +6,7 @@ import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
 import { AddIcon, CloseIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
-import { buildCollectionViewModel } from './buildCollectionViewModel'
+import { buildCollectionViewModel } from './build-collection-view-model'
 import type { CollectionForm } from './types'
 
 import './CollectionScreen.css'

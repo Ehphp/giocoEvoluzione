@@ -22,7 +22,8 @@ export const DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED = 3
  * The targets of the starter body plan. The database draw uses the same list; a body plan with a
  * different set is filtered server-side before a target can be selected or generated.
  */
-export const DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS: readonly EvolutionTargetId[] = BODY_PLANS.QUADRUPED.evolutionTargets
+export const DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS: readonly EvolutionTargetId[] =
+    BODY_PLANS.QUADRUPED.evolutionTargets
 
 export type EvolutionDraft = Readonly<{
     options: readonly EvolutionTargetId[]
@@ -38,9 +39,7 @@ export type EvolutionTargetProgress = Readonly<{
 export function readEvolutionTargetWinsRequired(value: string | undefined): number {
     const parsed = Number(value)
 
-    return Number.isInteger(parsed) && parsed >= 1 && parsed <= 100
-        ? parsed
-        : DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED
+    return Number.isInteger(parsed) && parsed >= 1 && parsed <= 100 ? parsed : DEFAULT_EVOLUTION_TARGET_WINS_REQUIRED
 }
 
 /**
@@ -65,7 +64,10 @@ export function drawEvolutionDraftOptions(
 }
 
 /** A choice is valid only if it is one of the options this player was actually offered. */
-export function isChoosableEvolutionTarget(options: readonly string[], candidate: unknown): candidate is EvolutionTargetId {
+export function isChoosableEvolutionTarget(
+    options: readonly string[],
+    candidate: unknown,
+): candidate is EvolutionTargetId {
     return isEvolutionTargetId(candidate) && options.includes(candidate)
 }
 

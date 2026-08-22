@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { PlayerRecord } from '../../../lib/game-api'
-import { buildBattleParticipants } from './battleParticipants'
+import { buildBattleParticipants } from './battle-participants'
 
 function player(id: string, slot: 1 | 2): PlayerRecord {
     return {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { awardedCreatureVisualProgress, nextCreatureVisualProgress, readCreatureVisualProgressionWinsRequired } from './visual-progression.ts'
+import {
+    awardedCreatureVisualProgress,
+    nextCreatureVisualProgress,
+    readCreatureVisualProgressionWinsRequired,
+} from './visual-progression.ts'
 
 describe('visual progression policy', () => {
     it('awards exactly one point only for a win', () => {
@@ -10,8 +14,16 @@ describe('visual progression policy', () => {
     })
 
     it('moves an active track to READY at its server target', () => {
-        expect(nextCreatureVisualProgress({ progress: 2, target: 3, status: 'ACTIVE' }, 'WIN')).toEqual({ awarded: 1, progress: 3, status: 'READY' })
-        expect(nextCreatureVisualProgress({ progress: 2, target: 3, status: 'ACTIVE' }, 'DRAW')).toEqual({ awarded: 0, progress: 2, status: 'ACTIVE' })
+        expect(nextCreatureVisualProgress({ progress: 2, target: 3, status: 'ACTIVE' }, 'WIN')).toEqual({
+            awarded: 1,
+            progress: 3,
+            status: 'READY',
+        })
+        expect(nextCreatureVisualProgress({ progress: 2, target: 3, status: 'ACTIVE' }, 'DRAW')).toEqual({
+            awarded: 0,
+            progress: 2,
+            status: 'ACTIVE',
+        })
     })
 
     it('has one authoritative default and ignores invalid environment values', () => {

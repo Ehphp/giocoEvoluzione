@@ -1,1 +1,9 @@
-export { getCombatMutationEvolvePreview, getCombatMutationUseBonus, getCombatMutationUsePreview, getRoundPoints, isAdaptationEvolvable as isTraitEvolvable, isAdaptationUsable as isTraitUsable, resolveRound } from '../../shared/game-rules/engine.ts'
+export {
+    getCombatMutationEvolvePreview,
+    getCombatMutationUseBonus,
+    getCombatMutationUsePreview,
+    getRoundPoints,
+    isAdaptationEvolvable as isTraitEvolvable,
+    isAdaptationUsable as isTraitUsable,
+    resolveRound,
+} from '../../shared/game-rules/engine.ts'

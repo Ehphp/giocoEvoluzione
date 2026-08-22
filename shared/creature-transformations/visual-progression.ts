@@ -13,7 +13,8 @@ export type MatchCompletionEvent = Readonly<{
     completedAt: string
 }>
 
-export type CreatureVisualProgressTrackStatus = 'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'
+export type CreatureVisualProgressTrackStatus =
+    'ACTIVE' | 'READY' | 'GENERATING' | 'POST_PROCESSING' | 'GENERATED' | 'COMPLETED' | 'CANCELLED'
 
 export type CreatureVisualProgressTrack = Readonly<{
     id: string
@@ -42,12 +43,15 @@ export function awardedCreatureVisualProgress(outcome: MatchCompletionEvent['out
     return outcome === 'WIN' ? 1 : 0
 }
 
-export function nextCreatureVisualProgress(track: Pick<CreatureVisualProgressTrack, 'progress' | 'target' | 'status'>, outcome: MatchCompletionEvent['outcome']) {
+export function nextCreatureVisualProgress(
+    track: Pick<CreatureVisualProgressTrack, 'progress' | 'target' | 'status'>,
+    outcome: MatchCompletionEvent['outcome'],
+) {
     const awarded = awardedCreatureVisualProgress(outcome)
     const progress = track.progress + awarded
     return {
         awarded,
         progress,
-        status: track.status === 'ACTIVE' && progress >= track.target ? 'READY' as const : track.status,
+        status: track.status === 'ACTIVE' && progress >= track.target ? ('READY' as const) : track.status,
     }
 }

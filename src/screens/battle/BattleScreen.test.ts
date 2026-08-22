@@ -2,8 +2,8 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { DEFAULT_BATTLE_OPPONENT_CREATURE } from '../../components/game-v2/gameSelectionAssets'
-import type { GeneCardV2, GeneSelectionViewModelV2 } from '../../components/game-v2/types'
+import { DEFAULT_BATTLE_OPPONENT_CREATURE } from './controller/gene-selection-assets'
+import type { GeneCardV2, GeneSelectionViewModelV2 } from './controller/types'
 import { BattleScreen } from './BattleScreen'
 
 function makeGene(input: Pick<GeneCardV2, 'id' | 'traitType' | 'name' | 'level' | 'affinity' | 'usable' | 'exhausted'> & { score?: number; affinityValue?: number }): GeneCardV2 {

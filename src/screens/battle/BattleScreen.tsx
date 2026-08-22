@@ -5,8 +5,8 @@ import {
     DEFAULT_BATTLE_PLAYER_CREATURE,
     GAME_SELECTION_ASSETS,
     getBattleBackgroundForEvent,
-} from '../../components/game-v2/gameSelectionAssets'
-import type { GeneSelectionViewModelV2 } from '../../components/game-v2/types'
+} from './controller/gene-selection-assets'
+import type { GeneSelectionViewModelV2 } from './controller/types'
 import type { TraitType } from '../../game/types'
 import { AppShell, Button, Notice, Overlay, Panel, Pill } from '../../ui/components'
 import { CloseIcon } from '../../ui/icons'

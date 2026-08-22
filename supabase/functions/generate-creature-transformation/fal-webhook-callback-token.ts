@@ -5,7 +5,7 @@ function isToken(value: string | null | undefined): value is string {
 }
 
 /** Adds the private, purpose-limited callback credential before the URL is given to Fal. */
-export function appendFalWebhookCallbackToken(input: { webhookUrl: string, token: string }): string {
+export function appendFalWebhookCallbackToken(input: { webhookUrl: string; token: string }): string {
     if (!isToken(input.token)) throw new Error('Il token callback Fal non e valido.')
     const url = new URL(input.webhookUrl)
     if (url.protocol !== 'https:') throw new Error('Il webhook Fal deve usare HTTPS.')
@@ -14,7 +14,10 @@ export function appendFalWebhookCallbackToken(input: { webhookUrl: string, token
 }
 
 /** Constant-work comparison for the token received in Fal's callback URL. */
-export function hasFalWebhookCallbackToken(input: { callbackUrl: string, expectedToken: string | null | undefined }): boolean {
+export function hasFalWebhookCallbackToken(input: {
+    callbackUrl: string
+    expectedToken: string | null | undefined
+}): boolean {
     if (!isToken(input.expectedToken)) return false
     let received: string | null
     try {
@@ -24,6 +27,7 @@ export function hasFalWebhookCallbackToken(input: { callbackUrl: string, expecte
     }
     if (!isToken(received) || received.length !== input.expectedToken.length) return false
     let difference = 0
-    for (let index = 0; index < received.length; index += 1) difference |= received.charCodeAt(index) ^ input.expectedToken.charCodeAt(index)
+    for (let index = 0; index < received.length; index += 1)
+        difference |= received.charCodeAt(index) ^ input.expectedToken.charCodeAt(index)
     return difference === 0
 }

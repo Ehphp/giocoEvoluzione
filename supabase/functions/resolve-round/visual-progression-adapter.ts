@@ -14,13 +14,16 @@ export function createMatchCompletionEvents(input: {
 }): MatchCompletionEvent[] {
     return input.participants.flatMap((participant) => {
         if (!participant.profileId || !participant.creatureId) return []
-        return [{
-            gameId: input.gameId,
-            profileId: participant.profileId,
-            creatureId: participant.creatureId,
-            outcome: input.winnerPlayerId === null ? 'DRAW' : input.winnerPlayerId === participant.id ? 'WIN' : 'LOSS',
-            completedAt: input.completedAt,
-        } satisfies MatchCompletionEvent]
+        return [
+            {
+                gameId: input.gameId,
+                profileId: participant.profileId,
+                creatureId: participant.creatureId,
+                outcome:
+                    input.winnerPlayerId === null ? 'DRAW' : input.winnerPlayerId === participant.id ? 'WIN' : 'LOSS',
+                completedAt: input.completedAt,
+            } satisfies MatchCompletionEvent,
+        ]
     })
 }
 

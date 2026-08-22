@@ -2,7 +2,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { MatchResultRound, MatchResultViewModel } from '../../components/game-results/types'
+import type { MatchResultRound, MatchResultViewModel } from './types'
 import { MatchResultScreen } from './MatchResultScreen'
 
 const breakdown = {

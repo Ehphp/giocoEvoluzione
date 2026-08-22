@@ -1,7 +1,7 @@
 import type { CompetitiveLeaderboardEntry, PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../lib/profile-api'
-import type { GeneCardV2, GeneSelectionViewModelV2 } from '../components/game-v2/types'
-import { getEventAssetByArtKey, getGeneAssetByTrait } from '../components/game-v2/gameSelectionAssets'
-import { buildAuthenticatedHomeViewModel } from '../screens/home/buildHomeViewModel'
+import type { GeneCardV2, GeneSelectionViewModelV2 } from '../screens/battle/controller/types'
+import { getEventAssetByArtKey, getGeneAssetByTrait } from '../screens/battle/controller/gene-selection-assets'
+import { buildAuthenticatedHomeViewModel } from '../screens/home/build-home-view-model'
 import type { HomeViewModel } from '../screens/home/types'
 import { ASSETS } from '../ui/assets'
 

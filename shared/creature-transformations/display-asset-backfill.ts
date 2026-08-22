@@ -16,11 +16,17 @@ export type CreatureDisplayAssetBackfillCounts = Readonly<{
 
 export function hasPersistedCreatureDisplayAsset(version: LegacyCreatureVisualVersion): boolean {
     return Boolean(
-        version.displayAssetPath && /^display\/[a-f0-9]{64}\.webp$/.test(version.displayAssetPath)
-        && version.displayAssetSha256 && /^[a-f0-9]{64}$/.test(version.displayAssetSha256)
-        && version.displayMimeType === 'image/webp'
-        && version.displayWidth && version.displayWidth >= 1 && version.displayWidth <= 768
-        && version.displayHeight && version.displayHeight >= 1 && version.displayHeight <= 768,
+        version.displayAssetPath &&
+        /^display\/[a-f0-9]{64}\.webp$/.test(version.displayAssetPath) &&
+        version.displayAssetSha256 &&
+        /^[a-f0-9]{64}$/.test(version.displayAssetSha256) &&
+        version.displayMimeType === 'image/webp' &&
+        version.displayWidth &&
+        version.displayWidth >= 1 &&
+        version.displayWidth <= 768 &&
+        version.displayHeight &&
+        version.displayHeight >= 1 &&
+        version.displayHeight <= 768,
     )
 }
 

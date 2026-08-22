@@ -31,17 +31,18 @@ export async function convertJpegToPng(jpeg: Uint8Array): Promise<Uint8Array> {
     await Promise.all([initializeJpegDecoder(), initializePngCodec()])
     // Queue finalization receives a full response buffer in the usual path. Reuse it instead of
     // allocating a second JPEG-sized ArrayBuffer; retain the safe slice only for sub-views.
-    const source = jpeg.byteOffset === 0 && jpeg.byteLength === jpeg.buffer.byteLength
-        ? jpeg.buffer as ArrayBuffer
-        : jpeg.buffer.slice(jpeg.byteOffset, jpeg.byteOffset + jpeg.byteLength) as ArrayBuffer
+    const source =
+        jpeg.byteOffset === 0 && jpeg.byteLength === jpeg.buffer.byteLength
+            ? (jpeg.buffer as ArrayBuffer)
+            : (jpeg.buffer.slice(jpeg.byteOffset, jpeg.byteOffset + jpeg.byteLength) as ArrayBuffer)
     const pixels = await decodeJpeg(source)
     return new Uint8Array(await encodePng(pixels))
 }
 
 function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
     return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
-        ? bytes.buffer as ArrayBuffer
-        : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+        ? (bytes.buffer as ArrayBuffer)
+        : (bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)
 }
 
 /**
@@ -49,16 +50,22 @@ function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
  * A JPEG must become PNG here to avoid a second lossy JPEG encode; PNG alpha is carried through
  * unchanged by the RGBA flip and PNG encoder.
  */
-export async function flipImageHorizontallyToPng(input: { bytes: Uint8Array, mimeType: 'image/png' | 'image/jpeg' }): Promise<Readonly<{
+export async function flipImageHorizontallyToPng(input: {
     bytes: Uint8Array
-    mimeType: 'image/png'
-    width: number
-    height: number
-}>> {
+    mimeType: 'image/png' | 'image/jpeg'
+}): Promise<
+    Readonly<{
+        bytes: Uint8Array
+        mimeType: 'image/png'
+        width: number
+        height: number
+    }>
+> {
     await Promise.all([initializePngCodec(), ...(input.mimeType === 'image/jpeg' ? [initializeJpegDecoder()] : [])])
-    const decoded = input.mimeType === 'image/jpeg'
-        ? await decodeJpeg(asArrayBuffer(input.bytes))
-        : await decodePng(asArrayBuffer(input.bytes))
+    const decoded =
+        input.mimeType === 'image/jpeg'
+            ? await decodeJpeg(asArrayBuffer(input.bytes))
+            : await decodePng(asArrayBuffer(input.bytes))
     // `ImageData.data` is typed as `ImageDataArray`, which now also covers the Float16 buffers of
     // an HDR canvas. The @jsquash PNG and JPEG decoders only ever produce 8-bit RGBA.
     const rgba = decoded.data as Uint8ClampedArray

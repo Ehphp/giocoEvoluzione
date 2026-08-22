@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
 import { ArrowDownIcon, ArrowUpIcon, ChevronIcon, InfoIcon } from '../../../ui/icons'
-import type { RoundEventEffectV2, RoundEventV2 } from '../../../components/game-v2/types'
+import type { RoundEventEffectV2, RoundEventV2 } from '../controller/types'
 
 type EnvironmentCardProps = {
     roundEvent: RoundEventV2

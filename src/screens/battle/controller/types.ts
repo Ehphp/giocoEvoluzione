@@ -1,5 +1,5 @@
-import type { TraitType } from '../../game/types'
-import type { CreatureVisual } from './gameSelectionAssets'
+import type { TraitType } from '../../../game/types'
+import type { CreatureVisual } from './gene-selection-assets'
 
 export type DuelPlayerStatusV2 = 'choosing' | 'ready' | 'disconnected'
 

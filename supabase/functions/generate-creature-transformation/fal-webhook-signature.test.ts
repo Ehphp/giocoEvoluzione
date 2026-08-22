@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { clearFalWebhookJwksCacheForTest, verifyFalWebhookSignature } from './fal-webhook-signature.ts'
 
 function base64Url(bytes: Uint8Array): string {
-    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    return btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
 }
 
 function hex(bytes: Uint8Array): string {
@@ -27,12 +30,21 @@ describe('Fal webhook signatures', () => {
             'x-fal-webhook-timestamp': timestamp,
             'x-fal-webhook-signature': hex(signature),
         })
-        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ keys: [{ x: base64Url(publicKey) }] })))
+        const fetchImplementation = vi.fn(
+            async () => new Response(JSON.stringify({ keys: [{ x: base64Url(publicKey) }] })),
+        )
 
-        await expect(verifyFalWebhookSignature({ headers, rawBody, fetchImplementation, now: () => 1_000_000 }))
-            .resolves.toEqual({ valid: true, providerRequestId: 'queue-1', jwksSource: 'remote' })
-        await expect(verifyFalWebhookSignature({ headers, rawBody: new TextEncoder().encode('{"request_id":"queue-1","status":"ERROR"}'), fetchImplementation, now: () => 1_000_000 }))
-            .resolves.toEqual({ valid: false, reason: 'SIGNATURE_MISMATCH' })
+        await expect(
+            verifyFalWebhookSignature({ headers, rawBody, fetchImplementation, now: () => 1_000_000 }),
+        ).resolves.toEqual({ valid: true, providerRequestId: 'queue-1', jwksSource: 'remote' })
+        await expect(
+            verifyFalWebhookSignature({
+                headers,
+                rawBody: new TextEncoder().encode('{"request_id":"queue-1","status":"ERROR"}'),
+                fetchImplementation,
+                now: () => 1_000_000,
+            }),
+        ).resolves.toEqual({ valid: false, reason: 'SIGNATURE_MISMATCH' })
     })
 
     it('uses only a configured fallback JWKS when Fal JWKS is temporarily unreachable', async () => {
@@ -49,15 +61,19 @@ describe('Fal webhook signatures', () => {
             'x-fal-webhook-timestamp': timestamp,
             'x-fal-webhook-signature': hex(signature),
         })
-        const fetchImplementation = vi.fn(async () => { throw new Error('network unavailable') })
+        const fetchImplementation = vi.fn(async () => {
+            throw new Error('network unavailable')
+        })
 
-        await expect(verifyFalWebhookSignature({
-            headers,
-            rawBody,
-            fetchImplementation,
-            now: () => 1_000_000,
-            fallbackJwksJson: JSON.stringify({ keys: [{ x: base64Url(publicKey) }] }),
-        })).resolves.toEqual({ valid: true, providerRequestId: 'queue-fallback', jwksSource: 'fallback' })
+        await expect(
+            verifyFalWebhookSignature({
+                headers,
+                rawBody,
+                fetchImplementation,
+                now: () => 1_000_000,
+                fallbackJwksJson: JSON.stringify({ keys: [{ x: base64Url(publicKey) }] }),
+            }),
+        ).resolves.toEqual({ valid: true, providerRequestId: 'queue-fallback', jwksSource: 'fallback' })
     })
 
     it('rejects stale timestamps before making a JWKS request', async () => {
@@ -68,8 +84,14 @@ describe('Fal webhook signatures', () => {
             'x-fal-webhook-timestamp': '1',
             'x-fal-webhook-signature': 'a'.repeat(128),
         })
-        await expect(verifyFalWebhookSignature({ headers, rawBody: new Uint8Array([1]), fetchImplementation, now: () => 1_000_000 }))
-            .resolves.toEqual({ valid: false, reason: 'TIMESTAMP_OUT_OF_RANGE' })
+        await expect(
+            verifyFalWebhookSignature({
+                headers,
+                rawBody: new Uint8Array([1]),
+                fetchImplementation,
+                now: () => 1_000_000,
+            }),
+        ).resolves.toEqual({ valid: false, reason: 'TIMESTAMP_OUT_OF_RANGE' })
         expect(fetchImplementation).not.toHaveBeenCalled()
     })
 })

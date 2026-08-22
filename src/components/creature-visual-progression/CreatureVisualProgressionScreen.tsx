@@ -8,7 +8,7 @@ import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
 
-import { GAME_SELECTION_ASSETS } from '../game-v2/gameSelectionAssets'
+import { GAME_SELECTION_ASSETS } from '../../screens/battle/controller/gene-selection-assets'
 import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } from '../../ui/assets'
 import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
 import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'

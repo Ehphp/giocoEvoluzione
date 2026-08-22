@@ -22,7 +22,7 @@ function sequence(values: number[]): () => number {
 describe('evolution draft', () => {
     it('draws two distinct targets from the catalogue', () => {
         for (let seed = 0; seed < 40; seed += 1) {
-            const options = drawEvolutionDraftOptions(sequence([seed / 40, (seed * 7 % 40) / 40, .5, .1]))
+            const options = drawEvolutionDraftOptions(sequence([seed / 40, ((seed * 7) % 40) / 40, 0.5, 0.1]))
 
             expect(options).toHaveLength(EVOLUTION_DRAFT_OPTION_COUNT)
             expect(new Set(options).size).toBe(EVOLUTION_DRAFT_OPTION_COUNT)
@@ -31,8 +31,8 @@ describe('evolution draft', () => {
     })
 
     it('is deterministic for a given random source', () => {
-        const first = drawEvolutionDraftOptions(sequence([.1, .9, .4, .7, .2]))
-        const second = drawEvolutionDraftOptions(sequence([.1, .9, .4, .7, .2]))
+        const first = drawEvolutionDraftOptions(sequence([0.1, 0.9, 0.4, 0.7, 0.2]))
+        const second = drawEvolutionDraftOptions(sequence([0.1, 0.9, 0.4, 0.7, 0.2]))
 
         expect(first).toEqual(second)
     })
@@ -45,7 +45,10 @@ describe('evolution draft', () => {
     })
 
     it('drops anything that is not a known target when reading persisted options', () => {
-        expect(normalizeEvolutionDraftOptions(['TAIL', 'nope', 42, 'SKIN_AND_COVERING'])).toEqual(['TAIL', 'SKIN_AND_COVERING'])
+        expect(normalizeEvolutionDraftOptions(['TAIL', 'nope', 42, 'SKIN_AND_COVERING'])).toEqual([
+            'TAIL',
+            'SKIN_AND_COVERING',
+        ])
         expect(normalizeEvolutionDraftOptions(null)).toEqual([])
         expect(normalizeEvolutionDraftOptions('TAIL')).toEqual([])
     })
@@ -66,7 +69,11 @@ describe('evolution draft', () => {
         const progress = completeEvolutionTargetProgress([{ evolutionTargetId: 'TAIL', wins: 2, target: 3 }])
 
         expect(progress).toHaveLength(DEFAULT_DRAFTABLE_EVOLUTION_TARGET_IDS.length)
-        expect(progress.find((entry) => entry.evolutionTargetId === 'TAIL')).toEqual({ evolutionTargetId: 'TAIL', wins: 2, target: 3 })
+        expect(progress.find((entry) => entry.evolutionTargetId === 'TAIL')).toEqual({
+            evolutionTargetId: 'TAIL',
+            wins: 2,
+            target: 3,
+        })
         expect(progress.find((entry) => entry.evolutionTargetId === 'SKIN_AND_COVERING')).toEqual({
             evolutionTargetId: 'SKIN_AND_COVERING',
             wins: 0,
@@ -76,7 +83,7 @@ describe('evolution draft', () => {
 
     it('draws only the targets the creature body plan offers', () => {
         const serpentine = ['TAIL', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING'] as const
-        const options = drawEvolutionDraftOptions(sequence([.3, .8, .1, .6]), 2, serpentine)
+        const options = drawEvolutionDraftOptions(sequence([0.3, 0.8, 0.1, 0.6]), 2, serpentine)
 
         expect(options).toHaveLength(2)
         options.forEach((option) => expect(serpentine).toContain(option))

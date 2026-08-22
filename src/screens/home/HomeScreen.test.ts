@@ -2,7 +2,7 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildGuestHomeViewModel } from './buildHomeViewModel'
+import { buildGuestHomeViewModel } from './build-home-view-model'
 import { HomeScreen } from './HomeScreen'
 import type { HomeActions, HomeViewModel } from './types'
 

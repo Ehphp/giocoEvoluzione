@@ -28,7 +28,10 @@ function bucketWithTree(initialPaths: readonly string[]): StorageBucketClient & 
             }
             const offset = options.offset ?? 0
             const limit = options.limit ?? 100
-            return { data: [...children.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(offset, offset + limit), error: null }
+            return {
+                data: [...children.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(offset, offset + limit),
+                error: null,
+            }
         },
         async remove(removalPaths) {
             removed.push([...removalPaths])
@@ -58,7 +61,9 @@ const cleanVerification = {
 describe('reset-creature-evolution-environment', () => {
     it('fails closed without the exact destructive confirmation', () => {
         expect(() => parseResetArguments([])).toThrow('confirm-destructive-reset')
-        expect(() => parseResetArguments(['--confirm-destructive-reset', '--other'])).toThrow('confirm-destructive-reset')
+        expect(() => parseResetArguments(['--confirm-destructive-reset', '--other'])).toThrow(
+            'confirm-destructive-reset',
+        )
         expect(() => parseResetArguments(['--confirm-destructive-reset'])).not.toThrow()
     })
 
@@ -103,7 +108,9 @@ describe('reset-creature-evolution-environment', () => {
         const experiments = bucketWithTree(['display/v1.webp', 'experiments/raw/old.png'])
         const rpcCalls: string[] = []
         const supabase = {
-            storage: { from: (bucket: string) => bucket === 'creature-transformation-sources' ? source : experiments },
+            storage: {
+                from: (bucket: string) => (bucket === 'creature-transformation-sources' ? source : experiments),
+            },
             async rpc(name: string) {
                 rpcCalls.push(name)
                 if (name === 'admin_destructive_reset_creature_evolution_environment') {

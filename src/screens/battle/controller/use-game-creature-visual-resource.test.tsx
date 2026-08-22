@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { GameSnapshot, PlayerRecord } from '../../../lib/game-api'
-import { useGameCreatureVisualResource, type GameCreatureVisual } from './useGameCreatureVisualResource'
+import { useGameCreatureVisualResource, type GameCreatureVisual } from './use-game-creature-visual-resource'
 
 type Deferred<T> = {
     promise: Promise<T>

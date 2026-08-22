@@ -1,10 +1,10 @@
 import { useState } from 'react'
 
 import { TRAIT_LABELS } from '../../game/config'
-import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
-import { getResultActionLabel } from '../../components/game-results/buildMatchResultViewModel'
+import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
+import { getResultActionLabel } from './build-match-result-view-model'
 import { getCombatMutationEffectDescription } from '../../game/round-result-explainer'
-import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from '../../components/game-results/types'
+import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from './types'
 import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
 import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'

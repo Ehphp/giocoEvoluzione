@@ -7,8 +7,15 @@ type StorageError = { message?: string } | null
 
 type StorageBucketClient = {
     download(path: string): Promise<{ data: Blob | null; error: StorageError }>
-    upload(path: string, body: Uint8Array, options: { contentType: string; upsert: boolean }): Promise<{ error: StorageError }>
-    createSignedUrl(path: string, expiresIn: number): Promise<{ data: { signedUrl?: string } | null; error: StorageError }>
+    upload(
+        path: string,
+        body: Uint8Array,
+        options: { contentType: string; upsert: boolean },
+    ): Promise<{ error: StorageError }>
+    createSignedUrl(
+        path: string,
+        expiresIn: number,
+    ): Promise<{ data: { signedUrl?: string } | null; error: StorageError }>
 }
 
 export interface CreatureTransformationStorageClient {
@@ -33,9 +40,7 @@ export type CreatureTransformationStorageAdapterOptions = Readonly<{
 }>
 
 export type CreatureTransformationStorageErrorCode =
-    | 'SOURCE_IMAGE_NOT_FOUND'
-    | 'STORAGE_UPLOAD_FAILED'
-    | 'SIGNED_URL_FAILED'
+    'SOURCE_IMAGE_NOT_FOUND' | 'STORAGE_UPLOAD_FAILED' | 'SIGNED_URL_FAILED'
 
 export class CreatureTransformationStorageError extends Error {
     readonly code: CreatureTransformationStorageErrorCode
@@ -49,18 +54,23 @@ export class CreatureTransformationStorageError extends Error {
 
 function profilePathSegment(profileId: string): string {
     if (!/^[A-Za-z0-9-]{1,128}$/.test(profileId)) {
-        throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Il profilo autenticato non puo essere usato per il path del risultato.')
+        throw new CreatureTransformationStorageError(
+            'STORAGE_UPLOAD_FAILED',
+            'Il profilo autenticato non puo essere usato per il path del risultato.',
+        )
     }
     return profileId
 }
 
 function isSafeResultObjectPath(path: string): boolean {
-    return /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
-        || /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
-        || /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.jpg$/.test(path)
-        || /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path)
-        || /^cleanup\/[a-f0-9]{64}\.png$/.test(path)
-        || /^display\/[a-f0-9]{64}\.webp$/.test(path)
+    return (
+        /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path) ||
+        /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path) ||
+        /^experiments\/raw\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.jpg$/.test(path) ||
+        /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(path) ||
+        /^cleanup\/[a-f0-9]{64}\.png$/.test(path) ||
+        /^display\/[a-f0-9]{64}\.webp$/.test(path)
+    )
 }
 
 export class SupabaseCreatureTransformationStorageAdapter {
@@ -71,7 +81,10 @@ export class SupabaseCreatureTransformationStorageAdapter {
     private readonly signedUrlTtlSeconds: number
     private readonly now: () => number
 
-    constructor(client: CreatureTransformationStorageClient, options: CreatureTransformationStorageAdapterOptions = {}) {
+    constructor(
+        client: CreatureTransformationStorageClient,
+        options: CreatureTransformationStorageAdapterOptions = {},
+    ) {
         this.client = client
         this.sourceBucket = options.sourceBucket ?? CREATURE_TRANSFORMATION_SOURCE_BUCKET
         this.experimentBucket = options.experimentBucket ?? CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET
@@ -82,12 +95,22 @@ export class SupabaseCreatureTransformationStorageAdapter {
     async readCanonicalSource(sourceImagePath: string, isBaseVersion = true): Promise<CanonicalCreatureSourceImage> {
         let result: { data: Blob | null; error: StorageError }
         try {
-            result = await this.client.from(isBaseVersion ? this.sourceBucket : this.experimentBucket).download(sourceImagePath)
+            result = await this.client
+                .from(isBaseVersion ? this.sourceBucket : this.experimentBucket)
+                .download(sourceImagePath)
         } catch (error) {
-            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente canonica non e disponibile.', { cause: error })
+            throw new CreatureTransformationStorageError(
+                'SOURCE_IMAGE_NOT_FOUND',
+                'La sorgente canonica non e disponibile.',
+                { cause: error },
+            )
         }
         if (result.error || !result.data) {
-            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente canonica non e disponibile.', { cause: result.error ?? undefined })
+            throw new CreatureTransformationStorageError(
+                'SOURCE_IMAGE_NOT_FOUND',
+                'La sorgente canonica non e disponibile.',
+                { cause: result.error ?? undefined },
+            )
         }
         return {
             bytes: new Uint8Array(await result.data.arrayBuffer()),
@@ -101,7 +124,10 @@ export class SupabaseCreatureTransformationStorageAdapter {
         const isLegacyExperiment = /^[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
         const isFinalCandidate = /^candidates\/[A-Za-z0-9-]{1,128}\/[a-f0-9]{64}\.png$/.test(resultPath)
         if (!isCurrentRawExperiment && !isLegacyExperiment && !isFinalCandidate) {
-            throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente sperimentale non e valida.')
+            throw new CreatureTransformationStorageError(
+                'SOURCE_IMAGE_NOT_FOUND',
+                'La sorgente sperimentale non e valida.',
+            )
         }
         return this.readCanonicalSource(resultPath, false)
     }
@@ -112,7 +138,10 @@ export class SupabaseCreatureTransformationStorageAdapter {
         const isValidBasePath = /^[A-Za-z0-9._/-]{1,512}$/.test(assetPath)
         if (isBaseVersion && isValidBasePath) return this.readCanonicalSource(assetPath, !isCleanupPath)
         if (!isBaseVersion && isSafeResultObjectPath(assetPath)) return this.readCanonicalSource(assetPath, false)
-        throw new CreatureTransformationStorageError('SOURCE_IMAGE_NOT_FOUND', 'La sorgente visuale selezionata non e valida.')
+        throw new CreatureTransformationStorageError(
+            'SOURCE_IMAGE_NOT_FOUND',
+            'La sorgente visuale selezionata non e valida.',
+        )
     }
 
     async createResultObjectPath(profileId: string, idempotencyKey: string): Promise<string> {
@@ -121,7 +150,11 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return `${profileSegment}/${idempotencyDigest}.png`
     }
 
-    async createRawResultObjectPath(profileId: string, idempotencyKey: string, mimeType: 'image/png' | 'image/jpeg' = 'image/png'): Promise<string> {
+    async createRawResultObjectPath(
+        profileId: string,
+        idempotencyKey: string,
+        mimeType: 'image/png' | 'image/jpeg' = 'image/png',
+    ): Promise<string> {
         const profileSegment = profilePathSegment(profileId)
         const idempotencyDigest = await sha256Hex(new TextEncoder().encode(idempotencyKey))
         return `experiments/raw/${profileSegment}/${idempotencyDigest}.${mimeType === 'image/jpeg' ? 'jpg' : 'png'}`
@@ -152,16 +185,35 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return this.savePng(objectPath, input.image)
     }
 
-    async saveRawResult(input: { profileId: string; idempotencyKey: string; image: Uint8Array; mimeType?: 'image/png' | 'image/jpeg' }): Promise<StoredCreatureTransformationImage> {
+    async saveRawResult(input: {
+        profileId: string
+        idempotencyKey: string
+        image: Uint8Array
+        mimeType?: 'image/png' | 'image/jpeg'
+    }): Promise<StoredCreatureTransformationImage> {
         const mimeType = input.mimeType ?? 'image/png'
-        return this.saveImage(await this.createRawResultObjectPath(input.profileId, input.idempotencyKey, mimeType), input.image, mimeType)
+        return this.saveImage(
+            await this.createRawResultObjectPath(input.profileId, input.idempotencyKey, mimeType),
+            input.image,
+            mimeType,
+        )
     }
 
-    async saveBackgroundRemovalCandidate(input: { profileId: string; transformationRequestId: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
-        return this.savePng(await this.createCandidateObjectPath(input.profileId, input.transformationRequestId), input.image)
+    async saveBackgroundRemovalCandidate(input: {
+        profileId: string
+        transformationRequestId: string
+        image: Uint8Array
+    }): Promise<StoredCreatureTransformationImage> {
+        return this.savePng(
+            await this.createCandidateObjectPath(input.profileId, input.transformationRequestId),
+            input.image,
+        )
     }
 
-    async saveCleanedVisual(input: { visualVersionId: string; image: Uint8Array }): Promise<StoredCreatureTransformationImage> {
+    async saveCleanedVisual(input: {
+        visualVersionId: string
+        image: Uint8Array
+    }): Promise<StoredCreatureTransformationImage> {
         return this.savePng(await this.createCleanupObjectPath(input.visualVersionId), input.image)
     }
 
@@ -173,7 +225,11 @@ export class SupabaseCreatureTransformationStorageAdapter {
         return this.saveImage(objectPath, image, 'image/png')
     }
 
-    private async saveImage(objectPath: string, image: Uint8Array, contentType: 'image/png' | 'image/jpeg' | 'image/webp'): Promise<StoredCreatureTransformationImage> {
+    private async saveImage(
+        objectPath: string,
+        image: Uint8Array,
+        contentType: 'image/png' | 'image/jpeg' | 'image/webp',
+    ): Promise<StoredCreatureTransformationImage> {
         let upload: { error: StorageError }
         try {
             upload = await this.client.from(this.experimentBucket).upload(objectPath, image, {
@@ -181,30 +237,55 @@ export class SupabaseCreatureTransformationStorageAdapter {
                 upsert: true,
             })
         } catch (error) {
-            throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Non e stato possibile salvare il risultato della trasformazione.', { cause: error })
+            throw new CreatureTransformationStorageError(
+                'STORAGE_UPLOAD_FAILED',
+                'Non e stato possibile salvare il risultato della trasformazione.',
+                { cause: error },
+            )
         }
         if (upload.error) {
-            throw new CreatureTransformationStorageError('STORAGE_UPLOAD_FAILED', 'Non e stato possibile salvare il risultato della trasformazione.', { cause: upload.error })
+            throw new CreatureTransformationStorageError(
+                'STORAGE_UPLOAD_FAILED',
+                'Non e stato possibile salvare il risultato della trasformazione.',
+                { cause: upload.error },
+            )
         }
 
         return this.createResultSignedUrl(objectPath)
     }
 
-    async createResultSignedUrl(resultPath: string, expiresInSeconds = this.signedUrlTtlSeconds): Promise<StoredCreatureTransformationImage> {
+    async createResultSignedUrl(
+        resultPath: string,
+        expiresInSeconds = this.signedUrlTtlSeconds,
+    ): Promise<StoredCreatureTransformationImage> {
         if (!isSafeResultObjectPath(resultPath)) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path persistito del risultato non e valido.')
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Il path persistito del risultato non e valido.',
+            )
         }
         if (!Number.isInteger(expiresInSeconds) || expiresInSeconds < 60 || expiresInSeconds > 86_400) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La durata del link del risultato non e valida.')
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'La durata del link del risultato non e valida.',
+            )
         }
         let signed: { data: { signedUrl?: string } | null; error: StorageError }
         try {
             signed = await this.client.from(this.experimentBucket).createSignedUrl(resultPath, expiresInSeconds)
         } catch (error) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo del risultato.', { cause: error })
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Non e stato possibile creare il link temporaneo del risultato.',
+                { cause: error },
+            )
         }
         if (signed.error || !signed.data?.signedUrl) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo del risultato.', { cause: signed.error ?? undefined })
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Non e stato possibile creare il link temporaneo del risultato.',
+                { cause: signed.error ?? undefined },
+            )
         }
 
         return {
@@ -213,15 +294,26 @@ export class SupabaseCreatureTransformationStorageAdapter {
         }
     }
 
-    async createVisualVersionSignedUrl(input: { assetPath: string; isBaseVersion: boolean; expiresInSeconds?: number }): Promise<StoredCreatureTransformationImage> {
+    async createVisualVersionSignedUrl(input: {
+        assetPath: string
+        isBaseVersion: boolean
+        expiresInSeconds?: number
+    }): Promise<StoredCreatureTransformationImage> {
         const isCleanupPath = /^cleanup\/[a-f0-9]{64}\.png$/.test(input.assetPath)
         const bucket = !input.isBaseVersion || isCleanupPath ? this.experimentBucket : this.sourceBucket
-        const expiresInSeconds = input.expiresInSeconds === undefined
-            ? this.signedUrlTtlSeconds
-            : Number.isInteger(input.expiresInSeconds) && input.expiresInSeconds >= 60 && input.expiresInSeconds <= 86_400
-                ? input.expiresInSeconds
-                : null
-        if (expiresInSeconds === null) throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La durata del link della sorgente non e valida.')
+        const expiresInSeconds =
+            input.expiresInSeconds === undefined
+                ? this.signedUrlTtlSeconds
+                : Number.isInteger(input.expiresInSeconds) &&
+                    input.expiresInSeconds >= 60 &&
+                    input.expiresInSeconds <= 86_400
+                  ? input.expiresInSeconds
+                  : null
+        if (expiresInSeconds === null)
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'La durata del link della sorgente non e valida.',
+            )
         const cacheKey = `${bucket}:${input.assetPath}:${expiresInSeconds}`
         const cached = SupabaseCreatureTransformationStorageAdapter.signedUrlCache.get(cacheKey)
         if (cached && Date.parse(cached.expiresAt) - this.now() > 30_000) return cached
@@ -229,18 +321,32 @@ export class SupabaseCreatureTransformationStorageAdapter {
             throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'La sorgente visuale non e valida.')
         }
         if (!input.isBaseVersion && !isSafeResultObjectPath(input.assetPath)) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Il path della versione visuale non e valido.')
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Il path della versione visuale non e valido.',
+            )
         }
         let signed: { data: { signedUrl?: string } | null; error: StorageError }
         try {
             signed = await this.client.from(bucket).createSignedUrl(input.assetPath, expiresInSeconds)
         } catch (error) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo della visuale.', { cause: error })
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Non e stato possibile creare il link temporaneo della visuale.',
+                { cause: error },
+            )
         }
         if (signed.error || !signed.data?.signedUrl) {
-            throw new CreatureTransformationStorageError('SIGNED_URL_FAILED', 'Non e stato possibile creare il link temporaneo della visuale.', { cause: signed.error ?? undefined })
+            throw new CreatureTransformationStorageError(
+                'SIGNED_URL_FAILED',
+                'Non e stato possibile creare il link temporaneo della visuale.',
+                { cause: signed.error ?? undefined },
+            )
         }
-        const result = { signedUrl: signed.data.signedUrl, expiresAt: new Date(this.now() + expiresInSeconds * 1000).toISOString() }
+        const result = {
+            signedUrl: signed.data.signedUrl,
+            expiresAt: new Date(this.now() + expiresInSeconds * 1000).toISOString(),
+        }
         SupabaseCreatureTransformationStorageAdapter.signedUrlCache.set(cacheKey, result)
         return result
     }

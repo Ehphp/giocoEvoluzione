@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
-import type { GeneActionTypeV2 } from '../types'
-import { buildGeneSelectionV2ViewModel, getInitialTraitIdForSnapshot } from './buildGeneSelectionV2ViewModel'
+import type { GeneActionTypeV2 } from './types'
+import { buildGeneSelectionV2ViewModel, getInitialTraitIdForSnapshot } from './build-gene-selection-v2-view-model'
 
 type UseGeneSelectionV2ControllerInput = {
     snapshot: GameSnapshot

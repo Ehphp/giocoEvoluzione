@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
+import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
 import type { PlayerCreatureRecord, ProfileMatchHistoryItem, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
 import { COMBAT_MUTATION_CATALOG } from '../../../shared/game-rules/catalog.ts'

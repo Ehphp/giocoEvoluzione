@@ -7,7 +7,7 @@ import { CollectionScreen } from '../screens/collection/CollectionScreen'
 import { LeaderboardScreen } from '../screens/ranking/LeaderboardScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
-import type { UiPreviewRoute } from './uiPreviewRoute'
+import type { UiPreviewRoute } from './ui-preview-route'
 import {
     PREVIEW_CREATURE,
     PREVIEW_GENES,
@@ -17,7 +17,7 @@ import {
     PREVIEW_VISUAL_HISTORY,
     buildPreviewBattleViewModel,
     buildPreviewHomeViewModel,
-} from './uiPreviewFixtures'
+} from './ui-preview-fixtures'
 
 const noop = () => undefined
 const asyncNoop = async () => undefined

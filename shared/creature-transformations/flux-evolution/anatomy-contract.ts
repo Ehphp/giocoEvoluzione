@@ -1,6 +1,17 @@
 import { EVOLUTION_TARGET_BY_ID, type EvolutionTargetId } from '../evolution-targets.ts'
-import { BODY_PLAN_MUTATION_BY_ID, type BodyPlanMutationDefinition, type BodyPlanMutationId, type EvolutionCapability } from './body-plan-mutations.ts'
-import { applyBodyPlanMutation, isEvolutionTargetAvailable, type BodyPlanId, type CreatureBodyPlan, type CreatureTopology } from './body-plan-registry.ts'
+import {
+    BODY_PLAN_MUTATION_BY_ID,
+    type BodyPlanMutationDefinition,
+    type BodyPlanMutationId,
+    type EvolutionCapability,
+} from './body-plan-mutations.ts'
+import {
+    applyBodyPlanMutation,
+    isEvolutionTargetAvailable,
+    type BodyPlanId,
+    type CreatureBodyPlan,
+    type CreatureTopology,
+} from './body-plan-registry.ts'
 
 /**
  * The anatomy contract is the deterministic half of a FLUX evolution: it states the topology
@@ -71,7 +82,11 @@ function topologyInvariants(bodyPlan: CreatureBodyPlan, preservePresentation = f
     ].filter((entry): entry is string => entry !== null)
 }
 
-type TargetContract = Readonly<{ allowances: readonly string[], preservation: readonly string[], failures: readonly string[] }>
+type TargetContract = Readonly<{
+    allowances: readonly string[]
+    preservation: readonly string[]
+    failures: readonly string[]
+}>
 
 const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Object.freeze({
     TAIL: {
@@ -87,7 +102,9 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Treat all existing limbs as one system and evolve them together: length, mass, visible articulation, feet, toes, claws, pads, spurs, membranes and structures anchored to the limbs.',
             'Strong changes of limb proportion, thickness and stance height are wanted.',
         ],
-        preservation: ['Keep every limb connected to its existing anatomical root and body region. Relative spacing, stance and visible position may adapt to the evolved limb proportions.'],
+        preservation: [
+            'Keep every limb connected to its existing anatomical root and body region. Relative spacing, stance and visible position may adapt to the evolved limb proportions.',
+        ],
         failures: [],
     },
     HEAD_AND_CROWN: {
@@ -117,14 +134,18 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'These structures may be large and may change the upper silhouette strongly.',
         ],
         preservation: ['Keep new dorsal structures biologically rooted along the existing back and spine region.'],
-        failures: ['Dorsal structures may not become limbs, wings, tails or heads, and related secondary adaptations may not create a new dominant mutation elsewhere.'],
+        failures: [
+            'Dorsal structures may not become limbs, wings, tails or heads, and related secondary adaptations may not create a new dominant mutation elsewhere.',
+        ],
     },
     SKIN_AND_COVERING: {
         allowances: [
             'Rework the surface and covering over the existing anatomy: material, scale shape and grain, plating, fur, feathers, texture, pattern, colour treatment and translucency.',
             'The treatment may be striking and clearly readable at gameplay scale.',
         ],
-        preservation: ['The covering follows the existing anatomy; keep the body plan and recognisable overall creature silhouette.'],
+        preservation: [
+            'The covering follows the existing anatomy; keep the body plan and recognisable overall creature silhouette.',
+        ],
         failures: ['New appendages or structural anatomy changes are invalid on this target.'],
     },
     WINGS: {
@@ -132,7 +153,9 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'Evolve the existing wings: span, membrane shape, spar structure, feathering, edge profile, folds and structures anchored to the wings.',
             'A strong change of the wing silhouette is wanted.',
         ],
-        preservation: ['Keep every wing connected to its existing anatomical root and body region; its visible angle and span may adapt to the mutation.'],
+        preservation: [
+            'Keep every wing connected to its existing anatomical root and body region; its visible angle and span may adapt to the mutation.',
+        ],
         failures: ['Wing structures may not become independently rooted limbs or appendages.'],
     },
     TENTACLES: {
@@ -161,17 +184,30 @@ function resolveAuthorizedMutation(input: {
 }): BodyPlanMutationDefinition | null {
     if (input.capability === 'ANATOMICAL_MUTATION') {
         if (input.bodyPlanMutationId) {
-            throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'Una mutazione strutturale richiede la capability BODY_PLAN_MUTATION.')
+            throw new AnatomyContractError(
+                'BODY_PLAN_MUTATION_NOT_AUTHORIZED',
+                'Una mutazione strutturale richiede la capability BODY_PLAN_MUTATION.',
+            )
         }
         return null
     }
     const mutation = input.bodyPlanMutationId ? BODY_PLAN_MUTATION_BY_ID[input.bodyPlanMutationId] : undefined
-    if (!mutation) throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'La capability BODY_PLAN_MUTATION richiede una mutazione strutturale del catalogo.')
+    if (!mutation)
+        throw new AnatomyContractError(
+            'BODY_PLAN_MUTATION_NOT_AUTHORIZED',
+            'La capability BODY_PLAN_MUTATION richiede una mutazione strutturale del catalogo.',
+        )
     if (mutation.evolutionTargetId !== input.evolutionTargetId) {
-        throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'La mutazione strutturale non appartiene al target selezionato.')
+        throw new AnatomyContractError(
+            'BODY_PLAN_MUTATION_NOT_AUTHORIZED',
+            'La mutazione strutturale non appartiene al target selezionato.',
+        )
     }
     if (!applyBodyPlanMutation(input.bodyPlan, mutation.id)) {
-        throw new AnatomyContractError('BODY_PLAN_MUTATION_NOT_AUTHORIZED', 'Il body-plan corrente non prevede questa mutazione strutturale.')
+        throw new AnatomyContractError(
+            'BODY_PLAN_MUTATION_NOT_AUTHORIZED',
+            'Il body-plan corrente non prevede questa mutazione strutturale.',
+        )
     }
     return mutation
 }
@@ -184,7 +220,10 @@ export function buildAnatomyContract(input: {
 }): AnatomyContract {
     const capability: EvolutionCapability = input.capability ?? 'ANATOMICAL_MUTATION'
     if (!isEvolutionTargetAvailable(input.bodyPlan, input.evolutionTargetId)) {
-        throw new AnatomyContractError('EVOLUTION_TARGET_NOT_AVAILABLE', 'Il target evolutivo non e disponibile per il body-plan corrente.')
+        throw new AnatomyContractError(
+            'EVOLUTION_TARGET_NOT_AVAILABLE',
+            'Il target evolutivo non e disponibile per il body-plan corrente.',
+        )
     }
     const mutation = resolveAuthorizedMutation({ ...input, capability })
     const resultBodyPlan = mutation ? applyBodyPlanMutation(input.bodyPlan, mutation.id)! : input.bodyPlan

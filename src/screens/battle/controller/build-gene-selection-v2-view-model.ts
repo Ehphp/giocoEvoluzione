@@ -14,7 +14,7 @@ import {
     GAME_SELECTION_ASSETS,
     getEventAssetByArtKey,
     getGeneAssetByTrait,
-} from '../gameSelectionAssets'
+} from './gene-selection-assets'
 import type {
     CombatMutationSlotV2,
     DuelPlayerStatusV2,
@@ -24,8 +24,8 @@ import type {
     RoundEventEffectV2,
     GeneSelectionStatusV2,
     GeneSelectionViewModelV2,
-} from '../types'
-import { buildBattleParticipants } from './battleParticipants'
+} from './types'
+import { buildBattleParticipants } from './battle-participants'
 
 type BuildGeneSelectionV2ViewModelInput = {
     snapshot: GameSnapshot

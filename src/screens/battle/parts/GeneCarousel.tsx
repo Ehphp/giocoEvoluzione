@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
 import { ArrowDownIcon, ArrowUpIcon, GeneIcon, InfoIcon } from '../../../ui/icons'
-import type { GeneCardV2 } from '../../../components/game-v2/types'
+import type { GeneCardV2 } from '../controller/types'
 
 type GeneCarouselProps = {
     genes: GeneCardV2[]

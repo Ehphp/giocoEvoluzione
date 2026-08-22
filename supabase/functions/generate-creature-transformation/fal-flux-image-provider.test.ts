@@ -9,24 +9,54 @@ import { FAL_SEEDREAM_MODEL, FalFluxImageProvider, parseFalWebhookEvent } from '
  */
 describe('FalFluxImageProvider', () => {
     it('parses only completed Fal webhook payloads with a safe result URL', () => {
-        expect(parseFalWebhookEvent({ request_id: 'queue-request-1', status: 'OK', payload: { seed: 7, images: [{ url: 'https://fal.media/result.png', content_type: 'image/png' }] } }))
-            .toEqual({ providerRequestId: 'queue-request-1', status: 'OK', errorMessage: null, image: { url: 'https://fal.media/result.png', contentType: 'image/png' }, seed: 7 })
-        expect(parseFalWebhookEvent({ request_id: 'queue-request-1', status: 'ERROR', error: 'runner failed', payload: null }))
-            .toMatchObject({ status: 'ERROR', image: null, errorMessage: 'runner failed' })
-        expect(parseFalWebhookEvent({ request_id: 'queue-request-1', status: 'OK', payload: { images: [{ url: 'data:image/png;base64,aGVsbG8=' }] } }))
-            .toMatchObject({ status: 'OK', image: null })
+        expect(
+            parseFalWebhookEvent({
+                request_id: 'queue-request-1',
+                status: 'OK',
+                payload: { seed: 7, images: [{ url: 'https://fal.media/result.png', content_type: 'image/png' }] },
+            }),
+        ).toEqual({
+            providerRequestId: 'queue-request-1',
+            status: 'OK',
+            errorMessage: null,
+            image: { url: 'https://fal.media/result.png', contentType: 'image/png' },
+            seed: 7,
+        })
+        expect(
+            parseFalWebhookEvent({
+                request_id: 'queue-request-1',
+                status: 'ERROR',
+                error: 'runner failed',
+                payload: null,
+            }),
+        ).toMatchObject({ status: 'ERROR', image: null, errorMessage: 'runner failed' })
+        expect(
+            parseFalWebhookEvent({
+                request_id: 'queue-request-1',
+                status: 'OK',
+                payload: { images: [{ url: 'data:image/png;base64,aGVsbG8=' }] },
+            }),
+        ).toMatchObject({ status: 'OK', image: null })
     })
 
     it('submits the locked Seedream production payload through Queue without downloading output media', async () => {
-        const fetchImplementation = vi.fn(async () => new Response(JSON.stringify({ request_id: 'seedream-queue-request' })))
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+        const fetchImplementation = vi.fn(
+            async () => new Response(JSON.stringify({ request_id: 'seedream-queue-request' })),
+        )
+        const provider = new FalFluxImageProvider({
+            apiKey: 'test-fal-key',
+            model: FAL_SEEDREAM_MODEL,
+            fetchImplementation,
+        })
 
-        await expect(provider.submitSeedreamEvolution({
-            prompt: 'LOCKED SEEDREAM PROMPT',
-            sourceUrl: 'https://storage.example/source.png?token=private',
-            imageSize: { width: 1920, height: 2880 },
-            webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
-        })).resolves.toMatchObject({ providerRequestId: 'seedream-queue-request', model: FAL_SEEDREAM_MODEL })
+        await expect(
+            provider.submitSeedreamEvolution({
+                prompt: 'LOCKED SEEDREAM PROMPT',
+                sourceUrl: 'https://storage.example/source.png?token=private',
+                imageSize: { width: 1920, height: 2880 },
+                webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
+            }),
+        ).resolves.toMatchObject({ providerRequestId: 'seedream-queue-request', model: FAL_SEEDREAM_MODEL })
 
         const [url, init] = fetchImplementation.mock.calls[0]!
         expect(url).toContain('https://queue.fal.run/fal-ai/bytedance/seedream/v4.5/edit?fal_webhook=')
@@ -44,27 +74,43 @@ describe('FalFluxImageProvider', () => {
     it('refuses to submit an evolution on any model other than the pinned Seedream edit model', async () => {
         const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: 'fal-ai/flux-2-klein/9b/edit' })
 
-        await expect(provider.submitSeedreamEvolution({
-            prompt: 'LOCKED SEEDREAM PROMPT',
-            sourceUrl: 'https://storage.example/source.png',
-            imageSize: { width: 1920, height: 2880 },
-            webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
-        })).rejects.toMatchObject({ code: 'FAL_SEEDREAM_MODEL_REQUIRED' })
+        await expect(
+            provider.submitSeedreamEvolution({
+                prompt: 'LOCKED SEEDREAM PROMPT',
+                sourceUrl: 'https://storage.example/source.png',
+                imageSize: { width: 1920, height: 2880 },
+                webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
+            }),
+        ).rejects.toMatchObject({ code: 'FAL_SEEDREAM_MODEL_REQUIRED' })
     })
 
     it('rejects an oversized queued result before buffering it in the finalizer', async () => {
-        const fetchImplementation = vi.fn(async () => new Response(createTestPng(), { headers: { 'content-length': String(40 * 1024 * 1024) } }))
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, fetchImplementation })
+        const fetchImplementation = vi.fn(
+            async () => new Response(createTestPng(), { headers: { 'content-length': String(40 * 1024 * 1024) } }),
+        )
+        const provider = new FalFluxImageProvider({
+            apiKey: 'test-fal-key',
+            model: FAL_SEEDREAM_MODEL,
+            fetchImplementation,
+        })
 
-        await expect(provider.downloadQueuedImage({ url: 'https://fal.media/oversized.png', contentType: 'image/png' }))
-            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID' })
+        await expect(
+            provider.downloadQueuedImage({ url: 'https://fal.media/oversized.png', contentType: 'image/png' }),
+        ).rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID' })
     })
 
     it('converts the JPEG Seedream returns before PNG validation, and leaves a PNG untouched', async () => {
-        const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x04, 0x00, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01])
+        const jpeg = new Uint8Array([
+            0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x04, 0x00, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01,
+            0x03, 0x11, 0x01,
+        ])
         const png = createTestPng({ width: 1920, height: 2880 })
         const convertJpegToPng = vi.fn(async () => png)
-        const provider = new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL, convertJpegToPng })
+        const provider = new FalFluxImageProvider({
+            apiKey: 'test-fal-key',
+            model: FAL_SEEDREAM_MODEL,
+            convertJpegToPng,
+        })
 
         expect(await provider.normalizeQueuedImage({ bytes: jpeg, mimeType: 'image/jpeg' })).toEqual(png)
         expect(convertJpegToPng).toHaveBeenCalledWith(jpeg)
@@ -73,16 +119,29 @@ describe('FalFluxImageProvider', () => {
     })
 
     it('reports a specific error when Seedream JPEG conversion is missing or fails', async () => {
-        const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x04, 0x00, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01])
+        const jpeg = new Uint8Array([
+            0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x04, 0x00, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01,
+            0x03, 0x11, 0x01,
+        ])
 
-        await expect(new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL })
-            .normalizeQueuedImage({ bytes: jpeg, mimeType: 'image/jpeg' }))
-            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID' })
+        await expect(
+            new FalFluxImageProvider({ apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL }).normalizeQueuedImage({
+                bytes: jpeg,
+                mimeType: 'image/jpeg',
+            }),
+        ).rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID' })
 
-        await expect(new FalFluxImageProvider({
-            apiKey: 'test-fal-key', model: FAL_SEEDREAM_MODEL,
-            convertJpegToPng: async () => { throw new Error('decode failed') },
-        }).normalizeQueuedImage({ bytes: jpeg, mimeType: 'image/jpeg' }))
-            .rejects.toMatchObject({ code: 'FAL_FLUX_RESPONSE_INVALID', message: expect.stringContaining('La conversione JPEG di Seedream in PNG non e riuscita.') })
+        await expect(
+            new FalFluxImageProvider({
+                apiKey: 'test-fal-key',
+                model: FAL_SEEDREAM_MODEL,
+                convertJpegToPng: async () => {
+                    throw new Error('decode failed')
+                },
+            }).normalizeQueuedImage({ bytes: jpeg, mimeType: 'image/jpeg' }),
+        ).rejects.toMatchObject({
+            code: 'FAL_FLUX_RESPONSE_INVALID',
+            message: expect.stringContaining('La conversione JPEG di Seedream in PNG non e riuscita.'),
+        })
     })
 })

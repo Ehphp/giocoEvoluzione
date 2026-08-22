@@ -10,7 +10,13 @@ export type RgbaImage = Readonly<{
  * (including alpha), and therefore cannot crop or soften the subject.
  */
 export function flipRgbaImageHorizontally(input: RgbaImage): RgbaImage {
-    if (!Number.isInteger(input.width) || !Number.isInteger(input.height) || input.width < 1 || input.height < 1 || input.data.length !== input.width * input.height * 4) {
+    if (
+        !Number.isInteger(input.width) ||
+        !Number.isInteger(input.height) ||
+        input.width < 1 ||
+        input.height < 1 ||
+        input.data.length !== input.width * input.height * 4
+    ) {
         throw new Error('Il raster RGBA da specchiare non ha dimensioni valide.')
     }
     const mirrored = new Uint8ClampedArray(input.data.length)

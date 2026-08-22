@@ -4,7 +4,7 @@ import { ROUND_EVENT_BY_ID } from '../../../../shared/game-rules/catalog'
 import { createInitialAdaptations, getRoundEventById } from '../../../../shared/game-rules/index'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { getWorldById } from '../../../game/worlds'
-import { buildGeneSelectionV2ViewModel, buildRoundEventEffects } from './buildGeneSelectionV2ViewModel'
+import { buildGeneSelectionV2ViewModel, buildRoundEventEffects } from './build-gene-selection-v2-view-model'
 
 describe('buildRoundEventEffects', () => {
     it('shows all five affinities using only the 0-1-2 scale', () => {

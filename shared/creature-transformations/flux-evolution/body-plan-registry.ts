@@ -1,5 +1,9 @@
 import type { EvolutionTargetId } from '../evolution-targets.ts'
-import { BODY_PLAN_MUTATION_BY_ID, type BodyPlanMutationDefinition, type BodyPlanMutationId } from './body-plan-mutations.ts'
+import {
+    BODY_PLAN_MUTATION_BY_ID,
+    type BodyPlanMutationDefinition,
+    type BodyPlanMutationId,
+} from './body-plan-mutations.ts'
 
 export const BODY_PLAN_IDS = Object.freeze([
     'QUADRUPED',
@@ -60,14 +64,26 @@ function defineBodyPlan(plan: CreatureBodyPlan): CreatureBodyPlan {
         ...plan,
         topology: Object.freeze({ ...plan.topology }),
         evolutionTargets: Object.freeze([...plan.evolutionTargets]),
-        structuralMutations: Object.freeze(plan.structuralMutations.map((transition) => Object.freeze({ ...transition }))),
+        structuralMutations: Object.freeze(
+            plan.structuralMutations.map((transition) => Object.freeze({ ...transition })),
+        ),
     })
 }
 
 export const BODY_PLANS: Readonly<Record<BodyPlanId, CreatureBodyPlan>> = Object.freeze({
     QUADRUPED: defineBodyPlan({
-        id: 'QUADRUPED', label: 'Quadrupede', promptDescription: 'four-legged quadrupedal body plan',
-        topology: { stance: 'QUADRUPEDAL', headCount: 1, forelimbCount: 2, hindLimbCount: 2, wingCount: 0, tentacleCount: 0, tailCount: 1 },
+        id: 'QUADRUPED',
+        label: 'Quadrupede',
+        promptDescription: 'four-legged quadrupedal body plan',
+        topology: {
+            stance: 'QUADRUPEDAL',
+            headCount: 1,
+            forelimbCount: 2,
+            hindLimbCount: 2,
+            wingCount: 0,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         evolutionTargets: CORE_TARGETS,
         structuralMutations: [
             { mutationId: 'ADD_LIMB_PAIR', resultBodyPlanId: 'SIX_LIMBED' },
@@ -77,45 +93,115 @@ export const BODY_PLANS: Readonly<Record<BodyPlanId, CreatureBodyPlan>> = Object
         ],
     }),
     SIX_LIMBED: defineBodyPlan({
-        id: 'SIX_LIMBED', label: 'Sei arti', promptDescription: 'six-limbed body plan',
-        topology: { stance: 'QUADRUPEDAL', headCount: 1, forelimbCount: 4, hindLimbCount: 2, wingCount: 0, tentacleCount: 0, tailCount: 1 },
+        id: 'SIX_LIMBED',
+        label: 'Sei arti',
+        promptDescription: 'six-limbed body plan',
+        topology: {
+            stance: 'QUADRUPEDAL',
+            headCount: 1,
+            forelimbCount: 4,
+            hindLimbCount: 2,
+            wingCount: 0,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         evolutionTargets: CORE_TARGETS,
         structuralMutations: [{ mutationId: 'FORELIMBS_TO_WINGS', resultBodyPlanId: 'WINGED_QUADRUPED' }],
     }),
     BIPED: defineBodyPlan({
-        id: 'BIPED', label: 'Bipede', promptDescription: 'upright bipedal body plan',
-        topology: { stance: 'BIPEDAL', headCount: 1, forelimbCount: 2, hindLimbCount: 2, wingCount: 0, tentacleCount: 0, tailCount: 1 },
+        id: 'BIPED',
+        label: 'Bipede',
+        promptDescription: 'upright bipedal body plan',
+        topology: {
+            stance: 'BIPEDAL',
+            headCount: 1,
+            forelimbCount: 2,
+            hindLimbCount: 2,
+            wingCount: 0,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         evolutionTargets: CORE_TARGETS,
         structuralMutations: [{ mutationId: 'FORELIMBS_TO_WINGS', resultBodyPlanId: 'WINGED_BIPED' }],
     }),
     WINGED_BIPED: defineBodyPlan({
-        id: 'WINGED_BIPED', label: 'Bipede alato', promptDescription: 'two-legged winged body plan',
-        topology: { stance: 'BIPEDAL', headCount: 1, forelimbCount: 0, hindLimbCount: 2, wingCount: 2, tentacleCount: 0, tailCount: 1 },
+        id: 'WINGED_BIPED',
+        label: 'Bipede alato',
+        promptDescription: 'two-legged winged body plan',
+        topology: {
+            stance: 'BIPEDAL',
+            headCount: 1,
+            forelimbCount: 0,
+            hindLimbCount: 2,
+            wingCount: 2,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         evolutionTargets: [...CORE_TARGETS, 'WINGS'],
         structuralMutations: [],
     }),
     WINGED_QUADRUPED: defineBodyPlan({
-        id: 'WINGED_QUADRUPED', label: 'Quadrupede alato', promptDescription: 'four-legged winged body plan',
-        topology: { stance: 'QUADRUPEDAL', headCount: 1, forelimbCount: 2, hindLimbCount: 2, wingCount: 2, tentacleCount: 0, tailCount: 1 },
+        id: 'WINGED_QUADRUPED',
+        label: 'Quadrupede alato',
+        promptDescription: 'four-legged winged body plan',
+        topology: {
+            stance: 'QUADRUPEDAL',
+            headCount: 1,
+            forelimbCount: 2,
+            hindLimbCount: 2,
+            wingCount: 2,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         evolutionTargets: [...CORE_TARGETS, 'WINGS'],
         structuralMutations: [],
     }),
     FORKED_TAIL_QUADRUPED: defineBodyPlan({
-        id: 'FORKED_TAIL_QUADRUPED', label: 'Quadrupede bicaudato', promptDescription: 'four-legged quadrupedal body plan with two tails',
-        topology: { stance: 'QUADRUPEDAL', headCount: 1, forelimbCount: 2, hindLimbCount: 2, wingCount: 0, tentacleCount: 0, tailCount: 2 },
+        id: 'FORKED_TAIL_QUADRUPED',
+        label: 'Quadrupede bicaudato',
+        promptDescription: 'four-legged quadrupedal body plan with two tails',
+        topology: {
+            stance: 'QUADRUPEDAL',
+            headCount: 1,
+            forelimbCount: 2,
+            hindLimbCount: 2,
+            wingCount: 0,
+            tentacleCount: 0,
+            tailCount: 2,
+        },
         evolutionTargets: CORE_TARGETS,
         structuralMutations: [],
     }),
     SERPENTINE: defineBodyPlan({
-        id: 'SERPENTINE', label: 'Serpentiforme', promptDescription: 'limbless serpentine body plan',
-        topology: { stance: 'SERPENTINE', headCount: 1, forelimbCount: 0, hindLimbCount: 0, wingCount: 0, tentacleCount: 0, tailCount: 1 },
+        id: 'SERPENTINE',
+        label: 'Serpentiforme',
+        promptDescription: 'limbless serpentine body plan',
+        topology: {
+            stance: 'SERPENTINE',
+            headCount: 1,
+            forelimbCount: 0,
+            hindLimbCount: 0,
+            wingCount: 0,
+            tentacleCount: 0,
+            tailCount: 1,
+        },
         // A creature with no limbs offers no limb target at all.
         evolutionTargets: ['TAIL', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING'],
         structuralMutations: [],
     }),
     TENTACLED: defineBodyPlan({
-        id: 'TENTACLED', label: 'Tentacolare', promptDescription: 'radial tentacled body plan',
-        topology: { stance: 'RADIAL', headCount: 1, forelimbCount: 0, hindLimbCount: 0, wingCount: 0, tentacleCount: 8, tailCount: 0 },
+        id: 'TENTACLED',
+        label: 'Tentacolare',
+        promptDescription: 'radial tentacled body plan',
+        topology: {
+            stance: 'RADIAL',
+            headCount: 1,
+            forelimbCount: 0,
+            hindLimbCount: 0,
+            wingCount: 0,
+            tentacleCount: 8,
+            tailCount: 0,
+        },
         evolutionTargets: ['TENTACLES', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING'],
         structuralMutations: [],
     }),
@@ -142,7 +228,10 @@ export function resolveBaseCreatureBodyPlan(baseCreatureKey: string): CreatureBo
     return bodyPlanId ? BODY_PLANS[bodyPlanId] : null
 }
 
-export function bodyPlanStructuralMutations(bodyPlan: CreatureBodyPlan, evolutionTargetId?: EvolutionTargetId): BodyPlanMutationDefinition[] {
+export function bodyPlanStructuralMutations(
+    bodyPlan: CreatureBodyPlan,
+    evolutionTargetId?: EvolutionTargetId,
+): BodyPlanMutationDefinition[] {
     return bodyPlan.structuralMutations.flatMap((transition) => {
         const mutation = BODY_PLAN_MUTATION_BY_ID[transition.mutationId]
         if (!mutation) return []
@@ -155,7 +244,10 @@ export function allowsBodyPlanMutation(bodyPlan: CreatureBodyPlan, mutationId: B
 }
 
 /** The body plan a creature has after a structural mutation is adopted. */
-export function applyBodyPlanMutation(bodyPlan: CreatureBodyPlan, mutationId: BodyPlanMutationId): CreatureBodyPlan | null {
+export function applyBodyPlanMutation(
+    bodyPlan: CreatureBodyPlan,
+    mutationId: BodyPlanMutationId,
+): CreatureBodyPlan | null {
     const transition = bodyPlan.structuralMutations.find((entry) => entry.mutationId === mutationId)
     return transition ? BODY_PLANS[transition.resultBodyPlanId] : null
 }

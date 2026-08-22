@@ -4,18 +4,32 @@ export const VISUAL_INSPECTION_SCHEMA_VERSION = 'visual-inspection-v1'
 export const OBSERVED_VISUAL_STATE_SCHEMA_VERSION = 'observed-visual-v1'
 
 export const VISUAL_ANOMALY_TYPES = [
-    'EXTRA_LIMB', 'MISSING_LIMB', 'DUPLICATED_LIMB', 'FUSED_LIMB', 'DEFORMED_APPENDAGE',
-    'IMPOSSIBLE_ATTACHMENT', 'MIRRORED_SUBJECT', 'ORIENTATION_MISMATCH', 'OTHER_STRUCTURAL',
+    'EXTRA_LIMB',
+    'MISSING_LIMB',
+    'DUPLICATED_LIMB',
+    'FUSED_LIMB',
+    'DEFORMED_APPENDAGE',
+    'IMPOSSIBLE_ATTACHMENT',
+    'MIRRORED_SUBJECT',
+    'ORIENTATION_MISMATCH',
+    'OTHER_STRUCTURAL',
 ] as const
-export type VisualAnomalyType = typeof VISUAL_ANOMALY_TYPES[number]
+export type VisualAnomalyType = (typeof VISUAL_ANOMALY_TYPES)[number]
 
 export const VISUAL_IMAGE_REGIONS = [
-    'IMAGE_LEFT', 'IMAGE_RIGHT',
-    'UPPER_IMAGE_LEFT', 'UPPER_IMAGE_CENTER', 'UPPER_IMAGE_RIGHT',
-    'CENTER_IMAGE_LEFT', 'CENTER_IMAGE', 'CENTER_IMAGE_RIGHT',
-    'LOWER_IMAGE_LEFT', 'LOWER_IMAGE_CENTER', 'LOWER_IMAGE_RIGHT',
+    'IMAGE_LEFT',
+    'IMAGE_RIGHT',
+    'UPPER_IMAGE_LEFT',
+    'UPPER_IMAGE_CENTER',
+    'UPPER_IMAGE_RIGHT',
+    'CENTER_IMAGE_LEFT',
+    'CENTER_IMAGE',
+    'CENTER_IMAGE_RIGHT',
+    'LOWER_IMAGE_LEFT',
+    'LOWER_IMAGE_CENTER',
+    'LOWER_IMAGE_RIGHT',
 ] as const
-export type VisualImageRegion = typeof VISUAL_IMAGE_REGIONS[number]
+export type VisualImageRegion = (typeof VISUAL_IMAGE_REGIONS)[number]
 
 export type Vision1DiagnosticEvidence = Readonly<{
     type: VisualAnomalyType
@@ -24,11 +38,12 @@ export type Vision1DiagnosticEvidence = Readonly<{
     confidence: number
 }>
 
-export type VisualAnomaly = Vision1DiagnosticEvidence & Readonly<{
-    status: 'UNRESOLVED' | 'RESOLVED'
-    detectedAtGeneration: number
-    resolvedAtGeneration?: number
-}>
+export type VisualAnomaly = Vision1DiagnosticEvidence &
+    Readonly<{
+        status: 'UNRESOLVED' | 'RESOLVED'
+        detectedAtGeneration: number
+        resolvedAtGeneration?: number
+    }>
 
 export type MapperEvidenceAssessment = Readonly<{
     evidenceIndex: number
@@ -54,7 +69,7 @@ export type ObservedVisualState = Readonly<{
     skinCovering: string
     primaryColors: readonly string[]
     distinctiveStructures: readonly string[]
-    targetRegions: readonly Readonly<{ target: EvolutionTargetId, description: string }>[]
+    targetRegions: readonly Readonly<{ target: EvolutionTargetId; description: string }>[]
 }>
 
 export type HorizontalMirrorAssetCorrection = Readonly<{
@@ -87,7 +102,7 @@ export type VisualInspection = Readonly<{
 type RecordValue = Record<string, unknown>
 
 function record(value: unknown): RecordValue | null {
-    return value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as RecordValue) : null
 }
 
 function text(value: unknown, maximum: number): string | null {
@@ -120,22 +135,37 @@ function generation(value: unknown): number | null {
 }
 
 function anomalyType(value: unknown): VisualAnomalyType | null {
-    return typeof value === 'string' && (VISUAL_ANOMALY_TYPES as readonly string[]).includes(value) ? value as VisualAnomalyType : null
+    return typeof value === 'string' && (VISUAL_ANOMALY_TYPES as readonly string[]).includes(value)
+        ? (value as VisualAnomalyType)
+        : null
 }
 
 function imageRegion(value: unknown): VisualImageRegion | null {
-    return typeof value === 'string' && (VISUAL_IMAGE_REGIONS as readonly string[]).includes(value) ? value as VisualImageRegion : null
+    return typeof value === 'string' && (VISUAL_IMAGE_REGIONS as readonly string[]).includes(value)
+        ? (value as VisualImageRegion)
+        : null
 }
 
 function target(value: unknown): EvolutionTargetId | null {
-    return typeof value === 'string' && [
-        'TAIL', 'LIMBS_AND_FEET', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING', 'WINGS', 'TENTACLES',
-    ].includes(value) ? value as EvolutionTargetId : null
+    return typeof value === 'string' &&
+        [
+            'TAIL',
+            'LIMBS_AND_FEET',
+            'HEAD_AND_CROWN',
+            'BODY_SHAPE',
+            'DORSAL_STRUCTURES',
+            'SKIN_AND_COVERING',
+            'WINGS',
+            'TENTACLES',
+        ].includes(value)
+        ? (value as EvolutionTargetId)
+        : null
 }
 
 export function parseVision1DiagnosticEvidence(value: unknown): Vision1DiagnosticEvidence | null {
     const item = record(value)
-    if (!item || Object.keys(item).some((key) => !['type', 'imageRegion', 'description', 'confidence'].includes(key))) return null
+    if (!item || Object.keys(item).some((key) => !['type', 'imageRegion', 'description', 'confidence'].includes(key)))
+        return null
     const type = anomalyType(item.type)
     const region = imageRegion(item.imageRegion)
     const description = text(item.description, 280)
@@ -153,11 +183,21 @@ function parseEvidenceList(value: unknown, maximum = 8): Vision1DiagnosticEviden
 
 export function parseMapperEvidenceAssessment(value: unknown): MapperEvidenceAssessment | null {
     const item = record(value)
-    if (!item || Object.keys(item).some((key) => !['evidenceIndex', 'disposition', 'verificationNote'].includes(key))) return null
-    const evidenceIndex = typeof item.evidenceIndex === 'number' && Number.isInteger(item.evidenceIndex) && item.evidenceIndex >= 0 && item.evidenceIndex < 8 ? item.evidenceIndex : null
-    const disposition = item.disposition === 'CONFIRMED' || item.disposition === 'POSSIBLE' || item.disposition === 'REJECTED_WITH_STRONG_CONTRARY_EVIDENCE'
-        ? item.disposition
-        : null
+    if (!item || Object.keys(item).some((key) => !['evidenceIndex', 'disposition', 'verificationNote'].includes(key)))
+        return null
+    const evidenceIndex =
+        typeof item.evidenceIndex === 'number' &&
+        Number.isInteger(item.evidenceIndex) &&
+        item.evidenceIndex >= 0 &&
+        item.evidenceIndex < 8
+            ? item.evidenceIndex
+            : null
+    const disposition =
+        item.disposition === 'CONFIRMED' ||
+        item.disposition === 'POSSIBLE' ||
+        item.disposition === 'REJECTED_WITH_STRONG_CONTRARY_EVIDENCE'
+            ? item.disposition
+            : null
     const verificationNote = text(item.verificationNote, 280)
     return evidenceIndex !== null && disposition && verificationNote
         ? Object.freeze({ evidenceIndex, disposition, verificationNote })
@@ -166,60 +206,153 @@ export function parseMapperEvidenceAssessment(value: unknown): MapperEvidenceAss
 
 export function parseObservedVisualState(value: unknown): ObservedVisualState | null {
     const item = record(value)
-    if (!item || Object.keys(item).some((key) => ![
-        'schemaVersion', 'shortDescription', 'orientation', 'observedBodyPlan', 'headAndEyes', 'limbsAndLimbLikeStructures', 'tail', 'hornsAntlers', 'dorsalStructures', 'appendages',
-        'skinCovering', 'primaryColors', 'distinctiveStructures', 'targetRegions',
-    ].includes(key))) return null
+    if (
+        !item ||
+        Object.keys(item).some(
+            (key) =>
+                ![
+                    'schemaVersion',
+                    'shortDescription',
+                    'orientation',
+                    'observedBodyPlan',
+                    'headAndEyes',
+                    'limbsAndLimbLikeStructures',
+                    'tail',
+                    'hornsAntlers',
+                    'dorsalStructures',
+                    'appendages',
+                    'skinCovering',
+                    'primaryColors',
+                    'distinctiveStructures',
+                    'targetRegions',
+                ].includes(key),
+        )
+    )
+        return null
     if (item.schemaVersion !== undefined && item.schemaVersion !== OBSERVED_VISUAL_STATE_SCHEMA_VERSION) return null
     const orientation = record(item.orientation)
-    const viewpoint = orientation?.viewpoint === 'FRONT' || orientation?.viewpoint === 'THREE_QUARTER' || orientation?.viewpoint === 'PROFILE' || orientation?.viewpoint === 'REAR' || orientation?.viewpoint === 'UNKNOWN'
-        ? orientation.viewpoint
-        : null
-    const facing = orientation?.facing === 'IMAGE_LEFT' || orientation?.facing === 'IMAGE_RIGHT' || orientation?.facing === 'CENTER' || orientation?.facing === 'UNKNOWN'
-        ? orientation.facing
-        : null
-    const targetRegions = Array.isArray(item.targetRegions) && item.targetRegions.length <= 8
-        ? item.targetRegions.map((entry) => {
-            const region = record(entry)
-            const regionTarget = target(region?.target)
-            const description = text(region?.description, 240)
-            return regionTarget && description ? Object.freeze({ target: regionTarget, description }) : null
-        })
-        : null
+    const viewpoint =
+        orientation?.viewpoint === 'FRONT' ||
+        orientation?.viewpoint === 'THREE_QUARTER' ||
+        orientation?.viewpoint === 'PROFILE' ||
+        orientation?.viewpoint === 'REAR' ||
+        orientation?.viewpoint === 'UNKNOWN'
+            ? orientation.viewpoint
+            : null
+    const facing =
+        orientation?.facing === 'IMAGE_LEFT' ||
+        orientation?.facing === 'IMAGE_RIGHT' ||
+        orientation?.facing === 'CENTER' ||
+        orientation?.facing === 'UNKNOWN'
+            ? orientation.facing
+            : null
+    const targetRegions =
+        Array.isArray(item.targetRegions) && item.targetRegions.length <= 8
+            ? item.targetRegions.map((entry) => {
+                  const region = record(entry)
+                  const regionTarget = target(region?.target)
+                  const description = text(region?.description, 240)
+                  return regionTarget && description ? Object.freeze({ target: regionTarget, description }) : null
+              })
+            : null
     const primaryColors = textList(item.primaryColors, 8, 80)
     const distinctiveStructures = textList(item.distinctiveStructures, 8, 160)
-    const shortDescription = item.shortDescription === undefined ? undefined : parseShortDescription(item.shortDescription)
+    const shortDescription =
+        item.shortDescription === undefined ? undefined : parseShortDescription(item.shortDescription)
     const fields = [
-        text(item.observedBodyPlan, 300), text(item.headAndEyes, 300), text(item.limbsAndLimbLikeStructures, 360), text(item.tail, 240),
-        text(item.hornsAntlers, 240), text(item.dorsalStructures, 240), text(item.appendages, 300), text(item.skinCovering, 240),
+        text(item.observedBodyPlan, 300),
+        text(item.headAndEyes, 300),
+        text(item.limbsAndLimbLikeStructures, 360),
+        text(item.tail, 240),
+        text(item.hornsAntlers, 240),
+        text(item.dorsalStructures, 240),
+        text(item.appendages, 300),
+        text(item.skinCovering, 240),
     ]
-    if (!viewpoint || !facing || !primaryColors || !distinctiveStructures || !targetRegions || !targetRegions.every((entry): entry is { target: EvolutionTargetId, description: string } => entry !== null) || fields.some((entry) => entry === null) || (item.shortDescription !== undefined && !shortDescription)) return null
+    if (
+        !viewpoint ||
+        !facing ||
+        !primaryColors ||
+        !distinctiveStructures ||
+        !targetRegions ||
+        !targetRegions.every((entry): entry is { target: EvolutionTargetId; description: string } => entry !== null) ||
+        fields.some((entry) => entry === null) ||
+        (item.shortDescription !== undefined && !shortDescription)
+    )
+        return null
     return Object.freeze({
         schemaVersion: OBSERVED_VISUAL_STATE_SCHEMA_VERSION,
         ...(shortDescription ? { shortDescription } : {}),
         orientation: Object.freeze({ viewpoint, facing }),
-        observedBodyPlan: fields[0]!, headAndEyes: fields[1]!, limbsAndLimbLikeStructures: fields[2]!, tail: fields[3]!, hornsAntlers: fields[4]!,
-        dorsalStructures: fields[5]!, appendages: fields[6]!, skinCovering: fields[7]!, primaryColors: Object.freeze(primaryColors),
-        distinctiveStructures: Object.freeze(distinctiveStructures), targetRegions: Object.freeze(targetRegions),
+        observedBodyPlan: fields[0]!,
+        headAndEyes: fields[1]!,
+        limbsAndLimbLikeStructures: fields[2]!,
+        tail: fields[3]!,
+        hornsAntlers: fields[4]!,
+        dorsalStructures: fields[5]!,
+        appendages: fields[6]!,
+        skinCovering: fields[7]!,
+        primaryColors: Object.freeze(primaryColors),
+        distinctiveStructures: Object.freeze(distinctiveStructures),
+        targetRegions: Object.freeze(targetRegions),
     })
 }
 
 function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
     const item = record(value)
-    if (!item || Object.keys(item).some((key) => !['type', 'imageRegion', 'description', 'confidence', 'status', 'detectedAtGeneration', 'resolvedAtGeneration'].includes(key))) return null
-    const evidence = parseVision1DiagnosticEvidence({ type: item.type, imageRegion: item.imageRegion, description: item.description, confidence: item.confidence })
+    if (
+        !item ||
+        Object.keys(item).some(
+            (key) =>
+                ![
+                    'type',
+                    'imageRegion',
+                    'description',
+                    'confidence',
+                    'status',
+                    'detectedAtGeneration',
+                    'resolvedAtGeneration',
+                ].includes(key),
+        )
+    )
+        return null
+    const evidence = parseVision1DiagnosticEvidence({
+        type: item.type,
+        imageRegion: item.imageRegion,
+        description: item.description,
+        confidence: item.confidence,
+    })
     const detectedAtGeneration = generation(item.detectedAtGeneration)
     const status = item.status === 'UNRESOLVED' || item.status === 'RESOLVED' ? item.status : null
-    const resolvedAtGeneration = item.resolvedAtGeneration === undefined ? undefined : generation(item.resolvedAtGeneration)
-    if (!evidence || !detectedAtGeneration || !status || (item.resolvedAtGeneration !== undefined && !resolvedAtGeneration) || (status === 'RESOLVED' && !resolvedAtGeneration)) return null
-    return Object.freeze({ ...evidence, status, detectedAtGeneration, ...(resolvedAtGeneration ? { resolvedAtGeneration } : {}) })
+    const resolvedAtGeneration =
+        item.resolvedAtGeneration === undefined ? undefined : generation(item.resolvedAtGeneration)
+    if (
+        !evidence ||
+        !detectedAtGeneration ||
+        !status ||
+        (item.resolvedAtGeneration !== undefined && !resolvedAtGeneration) ||
+        (status === 'RESOLVED' && !resolvedAtGeneration)
+    )
+        return null
+    return Object.freeze({
+        ...evidence,
+        status,
+        detectedAtGeneration,
+        ...(resolvedAtGeneration ? { resolvedAtGeneration } : {}),
+    })
 }
 
 function parseHorizontalMirrorAssetCorrection(value: unknown): HorizontalMirrorAssetCorrection | null {
     const item = record(value)
     // sourceFacing was the short-lived pre-canonical field name; retain read compatibility for
     // any inspection persisted while that implementation was active.
-    if (!item || Object.keys(item).some((key) => !['type', 'appliedAt', 'outputFacing', 'correctedFacing', 'sourceFacing'].includes(key))) return null
+    if (
+        !item ||
+        Object.keys(item).some(
+            (key) => !['type', 'appliedAt', 'outputFacing', 'correctedFacing', 'sourceFacing'].includes(key),
+        )
+    )
+        return null
     const appliedAt = text(item.appliedAt, 64)
     const outputFacing = directionalFacing(item.outputFacing)
     const correctedFacing = directionalFacing(item.correctedFacing ?? item.sourceFacing)
@@ -230,24 +363,66 @@ function parseHorizontalMirrorAssetCorrection(value: unknown): HorizontalMirrorA
 
 export function parseVisualInspection(value: unknown): VisualInspection | null {
     const item = record(value)
-    if (!item || item.schemaVersion !== VISUAL_INSPECTION_SCHEMA_VERSION || Object.keys(item).some((key) => !['schemaVersion', 'inspectedAt', 'anomalyDetector', 'visualAnomalies', 'stateMapper', 'observedVisualState', 'assetCorrection'].includes(key))) return null
+    if (
+        !item ||
+        item.schemaVersion !== VISUAL_INSPECTION_SCHEMA_VERSION ||
+        Object.keys(item).some(
+            (key) =>
+                ![
+                    'schemaVersion',
+                    'inspectedAt',
+                    'anomalyDetector',
+                    'visualAnomalies',
+                    'stateMapper',
+                    'observedVisualState',
+                    'assetCorrection',
+                ].includes(key),
+        )
+    )
+        return null
     const inspectedAt = text(item.inspectedAt, 64)
     const detector = record(item.anomalyDetector)
     const mapper = record(item.stateMapper)
     const evidence = parseEvidenceList(detector?.evidence)
-    const anomalies = Array.isArray(item.visualAnomalies) && item.visualAnomalies.length <= 16 ? item.visualAnomalies.map(parseVisualAnomaly) : null
-    const assessments = Array.isArray(mapper?.evidenceAssessments) && mapper.evidenceAssessments.length <= 8 ? mapper.evidenceAssessments.map(parseMapperEvidenceAssessment) : null
+    const anomalies =
+        Array.isArray(item.visualAnomalies) && item.visualAnomalies.length <= 16
+            ? item.visualAnomalies.map(parseVisualAnomaly)
+            : null
+    const assessments =
+        Array.isArray(mapper?.evidenceAssessments) && mapper.evidenceAssessments.length <= 8
+            ? mapper.evidenceAssessments.map(parseMapperEvidenceAssessment)
+            : null
     const structuralConcerns = parseEvidenceList(mapper?.structuralConcerns)
-    const observed = item.observedVisualState === undefined ? undefined : parseObservedVisualState(item.observedVisualState)
-    const assetCorrection = item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
-    if (!inspectedAt || (detector?.status !== 'COMPLETE' && detector?.status !== 'UNAVAILABLE') || !evidence || !anomalies || !anomalies.every((entry): entry is VisualAnomaly => entry !== null)
-        || (mapper?.status !== 'COMPLETE' && mapper?.status !== 'UNAVAILABLE') || typeof mapper?.usedVision1Evidence !== 'boolean' || !assessments || !assessments.every((entry): entry is MapperEvidenceAssessment => entry !== null)
-        || !structuralConcerns || (item.observedVisualState !== undefined && !observed) || (item.assetCorrection !== undefined && !assetCorrection)) return null
+    const observed =
+        item.observedVisualState === undefined ? undefined : parseObservedVisualState(item.observedVisualState)
+    const assetCorrection =
+        item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
+    if (
+        !inspectedAt ||
+        (detector?.status !== 'COMPLETE' && detector?.status !== 'UNAVAILABLE') ||
+        !evidence ||
+        !anomalies ||
+        !anomalies.every((entry): entry is VisualAnomaly => entry !== null) ||
+        (mapper?.status !== 'COMPLETE' && mapper?.status !== 'UNAVAILABLE') ||
+        typeof mapper?.usedVision1Evidence !== 'boolean' ||
+        !assessments ||
+        !assessments.every((entry): entry is MapperEvidenceAssessment => entry !== null) ||
+        !structuralConcerns ||
+        (item.observedVisualState !== undefined && !observed) ||
+        (item.assetCorrection !== undefined && !assetCorrection)
+    )
+        return null
     return Object.freeze({
-        schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION, inspectedAt,
+        schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION,
+        inspectedAt,
         anomalyDetector: Object.freeze({ status: detector.status, evidence: Object.freeze(evidence) }),
         visualAnomalies: Object.freeze(anomalies),
-        stateMapper: Object.freeze({ status: mapper.status, usedVision1Evidence: mapper.usedVision1Evidence, evidenceAssessments: Object.freeze(assessments), structuralConcerns: Object.freeze(structuralConcerns) }),
+        stateMapper: Object.freeze({
+            status: mapper.status,
+            usedVision1Evidence: mapper.usedVision1Evidence,
+            evidenceAssessments: Object.freeze(assessments),
+            structuralConcerns: Object.freeze(structuralConcerns),
+        }),
         ...(observed ? { observedVisualState: observed } : {}),
         ...(assetCorrection ? { assetCorrection } : {}),
     })
@@ -265,8 +440,9 @@ export type HorizontalMirrorCorrectionDecision = Readonly<{
  * fail-open so a transient mapper outage cannot discard a paid generation.
  */
 export function shouldRejectSeedreamCenterFacing(inspection: VisualInspection | null | undefined): boolean {
-    return inspection?.stateMapper.status === 'COMPLETE'
-        && inspection.observedVisualState?.orientation.facing === 'CENTER'
+    return (
+        inspection?.stateMapper.status === 'COMPLETE' && inspection.observedVisualState?.orientation.facing === 'CENTER'
+    )
 }
 
 /**
@@ -278,7 +454,8 @@ export function decideHorizontalMirrorCorrection(input: {
     inspection: VisualInspection
 }): HorizontalMirrorCorrectionDecision {
     const outputFacing = directionalFacing(input.inspection.observedVisualState?.orientation.facing)
-    if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR') return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', outputFacing })
+    if (input.inspection.assetCorrection?.type === 'HORIZONTAL_MIRROR')
+        return Object.freeze({ action: 'KEEP', reason: 'ALREADY_CORRECTED', outputFacing })
     if (!outputFacing) return Object.freeze({ action: 'KEEP', reason: 'OUTPUT_FACING_UNKNOWN', outputFacing })
     return outputFacing === 'IMAGE_LEFT'
         ? Object.freeze({ action: 'FLIP', reason: 'OUTPUT_FACING_LEFT', outputFacing })
@@ -287,10 +464,17 @@ export function decideHorizontalMirrorCorrection(input: {
 
 function mirrorImageRegion(region: VisualImageRegion): VisualImageRegion {
     const regions: Record<VisualImageRegion, VisualImageRegion> = {
-        IMAGE_LEFT: 'IMAGE_RIGHT', IMAGE_RIGHT: 'IMAGE_LEFT',
-        UPPER_IMAGE_LEFT: 'UPPER_IMAGE_RIGHT', UPPER_IMAGE_CENTER: 'UPPER_IMAGE_CENTER', UPPER_IMAGE_RIGHT: 'UPPER_IMAGE_LEFT',
-        CENTER_IMAGE_LEFT: 'CENTER_IMAGE_RIGHT', CENTER_IMAGE: 'CENTER_IMAGE', CENTER_IMAGE_RIGHT: 'CENTER_IMAGE_LEFT',
-        LOWER_IMAGE_LEFT: 'LOWER_IMAGE_RIGHT', LOWER_IMAGE_CENTER: 'LOWER_IMAGE_CENTER', LOWER_IMAGE_RIGHT: 'LOWER_IMAGE_LEFT',
+        IMAGE_LEFT: 'IMAGE_RIGHT',
+        IMAGE_RIGHT: 'IMAGE_LEFT',
+        UPPER_IMAGE_LEFT: 'UPPER_IMAGE_RIGHT',
+        UPPER_IMAGE_CENTER: 'UPPER_IMAGE_CENTER',
+        UPPER_IMAGE_RIGHT: 'UPPER_IMAGE_LEFT',
+        CENTER_IMAGE_LEFT: 'CENTER_IMAGE_RIGHT',
+        CENTER_IMAGE: 'CENTER_IMAGE',
+        CENTER_IMAGE_RIGHT: 'CENTER_IMAGE_LEFT',
+        LOWER_IMAGE_LEFT: 'LOWER_IMAGE_RIGHT',
+        LOWER_IMAGE_CENTER: 'LOWER_IMAGE_CENTER',
+        LOWER_IMAGE_RIGHT: 'LOWER_IMAGE_LEFT',
     }
     return regions[region]
 }
@@ -318,23 +502,39 @@ export function applyHorizontalMirrorCorrection(input: {
             ...input.inspection.anomalyDetector,
             evidence: Object.freeze(input.inspection.anomalyDetector.evidence.map(mirrorEvidenceRegion)),
         }),
-        visualAnomalies: Object.freeze(input.inspection.visualAnomalies.map((anomaly) => Object.freeze({
-            ...mirrorEvidenceRegion(anomaly),
-            ...(anomaly.type === 'MIRRORED_SUBJECT' ? { status: 'RESOLVED' as const, resolvedAtGeneration: input.generation } : {}),
-        }))),
+        visualAnomalies: Object.freeze(
+            input.inspection.visualAnomalies.map((anomaly) =>
+                Object.freeze({
+                    ...mirrorEvidenceRegion(anomaly),
+                    ...(anomaly.type === 'MIRRORED_SUBJECT'
+                        ? { status: 'RESOLVED' as const, resolvedAtGeneration: input.generation }
+                        : {}),
+                }),
+            ),
+        ),
         stateMapper: Object.freeze({
             ...input.inspection.stateMapper,
-            structuralConcerns: Object.freeze(input.inspection.stateMapper.structuralConcerns.map(mirrorEvidenceRegion)),
+            structuralConcerns: Object.freeze(
+                input.inspection.stateMapper.structuralConcerns.map(mirrorEvidenceRegion),
+            ),
         }),
         observedVisualState: Object.freeze({
             ...observed,
             orientation: Object.freeze({ ...observed.orientation, facing: input.correctedFacing }),
         }),
-        assetCorrection: Object.freeze({ type: 'HORIZONTAL_MIRROR', appliedAt: input.appliedAt, outputFacing: input.outputFacing, correctedFacing: input.correctedFacing }),
+        assetCorrection: Object.freeze({
+            type: 'HORIZONTAL_MIRROR',
+            appliedAt: input.appliedAt,
+            outputFacing: input.outputFacing,
+            correctedFacing: input.correctedFacing,
+        }),
     })
 }
 
-function sameAnomaly(left: Pick<Vision1DiagnosticEvidence, 'type' | 'imageRegion'>, right: Pick<Vision1DiagnosticEvidence, 'type' | 'imageRegion'>): boolean {
+function sameAnomaly(
+    left: Pick<Vision1DiagnosticEvidence, 'type' | 'imageRegion'>,
+    right: Pick<Vision1DiagnosticEvidence, 'type' | 'imageRegion'>,
+): boolean {
     return left.type === right.type && left.imageRegion === right.imageRegion
 }
 
@@ -350,7 +550,7 @@ export function mergeVisualInspection(input: {
     previous: VisualInspection | null | undefined
     generation: number
     inspectedAt: string
-    detector: Readonly<{ status: 'COMPLETE' | 'UNAVAILABLE', evidence: readonly Vision1DiagnosticEvidence[] }>
+    detector: Readonly<{ status: 'COMPLETE' | 'UNAVAILABLE'; evidence: readonly Vision1DiagnosticEvidence[] }>
     mapper: Readonly<{
         status: 'COMPLETE' | 'UNAVAILABLE'
         usedVision1Evidence: boolean
@@ -362,10 +562,16 @@ export function mergeVisualInspection(input: {
     const previous = input.previous ?? null
     if (input.detector.status === 'UNAVAILABLE') {
         return Object.freeze({
-            schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION, inspectedAt: input.inspectedAt,
+            schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION,
+            inspectedAt: input.inspectedAt,
             anomalyDetector: Object.freeze({ status: 'UNAVAILABLE', evidence: Object.freeze([]) }),
             visualAnomalies: Object.freeze([...(previous?.visualAnomalies ?? [])]),
-            stateMapper: Object.freeze({ status: input.mapper.status, usedVision1Evidence: false, evidenceAssessments: Object.freeze([...input.mapper.evidenceAssessments]), structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]) }),
+            stateMapper: Object.freeze({
+                status: input.mapper.status,
+                usedVision1Evidence: false,
+                evidenceAssessments: Object.freeze([...input.mapper.evidenceAssessments]),
+                structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]),
+            }),
             ...(input.mapper.observedVisualState ? { observedVisualState: input.mapper.observedVisualState } : {}),
         })
     }
@@ -379,31 +585,61 @@ export function mergeVisualInspection(input: {
             detectedAtGeneration: previousAnomaly?.detectedAtGeneration ?? input.generation,
         })
     })
-    const absentFromDetector = priorUnresolved.filter((anomaly) => !input.detector.evidence.some((evidence) => sameAnomaly(anomaly, evidence)))
-    const retained = input.mapper.status !== 'COMPLETE'
-        ? absentFromDetector
-        : absentFromDetector.filter((anomaly) => concernMatches(anomaly, input.mapper.structuralConcerns))
-    const resolved = input.mapper.status === 'COMPLETE'
-        ? absentFromDetector.filter((anomaly) => !concernMatches(anomaly, input.mapper.structuralConcerns)).map((anomaly) => Object.freeze({ ...anomaly, status: 'RESOLVED' as const, resolvedAtGeneration: input.generation }))
-        : []
+    const absentFromDetector = priorUnresolved.filter(
+        (anomaly) => !input.detector.evidence.some((evidence) => sameAnomaly(anomaly, evidence)),
+    )
+    const retained =
+        input.mapper.status !== 'COMPLETE'
+            ? absentFromDetector
+            : absentFromDetector.filter((anomaly) => concernMatches(anomaly, input.mapper.structuralConcerns))
+    const resolved =
+        input.mapper.status === 'COMPLETE'
+            ? absentFromDetector
+                  .filter((anomaly) => !concernMatches(anomaly, input.mapper.structuralConcerns))
+                  .map((anomaly) =>
+                      Object.freeze({
+                          ...anomaly,
+                          status: 'RESOLVED' as const,
+                          resolvedAtGeneration: input.generation,
+                      }),
+                  )
+            : []
     return Object.freeze({
-        schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION, inspectedAt: input.inspectedAt,
+        schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION,
+        inspectedAt: input.inspectedAt,
         anomalyDetector: Object.freeze({ status: 'COMPLETE', evidence: Object.freeze([...input.detector.evidence]) }),
         visualAnomalies: Object.freeze([...continuedOrNew, ...retained, ...resolved]),
-        stateMapper: Object.freeze({ status: input.mapper.status, usedVision1Evidence: input.mapper.usedVision1Evidence, evidenceAssessments: Object.freeze([...input.mapper.evidenceAssessments]), structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]) }),
+        stateMapper: Object.freeze({
+            status: input.mapper.status,
+            usedVision1Evidence: input.mapper.usedVision1Evidence,
+            evidenceAssessments: Object.freeze([...input.mapper.evidenceAssessments]),
+            structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]),
+        }),
         ...(input.mapper.observedVisualState ? { observedVisualState: input.mapper.observedVisualState } : {}),
     })
 }
 
 function hasRejectedAssessment(inspection: VisualInspection, anomaly: VisualAnomaly): boolean {
     const index = inspection.anomalyDetector.evidence.findIndex((evidence) => sameAnomaly(anomaly, evidence))
-    return index >= 0 && inspection.stateMapper.evidenceAssessments.some((assessment) => assessment.evidenceIndex === index && assessment.disposition === 'REJECTED_WITH_STRONG_CONTRARY_EVIDENCE')
+    return (
+        index >= 0 &&
+        inspection.stateMapper.evidenceAssessments.some(
+            (assessment) =>
+                assessment.evidenceIndex === index &&
+                assessment.disposition === 'REJECTED_WITH_STRONG_CONTRARY_EVIDENCE',
+        )
+    )
 }
 
 export function visualRepairBrief(inspection: VisualInspection | null | undefined): string | null {
     if (!inspection) return null
     const anomalies = inspection.visualAnomalies
-        .filter((anomaly) => anomaly.status === 'UNRESOLVED' && anomaly.confidence >= 0.7 && !hasRejectedAssessment(inspection, anomaly))
+        .filter(
+            (anomaly) =>
+                anomaly.status === 'UNRESOLVED' &&
+                anomaly.confidence >= 0.7 &&
+                !hasRejectedAssessment(inspection, anomaly),
+        )
         .slice(0, 2)
     if (!anomalies.length) return null
     return [
@@ -418,7 +654,9 @@ export function visualContinuityBrief(inspection: VisualInspection | null | unde
     const sections: string[] = []
     if (inspection.observedVisualState) {
         const observed = inspection.observedVisualState
-        sections.push(`CURRENT OBSERVED VISUAL STATE (descriptive, never canonical): orientation ${observed.orientation.viewpoint}/${observed.orientation.facing}; body plan ${observed.observedBodyPlan}; limbs ${observed.limbsAndLimbLikeStructures}; tail ${observed.tail}; covering ${observed.skinCovering}.`)
+        sections.push(
+            `CURRENT OBSERVED VISUAL STATE (descriptive, never canonical): orientation ${observed.orientation.viewpoint}/${observed.orientation.facing}; body plan ${observed.observedBodyPlan}; limbs ${observed.limbsAndLimbLikeStructures}; tail ${observed.tail}; covering ${observed.skinCovering}.`,
+        )
     }
     const repair = visualRepairBrief(inspection)
     if (repair) sections.push(repair)

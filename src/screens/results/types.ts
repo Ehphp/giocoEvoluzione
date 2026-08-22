@@ -1,4 +1,4 @@
-import type { CreatureVisual } from '../game-v2/gameSelectionAssets'
+import type { CreatureVisual } from '../battle/controller/gene-selection-assets'
 import type { CombatMutationEffect, RoundValueBreakdown, TraitType } from '../../game/types'
 
 export type MatchResultOutcome = 'win' | 'loss' | 'draw'

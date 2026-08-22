@@ -2,7 +2,7 @@ import type { HomeBusyAction, HomeNotice, HomeViewModel } from './types'
 import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
 import { getExperienceProgress } from '../../lib/progression'
 import { ASSETS } from '../../ui/assets'
-import { buildCreatureVisualVersions, type CreatureVisualVersionSource } from '../../components/creature-visual-progression/visualVersions'
+import { buildCreatureVisualVersions, type CreatureVisualVersionSource } from '../../components/creature-visual-progression/visual-versions'
 
 export type BuildGuestHomeViewModelInput = {
     nickname: string

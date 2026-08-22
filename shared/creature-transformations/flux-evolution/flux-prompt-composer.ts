@@ -16,9 +16,9 @@ function plural(count: number, singular: string, pluralForm: string): string {
 }
 
 function isTailStructuralMutation(contract: AnatomyContract): boolean {
-    return contract.target === 'TAIL'
-        && contract.capability === 'BODY_PLAN_MUTATION'
-        && Boolean(contract.structuralChange)
+    return (
+        contract.target === 'TAIL' && contract.capability === 'BODY_PLAN_MUTATION' && Boolean(contract.structuralChange)
+    )
 }
 
 function withoutTailInvariant(invariants: readonly string[]): readonly string[] {
@@ -51,12 +51,13 @@ function tailSpecificPolicySections(contract: AnatomyContract): readonly string[
     ]
 }
 
-
 function lockedTopologyInvariants(invariants: readonly string[]): readonly string[] {
-    return invariants.map((invariant) => invariant.replace(
-        ' Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.',
-        ' Keep every limb in its existing anatomical root and body region.',
-    ))
+    return invariants.map((invariant) =>
+        invariant.replace(
+            ' Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.',
+            ' Keep every limb in its existing anatomical root and body region.',
+        ),
+    )
 }
 
 function lockedTargetRules(contract: AnatomyContract): readonly string[] {
@@ -64,8 +65,9 @@ function lockedTargetRules(contract: AnatomyContract): readonly string[] {
     // adjustment belong to the flexible FLUX composers, never to this diagnostic template.
     const rules = [...contract.targetAllowances, ...contract.preservationRules]
     if (contract.capability === 'BODY_PLAN_MUTATION') return rules
-    return rules
-        .filter((rule) => !/\b(?:stance|posture|orientation|viewpoint|camera|composition|rebalancing)\b/i.test(rule))
+    return rules.filter(
+        (rule) => !/\b(?:stance|posture|orientation|viewpoint|camera|composition|rebalancing)\b/i.test(rule),
+    )
 }
 
 /**
@@ -77,11 +79,14 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
     const structural = contract.capability === 'BODY_PLAN_MUTATION'
     const tailPresentationLock = contract.target === 'TAIL'
     const tailStructural = isTailStructuralMutation(contract)
-    const anatomyInvariants = tailStructural ? withoutTailInvariant(contract.topologyInvariants) : contract.topologyInvariants
+    const anatomyInvariants = tailStructural
+        ? withoutTailInvariant(contract.topologyInvariants)
+        : contract.topologyInvariants
     const target = EVOLUTION_TARGET_BY_ID[contract.target]
-    const retryFraming = input.framingAttempt && input.framingAttempt > 0
-        ? `RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1})\n\nMake the creature visibly smaller in frame. Use a wider camera and at least ${10 + input.framingAttempt * 5}% clear background margin around the complete silhouette. Do not crop, rotate or mirror the creature.`
-        : null
+    const retryFraming =
+        input.framingAttempt && input.framingAttempt > 0
+            ? `RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1})\n\nMake the creature visibly smaller in frame. Use a wider camera and at least ${10 + input.framingAttempt * 5}% clear background margin around the complete silhouette. Do not crop, rotate or mirror the creature.`
+            : null
     const targetRules = lockedTargetRules(contract)
     const identity = input.identity.identityFeatures.length
         ? input.identity.identityFeatures.join('; ')
@@ -94,8 +99,8 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         tailPresentationLock
             ? 'Preserve the exact same camera angle, 3/4 view, facing direction, overall pose and body plan as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nDo not change posture, stance, neck length, torso proportions or limb placement.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.'
             : structural
-            ? 'Preserve the same camera angle, 3/4 view, facing direction and overall presentation as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nOnly the posture and silhouette changes required by the authorized structural mutation are allowed.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.'
-            : 'Preserve the exact same camera angle, 3/4 view, facing direction and overall pose as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nThe mutation must be achieved without changing how the creature is oriented.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.',
+              ? 'Preserve the same camera angle, 3/4 view, facing direction and overall presentation as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nOnly the posture and silhouette changes required by the authorized structural mutation are allowed.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.'
+              : 'Preserve the exact same camera angle, 3/4 view, facing direction and overall pose as the source image.\n\nDo not rotate the creature toward the camera.\nDo not rotate it into profile.\nDo not turn it toward the opposite side.\nDo not mirror the subject.\n\nThe mutation must be achieved without changing how the creature is oriented.\n\nOnly minimal zoom-out or reframing is allowed when required to keep the entire creature inside the canvas.',
         'STRICT FRAMING',
         'Show the entire creature and every appendage.\n\nNothing may touch or cross the canvas boundary.\n\nKeep at least 8-10% clear background margin around the complete silhouette.\n\nIf the mutation requires more space, zoom out instead of cropping or rotating the creature.',
         ...(retryFraming ? [retryFraming] : []),
@@ -103,7 +108,10 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         [
             ...lockedTopologyInvariants(anatomyInvariants),
             ...(!tailStructural && structural && contract.structuralChange
-                ? [`AUTHORIZED STRUCTURAL MUTATION: ${contract.structuralChange}`, 'Realize exactly this one topology change and no other topology change.']
+                ? [
+                      `AUTHORIZED STRUCTURAL MUTATION: ${contract.structuralChange}`,
+                      'Realize exactly this one topology change and no other topology change.',
+                  ]
                 : []),
             'Keep the existing eye arrangement.',
             `Preserve the creature's distinctive identity: ${identity}.`,
@@ -122,7 +130,9 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
             input.microConcept.mutationIdea,
             'Visual details:',
             ...input.microConcept.visualDetails.map((detail) => `- ${detail}`),
-            ...(input.microConcept.avoid?.length ? ['Avoid:', ...input.microConcept.avoid.map((item) => `- ${item}`)] : []),
+            ...(input.microConcept.avoid?.length
+                ? ['Avoid:', ...input.microConcept.avoid.map((item) => `- ${item}`)]
+                : []),
             'These mutation details cannot override VIEWPOINT LOCK, STRICT FRAMING, ANATOMY LOCK or NON-TARGET PRESERVATION.',
         ].join('\n'),
         'BIOLOGICAL PRIOR',
@@ -131,8 +141,8 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         tailPresentationLock
             ? 'Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation.\n\nDo not redesign the creature to present the tail mutation.\n\nOnly the minimum local anatomical continuity, tail-root integration or tightly linked target material or colour propagation is allowed.'
             : structural
-            ? 'Preserve unrelated body regions by default.\n\nDo not redesign anatomy outside the authorized structural change.\n\nOnly the supporting integration required by that exact mutation is allowed.'
-            : 'Preserve unrelated body regions by default.\n\nDo not redesign unrelated limbs, tail, face, body coloration or pose.\n\nOnly minor local anatomical integration required by the selected mutation is allowed.',
+              ? 'Preserve unrelated body regions by default.\n\nDo not redesign anatomy outside the authorized structural change.\n\nOnly the supporting integration required by that exact mutation is allowed.'
+              : 'Preserve unrelated body regions by default.\n\nDo not redesign unrelated limbs, tail, face, body coloration or pose.\n\nOnly minor local anatomical integration required by the selected mutation is allowed.',
         'BACKGROUND',
         'Flat uniform medium-gray technical background.\n\nSingle isolated creature.\n\nNo objects, scenery, text, aura, glow, bloom, fog, light spill or background gradient.',
         'INVALID RESULT IF',
@@ -140,15 +150,21 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
             tailPresentationLock
                 ? 'The creature changes its original pose, stance, body plan, neck length, torso proportions, limb placement, camera angle, facing direction or overall presentation.'
                 : structural
-                ? 'The creature becomes front-facing, profile-facing, mirrored or turned toward the opposite direction. The authorized posture and silhouette change is allowed; a camera or facing change is not.'
-                : 'The creature becomes front-facing, profile-facing, mirrored, turned toward the opposite direction, or otherwise changes its original presentation.',
+                  ? 'The creature becomes front-facing, profile-facing, mirrored or turned toward the opposite direction. The authorized posture and silhouette change is allowed; a camera or facing change is not.'
+                  : 'The creature becomes front-facing, profile-facing, mirrored, turned toward the opposite direction, or otherwise changes its original presentation.',
             'Also invalid:',
             '- cropped anatomy',
-            structural ? '- any topology change other than the authorized structural mutation' : '- unauthorized extra limbs',
+            structural
+                ? '- any topology change other than the authorized structural mutation'
+                : '- unauthorized extra limbs',
             '- extra heads',
             '- extra faces',
             '- extra eyes',
-            ...(tailPresentationLock ? ['- a tail interpreted as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages'] : []),
+            ...(tailPresentationLock
+                ? [
+                      '- a tail interpreted as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages',
+                  ]
+                : []),
             '- artificial-looking structures',
             '- failure to make the requested mutation clearly visible',
             ...contract.failureConditions.map((condition) => `- ${condition}`),

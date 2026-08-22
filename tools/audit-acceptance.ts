@@ -1,42 +1,349 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { ADAPTATION_IDS, BOT_COMBAT_MUTATION_LOADOUT, ROUND_EVENT_DEFINITIONS, RULE_VERSION, createInitialCombatMutationState, createLookaheadPolicy, createSeededRandom, evolveFirstPolicy, getAdaptationRoundValue, greedyUsePolicy, heuristicPolicy, randomPolicy, simulateMatch, type BotPolicy } from '../shared/game-rules/index.ts'
+import {
+    ADAPTATION_IDS,
+    BOT_COMBAT_MUTATION_LOADOUT,
+    ROUND_EVENT_DEFINITIONS,
+    RULE_VERSION,
+    createInitialCombatMutationState,
+    createLookaheadPolicy,
+    createSeededRandom,
+    evolveFirstPolicy,
+    getAdaptationRoundValue,
+    greedyUsePolicy,
+    heuristicPolicy,
+    randomPolicy,
+    simulateMatch,
+    type BotPolicy,
+} from '../shared/game-rules/index.ts'
 
 const AUDIT_SEED = 0x5eed2026
-const policies: BotPolicy[] = [randomPolicy, greedyUsePolicy, evolveFirstPolicy, heuristicPolicy, createLookaheadPolicy({ depth: 2, id: 'lookahead-2' })]
-const sequences = (() => { const random = createSeededRandom(AUDIT_SEED); return Array.from({ length: 3 }, () => { const ids = ROUND_EVENT_DEFINITIONS.map((event) => event.id); for (let index = ids.length - 1; index > 0; index -= 1) { const swap = Math.floor(random() * (index + 1)); [ids[index], ids[swap]] = [ids[swap]!, ids[index]!] } return [...ids, ids[0]!] }) })()
-const hash = (value: string) => { let result = 2166136261; for (const character of value) { result ^= character.charCodeAt(0); result = Math.imul(result, 16777619) } return result >>> 0 }
-const initialMutations = () => ({ leftCombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT, rightCombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT, leftCombatMutationState: createInitialCombatMutationState(), rightCombatMutationState: createInitialCombatMutationState() })
-const metrics = { matches: 0, rounds: 0, use: 0, evolve: 0, pureRecoveries: 0, geneActions: Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, 0])) as Record<string, number>, doubleUse: 0, matchupWinnerChanges: 0, lowerEnvironmentalMatchupWins: 0, exhaustedPlayerRounds: 0, firstRecoveryRounds: [] as number[], illegalActions: 0, leftWins: 0, rightWins: 0, draws: 0, tiebreaks: 0, endReasons: {} as Record<string, number>, deterministic: true, elasticActivations: 0, adaptiveCoreArmed: 0, adaptiveCoreBonuses: 0, armoredMemoryActivations: 0, recoverySurgeActivations: 0, invalidMutationTransitions: 0 }
-const policyResults = Object.fromEntries(policies.map((policy) => [policy.id, { wins: 0, draws: 0, losses: 0, actions: 0, evolves: 0 }])) as Record<string, { wins: number; draws: number; losses: number; actions: number; evolves: number }>
+const policies: BotPolicy[] = [
+    randomPolicy,
+    greedyUsePolicy,
+    evolveFirstPolicy,
+    heuristicPolicy,
+    createLookaheadPolicy({ depth: 2, id: 'lookahead-2' }),
+]
+const sequences = (() => {
+    const random = createSeededRandom(AUDIT_SEED)
+    return Array.from({ length: 3 }, () => {
+        const ids = ROUND_EVENT_DEFINITIONS.map((event) => event.id)
+        for (let index = ids.length - 1; index > 0; index -= 1) {
+            const swap = Math.floor(random() * (index + 1))
+            ;[ids[index], ids[swap]] = [ids[swap]!, ids[index]!]
+        }
+        return [...ids, ids[0]!]
+    })
+})()
+const hash = (value: string) => {
+    let result = 2166136261
+    for (const character of value) {
+        result ^= character.charCodeAt(0)
+        result = Math.imul(result, 16777619)
+    }
+    return result >>> 0
+}
+const initialMutations = () => ({
+    leftCombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+    rightCombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+    leftCombatMutationState: createInitialCombatMutationState(),
+    rightCombatMutationState: createInitialCombatMutationState(),
+})
+const metrics = {
+    matches: 0,
+    rounds: 0,
+    use: 0,
+    evolve: 0,
+    pureRecoveries: 0,
+    geneActions: Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, 0])) as Record<string, number>,
+    doubleUse: 0,
+    matchupWinnerChanges: 0,
+    lowerEnvironmentalMatchupWins: 0,
+    exhaustedPlayerRounds: 0,
+    firstRecoveryRounds: [] as number[],
+    illegalActions: 0,
+    leftWins: 0,
+    rightWins: 0,
+    draws: 0,
+    tiebreaks: 0,
+    endReasons: {} as Record<string, number>,
+    deterministic: true,
+    elasticActivations: 0,
+    adaptiveCoreArmed: 0,
+    adaptiveCoreBonuses: 0,
+    armoredMemoryActivations: 0,
+    recoverySurgeActivations: 0,
+    invalidMutationTransitions: 0,
+}
+const policyResults = Object.fromEntries(
+    policies.map((policy) => [policy.id, { wins: 0, draws: 0, losses: 0, actions: 0, evolves: 0 }]),
+) as Record<string, { wins: number; draws: number; losses: number; actions: number; evolves: number }>
 const headToHead = new Map<string, { strategic: string; wins: number; draws: number; losses: number }>()
 
-for (let leftIndex = 0; leftIndex < policies.length; leftIndex += 1) for (let rightIndex = 0; rightIndex < policies.length; rightIndex += 1) for (let sequenceIndex = 0; sequenceIndex < sequences.length; sequenceIndex += 1) for (let sample = 0; sample < 2; sample += 1) {
-    const leftPolicy = policies[leftIndex]!; const rightPolicy = policies[rightIndex]!; const pairKey = [leftPolicy.id, rightPolicy.id].sort().join('|'); const seed = AUDIT_SEED ^ hash(`${pairKey}|${sequenceIndex}|${sample}`)
-    let report
-    try { report = simulateMatch({ leftPolicy, rightPolicy, eventSequence: sequences[sequenceIndex]!, seed, ruleVersion: RULE_VERSION, initialState: initialMutations(), trace: true }) } catch { metrics.illegalActions += 1; continue }
-    if (metrics.matches < 5) { const replay = simulateMatch({ leftPolicy, rightPolicy, eventSequence: sequences[sequenceIndex]!, seed, ruleVersion: RULE_VERSION, initialState: initialMutations(), trace: true }); if (JSON.stringify(replay) !== JSON.stringify(report)) metrics.deterministic = false }
-    metrics.matches += 1; metrics.rounds += report.rounds; if (report.winner === 'left') metrics.leftWins += 1; else if (report.winner === 'right') metrics.rightWins += 1; else metrics.draws += 1; if (report.tiebreak) metrics.tiebreaks += 1; metrics.endReasons[report.endReason ?? 'UNFINISHED'] = (metrics.endReasons[report.endReason ?? 'UNFINISHED'] ?? 0) + 1
-    const leftResult = policyResults[leftPolicy.id]!; const rightResult = policyResults[rightPolicy.id]!
-    if (report.winner === 'left') { leftResult.wins += 1; rightResult.losses += 1 } else if (report.winner === 'right') { rightResult.wins += 1; leftResult.losses += 1 } else { leftResult.draws += 1; rightResult.draws += 1 }
-    let firstRecovery: number | null = null
-    for (const round of report.trace) {
-        metrics.exhaustedPlayerRounds += Object.values(round.leftAdaptationsBefore).filter((state) => state.exhausted).length + Object.values(round.rightAdaptationsBefore).filter((state) => state.exhausted).length
-        for (const [action, before, result] of [[round.leftAction, round.leftAdaptationsBefore, leftResult], [round.rightAction, round.rightAdaptationsBefore, rightResult]] as const) { metrics.geneActions[action.trait] += 1; result.actions += 1; if (action.actionType === 'USE') metrics.use += 1; else { metrics.evolve += 1; result.evolves += 1; if (before[action.trait].exhausted) firstRecovery ??= round.roundNumber; if (before[action.trait].level === 2 && before[action.trait].exhausted) metrics.pureRecoveries += 1 } }
-        for (const [action, before, after, effects, traitsAfter] of [[round.leftAction, round.leftCombatMutationStateBefore, round.leftCombatMutationStateAfter, round.leftMutationEffects, round.leftAdaptationsAfter], [round.rightAction, round.rightCombatMutationStateBefore, round.rightCombatMutationStateAfter, round.rightMutationEffects, round.rightAdaptationsAfter]] as const) for (const effect of effects) {
-            if (effect.id === 'ELASTIC_LIMBS') { metrics.elasticActivations += 1; if (action.actionType !== 'USE' || action.trait !== 'AGILITY' || before.elasticLimbsUsed || !after.elasticLimbsUsed || traitsAfter.AGILITY.exhausted) metrics.invalidMutationTransitions += 1 }
-            else if (effect.id === 'ARMORED_MEMORY') { metrics.armoredMemoryActivations += 1; if (action.actionType !== 'USE' || action.trait !== 'ARMOR' || before.armoredMemoryUsed || !after.armoredMemoryUsed || traitsAfter.ARMOR.exhausted) metrics.invalidMutationTransitions += 1 }
-            else if (effect.id === 'RECOVERY_SURGE') { metrics.recoverySurgeActivations += 1; if (action.actionType !== 'EVOLVE' || before.recoverySurgeUsed || !after.recoverySurgeUsed) metrics.invalidMutationTransitions += 1 }
-            else if (effect.effect === 'CORE_ARMED') { metrics.adaptiveCoreArmed += 1; if (action.actionType !== 'EVOLVE' || before.adaptiveCoreStatus !== 'DORMANT' || after.adaptiveCoreStatus !== 'ARMED') metrics.invalidMutationTransitions += 1 }
-            else { metrics.adaptiveCoreBonuses += 1; if (action.actionType !== 'USE' || before.adaptiveCoreStatus !== 'ARMED' || after.adaptiveCoreStatus !== 'CONSUMED') metrics.invalidMutationTransitions += 1 }
-        }
-        if (round.leftAction.actionType === 'USE' && round.rightAction.actionType === 'USE') { metrics.doubleUse += 1; const leftBase = round.leftValue - round.leftBreakdown.matchupBonus; const rightBase = round.rightValue - round.rightBreakdown.matchupBonus; const baseWinner = leftBase > rightBase ? 'left' : rightBase > leftBase ? 'right' : null; if (baseWinner !== round.winnerId) metrics.matchupWinnerChanges += 1; if ((round.winnerId === 'left' && leftBase < rightBase && round.leftBreakdown.matchupBonus > 0) || (round.winnerId === 'right' && rightBase < leftBase && round.rightBreakdown.matchupBonus > 0)) metrics.lowerEnvironmentalMatchupWins += 1; getAdaptationRoundValue(round.event, round.leftAdaptationsBefore, round.leftAction.trait, round.leftCombatMutationStateBefore, round.leftCombatMutationLoadout) }
-    }
-    if (firstRecovery !== null) metrics.firstRecoveryRounds.push(firstRecovery)
-    if ((leftPolicy.id === greedyUsePolicy.id) !== (rightPolicy.id === greedyUsePolicy.id)) { const strategic = leftPolicy.id === greedyUsePolicy.id ? rightPolicy.id : leftPolicy.id; const entry = headToHead.get(strategic) ?? { strategic, wins: 0, draws: 0, losses: 0 }; const strategicWon = (report.winner === 'left' && leftPolicy.id === strategic) || (report.winner === 'right' && rightPolicy.id === strategic); if (strategicWon) entry.wins += 1; else if (!report.winner) entry.draws += 1; else entry.losses += 1; headToHead.set(strategic, entry) }
-}
+for (let leftIndex = 0; leftIndex < policies.length; leftIndex += 1)
+    for (let rightIndex = 0; rightIndex < policies.length; rightIndex += 1)
+        for (let sequenceIndex = 0; sequenceIndex < sequences.length; sequenceIndex += 1)
+            for (let sample = 0; sample < 2; sample += 1) {
+                const leftPolicy = policies[leftIndex]!
+                const rightPolicy = policies[rightIndex]!
+                const pairKey = [leftPolicy.id, rightPolicy.id].sort().join('|')
+                const seed = AUDIT_SEED ^ hash(`${pairKey}|${sequenceIndex}|${sample}`)
+                let report
+                try {
+                    report = simulateMatch({
+                        leftPolicy,
+                        rightPolicy,
+                        eventSequence: sequences[sequenceIndex]!,
+                        seed,
+                        ruleVersion: RULE_VERSION,
+                        initialState: initialMutations(),
+                        trace: true,
+                    })
+                } catch {
+                    metrics.illegalActions += 1
+                    continue
+                }
+                if (metrics.matches < 5) {
+                    const replay = simulateMatch({
+                        leftPolicy,
+                        rightPolicy,
+                        eventSequence: sequences[sequenceIndex]!,
+                        seed,
+                        ruleVersion: RULE_VERSION,
+                        initialState: initialMutations(),
+                        trace: true,
+                    })
+                    if (JSON.stringify(replay) !== JSON.stringify(report)) metrics.deterministic = false
+                }
+                metrics.matches += 1
+                metrics.rounds += report.rounds
+                if (report.winner === 'left') metrics.leftWins += 1
+                else if (report.winner === 'right') metrics.rightWins += 1
+                else metrics.draws += 1
+                if (report.tiebreak) metrics.tiebreaks += 1
+                metrics.endReasons[report.endReason ?? 'UNFINISHED'] =
+                    (metrics.endReasons[report.endReason ?? 'UNFINISHED'] ?? 0) + 1
+                const leftResult = policyResults[leftPolicy.id]!
+                const rightResult = policyResults[rightPolicy.id]!
+                if (report.winner === 'left') {
+                    leftResult.wins += 1
+                    rightResult.losses += 1
+                } else if (report.winner === 'right') {
+                    rightResult.wins += 1
+                    leftResult.losses += 1
+                } else {
+                    leftResult.draws += 1
+                    rightResult.draws += 1
+                }
+                let firstRecovery: number | null = null
+                for (const round of report.trace) {
+                    metrics.exhaustedPlayerRounds +=
+                        Object.values(round.leftAdaptationsBefore).filter((state) => state.exhausted).length +
+                        Object.values(round.rightAdaptationsBefore).filter((state) => state.exhausted).length
+                    for (const [action, before, result] of [
+                        [round.leftAction, round.leftAdaptationsBefore, leftResult],
+                        [round.rightAction, round.rightAdaptationsBefore, rightResult],
+                    ] as const) {
+                        metrics.geneActions[action.trait] += 1
+                        result.actions += 1
+                        if (action.actionType === 'USE') metrics.use += 1
+                        else {
+                            metrics.evolve += 1
+                            result.evolves += 1
+                            if (before[action.trait].exhausted) firstRecovery ??= round.roundNumber
+                            if (before[action.trait].level === 2 && before[action.trait].exhausted)
+                                metrics.pureRecoveries += 1
+                        }
+                    }
+                    for (const [action, before, after, effects, traitsAfter] of [
+                        [
+                            round.leftAction,
+                            round.leftCombatMutationStateBefore,
+                            round.leftCombatMutationStateAfter,
+                            round.leftMutationEffects,
+                            round.leftAdaptationsAfter,
+                        ],
+                        [
+                            round.rightAction,
+                            round.rightCombatMutationStateBefore,
+                            round.rightCombatMutationStateAfter,
+                            round.rightMutationEffects,
+                            round.rightAdaptationsAfter,
+                        ],
+                    ] as const)
+                        for (const effect of effects) {
+                            if (effect.id === 'ELASTIC_LIMBS') {
+                                metrics.elasticActivations += 1
+                                if (
+                                    action.actionType !== 'USE' ||
+                                    action.trait !== 'AGILITY' ||
+                                    before.elasticLimbsUsed ||
+                                    !after.elasticLimbsUsed ||
+                                    traitsAfter.AGILITY.exhausted
+                                )
+                                    metrics.invalidMutationTransitions += 1
+                            } else if (effect.id === 'ARMORED_MEMORY') {
+                                metrics.armoredMemoryActivations += 1
+                                if (
+                                    action.actionType !== 'USE' ||
+                                    action.trait !== 'ARMOR' ||
+                                    before.armoredMemoryUsed ||
+                                    !after.armoredMemoryUsed ||
+                                    traitsAfter.ARMOR.exhausted
+                                )
+                                    metrics.invalidMutationTransitions += 1
+                            } else if (effect.id === 'RECOVERY_SURGE') {
+                                metrics.recoverySurgeActivations += 1
+                                if (
+                                    action.actionType !== 'EVOLVE' ||
+                                    before.recoverySurgeUsed ||
+                                    !after.recoverySurgeUsed
+                                )
+                                    metrics.invalidMutationTransitions += 1
+                            } else if (effect.effect === 'CORE_ARMED') {
+                                metrics.adaptiveCoreArmed += 1
+                                if (
+                                    action.actionType !== 'EVOLVE' ||
+                                    before.adaptiveCoreStatus !== 'DORMANT' ||
+                                    after.adaptiveCoreStatus !== 'ARMED'
+                                )
+                                    metrics.invalidMutationTransitions += 1
+                            } else {
+                                metrics.adaptiveCoreBonuses += 1
+                                if (
+                                    action.actionType !== 'USE' ||
+                                    before.adaptiveCoreStatus !== 'ARMED' ||
+                                    after.adaptiveCoreStatus !== 'CONSUMED'
+                                )
+                                    metrics.invalidMutationTransitions += 1
+                            }
+                        }
+                    if (round.leftAction.actionType === 'USE' && round.rightAction.actionType === 'USE') {
+                        metrics.doubleUse += 1
+                        const leftBase = round.leftValue - round.leftBreakdown.matchupBonus
+                        const rightBase = round.rightValue - round.rightBreakdown.matchupBonus
+                        const baseWinner = leftBase > rightBase ? 'left' : rightBase > leftBase ? 'right' : null
+                        if (baseWinner !== round.winnerId) metrics.matchupWinnerChanges += 1
+                        if (
+                            (round.winnerId === 'left' &&
+                                leftBase < rightBase &&
+                                round.leftBreakdown.matchupBonus > 0) ||
+                            (round.winnerId === 'right' &&
+                                rightBase < leftBase &&
+                                round.rightBreakdown.matchupBonus > 0)
+                        )
+                            metrics.lowerEnvironmentalMatchupWins += 1
+                        getAdaptationRoundValue(
+                            round.event,
+                            round.leftAdaptationsBefore,
+                            round.leftAction.trait,
+                            round.leftCombatMutationStateBefore,
+                            round.leftCombatMutationLoadout,
+                        )
+                    }
+                }
+                if (firstRecovery !== null) metrics.firstRecoveryRounds.push(firstRecovery)
+                if ((leftPolicy.id === greedyUsePolicy.id) !== (rightPolicy.id === greedyUsePolicy.id)) {
+                    const strategic = leftPolicy.id === greedyUsePolicy.id ? rightPolicy.id : leftPolicy.id
+                    const entry = headToHead.get(strategic) ?? { strategic, wins: 0, draws: 0, losses: 0 }
+                    const strategicWon =
+                        (report.winner === 'left' && leftPolicy.id === strategic) ||
+                        (report.winner === 'right' && rightPolicy.id === strategic)
+                    if (strategicWon) entry.wins += 1
+                    else if (!report.winner) entry.draws += 1
+                    else entry.losses += 1
+                    headToHead.set(strategic, entry)
+                }
+            }
 
-const totalActions = metrics.use + metrics.evolve; const geneFrequency = Object.fromEntries(Object.entries(metrics.geneActions).map(([gene, count]) => [gene, count / totalActions])); const evolveRate = metrics.evolve / totalActions; const strategicVsGreedy = [...headToHead.values()].map((entry) => ({ ...entry, scoreRate: (entry.wins + entry.draws * 0.5) / (entry.wins + entry.draws + entry.losses) })); const positionDifference = Math.abs(metrics.leftWins - metrics.rightWins) / Math.max(1, metrics.leftWins + metrics.rightWins)
-const thresholds = { maximumGeneFrequency: Math.max(...Object.values(geneFrequency)) <= 0.35, minimumGeneFrequency: Math.min(...Object.values(geneFrequency)) >= 0.10, evolveRate: evolveRate >= 0.10 && evolveRate <= 0.35, matchupMaterial: metrics.matchupWinnerChanges / Math.max(1, metrics.doubleUse) >= 0.03, strategicBeatsGreedy: strategicVsGreedy.some((entry) => entry.strategic !== randomPolicy.id && entry.scoreRate > 0.5), positionBalanced: positionDifference <= 0.08, noIllegalActions: metrics.illegalActions === 0, deterministic: metrics.deterministic, mutationTransitions: metrics.invalidMutationTransitions === 0 }
-const result = { ruleVersion: RULE_VERSION, seed: AUDIT_SEED, methodology: 'Seeded symmetric tournament using only production getLegalBotActions, resolveRound, resolveMatchOutcome and simulateMatch. Mirrored pairings share the same seed. No alternate scoring or transition model.', actions: { USE: metrics.use, EVOLVE: metrics.evolve, evolveRate, pureMaxLevelRecoveries: metrics.pureRecoveries, pureRecoveryRate: metrics.pureRecoveries / Math.max(1, metrics.evolve) }, geneFrequency, concentration: Math.max(...Object.values(geneFrequency)), matchup: { doubleUseRounds: metrics.doubleUse, winnerChanges: metrics.matchupWinnerChanges, lowerEnvironmentalValueWins: metrics.lowerEnvironmentalMatchupWins }, exhaustion: { averageExhaustedGenesPerPlayerRound: metrics.exhaustedPlayerRounds / Math.max(1, metrics.rounds * 2), averageFirstRecoveryRound: metrics.firstRecoveryRounds.length ? metrics.firstRecoveryRounds.reduce((sum, round) => sum + round, 0) / metrics.firstRecoveryRounds.length : null }, combatMutations: { elasticActivations: metrics.elasticActivations, adaptiveCoreArmed: metrics.adaptiveCoreArmed, adaptiveCoreBonuses: metrics.adaptiveCoreBonuses, armoredMemoryActivations: metrics.armoredMemoryActivations, recoverySurgeActivations: metrics.recoverySurgeActivations, invalidTransitions: metrics.invalidMutationTransitions }, integrity: { illegalActions: metrics.illegalActions, deterministicAtSameSeed: metrics.deterministic }, matches: { count: metrics.matches, averageDurationRounds: metrics.rounds / metrics.matches, leftWins: metrics.leftWins, rightWins: metrics.rightWins, positionDifference, draws: metrics.draws, tiebreaks: metrics.tiebreaks, endReasons: metrics.endReasons }, policyResults: Object.fromEntries(Object.entries(policyResults).map(([id, value]) => [id, { ...value, evolveRate: value.evolves / Math.max(1, value.actions), scoreRate: (value.wins + value.draws * 0.5) / Math.max(1, value.wins + value.draws + value.losses) }])), strategicVsGreedy, thresholds, accepted: Object.values(thresholds).every(Boolean) }
-const output = resolve(import.meta.dirname, '../artifacts/audit'); mkdirSync(output, { recursive: true }); writeFileSync(resolve(output, 'acceptance.json'), `${JSON.stringify(result, null, 2)}\n`); writeFileSync(resolve(output, 'acceptance.md'), `# Audit acceptance — ${RULE_VERSION}\n\n${JSON.stringify(result, null, 2)}\n`); console.log(JSON.stringify(result))
+const totalActions = metrics.use + metrics.evolve
+const geneFrequency = Object.fromEntries(
+    Object.entries(metrics.geneActions).map(([gene, count]) => [gene, count / totalActions]),
+)
+const evolveRate = metrics.evolve / totalActions
+const strategicVsGreedy = [...headToHead.values()].map((entry) => ({
+    ...entry,
+    scoreRate: (entry.wins + entry.draws * 0.5) / (entry.wins + entry.draws + entry.losses),
+}))
+const positionDifference =
+    Math.abs(metrics.leftWins - metrics.rightWins) / Math.max(1, metrics.leftWins + metrics.rightWins)
+const thresholds = {
+    maximumGeneFrequency: Math.max(...Object.values(geneFrequency)) <= 0.35,
+    minimumGeneFrequency: Math.min(...Object.values(geneFrequency)) >= 0.1,
+    evolveRate: evolveRate >= 0.1 && evolveRate <= 0.35,
+    matchupMaterial: metrics.matchupWinnerChanges / Math.max(1, metrics.doubleUse) >= 0.03,
+    strategicBeatsGreedy: strategicVsGreedy.some(
+        (entry) => entry.strategic !== randomPolicy.id && entry.scoreRate > 0.5,
+    ),
+    positionBalanced: positionDifference <= 0.08,
+    noIllegalActions: metrics.illegalActions === 0,
+    deterministic: metrics.deterministic,
+    mutationTransitions: metrics.invalidMutationTransitions === 0,
+}
+const result = {
+    ruleVersion: RULE_VERSION,
+    seed: AUDIT_SEED,
+    methodology:
+        'Seeded symmetric tournament using only production getLegalBotActions, resolveRound, resolveMatchOutcome and simulateMatch. Mirrored pairings share the same seed. No alternate scoring or transition model.',
+    actions: {
+        USE: metrics.use,
+        EVOLVE: metrics.evolve,
+        evolveRate,
+        pureMaxLevelRecoveries: metrics.pureRecoveries,
+        pureRecoveryRate: metrics.pureRecoveries / Math.max(1, metrics.evolve),
+    },
+    geneFrequency,
+    concentration: Math.max(...Object.values(geneFrequency)),
+    matchup: {
+        doubleUseRounds: metrics.doubleUse,
+        winnerChanges: metrics.matchupWinnerChanges,
+        lowerEnvironmentalValueWins: metrics.lowerEnvironmentalMatchupWins,
+    },
+    exhaustion: {
+        averageExhaustedGenesPerPlayerRound: metrics.exhaustedPlayerRounds / Math.max(1, metrics.rounds * 2),
+        averageFirstRecoveryRound: metrics.firstRecoveryRounds.length
+            ? metrics.firstRecoveryRounds.reduce((sum, round) => sum + round, 0) / metrics.firstRecoveryRounds.length
+            : null,
+    },
+    combatMutations: {
+        elasticActivations: metrics.elasticActivations,
+        adaptiveCoreArmed: metrics.adaptiveCoreArmed,
+        adaptiveCoreBonuses: metrics.adaptiveCoreBonuses,
+        armoredMemoryActivations: metrics.armoredMemoryActivations,
+        recoverySurgeActivations: metrics.recoverySurgeActivations,
+        invalidTransitions: metrics.invalidMutationTransitions,
+    },
+    integrity: { illegalActions: metrics.illegalActions, deterministicAtSameSeed: metrics.deterministic },
+    matches: {
+        count: metrics.matches,
+        averageDurationRounds: metrics.rounds / metrics.matches,
+        leftWins: metrics.leftWins,
+        rightWins: metrics.rightWins,
+        positionDifference,
+        draws: metrics.draws,
+        tiebreaks: metrics.tiebreaks,
+        endReasons: metrics.endReasons,
+    },
+    policyResults: Object.fromEntries(
+        Object.entries(policyResults).map(([id, value]) => [
+            id,
+            {
+                ...value,
+                evolveRate: value.evolves / Math.max(1, value.actions),
+                scoreRate: (value.wins + value.draws * 0.5) / Math.max(1, value.wins + value.draws + value.losses),
+            },
+        ]),
+    ),
+    strategicVsGreedy,
+    thresholds,
+    accepted: Object.values(thresholds).every(Boolean),
+}
+const output = resolve(import.meta.dirname, '../artifacts/audit')
+mkdirSync(output, { recursive: true })
+writeFileSync(resolve(output, 'acceptance.json'), `${JSON.stringify(result, null, 2)}\n`)
+writeFileSync(
+    resolve(output, 'acceptance.md'),
+    `# Audit acceptance — ${RULE_VERSION}\n\n${JSON.stringify(result, null, 2)}\n`,
+)
+console.log(JSON.stringify(result))

@@ -8,7 +8,7 @@ import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
     DEFAULT_BATTLE_PLAYER_CREATURE,
     getBattleBackgroundForEvent,
-} from '../game-v2/gameSelectionAssets'
+} from '../battle/controller/gene-selection-assets'
 import type {
     MatchResultOutcome,
     MatchResultRound,

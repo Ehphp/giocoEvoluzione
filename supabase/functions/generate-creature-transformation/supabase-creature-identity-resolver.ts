@@ -1,4 +1,7 @@
-import type { CreatureIdentityResolver, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
+import type {
+    CreatureIdentityResolver,
+    ResolvedCreatureSource,
+} from '../../../shared/creature-transformations/contracts.ts'
 import { CREATURE_IDENTITY_REGISTRY, type CreatureIdentityDefinition } from './identity-registry.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
@@ -24,7 +27,10 @@ export type StoredCurrentVisualVersion = Readonly<{
 
 export interface PlayerCreatureRepository {
     findByCreatureId(creatureId: string): Promise<StoredPlayerCreature | null>
-    findCurrentVisualVersion?(input: { creatureId: string; versionId: string }): Promise<StoredCurrentVisualVersion | null>
+    findCurrentVisualVersion?(input: {
+        creatureId: string
+        versionId: string
+    }): Promise<StoredCurrentVisualVersion | null>
     listPreviousTransformations?(creatureId: string): Promise<PreviousCreatureTransformationSummary[]>
 }
 
@@ -47,14 +53,14 @@ export class CreatureIdentityResolutionError extends Error {
 
 function isCompleteIdentityDefinition(definition: CreatureIdentityDefinition): boolean {
     return Boolean(
-        definition.baseCreatureKey.trim()
-        && definition.sourceImagePath.trim()
-        && definition.description.trim()
-        && definition.styleDefinition.trim()
-        && definition.identityFeatures.length
-        && definition.identityFeatures.every((feature) => feature.trim())
-        && definition.mutableVisualFeatures.length
-        && definition.mutableVisualFeatures.every((feature) => feature.trim())
+        definition.baseCreatureKey.trim() &&
+        definition.sourceImagePath.trim() &&
+        definition.description.trim() &&
+        definition.styleDefinition.trim() &&
+        definition.identityFeatures.length &&
+        definition.identityFeatures.every((feature) => feature.trim()) &&
+        definition.mutableVisualFeatures.length &&
+        definition.mutableVisualFeatures.every((feature) => feature.trim()),
     )
 }
 
@@ -72,40 +78,65 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
         try {
             creature = await this.repository.findByCreatureId(input.creatureId)
         } catch (error) {
-            throw new CreatureIdentityResolutionError('CREATURE_LOOKUP_FAILED', 'Impossibile recuperare la creatura richiesta.', { cause: error })
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_LOOKUP_FAILED',
+                'Impossibile recuperare la creatura richiesta.',
+                { cause: error },
+            )
         }
 
         if (!creature) {
             throw new CreatureIdentityResolutionError('CREATURE_NOT_FOUND', 'La creatura richiesta non esiste.')
         }
         if (creature.profileId !== input.profileId) {
-            throw new CreatureIdentityResolutionError('CREATURE_NOT_OWNED', 'La creatura non appartiene al profilo autenticato.')
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_NOT_OWNED',
+                'La creatura non appartiene al profilo autenticato.',
+            )
         }
 
         const definition = this.registry[creature.baseCreatureKey]
         if (!definition) {
-            throw new CreatureIdentityResolutionError('CREATURE_IDENTITY_NOT_SUPPORTED', 'La creatura non ha un identita canonica supportata.')
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_IDENTITY_NOT_SUPPORTED',
+                'La creatura non ha un identita canonica supportata.',
+            )
         }
         if (!isCompleteIdentityDefinition(definition) || definition.baseCreatureKey !== creature.baseCreatureKey) {
-            throw new CreatureIdentityResolutionError('CREATURE_IDENTITY_CONFIGURATION_INVALID', 'La configurazione canonica della creatura non e completa.')
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_IDENTITY_CONFIGURATION_INVALID',
+                'La configurazione canonica della creatura non e completa.',
+            )
         }
 
-        const currentVisualVersion = creature.currentVisualVersionId && this.repository.findCurrentVisualVersion
-            ? await this.repository.findCurrentVisualVersion({ creatureId: creature.id, versionId: creature.currentVisualVersionId })
-            : null
+        const currentVisualVersion =
+            creature.currentVisualVersionId && this.repository.findCurrentVisualVersion
+                ? await this.repository.findCurrentVisualVersion({
+                      creatureId: creature.id,
+                      versionId: creature.currentVisualVersionId,
+                  })
+                : null
         if (creature.currentVisualVersionId && !currentVisualVersion) {
-            throw new CreatureIdentityResolutionError('CREATURE_LOOKUP_FAILED', 'La versione visuale corrente della creatura non e disponibile.')
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_LOOKUP_FAILED',
+                'La versione visuale corrente della creatura non e disponibile.',
+            )
         }
-        const previousTransformations = creature.currentVisualVersionId && this.repository.listPreviousTransformations
-            ? await this.repository.listPreviousTransformations(creature.id)
-            : []
+        const previousTransformations =
+            creature.currentVisualVersionId && this.repository.listPreviousTransformations
+                ? await this.repository.listPreviousTransformations(creature.id)
+                : []
         // Adopted structural mutations, in adoption order, are what makes the canonical body
         // plan of this individual differ from its starter topology.
-        const adoptedBodyPlanMutationIds = previousTransformations
-            .flatMap((entry): BodyPlanMutationId[] => (entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : []))
+        const adoptedBodyPlanMutationIds = previousTransformations.flatMap((entry): BodyPlanMutationId[] =>
+            entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : [],
+        )
 
         return {
-            bodyPlan: resolveCanonicalBodyPlan({ baseCreatureKey: definition.baseCreatureKey, adoptedBodyPlanMutationIds }),
+            bodyPlan: resolveCanonicalBodyPlan({
+                baseCreatureKey: definition.baseCreatureKey,
+                adoptedBodyPlanMutationIds,
+            }),
             adoptedBodyPlanMutationIds,
             identity: {
                 creatureId: creature.id,
@@ -116,9 +147,11 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
                 styleDefinition: definition.styleDefinition,
             },
             sourceImagePath: currentVisualVersion?.assetPath ?? definition.sourceImagePath,
-            sourceSha256: currentVisualVersion?.assetSha256 ?? 'e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605',
+            sourceSha256:
+                currentVisualVersion?.assetSha256 ?? 'e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605',
             sourceIsBaseVersion: currentVisualVersion?.isBaseVersion ?? true,
-            currentVisualVersionId: currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
+            currentVisualVersionId:
+                currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
             currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,
             visualInspection: currentVisualVersion?.visualInspection ?? null,
             // The full adopted history is needed to reconstruct permanent body-plan mutations.

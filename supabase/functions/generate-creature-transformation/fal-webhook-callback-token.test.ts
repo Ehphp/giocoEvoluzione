@@ -15,10 +15,20 @@ describe('Fal callback URL token', () => {
         expect(new URL(callbackUrl).searchParams.get('trace')).toBe('1')
         expect(hasFalWebhookCallbackToken({ callbackUrl, expectedToken: TOKEN })).toBe(true)
         expect(hasFalWebhookCallbackToken({ callbackUrl, expectedToken: TOKEN.replace('A', 'B') })).toBe(false)
-        expect(hasFalWebhookCallbackToken({ callbackUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook', expectedToken: TOKEN })).toBe(false)
+        expect(
+            hasFalWebhookCallbackToken({
+                callbackUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
+                expectedToken: TOKEN,
+            }),
+        ).toBe(false)
     })
 
     it('rejects an undersized token before it can reach Fal', () => {
-        expect(() => appendFalWebhookCallbackToken({ webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook', token: 'too-short' })).toThrow('token callback Fal non e valido')
+        expect(() =>
+            appendFalWebhookCallbackToken({
+                webhookUrl: 'https://project.supabase.co/functions/v1/fal-creature-transformation-webhook',
+                token: 'too-short',
+            }),
+        ).toThrow('token callback Fal non e valido')
     })
 })

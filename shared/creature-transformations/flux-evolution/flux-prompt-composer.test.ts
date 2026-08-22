@@ -6,10 +6,17 @@ import { BODY_PLANS } from './body-plan-registry.ts'
 
 describe('composeLockedDynamicFluxEvolutionPrompt', () => {
     const identity = {
-        creatureId: 'creature', baseCreatureKey: 'test-creature', description: 'A moss-green quadruped.',
-        identityFeatures: ['round eyes'], mutableVisualFeatures: [], styleDefinition: 'illustrated',
+        creatureId: 'creature',
+        baseCreatureKey: 'test-creature',
+        description: 'A moss-green quadruped.',
+        identityFeatures: ['round eyes'],
+        mutableVisualFeatures: [],
+        styleDefinition: 'illustrated',
     }
-    const anatomyContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'HEAD_AND_CROWN' })
+    const anatomyContract = buildAnatomyContract({
+        bodyPlan: BODY_PLANS.QUADRUPED,
+        evolutionTargetId: 'HEAD_AND_CROWN',
+    })
     const dynamicConcept = {
         conceptName: 'TEST_DYNAMIC_MUTATION_123',
         mutationIdea: 'Grow a symmetrical pair of soft crown structures from the existing skull.',
@@ -17,8 +24,16 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         avoid: ['exposed white bone'],
     }
 
-    function lockedPrompt(microConcept: Parameters<typeof composeLockedDynamicFluxEvolutionPrompt>[0]['microConcept'] = dynamicConcept, framingAttempt?: number) {
-        return composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract, microConcept, ...(framingAttempt === undefined ? {} : { framingAttempt }) })
+    function lockedPrompt(
+        microConcept: Parameters<typeof composeLockedDynamicFluxEvolutionPrompt>[0]['microConcept'] = dynamicConcept,
+        framingAttempt?: number,
+    ) {
+        return composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract,
+            microConcept,
+            ...(framingAttempt === undefined ? {} : { framingAttempt }),
+        })
     }
 
     function withoutMutation(prompt: string) {
@@ -53,7 +68,9 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(prompt).toContain(dynamicConcept.mutationIdea)
         expect(prompt).toContain('Visual details:\n- rounded upward branches\n- living orange vascular velvet')
         expect(prompt).toContain('Avoid:\n- exposed white bone')
-        expect(prompt).toContain('cannot override VIEWPOINT LOCK, STRICT FRAMING, ANATOMY LOCK or NON-TARGET PRESERVATION')
+        expect(prompt).toContain(
+            'cannot override VIEWPOINT LOCK, STRICT FRAMING, ANATOMY LOCK or NON-TARGET PRESERVATION',
+        )
         expect(lockedPrompt({ ...dynamicConcept, avoid: undefined })).not.toContain('\nAvoid:\n')
     })
 
@@ -79,14 +96,24 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
 
     it('applies the pose, locality and non-target locks only to TAIL', () => {
         const tailContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' })
-        const tailPrompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: tailContract, microConcept: dynamicConcept })
+        const tailPrompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: tailContract,
+            microConcept: dynamicConcept,
+        })
         const nonTailPrompt = lockedPrompt()
 
         expect(tailPrompt).toContain('TAIL POSE AND BODY LOCK')
         expect(tailPrompt).toMatch(/Preserve the original pose and body plan/i)
-        expect(tailPrompt).toMatch(/Do not make the creature taller, more upright, more serpentine or substantially elongated/i)
-        expect(tailPrompt).toMatch(/never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i)
-        expect(tailPrompt).toMatch(/Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation/i)
+        expect(tailPrompt).toMatch(
+            /Do not make the creature taller, more upright, more serpentine or substantially elongated/i,
+        )
+        expect(tailPrompt).toMatch(
+            /never as wings, dorsal fronds, back ornaments, unrelated fins or independently rooted appendages/i,
+        )
+        expect(tailPrompt).toMatch(
+            /Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation/i,
+        )
         expect(tailPrompt).not.toMatch(/posture rebalancing|stance rebalancing|supporting anatomy/i)
         expect(nonTailPrompt).not.toContain('TAIL POSE AND BODY LOCK')
         expect(nonTailPrompt).not.toContain('TAIL LOCALITY AND INTEGRATION')
@@ -99,10 +126,16 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
             capability: 'BODY_PLAN_MUTATION',
             bodyPlanMutationId: 'TAIL_SPLIT',
         })
-        const prompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: tailSplitContract, microConcept: dynamicConcept })
+        const prompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: tailSplitContract,
+            microConcept: dynamicConcept,
+        })
 
         expect(prompt).toMatch(/SOURCE ANATOMY[\s\S]*source creature currently has exactly 1 tail/i)
-        expect(prompt).toMatch(/AUTHORIZED TOPOLOGY CHANGE[\s\S]*Change exactly 1 existing tail into 2 tails sharing the original tail root/i)
+        expect(prompt).toMatch(
+            /AUTHORIZED TOPOLOGY CHANGE[\s\S]*Change exactly 1 existing tail into 2 tails sharing the original tail root/i,
+        )
         expect(prompt).toMatch(/OUTPUT ANATOMY[\s\S]*final creature must have exactly 2 tails/i)
         expect(prompt.indexOf('SOURCE ANATOMY')).toBeLessThan(prompt.indexOf('AUTHORIZED TOPOLOGY CHANGE'))
         expect(prompt.indexOf('AUTHORIZED TOPOLOGY CHANGE')).toBeLessThan(prompt.indexOf('OUTPUT ANATOMY'))
@@ -117,7 +150,11 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
             bodyPlanMutationId: 'ADD_LIMB_PAIR',
         })
 
-        const prompt = composeLockedDynamicFluxEvolutionPrompt({ identity, anatomyContract: structuralContract, microConcept: dynamicConcept })
+        const prompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: structuralContract,
+            microConcept: dynamicConcept,
+        })
 
         expect(prompt).toContain('AUTHORIZED STRUCTURAL MUTATION')
         expect(prompt).toMatch(/Grow one additional symmetrical pair of limbs/i)
@@ -125,4 +162,3 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(prompt).toContain('any topology change other than the authorized structural mutation')
     })
 })
-

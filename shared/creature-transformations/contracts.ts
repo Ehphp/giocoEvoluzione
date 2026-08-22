@@ -1,7 +1,11 @@
 import type { BodyPlanMutationId } from './flux-evolution/body-plan-mutations.ts'
 import type { CreatureBodyPlan } from './flux-evolution/body-plan-registry.ts'
 import type { CreatureVisualProgressTrack } from './visual-progression.ts'
-import type { CurrentCreatureVisualResponse, CreatureVisualVersion, PreviousCreatureTransformationSummary } from './creature-visual-versions.ts'
+import type {
+    CurrentCreatureVisualResponse,
+    CreatureVisualVersion,
+    PreviousCreatureTransformationSummary,
+} from './creature-visual-versions.ts'
 import type { VisualInspection } from './visual-inspection.ts'
 
 export type CreatureSemanticIdentity = {
@@ -31,10 +35,7 @@ export type ResolvedCreatureSource = {
 }
 
 export interface CreatureIdentityResolver {
-    resolve(input: {
-        profileId: string
-        creatureId: string
-    }): Promise<ResolvedCreatureSource>
+    resolve(input: { profileId: string; creatureId: string }): Promise<ResolvedCreatureSource>
 }
 
 export type GetTransformationRequestStatusRequest = {

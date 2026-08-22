@@ -1,5 +1,9 @@
 import { composeLockedDynamicFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
-import { createFluxEvolutionSnapshot, isFluxEvolutionSnapshot, type FluxMicroConcept } from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
+import {
+    createFluxEvolutionSnapshot,
+    isFluxEvolutionSnapshot,
+    type FluxMicroConcept,
+} from '../../../shared/creature-transformations/flux-evolution/micro-concept.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
 import { ImageValidator, sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
@@ -9,7 +13,11 @@ import { FalFluxImageProvider, FalFluxImageProviderError } from './fal-flux-imag
 import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flux-micro-concept-generator.ts'
 import { FluxImageGenerationServiceError } from './flux-image-generation-service.ts'
 import type { FalQueueSource, SeedreamProductionParameters } from './fal-queue-workflow.ts'
-import { visualContinuityBrief, visualRepairBrief, type VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
+import {
+    visualContinuityBrief,
+    visualRepairBrief,
+    type VisualInspection,
+} from '../../../shared/creature-transformations/visual-inspection.ts'
 
 export function fluxMicroConceptFromSnapshot(value: unknown): FluxMicroConcept | null {
     if (!isFluxEvolutionSnapshot(value)) return null
@@ -22,7 +30,13 @@ export function fluxMicroConceptFromSnapshot(value: unknown): FluxMicroConcept |
 }
 
 /** The production Seedream route is intentionally pinned to the locked dynamic composer. */
-export async function composeSeedreamQueuePrompt(input: { identity: CreatureSemanticIdentity, plan: FluxEvolutionPlan, concept: FluxMicroConcept, framingAttempt: number, repairBrief?: string | null }) {
+export async function composeSeedreamQueuePrompt(input: {
+    identity: CreatureSemanticIdentity
+    plan: FluxEvolutionPlan
+    concept: FluxMicroConcept
+    framingAttempt: number
+    repairBrief?: string | null
+}) {
     const lockedPrompt = composeLockedDynamicFluxEvolutionPrompt({
         identity: input.identity,
         anatomyContract: input.plan.anatomyContract,
@@ -33,12 +47,17 @@ export async function composeSeedreamQueuePrompt(input: { identity: CreatureSema
     return Object.freeze({ prompt, promptSha256: await sha256Hex(new TextEncoder().encode(prompt)) })
 }
 
-async function validateFluxSource(input: { storage: SupabaseCreatureTransformationStorageAdapter, source: FalQueueSource, validator: ImageValidator }): Promise<string> {
-    const source = input.source.kind === 'EXPERIMENTAL'
-        ? await input.storage.readExperimentalSource(input.source.path)
-        : input.source.kind === 'VISUAL'
-            ? await input.storage.readVisualVersionSource(input.source.path, input.source.isBaseVersion)
-            : await input.storage.readCanonicalSource(input.source.path, input.source.isBaseVersion)
+async function validateFluxSource(input: {
+    storage: SupabaseCreatureTransformationStorageAdapter
+    source: FalQueueSource
+    validator: ImageValidator
+}): Promise<string> {
+    const source =
+        input.source.kind === 'EXPERIMENTAL'
+            ? await input.storage.readExperimentalSource(input.source.path)
+            : input.source.kind === 'VISUAL'
+              ? await input.storage.readVisualVersionSource(input.source.path, input.source.isBaseVersion)
+              : await input.storage.readCanonicalSource(input.source.path, input.source.isBaseVersion)
     const valid = await input.validator.validate({
         bytes: source.bytes,
         mimeType: source.mimeType,
@@ -47,12 +66,25 @@ async function validateFluxSource(input: { storage: SupabaseCreatureTransformati
         // portrait output. Do not reject a valid canonical source merely for being square.
         allowNonStandardDimensions: true,
     })
-    if (!valid.valid) throw new FluxImageGenerationServiceError('FLUX_SOURCE_IMAGE_INVALID', 'La sorgente FLUX non ha superato i controlli tecnici.', valid.problems)
+    if (!valid.valid)
+        throw new FluxImageGenerationServiceError(
+            'FLUX_SOURCE_IMAGE_INVALID',
+            'La sorgente FLUX non ha superato i controlli tecnici.',
+            valid.problems,
+        )
     return valid.metadata.sha256
 }
 
-function signedSource(input: { storage: SupabaseCreatureTransformationStorageAdapter, source: FalQueueSource, expiresInSeconds: number }) {
-    return input.storage.createVisualVersionSignedUrl({ assetPath: input.source.path, isBaseVersion: input.source.isBaseVersion, expiresInSeconds: input.expiresInSeconds })
+function signedSource(input: {
+    storage: SupabaseCreatureTransformationStorageAdapter
+    source: FalQueueSource
+    expiresInSeconds: number
+}) {
+    return input.storage.createVisualVersionSignedUrl({
+        assetPath: input.source.path,
+        isBaseVersion: input.source.isBaseVersion,
+        expiresInSeconds: input.expiresInSeconds,
+    })
 }
 
 /**
@@ -75,19 +107,42 @@ export async function submitSeedreamEvolutionForAuthenticatedProfile(input: {
     const validator = input.validator ?? new ImageValidator()
     let microConcept: FluxMicroConcept
     try {
-        microConcept = await input.microConceptGenerator.generate({ identity: input.identity, plan: input.plan, visualContinuity: visualContinuityBrief(input.visualInspection) })
+        microConcept = await input.microConceptGenerator.generate({
+            identity: input.identity,
+            plan: input.plan,
+            visualContinuity: visualContinuityBrief(input.visualInspection),
+        })
     } catch (error) {
-        if (error instanceof FluxMicroConceptGeneratorError) throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
+        if (error instanceof FluxMicroConceptGeneratorError)
+            throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
         throw error
     }
     const sourceSha256 = await validateFluxSource({ storage: input.storage, source: input.source, validator })
-    const sourceUrl = (await signedSource({ storage: input.storage, source: input.source, expiresInSeconds: input.sourceUrlTtlSeconds })).signedUrl
-    const composed = await composeSeedreamQueuePrompt({ identity: input.identity, plan: input.plan, concept: microConcept, framingAttempt: 0, repairBrief: visualRepairBrief(input.visualInspection) })
+    const sourceUrl = (
+        await signedSource({
+            storage: input.storage,
+            source: input.source,
+            expiresInSeconds: input.sourceUrlTtlSeconds,
+        })
+    ).signedUrl
+    const composed = await composeSeedreamQueuePrompt({
+        identity: input.identity,
+        plan: input.plan,
+        concept: microConcept,
+        framingAttempt: 0,
+        repairBrief: visualRepairBrief(input.visualInspection),
+    })
     let submission
     try {
-        submission = await input.provider.submitSeedreamEvolution({ prompt: composed.prompt, sourceUrl, imageSize: input.parameters.imageSize, webhookUrl: input.webhookUrl })
+        submission = await input.provider.submitSeedreamEvolution({
+            prompt: composed.prompt,
+            sourceUrl,
+            imageSize: input.parameters.imageSize,
+            webhookUrl: input.webhookUrl,
+        })
     } catch (error) {
-        if (error instanceof FalFluxImageProviderError) throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
+        if (error instanceof FalFluxImageProviderError)
+            throw new FluxImageGenerationServiceError(error.code, error.message, undefined, { cause: error })
         throw error
     }
     return Object.freeze({

@@ -1,5 +1,5 @@
 import { ASSETS } from '../../ui/assets'
-import { buildCreatureVisualVersions } from '../../components/creature-visual-progression/visualVersions'
+import { buildCreatureVisualVersions } from '../../components/creature-visual-progression/visual-versions'
 import type { CollectionForm, CollectionViewModel, CollectionViewModelInput } from './types'
 
 /* Elemental types are presentation placeholders until the profile API exposes them. */

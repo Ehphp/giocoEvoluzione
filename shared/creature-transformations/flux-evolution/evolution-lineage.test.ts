@@ -3,18 +3,29 @@ import { describe, expect, it } from 'vitest'
 import type { PreviousCreatureTransformationSummary } from '../creature-visual-versions.ts'
 import { buildAnatomyContract } from './anatomy-contract.ts'
 import { BODY_PLANS, resolveCanonicalBodyPlan } from './body-plan-registry.ts'
-import { buildEvolutionLineageContext, describeCurrentTargetState, recentTargetMutationReferences } from './evolution-lineage.ts'
+import {
+    buildEvolutionLineageContext,
+    describeCurrentTargetState,
+    recentTargetMutationReferences,
+} from './evolution-lineage.ts'
 import { buildFluxEvolutionPlan } from './evolution-plan.ts'
 import { composeLockedDynamicFluxEvolutionPrompt } from './flux-prompt-composer.ts'
 
 const IDENTITY = {
-    creatureId: 'creature-1', baseCreatureKey: 'VERDANT_HATCHLING',
+    creatureId: 'creature-1',
+    baseCreatureKey: 'VERDANT_HATCHLING',
     description: 'Piccolo drago verde con grandi occhi ambrati.',
     identityFeatures: ['grandi occhi ambrati', 'cresta dorsale di spine fogliari'],
-    mutableVisualFeatures: ['corpo verde'], styleDefinition: 'Illustrazione 3D stilizzata.',
+    mutableVisualFeatures: ['corpo verde'],
+    styleDefinition: 'Illustrazione 3D stilizzata.',
 }
 
-function evolution(versionNumber: number, evolutionTargetId: PreviousCreatureTransformationSummary['evolutionTargetId'], conceptName: string, mutationIdea: string): PreviousCreatureTransformationSummary {
+function evolution(
+    versionNumber: number,
+    evolutionTargetId: PreviousCreatureTransformationSummary['evolutionTargetId'],
+    conceptName: string,
+    mutationIdea: string,
+): PreviousCreatureTransformationSummary {
     return { versionNumber, visualTraitId: 'LOCOMOTION_ADAPTATION', evolutionTargetId, conceptName, mutationIdea }
 }
 
@@ -24,11 +35,17 @@ function evolution(versionNumber: number, evolutionTargetId: PreviousCreatureTra
  * tests therefore assert on the lineage description itself, and use the prompt only where it is
  * still the authority — the permanent topology invariants.
  */
-function promptFor(anatomyContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' })) {
+function promptFor(
+    anatomyContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' }),
+) {
     return composeLockedDynamicFluxEvolutionPrompt({
         identity: IDENTITY,
         anatomyContract,
-        microConcept: { conceptName: 'Coda a frusta', mutationIdea: 'La coda sviluppa vertebre elastiche schermate.', visualDetails: ['anelli di cheratina'] },
+        microConcept: {
+            conceptName: 'Coda a frusta',
+            mutationIdea: 'La coda sviluppa vertebre elastiche schermate.',
+            visualDetails: ['anelli di cheratina'],
+        },
     })
 }
 
@@ -47,14 +64,19 @@ describe('minimal Flux lineage', () => {
         expect(context.currentTargetState?.conceptName).toBe('Timone foglia')
         expect(describeCurrentTargetState(context)).toContain('minimal semantic continuity')
         expect(describeCurrentTargetState(context)).toContain('source image remains the complete visual state')
-        expect(describeCurrentTargetState(context)).toContain('new, substantial, independently readable morphological mutation')
+        expect(describeCurrentTargetState(context)).toContain(
+            'new, substantial, independently readable morphological mutation',
+        )
         expect(describeCurrentTargetState(context)).toContain('do not merely enlarge, decorate, refine or recolour it')
         expect(describeCurrentTargetState(context)).not.toContain('Coda vela')
         expect(describeCurrentTargetState(context)).not.toContain('Vele nervate')
     })
 
     it('starts a new target from the visual state already present in the source image', () => {
-        const context = buildEvolutionLineageContext({ evolutionTargetId: 'HEAD_AND_CROWN', previousTransformations: [evolution(1, 'TAIL', 'Timone foglia', 'lobi fogliari')] })
+        const context = buildEvolutionLineageContext({
+            evolutionTargetId: 'HEAD_AND_CROWN',
+            previousTransformations: [evolution(1, 'TAIL', 'Timone foglia', 'lobi fogliari')],
+        })
 
         expect(context.currentTargetState).toBeNull()
         expect(describeCurrentTargetState(context)).toMatch(/source image/i)
@@ -62,29 +84,56 @@ describe('minimal Flux lineage', () => {
 
     it('G1 to G10 does not grow preservation context with visual history', () => {
         const g1 = [evolution(1, 'TAIL', 'Coda mutazione g01', 'cresta elastica')]
-        const g10 = Array.from({ length: 10 }, (_, index) => evolution(index + 1, 'TAIL', `Coda mutazione g${String(index + 1).padStart(2, '0')}`, `forma locale g${String(index + 1).padStart(2, '0')}`))
-        const firstState = describeCurrentTargetState(buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: g1 }))
-        const tenthState = describeCurrentTargetState(buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: g10 }))
+        const g10 = Array.from({ length: 10 }, (_, index) =>
+            evolution(
+                index + 1,
+                'TAIL',
+                `Coda mutazione g${String(index + 1).padStart(2, '0')}`,
+                `forma locale g${String(index + 1).padStart(2, '0')}`,
+            ),
+        )
+        const firstState = describeCurrentTargetState(
+            buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: g1 }),
+        )
+        const tenthState = describeCurrentTargetState(
+            buildEvolutionLineageContext({ evolutionTargetId: 'TAIL', previousTransformations: g10 }),
+        )
 
         expect(tenthState).toContain('Coda mutazione g10')
         expect(tenthState).not.toContain('Coda mutazione g01')
         expect(tenthState).not.toContain('OTHER ESTABLISHED EVOLUTIONS')
         expect(tenthState).not.toContain('LEGACY EVOLUTIONS WITH UNKNOWN TARGET')
         expect(tenthState.length - firstState.length).toBeLessThan(120)
-        expect(recentTargetMutationReferences({ evolutionTargetId: 'TAIL', previousTransformations: g10 })).toHaveLength(3)
+        expect(
+            recentTargetMutationReferences({ evolutionTargetId: 'TAIL', previousTransformations: g10 }),
+        ).toHaveLength(3)
     })
 
     it('retains permanent topology even while textual lineage stays minimal', () => {
         const history: PreviousCreatureTransformationSummary[] = [
-            { ...evolution(1, 'LIMBS_AND_FEET', 'Arti mediani', 'un paio di arti mediani'), bodyPlanMutationId: 'ADD_LIMB_PAIR' },
-            ...Array.from({ length: 9 }, (_, index) => evolution(index + 2, 'TAIL', `Coda ${index + 2}`, `variazione locale ${index + 2}`)),
+            {
+                ...evolution(1, 'LIMBS_AND_FEET', 'Arti mediani', 'un paio di arti mediani'),
+                bodyPlanMutationId: 'ADD_LIMB_PAIR',
+            },
+            ...Array.from({ length: 9 }, (_, index) =>
+                evolution(index + 2, 'TAIL', `Coda ${index + 2}`, `variazione locale ${index + 2}`),
+            ),
         ]
-        const canonical = resolveCanonicalBodyPlan({ baseCreatureKey: 'VERDANT_HATCHLING', adoptedBodyPlanMutationIds: ['ADD_LIMB_PAIR'] })!
-        const plan = buildFluxEvolutionPlan({ bodyPlan: canonical, evolutionTargetId: 'TAIL', previousTransformations: history })
+        const canonical = resolveCanonicalBodyPlan({
+            baseCreatureKey: 'VERDANT_HATCHLING',
+            adoptedBodyPlanMutationIds: ['ADD_LIMB_PAIR'],
+        })!
+        const plan = buildFluxEvolutionPlan({
+            bodyPlan: canonical,
+            evolutionTargetId: 'TAIL',
+            previousTransformations: history,
+        })
         const prompt = promptFor(plan.anatomyContract)
 
         expect(plan.lineage.currentTargetState?.conceptName).toBe('Coda 10')
-        expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain('Keep exactly 6 limbs, in 3 symmetrical pairs')
+        expect(plan.anatomyContract.topologyInvariants.join(' ')).toContain(
+            'Keep exactly 6 limbs, in 3 symmetrical pairs',
+        )
         expect(prompt).toContain('Keep exactly 6 limbs, in 3 symmetrical pairs')
     })
 })

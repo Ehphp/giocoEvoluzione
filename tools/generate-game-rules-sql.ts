@@ -3,8 +3,13 @@ import { resolve } from 'node:path'
 import { ADAPTATION_IDS, MAX_ADAPTATION_LEVEL, ROUND_EVENT_DEFINITIONS } from '../shared/game-rules/index.ts'
 const outputPath = resolve(import.meta.dirname, '../supabase/generated/game-rules.sql')
 const adaptationIds = ADAPTATION_IDS.map((adaptation) => `'${adaptation}'`).join(', ')
-const initialAdaptations = ADAPTATION_IDS.map((adaptation) => `'${adaptation}', jsonb_build_object('level', 0, 'exhausted', false)`).join(',\n      ')
-const adaptationStateChecks = ADAPTATION_IDS.map((adaptation) => `jsonb_typeof(value->'${adaptation}') = 'object' and value->'${adaptation}' ? 'level' and value->'${adaptation}' ? 'exhausted' and value->'${adaptation}'->>'level' in ('0', '1', '2') and jsonb_typeof(value->'${adaptation}'->'exhausted') = 'boolean'`).join('\n    and ')
+const initialAdaptations = ADAPTATION_IDS.map(
+    (adaptation) => `'${adaptation}', jsonb_build_object('level', 0, 'exhausted', false)`,
+).join(',\n      ')
+const adaptationStateChecks = ADAPTATION_IDS.map(
+    (adaptation) =>
+        `jsonb_typeof(value->'${adaptation}') = 'object' and value->'${adaptation}' ? 'level' and value->'${adaptation}' ? 'exhausted' and value->'${adaptation}'->>'level' in ('0', '1', '2') and jsonb_typeof(value->'${adaptation}'->'exhausted') = 'boolean'`,
+).join('\n    and ')
 const eventIds = ROUND_EVENT_DEFINITIONS.map((roundEvent) => `'${roundEvent.id}'`).join(',\n      ')
 const generated = `-- Generated from shared/game-rules/catalog.ts. Do not edit manually.
 
@@ -62,4 +67,7 @@ $$;
 
 -- Bot game creation is structural and lives in supabase/schema.sql.
 `
-if (process.argv.includes('--check')) { if (readFileSync(outputPath, 'utf8') !== generated) throw new Error('supabase/generated/game-rules.sql is stale. Run npm run rules:generate.') } else writeFileSync(outputPath, generated)
+if (process.argv.includes('--check')) {
+    if (readFileSync(outputPath, 'utf8') !== generated)
+        throw new Error('supabase/generated/game-rules.sql is stale. Run npm run rules:generate.')
+} else writeFileSync(outputPath, generated)

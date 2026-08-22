@@ -24,13 +24,13 @@ export function getWorldById(worldId: string): WorldDefinition {
     if (!world) {
         return DEFAULT_WORLD_ID === WORLD_DEFINITIONS[0]?.id
             ? WORLD_DEFINITIONS[0]!
-            : WORLD_DEFINITIONS[0] ?? {
-                id: DEFAULT_WORLD_ID,
-                name: 'Aurelia Prime',
-                planetName: 'Aurelia',
-                backgroundArtKey: 'world-aurelia-prime',
-                paletteKey: 'aurelia-amber',
-            }
+            : (WORLD_DEFINITIONS[0] ?? {
+                  id: DEFAULT_WORLD_ID,
+                  name: 'Aurelia Prime',
+                  planetName: 'Aurelia',
+                  backgroundArtKey: 'world-aurelia-prime',
+                  paletteKey: 'aurelia-amber',
+              })
     }
 
     return world
