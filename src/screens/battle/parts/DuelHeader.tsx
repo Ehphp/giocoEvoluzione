@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { Avatar, Button, IconButton, Panel, Pips } from '../../../ui/components'
-import { BackIcon, BoltIcon, EyeIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
+import { BackIcon, BoltIcon, EyeIcon, MeteorIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
 import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../controller/types'
 
 type DuelHeaderProps = {
@@ -10,6 +10,7 @@ type DuelHeaderProps = {
     round: RoundInfoV2
     onRequestLeave: () => void
     onActivateSymbiosis?: () => void
+    onActivateFineDelMondo?: () => void
 }
 
 function statusLabel(status: DuelPlayerV2['status']): string {
@@ -46,12 +47,14 @@ function MutationIcon({ iconKey }: { iconKey: CombatMutationSlotV2['iconKey'] })
             return <EyeIcon />
         case 'armored-memory':
             return <ShieldCheckIcon />
+        case 'fine-del-mondo':
+            return <MeteorIcon />
         default:
             return <SparkIcon />
     }
 }
 
-function MutationSlots({ mutations, side, onActivateSymbiosis }: { mutations: CombatMutationSlotV2[]; side: 'player' | 'opponent'; onActivateSymbiosis?: () => void }) {
+function MutationSlots({ mutations, side, onActivateSymbiosis, onActivateFineDelMondo }: { mutations: CombatMutationSlotV2[]; side: 'player' | 'opponent'; onActivateSymbiosis?: () => void; onActivateFineDelMondo?: () => void }) {
     if (!mutations.length) {
         return null
     }
@@ -62,11 +65,12 @@ function MutationSlots({ mutations, side, onActivateSymbiosis }: { mutations: Co
                 const stateLabel = mutationStatusLabel(mutation.status)
 
                 const label = `${mutation.label}, ${stateLabel}. ${mutation.shortDescription}${mutation.linkLabel ? ` ${mutation.linkLabel}.` : ''}`
-                const canActivate = side === 'player' && mutation.id === 'SYMBIOSIS' && mutation.status === 'available' && onActivateSymbiosis
+                const activate = mutation.id === 'SYMBIOSIS' ? onActivateSymbiosis : mutation.id === 'FINE_DEL_MONDO' ? onActivateFineDelMondo : undefined
+                const canActivate = side === 'player' && mutation.status === 'available' && activate
                 return (
                     <span key={mutation.id} className="duel-mutation-wrap" role="listitem">
                         {canActivate ? (
-                            <IconButton label={`Attiva ${mutation.label}`} className={`duel-mutation duel-mutation--${mutation.status}`} onClick={onActivateSymbiosis}>
+                            <IconButton label={`Attiva ${mutation.label}`} className={`duel-mutation duel-mutation--${mutation.status}`} onClick={activate}>
                                 <MutationIcon iconKey={mutation.iconKey} />
                             </IconButton>
                         ) : (
@@ -181,12 +185,12 @@ function DuelCard({ player, role, side, round, onRequestLeave }: { player: DuelP
     )
 }
 
-export function DuelHeader({ player, opponent, round, onRequestLeave, onActivateSymbiosis }: DuelHeaderProps) {
+export function DuelHeader({ player, opponent, round, onRequestLeave, onActivateSymbiosis, onActivateFineDelMondo }: DuelHeaderProps) {
     return (
         <header className="duel-header" aria-label="Stato dello scontro">
             <div className="duel-header__competitor duel-header__competitor--player">
                 <DuelCard player={player} role="Tu" side="player" round={round} onRequestLeave={onRequestLeave} />
-                <MutationSlots mutations={player.combatMutations ?? []} side="player" onActivateSymbiosis={onActivateSymbiosis} />
+                <MutationSlots mutations={player.combatMutations ?? []} side="player" onActivateSymbiosis={onActivateSymbiosis} onActivateFineDelMondo={onActivateFineDelMondo} />
             </div>
             <span className="duel-header__versus" aria-hidden="true">VS</span>
             <div className="duel-header__competitor duel-header__competitor--opponent">

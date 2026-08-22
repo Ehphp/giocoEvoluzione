@@ -8,7 +8,7 @@ import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, Result
 import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
 import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
-import { ChevronIcon, CloseIcon, GeneIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
+import { ChevronIcon, CloseIcon, GeneIcon, MeteorIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './MatchResultScreen.css'
 
@@ -53,7 +53,9 @@ function CalculationDetails({ action, participant, eventLabel }: {
     }
 
     if (action?.actionType === 'ACTIVATE_MUTATION') {
-        return <p className="result-calc__empty">SIMBIOSI: {TRAIT_LABELS[action.sourceTrait]} ↔ {TRAIT_LABELS[action.targetTrait]}. Questo round vale 0; il legame e attivo dal prossimo round.</p>
+        return action.mutationId === 'FINE_DEL_MONDO'
+            ? <p className="result-calc__empty">FINE DEL MONDO: questo round vale 0. Il sorteggio server modifica la durata della partita.</p>
+            : <p className="result-calc__empty">SIMBIOSI: {TRAIT_LABELS[action.sourceTrait]} ↔ {TRAIT_LABELS[action.targetTrait]}. Questo round vale 0; il legame e attivo dal prossimo round.</p>
     }
 
     return <>
@@ -71,19 +73,23 @@ function CalculationDetails({ action, participant, eventLabel }: {
 function RoundSideCard({ side, round, participant }: { side: 'player' | 'opponent'; round: MatchResultRound; participant: ResultRoundParticipant }) {
     const [isOpen, setIsOpen] = useState(false)
     const action = participant.action
+    const symbiosisAction = action?.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'SYMBIOSIS' ? action : null
+    const sourceTrait = symbiosisAction?.sourceTrait
+    const directTrait = action?.actionType !== 'ACTIVATE_MUTATION' ? action?.trait : undefined
+    const isFineDelMondo = action?.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'FINE_DEL_MONDO'
     const detailId = `result-round-${round.id}-${side}`
 
     return (
-        <article className="result-side" data-gene={action?.actionType === 'ACTIVATE_MUTATION' ? action.sourceTrait : action?.trait}>
+        <article className="result-side" data-gene={sourceTrait ?? directTrait}>
             <header className="result-side__header">
-                <span className="result-side__glyph" aria-hidden="true">{action ? <GeneIcon trait={action.actionType === 'ACTIVATE_MUTATION' ? action.sourceTrait : action.trait} /> : null}</span>
+                <span className="result-side__glyph" aria-hidden="true">{isFineDelMondo ? <MeteorIcon /> : sourceTrait ? <GeneIcon trait={sourceTrait} /> : directTrait ? <GeneIcon trait={directTrait} /> : null}</span>
                 <div>
                     <span className="ev-eyebrow">{side === 'player' ? 'Tu' : 'Avversario'}</span>
-                    <strong>{action ? action.actionType === 'ACTIVATE_MUTATION' ? `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]}` : TRAIT_LABELS[action.trait] : 'Dati non disponibili'}</strong>
+                    <strong>{isFineDelMondo ? 'Fine del mondo' : symbiosisAction ? `${TRAIT_LABELS[symbiosisAction.sourceTrait]} ↔ ${TRAIT_LABELS[symbiosisAction.targetTrait]}` : directTrait ? TRAIT_LABELS[directTrait] : 'Dati non disponibili'}</strong>
                 </div>
             </header>
             <Chip tone={action?.actionType === 'ACTIVATE_MUTATION' ? 'warn' : action?.actionType === 'EVOLVE' ? 'info' : 'good'}>
-                {action ? (action.actionType === 'USE' ? 'USA' : action.actionType === 'EVOLVE' ? 'EVOLVI' : 'SIMBIOSI') : 'n/d'}
+                {!action ? 'n/d' : action.actionType === 'USE' ? 'USA' : action.actionType === 'EVOLVE' ? 'EVOLVI' : isFineDelMondo ? 'FINE DEL MONDO' : 'SIMBIOSI'}
             </Chip>
             <button type="button" className="result-side__toggle" aria-expanded={isOpen} aria-controls={detailId} onClick={() => setIsOpen((current) => !current)}>
                 {isOpen ? 'Nascondi calcolo' : 'Dettaglio calcolo'}

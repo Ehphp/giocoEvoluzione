@@ -46,6 +46,14 @@ export const COMBAT_MUTATION_CATALOG = {
         displayOrder: 5,
         iconKey: 'symbiosis',
     },
+    FINE_DEL_MONDO: {
+        id: 'FINE_DEL_MONDO',
+        label: 'Fine del mondo',
+        description: 'Una volta per partita rischia di accorciare di 2 round o estendere di 3 la durata dello scontro.',
+        shortDescription: 'Casualmente -2 o +3 round.',
+        displayOrder: 6,
+        iconKey: 'fine-del-mondo',
+    },
 } as const
 
 export type CombatMutationId = keyof typeof COMBAT_MUTATION_CATALOG

@@ -12,6 +12,7 @@ export type {
     CombatMutationLoadout,
     CombatMutationState,
     EnvironmentalCrisisEffect as RoundEventEffect,
+    FineDelMondoActivation,
     GameMode,
     GameStatus,
     AdaptationCollection as TraitCollection,

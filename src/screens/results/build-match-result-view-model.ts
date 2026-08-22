@@ -99,7 +99,9 @@ function getAction(resolution: PersistedResolutionData, slot: 1 | 2): ResultActi
 
     if (!action) return null
     return action.actionType === 'ACTIVATE_MUTATION'
-        ? { actionType: 'ACTIVATE_MUTATION', sourceTrait: action.sourceTrait, targetTrait: action.targetTrait }
+        ? action.mutationId === 'FINE_DEL_MONDO'
+            ? { actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' }
+            : { actionType: 'ACTIVATE_MUTATION', mutationId: 'SYMBIOSIS', sourceTrait: action.sourceTrait, targetTrait: action.targetTrait }
         : { trait: action.trait, actionType: action.actionType }
 }
 
@@ -158,7 +160,7 @@ export function getResultActionLabel(action: ResultAction | null): string {
         return 'Dati azione non disponibili'
     }
 
-    if (action.actionType === 'ACTIVATE_MUTATION') return `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]} (SIMBIOSI)`
+    if (action.actionType === 'ACTIVATE_MUTATION') return action.mutationId === 'FINE_DEL_MONDO' ? 'Fine del mondo (0 PT)' : `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]} (SIMBIOSI)`
     return `${TRAIT_LABELS[action.trait]} (${action.actionType === 'USE' ? 'USA' : 'EVOLVI'})`
 }
 
@@ -217,7 +219,7 @@ export function buildMatchResultViewModel(snapshot: GameSnapshot, myScore: numbe
             tiebreakTotal: opponentTiebreak,
         },
         finalRoundNumber: finalRecord?.round_number ?? snapshot.game.current_round,
-        totalRounds: snapshot.game.round_event_sequence.length,
+        totalRounds: snapshot.game.scheduled_rounds,
         background: getBattleBackgroundForEvent(finalEvent?.id),
         metrics,
         lastRound: rounds.at(-1) ?? null,

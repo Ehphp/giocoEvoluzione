@@ -9,6 +9,7 @@ import {
     Eye,
     Info,
     Lock,
+    Rocket,
     Plus,
     Flame,
     Leaf,
@@ -278,4 +279,5 @@ export const BackIcon = ArrowLeft
 export const NatureIcon = Leaf
 export const VenomIcon = Skull
 export const FireIcon = Flame
+export const MeteorIcon = Rocket
 export const AddIcon = Plus

@@ -4,8 +4,8 @@ import {
     EVOLVE_ROUND_VALUE,
     LEVEL_BONUS,
     MAX_ADAPTATION_LEVEL,
+    MAX_SCHEDULED_ROUNDS,
     NATURAL_ADVANTAGE_BONUS,
-    TOTAL_ROUNDS,
 } from '../../../shared/game-rules/catalog.ts'
 import {
     ADAPTATION_IDS,
@@ -16,6 +16,7 @@ import {
     normalizeAdaptationCollection,
     parseCombatMutationLoadout,
     parseCombatMutationState,
+    parseFineDelMondoActivations,
     parseSymbiosisLinks,
 } from '../../../shared/game-rules/state.ts'
 import type {
@@ -23,10 +24,13 @@ import type {
     AdaptationId,
     CombatMutationLoadout,
     CombatMutationState,
+    FineDelMondoActivation,
+    FineDelMondoActivationRequest,
     PlayerRoundAction,
 } from '../../../shared/game-rules/types.ts'
 import { selectEdgeBotAction } from './bot-policy.ts'
 import { resolveEdgeRound } from './round-domain.ts'
+import { drawFineDelMondoOutcome } from './fine-del-mondo-rng.ts'
 import {
     createMatchCompletionEvents,
     recordCreatureVisualProgressFromMatchCompletion,
@@ -134,6 +138,13 @@ function isTraitName(value: unknown): value is TraitName {
 }
 /** Database stores sourceTrait in the legacy trait column; the domain never does. */
 function parseStoredRoundAction(row: Record<string, unknown>, playerId: string): PlayerRoundAction {
+    if (
+        row.action_type === 'ACTIVATE_MUTATION' &&
+        row.mutation_id === 'FINE_DEL_MONDO' &&
+        row.trait === null &&
+        row.target_trait === null
+    )
+        return { playerId, actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' }
     if (!isTraitName(row.trait)) throw new Error('INVALID_STORED_ACTION_TRAIT')
     if (row.action_type === 'USE' || row.action_type === 'EVOLVE')
         return { playerId, trait: row.trait, actionType: row.action_type }
@@ -153,6 +164,7 @@ async function ensureEdgeBotRoundAction(
     input: {
         gameId: string
         roundNumber: number
+        scheduledRounds: number
         playerId: string
         traits: AdaptationCollection
         combatMutationState: CombatMutationState
@@ -175,6 +187,7 @@ async function ensureEdgeBotRoundAction(
         ruleVersion: input.ruleVersion,
         roundEvent: input.roundEvent,
         roundNumber: input.roundNumber,
+        scheduledRounds: input.scheduledRounds,
         nextRoundEvent: input.nextRoundEvent,
         publicOpponentTraits: input.publicOpponentTraits,
         publicOpponentCombatMutationState: input.publicOpponentCombatMutationState,
@@ -291,6 +304,8 @@ Deno.serve(async (request) => {
         const gameMode = String((gameData as Record<string, unknown>).game_mode ?? 'PVP')
         const ruleVersion = String((gameData as Record<string, unknown>).rule_version ?? '')
         let gameSymbiosisLinks: ReturnType<typeof parseSymbiosisLinks>
+        let gameFineDelMondoActivations: FineDelMondoActivation[]
+        const scheduledRounds = Number((gameData as Record<string, unknown>).scheduled_rounds ?? 7)
         try {
             assertSupportedRuleVersion(ruleVersion)
         } catch (error) {
@@ -301,15 +316,25 @@ Deno.serve(async (request) => {
                 (gameData as Record<string, unknown>).symbiosis_links,
                 'game.symbiosis_links',
             )
+            gameFineDelMondoActivations = parseFineDelMondoActivations(
+                (gameData as Record<string, unknown>).fine_del_mondo_activations ?? [],
+                'game.fine_del_mondo_activations',
+            )
         } catch {
             return json(
-                { error: 'Dati Simbiosi della partita non validi.', code: 'INVALID_SYMBIOSIS_LINKS', gameId },
+                {
+                    error: 'Dati Combat Mutations della partita non validi.',
+                    code: 'INVALID_COMBAT_MUTATION_MATCH_STATE',
+                    gameId,
+                },
                 409,
             )
         }
+        if (!Number.isInteger(scheduledRounds) || scheduledRounds < 5 || scheduledRounds > MAX_SCHEDULED_ROUNDS)
+            return json({ error: 'Durata partita non valida.', code: 'INVALID_SCHEDULED_ROUNDS', gameId }, 409)
         if (
             String(gameData.status) === 'FINISHED' ||
-            roundNumber > TOTAL_ROUNDS ||
+            roundNumber > scheduledRounds ||
             roundNumber !== Number(gameData.current_round)
         ) {
             return json({ status: 'stale_round' })
@@ -371,6 +396,7 @@ Deno.serve(async (request) => {
                 await ensureEdgeBotRoundAction(supabaseAdmin, {
                     gameId,
                     roundNumber,
+                    scheduledRounds,
                     ruleVersion,
                     playerId: String(botPlayer.id),
                     traits: normalizeAdaptationCollection(botPlayer.traits as AdaptationCollection),
@@ -379,7 +405,7 @@ Deno.serve(async (request) => {
                     symbiosisLinks: gameSymbiosisLinks,
                     roundEvent,
                     nextRoundEvent:
-                        roundNumber < TOTAL_ROUNDS
+                        roundNumber < scheduledRounds
                             ? getRoundEventById(String(gameData.round_event_sequence?.[roundNumber] ?? ''))
                             : null,
                     publicOpponentTraits: normalizeAdaptationCollection(humanPlayer.traits as AdaptationCollection),
@@ -435,6 +461,31 @@ Deno.serve(async (request) => {
             })
         }
 
+        const player1Action = parseStoredRoundAction(player1ActionRow as Record<string, unknown>, String(player1.id))
+        const player2Action = parseStoredRoundAction(player2ActionRow as Record<string, unknown>, String(player2.id))
+        const rngSecret = Deno.env.get('COMBAT_MUTATION_RNG_SECRET')
+        const fineDelMondoActivationRequests: FineDelMondoActivationRequest[] = [player1Action, player2Action]
+            .filter(
+                (action): action is Extract<PlayerRoundAction, { mutationId: 'FINE_DEL_MONDO' }> =>
+                    action.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'FINE_DEL_MONDO',
+            )
+            .map((action) => ({ ownerPlayerId: action.playerId, activatedRound: roundNumber }))
+        if (fineDelMondoActivationRequests.length && !rngSecret)
+            return json({ error: 'Missing Combat Mutation RNG configuration.' }, 500)
+        const fineDelMondoOutcomes = await Promise.all(
+            fineDelMondoActivationRequests.map(async (request) => ({
+                ...request,
+                outcome: await drawFineDelMondoOutcome({
+                    secret: rngSecret!,
+                    gameId,
+                    roundNumber,
+                    playerId: request.ownerPlayerId,
+                    mutationId: 'FINE_DEL_MONDO',
+                    ruleVersion,
+                }),
+            })),
+        )
+
         const resolution = resolveEdgeRound({
             roundNumber,
             roundEvent,
@@ -450,8 +501,11 @@ Deno.serve(async (request) => {
             player1CombatMutationState: player1Mutations.combatMutationState,
             player2CombatMutationState: player2Mutations.combatMutationState,
             symbiosisLinks,
-            player1Action: parseStoredRoundAction(player1ActionRow as Record<string, unknown>, String(player1.id)),
-            player2Action: parseStoredRoundAction(player2ActionRow as Record<string, unknown>, String(player2.id)),
+            scheduledRounds,
+            fineDelMondoActivations: gameFineDelMondoActivations,
+            fineDelMondoActivationOutcomes: fineDelMondoOutcomes,
+            player1Action,
+            player2Action,
             startedAt: (gameData.started_at as string | null) ?? null,
             priorRoundValues: (
                 (
@@ -478,6 +532,8 @@ Deno.serve(async (request) => {
             p_player_1_combat_mutation_state: resolutionData.player1CombatMutationStateAfter,
             p_player_2_combat_mutation_state: resolutionData.player2CombatMutationStateAfter,
             p_symbiosis_links: resolutionData.symbiosisLinksAfter,
+            p_scheduled_rounds: Number(resolutionData.scheduledRoundsAfter),
+            p_fine_del_mondo_activations: resolutionData.fineDelMondoActivationsAfter,
             p_player_1_score: Number(resolutionData.player1ScoreAfter ?? 0),
             p_player_2_score: Number(resolutionData.player2ScoreAfter ?? 0),
             p_status: String(resolutionData.statusAfter ?? 'REVEALING'),

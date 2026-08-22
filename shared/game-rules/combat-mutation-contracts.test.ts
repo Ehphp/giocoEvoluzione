@@ -74,6 +74,8 @@ describe('Combat Mutations production contracts', () => {
                 player2Action: { playerId: 'p2', trait: 'ARMOR', actionType: 'EVOLVE' },
             }),
         ).toThrow('UNSUPPORTED_RULE_VERSION')
-        expect(RULE_VERSION).toBe('combat-mutations-symbiosis-v1')
+        // A pin, not a fact: bumping the ruleset must be a deliberate edit here, because every
+        // match already in flight is frozen on the version it was created with.
+        expect(RULE_VERSION).toBe('combat-mutations-fine-del-mondo-v1')
     })
 })

@@ -84,9 +84,16 @@ export type ActivateMutationRoundAction = {
     sourceTrait: AdaptationId
     targetTrait: AdaptationId
 }
-export type PlayerRoundAction = DirectPlayerRoundAction | ActivateMutationRoundAction
+export type FineDelMondoActivateMutationRoundAction = {
+    playerId: string
+    actionType: 'ACTIVATE_MUTATION'
+    mutationId: 'FINE_DEL_MONDO'
+}
+export type PlayerRoundAction =
+    DirectPlayerRoundAction | ActivateMutationRoundAction | FineDelMondoActivateMutationRoundAction
 export type DirectRoundAction = Omit<DirectPlayerRoundAction, 'playerId'>
-export type ActivateMutationAction = Omit<ActivateMutationRoundAction, 'playerId'>
+export type ActivateMutationAction =
+    Omit<ActivateMutationRoundAction, 'playerId'> | Omit<FineDelMondoActivateMutationRoundAction, 'playerId'>
 export type RoundAction = DirectRoundAction | ActivateMutationAction
 
 /** Match-scoped state: ownership also proves that its owner's SYMBIOSIS is consumed. */
@@ -110,6 +117,14 @@ export type SymbiosisPropagationEvent = {
     levelAfter: AdaptationLevel
 }
 export type SymbiosisRoundEvent = SymbiosisActivationEvent | SymbiosisPropagationEvent
+export type FineDelMondoOutcome = 'FINE_DEL_MONDO' | 'ERA_PROSPERA'
+/** Match-scoped ownership is the canonical proof that this active mutation was consumed. */
+export type FineDelMondoActivation = {
+    ownerPlayerId: string
+    activatedRound: number
+    outcome: FineDelMondoOutcome
+}
+export type FineDelMondoActivationRequest = Pick<FineDelMondoActivation, 'ownerPlayerId' | 'activatedRound'>
 export type ResolvedPlayerRound = PlayerRoundAction & {
     roundValue: number
     breakdown: RoundValueBreakdown
@@ -132,6 +147,10 @@ export type ResolveRoundInput = {
     player2CombatMutationLoadout: CombatMutationLoadout
     /** Required by persisted matches; optional only for compatibility with legacy pure callers. */
     symbiosisLinks?: readonly SymbiosisLink[]
+    /** Canonical match duration. Optional only for legacy pure callers. */
+    scheduledRounds?: number
+    /** Match-scoped consumption history for FINE_DEL_MONDO. */
+    fineDelMondoActivations?: readonly FineDelMondoActivation[]
     player1Action: PlayerRoundAction
     player2Action: PlayerRoundAction
     alreadyResolved?: boolean
@@ -147,4 +166,5 @@ export type RoundResolution = {
     player2ScoreDelta: number
     symbiosisLinks: SymbiosisLink[]
     symbiosisEvents: SymbiosisRoundEvent[]
+    fineDelMondoActivationRequests: FineDelMondoActivationRequest[]
 }

@@ -1,4 +1,5 @@
 import {
+    STANDARD_SCHEDULED_ROUNDS,
     createLookaheadPolicy,
     getLegalBotActions,
     randomPolicy,
@@ -14,6 +15,7 @@ export type SelectEdgeBotActionInput = {
     combatMutationLoadout: SelectBotActionInput['combatMutationLoadout']
     roundEvent: SelectBotActionInput['roundEvent']
     roundNumber: number
+    scheduledRounds?: number
     ruleVersion: SelectBotActionInput['ruleVersion']
     publicOpponentTraits: SelectBotActionInput['publicOpponentAdaptations']
     publicOpponentCombatMutationState: SelectBotActionInput['publicOpponentCombatMutationState']
@@ -30,6 +32,7 @@ export function selectEdgeBotAction({
     combatMutationLoadout,
     roundEvent,
     roundNumber,
+    scheduledRounds = STANDARD_SCHEDULED_ROUNDS,
     ruleVersion,
     publicOpponentTraits,
     publicOpponentCombatMutationState,
@@ -47,6 +50,7 @@ export function selectEdgeBotAction({
             combatMutationLoadout,
             roundEvent,
             roundNumber,
+            scheduledRounds,
             ruleVersion,
             publicOpponentAdaptations: publicOpponentTraits,
             publicOpponentCombatMutationState,
@@ -66,6 +70,7 @@ export function selectEdgeBotAction({
             combatMutationLoadout,
             roundEvent,
             roundNumber,
+            scheduledRounds,
             ruleVersion,
             publicOpponentAdaptations: publicOpponentTraits,
             publicOpponentCombatMutationState,
@@ -84,6 +89,7 @@ export function selectEdgeBotAction({
         combatMutationLoadout,
         roundEvent,
         roundNumber,
+        scheduledRounds,
         ruleVersion,
         publicOpponentAdaptations: publicOpponentTraits,
         publicOpponentCombatMutationState,

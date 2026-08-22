@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { TOTAL_ROUNDS } from '../game/config'
 import type { TraitType } from '../game/types'
 import type { EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
 import {
@@ -27,7 +26,8 @@ export type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
 
 export type BattleSubmitAction =
     | { trait: TraitType; actionType: 'USE' | 'EVOLVE' }
-    | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
+    | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType }
+    | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' }
 
 /** How long the round result stays on screen before the reveal is acknowledged. */
 const REVEAL_ACKNOWLEDGE_DELAY_MS = 1000
@@ -239,7 +239,7 @@ export function useMatchSession(input: {
             !playerId ||
             currentStatus !== 'REVEALING' ||
             !currentRoundResultId ||
-            currentRound >= TOTAL_ROUNDS
+            currentRound >= (snapshot?.game.scheduled_rounds ?? 0)
         ) {
             return
         }
@@ -261,6 +261,7 @@ export function useMatchSession(input: {
         snapshot?.game.status,
         snapshot?.currentRoundResult?.id,
         snapshot?.game.current_round,
+        snapshot?.game.scheduled_rounds,
         snapshot?.me?.id,
     ])
 
@@ -377,14 +378,7 @@ export function useMatchSession(input: {
 
             try {
                 const mutation = await submitRoundAction(
-                    action.actionType === 'ACTIVATE_MUTATION'
-                        ? {
-                              gameId: snapshot.game.id,
-                              roundNumber: snapshot.game.current_round,
-                              ...action,
-                              mutationId: 'SYMBIOSIS',
-                          }
-                        : { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action },
+                    { gameId: snapshot.game.id, roundNumber: snapshot.game.current_round, ...action },
                 )
 
                 snapshotSyncRef.current?.invalidate(mutation.stateRevision, 'mutation')

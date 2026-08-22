@@ -57,6 +57,7 @@ function BattlePreview() {
             onUseGene={asyncNoop}
             onEvolveGene={asyncNoop}
             onActivateSymbiosis={async () => false}
+            onActivateFineDelMondo={async () => false}
             onLeaveSession={noop}
         />
     )

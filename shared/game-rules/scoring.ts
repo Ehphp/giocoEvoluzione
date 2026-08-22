@@ -107,3 +107,19 @@ export function getValidatedActionBreakdown(
         appliedEventEffects: [],
     }
 }
+
+/** Active mutations without a gene still need a stable, persisted zero-value breakdown. */
+export function getMutationActivationBreakdown(): RoundValueBreakdown {
+    return {
+        actionType: 'ACTIVATE_MUTATION',
+        baseContribution: 0,
+        levelContribution: 0,
+        eventModifier: 0,
+        matchupBonus: 0,
+        mutationBonus: 0,
+        originalLevel: 0,
+        effectiveLevel: 0,
+        total: 0,
+        appliedEventEffects: [],
+    }
+}

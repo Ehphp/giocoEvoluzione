@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 
 import { RULE_VERSION } from '../../../../shared/game-rules/catalog.ts'
 import { isSupportedRuleVersion } from '../../../../shared/game-rules/state.ts'
-import { TOTAL_ROUNDS, TRAIT_LABELS } from '../../../game/config'
+import { TRAIT_LABELS } from '../../../game/config'
 import { getCombatMutationEffectDescription, getRoundExplanation } from '../../../game/round-result-explainer'
 import { getRoundEventLabel } from '../../../game/ui-context'
-import type { CombatMutationEffect, PlayerRoundAction, RoundValueBreakdown } from '../../../game/types'
+import type { CombatMutationEffect, FineDelMondoActivation, PlayerRoundAction, RoundValueBreakdown } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
 import { Button, Chip, Notice, Overlay, Panel } from '../../../ui/components'
-import { GeneIcon } from '../../../ui/icons'
+import { GeneIcon, MeteorIcon } from '../../../ui/icons'
 
 export type RoundResolutionData = {
     ruleVersion?: string
@@ -25,6 +25,10 @@ export type RoundResolutionData = {
     matchEndReason?: 'CLINCH' | 'SCORE' | 'ROUND_VALUE_TIEBREAK' | 'DRAW' | null
     player1RoundValueTotal?: number
     player2RoundValueTotal?: number
+    scheduledRoundsBefore?: number
+    scheduledRoundsAfter?: number
+    fineDelMondoActivationsBefore?: FineDelMondoActivation[]
+    fineDelMondoActivationsAfter?: FineDelMondoActivation[]
 }
 
 type RoundResultOverlayProps = {
@@ -60,10 +64,13 @@ function BreakdownCard({
     showTotal,
     isMe = false,
 }: BreakdownCardProps) {
-    const actionLabel = action ? (action.actionType === 'USE' ? 'USA' : action.actionType === 'EVOLVE' ? 'EVOLVI' : 'SIMBIOSI') : 'N/D'
-    const sourceTrait = action?.actionType === 'ACTIVATE_MUTATION' ? action.sourceTrait : action?.trait
+    let actionLabel = 'N/D'
+    if (action?.actionType === 'USE') actionLabel = 'USA'
+    else if (action?.actionType === 'EVOLVE') actionLabel = 'EVOLVI'
+    else if (action?.actionType === 'ACTIVATE_MUTATION') actionLabel = action.mutationId === 'FINE_DEL_MONDO' ? 'FINE DEL MONDO' : 'SIMBIOSI'
+    const sourceTrait = action?.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'SYMBIOSIS' ? action.sourceTrait : action?.actionType === 'ACTIVATE_MUTATION' ? undefined : action?.trait
     const actionTitle = action?.actionType === 'ACTIVATE_MUTATION'
-        ? `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]}`
+        ? action.mutationId === 'FINE_DEL_MONDO' ? 'Fine del mondo' : `${TRAIT_LABELS[action.sourceTrait]} ↔ ${TRAIT_LABELS[action.targetTrait]}`
         : action ? TRAIT_LABELS[action.trait] : 'N/D'
 
     return (
@@ -73,7 +80,7 @@ function BreakdownCard({
         >
             <header className="round-breakdown__header">
                 <span className="round-breakdown__glyph" aria-hidden="true">
-                    {sourceTrait ? <GeneIcon trait={sourceTrait} /> : null}
+                    {sourceTrait ? <GeneIcon trait={sourceTrait} /> : action?.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'FINE_DEL_MONDO' ? <MeteorIcon /> : null}
                 </span>
                 <div>
                     <span className="ev-eyebrow">{title}</span>
@@ -86,7 +93,9 @@ function BreakdownCard({
                 <details className={`round-breakdown__details ${showContributions ? '' : 'is-hidden'}`}>
                     <summary>Dettaglio calcolo</summary>
                     <div className="round-breakdown__math">
-                        {action?.actionType === 'ACTIVATE_MUTATION' ? (
+                        {action?.actionType === 'ACTIVATE_MUTATION' ? action.mutationId === 'FINE_DEL_MONDO' ? (
+                            <p>FINE DEL MONDO: il round vale 0. Il sorteggio modifica la durata della partita.</p>
+                        ) : (
                             <p>SIMBIOSI: il round vale 0. Il legame sara attivo dal prossimo round.</p>
                         ) : action?.actionType === 'EVOLVE' ? (
                             <p>EVOLVI: valore fisso {breakdown.total}; evoluzione e recupero ignorano affinita e matchup.</p>
@@ -171,7 +180,7 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
     })
     const continueLabel = snapshot.game.status === 'REVEALING'
         ? 'Continua'
-        : snapshot.game.current_round < TOTAL_ROUNDS
+        : snapshot.game.current_round < snapshot.game.scheduled_rounds
             ? 'Prossimo round'
             : 'Risultato finale'
 
@@ -222,6 +231,11 @@ export function RoundResultOverlay({ snapshot, resolutionData, onContinue, isBus
                 {!hasCurrentRuleVersion ? (
                     <Notice tone="warning">
                         Risultato calcolato con regole non riconosciute. Distribuisci la Edge Function aggiornata e avvia una nuova partita.
+                    </Notice>
+                ) : null}
+                {resolutionData?.scheduledRoundsBefore !== undefined && resolutionData.scheduledRoundsAfter !== undefined && resolutionData.fineDelMondoActivationsAfter?.some((activation) => !resolutionData.fineDelMondoActivationsBefore?.some((before) => before.ownerPlayerId === activation.ownerPlayerId)) ? (
+                    <Notice tone="warning">
+                        Fine del mondo: {resolutionData.scheduledRoundsBefore} → {resolutionData.scheduledRoundsAfter} round. {resolutionData.fineDelMondoActivationsAfter?.filter((activation) => !resolutionData.fineDelMondoActivationsBefore?.some((before) => before.ownerPlayerId === activation.ownerPlayerId)).map((activation) => activation.outcome === 'FINE_DEL_MONDO' ? 'Fine del mondo' : 'Era prospera').join(' · ')}
                     </Notice>
                 ) : null}
 

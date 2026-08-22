@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { ADAPTATION_IDS, MAX_ADAPTATION_LEVEL, ROUND_EVENT_DEFINITIONS } from '../shared/game-rules/index.ts'
+import { ADAPTATION_IDS, MAX_ADAPTATION_LEVEL, MAX_SCHEDULED_ROUNDS, ROUND_EVENT_DEFINITIONS } from '../shared/game-rules/index.ts'
 const outputPath = resolve(import.meta.dirname, '../supabase/generated/game-rules.sql')
 const adaptationIds = ADAPTATION_IDS.map((adaptation) => `'${adaptation}'`).join(', ')
 const initialAdaptations = ADAPTATION_IDS.map(
@@ -57,12 +57,9 @@ returns jsonb language sql as $$
       ${eventIds}
     ]::text[]) event_id order by random()) randomized
   )
-  select jsonb_agg(event_id order by position)
-  from (
-    select event_id, position from shuffled
-    union all
-    select event_id, 7 as position from shuffled where position = 1
-  ) best_of_seven;
+  select jsonb_agg(shuffled.event_id order by rounds.round_number)
+  from generate_series(1, ${MAX_SCHEDULED_ROUNDS}) as rounds(round_number)
+  join shuffled on shuffled.position = ((rounds.round_number - 1) % ${ROUND_EVENT_DEFINITIONS.length}) + 1;
 $$;
 
 -- Bot game creation is structural and lives in supabase/schema.sql.

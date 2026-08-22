@@ -9,7 +9,7 @@ import {
     type RoundAction,
     type SymbiosisLink,
 } from './types.ts'
-import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, RULE_VERSION, TOTAL_ROUNDS } from './catalog.ts'
+import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE, RULE_VERSION, STANDARD_SCHEDULED_ROUNDS } from './catalog.ts'
 import {
     getAdaptationRoundValue,
     getCombatMutationStateAfterEvolve,
@@ -30,6 +30,7 @@ export type PublicRoundHistory = {
 }
 export type BotDecisionContext = {
     roundNumber: number
+    scheduledRounds?: number
     ownScore: number
     opponentScore: number
     ruleVersion: string
@@ -224,7 +225,8 @@ export function evaluateHeuristicAction(
     action: BotRoundAction,
     weights: HeuristicWeights = DEFAULT_HEURISTIC_WEIGHTS,
 ): HeuristicActionEvaluation {
-    const remaining = TOTAL_ROUNDS - context.roundNumber + 1
+    const scheduledRounds = context.scheduledRounds ?? STANDARD_SCHEDULED_ROUNDS
+    const remaining = scheduledRounds - context.roundNumber + 1
     const behind = Math.max(0, context.opponentScore - context.ownScore)
     const decisive = Math.abs(context.ownScore - context.opponentScore) <= 1 && remaining <= 2 ? 1 : 0
     const trait = context.adaptations[action.trait]
@@ -297,7 +299,7 @@ export function evaluateHeuristicAction(
         context.combatMutationState,
         context.combatMutationLoadout,
     )
-    const remainingRounds = ((MAX_ADAPTATION_LEVEL - trait.level + recovered) * remaining) / TOTAL_ROUNDS
+    const remainingRounds = ((MAX_ADAPTATION_LEVEL - trait.level + recovered) * remaining) / scheduledRounds
     return {
         action,
         score:

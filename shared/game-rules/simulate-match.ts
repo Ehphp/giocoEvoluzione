@@ -1,4 +1,4 @@
-import { TOTAL_ROUNDS } from './catalog.ts'
+import { STANDARD_SCHEDULED_ROUNDS } from './catalog.ts'
 import { resolveRound } from './engine.ts'
 import { resolveMatchOutcome, type StoredRoundValue } from './match.ts'
 import { createInitialAdaptations, getRoundEventById } from './state.ts'
@@ -30,6 +30,7 @@ export type SimulatedMatchState = {
     rightCombatMutationState: CombatMutationState
     symbiosisLinks: SymbiosisLink[]
     roundNumber: number
+    scheduledRounds: number
 }
 export type SimulatedRound = PublicRoundHistory & {
     event: EnvironmentalCrisisDefinition
@@ -144,6 +145,7 @@ function actionFor(
         input.side === 'left' ? input.state.rightCombatMutationLoadout : input.state.leftCombatMutationLoadout
     const context = {
         roundNumber: input.state.roundNumber,
+        scheduledRounds: input.state.scheduledRounds,
         ownScore: input.side === 'left' ? input.state.leftScore : input.state.rightScore,
         opponentScore: input.side === 'left' ? input.state.rightScore : input.state.leftScore,
         ruleVersion: input.ruleVersion,
@@ -183,6 +185,7 @@ export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
         rightCombatMutationState: cloneCombatMutationState(input.initialState.rightCombatMutationState),
         symbiosisLinks: cloneSymbiosisLinks(input.initialState.symbiosisLinks ?? []),
         roundNumber: input.initialState.roundNumber ?? 1,
+        scheduledRounds: input.initialState.scheduledRounds ?? STANDARD_SCHEDULED_ROUNDS,
     }
     const history: PublicRoundHistory[] = []
     const values: StoredRoundValue[] = [...(input.priorRoundValues ?? [])]
@@ -193,15 +196,16 @@ export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
         player1Score: state.leftScore,
         player2Score: state.rightScore,
         resolvedRoundNumber: Math.max(0, state.roundNumber - 1),
+        scheduledRounds: state.scheduledRounds,
         storedRoundValues: values,
     })
-    while (!outcome.finished && state.roundNumber <= TOTAL_ROUNDS) {
+    while (!outcome.finished && state.roundNumber <= state.scheduledRounds) {
         const event = getRoundEventById(input.eventSequence[(state.roundNumber - 1) % input.eventSequence.length]!)
         const nextEvent =
-            state.roundNumber < TOTAL_ROUNDS
+            state.roundNumber < state.scheduledRounds
                 ? getRoundEventById(input.eventSequence[state.roundNumber % input.eventSequence.length]!)
                 : null
-        const remainingEvents = Array.from({ length: TOTAL_ROUNDS - state.roundNumber + 1 }, (_, index) =>
+        const remainingEvents = Array.from({ length: state.scheduledRounds - state.roundNumber + 1 }, (_, index) =>
             getRoundEventById(input.eventSequence[(state.roundNumber - 1 + index) % input.eventSequence.length]!),
         )
         const leftScoreBefore = state.leftScore
@@ -235,6 +239,7 @@ export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
         })
         const resolution = resolveRound({
             roundNumber: state.roundNumber,
+            scheduledRounds: state.scheduledRounds,
             roundEvent: event,
             player1Id: 'left',
             player2Id: 'right',
@@ -299,6 +304,7 @@ export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
             player1Score: state.leftScore,
             player2Score: state.rightScore,
             resolvedRoundNumber: state.roundNumber,
+            scheduledRounds: state.scheduledRounds,
             storedRoundValues: values,
         })
         state.roundNumber += 1

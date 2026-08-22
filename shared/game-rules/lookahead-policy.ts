@@ -1,4 +1,4 @@
-import { TOTAL_ROUNDS } from './catalog.ts'
+import { STANDARD_SCHEDULED_ROUNDS } from './catalog.ts'
 import { getAdaptationRoundValue, resolveRound } from './engine.ts'
 import {
     getLegalBotActions,
@@ -43,6 +43,7 @@ type SearchState = {
     ownScore: number
     rivalScore: number
     round: number
+    scheduledRounds: number
 }
 function canonical(
     adaptations: AdaptationCollection,
@@ -123,8 +124,8 @@ function plausibleActions(
               symbiosisLinks: options.symbiosisLinks,
           })
               .filter(
-                  (action): action is Extract<RoundAction, { actionType: 'ACTIVATE_MUTATION' }> =>
-                      action.actionType === 'ACTIVATE_MUTATION',
+                  (action): action is Extract<RoundAction, { mutationId: 'SYMBIOSIS' }> =>
+                      action.actionType === 'ACTIVATE_MUTATION' && action.mutationId === 'SYMBIOSIS',
               )
               .sort(
                   (left, right) =>
@@ -175,7 +176,7 @@ function decide(
     const memo = new Map<string, number>()
     const search = (state: SearchState, step: number): number => {
         const event = events[step]
-        if (!event || step >= depth || state.round > TOTAL_ROUNDS)
+        if (!event || step >= depth || state.round > state.scheduledRounds)
             return evaluateBotState(state, Math.max(0, depth - step)).total
         const key = `${step}|${state.round}|${state.ownScore},${state.rivalScore}|${canonical(state.own, state.ownCombatMutationState, state.ownCombatMutationLoadout)}|${canonical(state.rival, state.rivalCombatMutationState, state.rivalCombatMutationLoadout)}|${canonicalSymbiosisLinks(state.symbiosisLinks)}`
         const cached = memo.get(key)
@@ -211,6 +212,7 @@ function decide(
             for (const rivalAction of rivalActions) {
                 const resolution = resolveRound({
                     roundNumber: state.round,
+                    scheduledRounds: state.scheduledRounds,
                     roundEvent: event,
                     player1Id: 'own',
                     player2Id: 'rival',
@@ -237,6 +239,7 @@ function decide(
                         ownScore: state.ownScore + resolution.player1ScoreDelta,
                         rivalScore: state.rivalScore + resolution.player2ScoreDelta,
                         round: state.round + 1,
+                        scheduledRounds: state.scheduledRounds,
                     },
                     step + 1,
                 )
@@ -257,6 +260,7 @@ function decide(
         ownScore: context.ownScore,
         rivalScore: context.opponentScore,
         round: context.roundNumber,
+        scheduledRounds: context.scheduledRounds ?? STANDARD_SCHEDULED_ROUNDS,
     }
     const choices = context.legalActions.map((action) => {
         const rivals = plausibleActions(
@@ -276,6 +280,7 @@ function decide(
         for (const rival of rivals) {
             const resolution = resolveRound({
                 roundNumber: root.round,
+                scheduledRounds: root.scheduledRounds,
                 roundEvent: context.roundEvent,
                 player1Id: 'own',
                 player2Id: 'rival',
@@ -302,6 +307,7 @@ function decide(
                     ownScore: root.ownScore + resolution.player1ScoreDelta,
                     rivalScore: root.rivalScore + resolution.player2ScoreDelta,
                     round: root.round + 1,
+                    scheduledRounds: root.scheduledRounds,
                 },
                 1,
             )

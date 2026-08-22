@@ -1,6 +1,7 @@
 import {
     ADAPTATION_CATALOG,
     MAX_ADAPTATION_LEVEL,
+    MAX_SCHEDULED_ROUNDS,
     ROUND_EVENT_BY_ID,
     ROUND_EVENT_DEFINITIONS,
     SUPPORTED_RULE_VERSIONS,
@@ -16,6 +17,7 @@ import {
     type CombatMutationLoadout,
     type CombatMutationState,
     type EnvironmentalCrisisDefinition,
+    type FineDelMondoActivation,
     type SymbiosisLink,
 } from './types.ts'
 export { ADAPTATION_IDS, TOTAL_ROUNDS, MAX_ADAPTATION_LEVEL }
@@ -48,7 +50,6 @@ export function createInitialCombatMutationState(): CombatMutationState {
         recoverySurgeUsed: false,
     }
 }
-
 export class CombatMutationDataError extends Error {
     readonly code: 'INVALID_COMBAT_MUTATION_LOADOUT' | 'INVALID_COMBAT_MUTATION_STATE'
     readonly field: string
@@ -154,6 +155,37 @@ export function parseSymbiosisLinks(value: unknown, field = 'symbiosis_links'): 
     return value.map((link) => ({ ...link }))
 }
 
+export function isFineDelMondoActivation(value: unknown): value is FineDelMondoActivation {
+    if (!isPlainRecord(value)) return false
+    const keys = Object.keys(value)
+    return (
+        keys.length === 3 &&
+        keys.every((key) => ['ownerPlayerId', 'activatedRound', 'outcome'].includes(key)) &&
+        typeof value.ownerPlayerId === 'string' &&
+        value.ownerPlayerId.length > 0 &&
+        typeof value.activatedRound === 'number' &&
+        Number.isInteger(value.activatedRound) &&
+        value.activatedRound >= 3 &&
+        value.activatedRound <= 10 &&
+        (value.outcome === 'FINE_DEL_MONDO' || value.outcome === 'ERA_PROSPERA')
+    )
+}
+export function isFineDelMondoActivations(value: unknown): value is FineDelMondoActivation[] {
+    return (
+        Array.isArray(value) &&
+        value.length <= 2 &&
+        value.every(isFineDelMondoActivation) &&
+        new Set(value.map((activation) => activation.ownerPlayerId)).size === value.length
+    )
+}
+export function parseFineDelMondoActivations(
+    value: unknown,
+    field = 'fine_del_mondo_activations',
+): FineDelMondoActivation[] {
+    if (!isFineDelMondoActivations(value)) throw new Error(`INVALID_FINE_DEL_MONDO_ACTIVATIONS: ${field}`)
+    return value.map((activation) => ({ ...activation }))
+}
+
 /** Cache-only canonicalization. It never writes, displays or changes a slot order. */
 export function canonicalCombatMutationLoadoutCacheKey(loadout: CombatMutationLoadout): string {
     return [...loadout]
@@ -182,11 +214,12 @@ export function getRoundEventForRound(sequence: string[], roundNumber: number): 
     const eventId = sequence[roundNumber - 1]
     return eventId ? getRoundEventById(eventId) : null
 }
+/** Persist enough events for the largest legal schedule; match state chooses the live prefix. */
 export function generateRoundEventSequence(random: () => number = Math.random): string[] {
     const ids = ROUND_EVENT_DEFINITIONS.map((roundEvent) => roundEvent.id)
     for (let index = ids.length - 1; index > 0; index -= 1) {
         const swap = Math.floor(random() * (index + 1))
         ;[ids[index], ids[swap]] = [ids[swap]!, ids[index]!]
     }
-    return Array.from({ length: TOTAL_ROUNDS }, (_, index) => ids[index % ids.length]!)
+    return Array.from({ length: MAX_SCHEDULED_ROUNDS }, (_, index) => ids[index % ids.length]!)
 }

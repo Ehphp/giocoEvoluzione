@@ -6,7 +6,8 @@ export type MatchResultOutcome = 'win' | 'loss' | 'draw'
 export type ResultAction = {
     trait: TraitType
     actionType: 'USE' | 'EVOLVE'
-} | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
+} | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType }
+  | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' }
 
 export type ResultParticipant = {
     id: string

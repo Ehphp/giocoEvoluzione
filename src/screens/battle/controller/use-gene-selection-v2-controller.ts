@@ -9,9 +9,9 @@ type UseGeneSelectionV2ControllerInput = {
     snapshot: GameSnapshot
     myScore: number
     opponentScore: number
-    onSubmitAction: (action: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }) => Promise<boolean>
+    onSubmitAction: (action: { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' }) => Promise<boolean>
 }
-type LocalSubmittedAction = { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
+type LocalSubmittedAction = { trait: TraitType; actionType: GeneActionTypeV2 } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'SYMBIOSIS'; sourceTrait: TraitType; targetTrait: TraitType } | { actionType: 'ACTIVATE_MUTATION'; mutationId: 'FINE_DEL_MONDO' }
 
 function getInitialTraitId(snapshot: GameSnapshot): string | null {
     return getInitialTraitIdForSnapshot(snapshot)
@@ -62,7 +62,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
 
         const traitIds = new Set((Object.keys(myTraits) as TraitType[]).map((trait) => trait))
 
-        if (myCurrentAction && !selectedGeneId) {
+        if (myCurrentAction?.trait && !selectedGeneId) {
             setSelectedGeneId(myCurrentAction.trait)
 
             return
@@ -148,9 +148,9 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         submittingRef.current = true
         setIsSubmitting(true)
         setSubmitErrorMessage(null)
-        const submitted = await input.onSubmitAction({ actionType: 'ACTIVATE_MUTATION', sourceTrait, targetTrait })
+        const submitted = await input.onSubmitAction({ actionType: 'ACTIVATE_MUTATION', mutationId: 'SYMBIOSIS', sourceTrait, targetTrait })
         if (submitted) {
-            setLocalSubmittedAction({ actionType: 'ACTIVATE_MUTATION', sourceTrait, targetTrait })
+            setLocalSubmittedAction({ actionType: 'ACTIVATE_MUTATION', mutationId: 'SYMBIOSIS', sourceTrait, targetTrait })
             setIsSubmitting(false)
             submittingRef.current = false
             return true
@@ -161,12 +161,31 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         return false
     }, [input, viewModel.canActivateSymbiosis, viewModel.status])
 
+    const handleActivateFineDelMondo = useCallback(async () => {
+        if (submittingRef.current || !viewModel.canActivateFineDelMondo || viewModel.status === 'invalid') return false
+        submittingRef.current = true
+        setIsSubmitting(true)
+        setSubmitErrorMessage(null)
+        const submitted = await input.onSubmitAction({ actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' })
+        if (submitted) {
+            setLocalSubmittedAction({ actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' })
+            setIsSubmitting(false)
+            submittingRef.current = false
+            return true
+        }
+        setIsSubmitting(false)
+        submittingRef.current = false
+        setSubmitErrorMessage('Invio Fine del mondo non riuscito. Riprova.')
+        return false
+    }, [input, viewModel.canActivateFineDelMondo, viewModel.status])
+
     return {
         viewModel,
         onSelectGene: handleSelectGene,
         onUseGene: handleUseGene,
         onEvolveGene: handleEvolveGene,
         onActivateSymbiosis: handleActivateSymbiosis,
+        onActivateFineDelMondo: handleActivateFineDelMondo,
     }
 }
 

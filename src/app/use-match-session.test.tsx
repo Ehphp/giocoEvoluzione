@@ -181,13 +181,18 @@ describe('useMatchSession', () => {
         expect(api.statusMessage).toContain('Scelta confermata')
     })
 
-    it('tags a symbiosis activation with its mutation id', async () => {
+    it('forwards a symbiosis activation with the mutation id the caller chose', async () => {
         render()
         await act(async () => {
             await api.createPvpGame()
         })
         await act(async () => {
-            await api.submitAction({ actionType: 'ACTIVATE_MUTATION', sourceTrait: 'ARMOR', targetTrait: 'SENSES' })
+            await api.submitAction({
+                actionType: 'ACTIVATE_MUTATION',
+                mutationId: 'SYMBIOSIS',
+                sourceTrait: 'ARMOR',
+                targetTrait: 'SENSES',
+            })
         })
 
         expect(submitRoundAction.mock.calls[0]![0]).toMatchObject({
@@ -196,6 +201,23 @@ describe('useMatchSession', () => {
             targetTrait: 'SENSES',
             mutationId: 'SYMBIOSIS',
         })
+    })
+
+    // FINE_DEL_MONDO carries no trait pair: the hook must not force SYMBIOSIS onto it, which is
+    // what it used to do when the mutation id was hard-coded here.
+    it('forwards a FINE_DEL_MONDO activation without inventing a trait pair', async () => {
+        render()
+        await act(async () => {
+            await api.createPvpGame()
+        })
+        await act(async () => {
+            await api.submitAction({ actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' })
+        })
+
+        const payload = submitRoundAction.mock.calls[0]![0]
+        expect(payload).toMatchObject({ actionType: 'ACTIVATE_MUTATION', mutationId: 'FINE_DEL_MONDO' })
+        expect(payload).not.toHaveProperty('sourceTrait')
+        expect(payload).not.toHaveProperty('targetTrait')
     })
 
     it('does not submit without a participant', async () => {

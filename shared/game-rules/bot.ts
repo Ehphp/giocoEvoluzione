@@ -5,6 +5,7 @@ import {
     getUsableBotAdaptations,
     type BotRoundAction,
 } from './bot-policies.ts'
+import { STANDARD_SCHEDULED_ROUNDS } from './catalog.ts'
 import type {
     AdaptationCollection,
     CombatMutationLoadout,
@@ -21,6 +22,7 @@ export type SelectBotActionInput = {
     combatMutationLoadout: CombatMutationLoadout
     roundEvent: EnvironmentalCrisisDefinition
     roundNumber: number
+    scheduledRounds?: number
     ruleVersion: string
     publicOpponentAdaptations: AdaptationCollection
     publicOpponentCombatMutationState: CombatMutationState
@@ -35,6 +37,7 @@ export function selectBotAction({
     combatMutationLoadout,
     roundEvent,
     roundNumber,
+    scheduledRounds = STANDARD_SCHEDULED_ROUNDS,
     ruleVersion,
     publicOpponentAdaptations,
     publicOpponentCombatMutationState,
@@ -48,6 +51,7 @@ export function selectBotAction({
         combatMutationLoadout,
         roundEvent,
         roundNumber,
+        scheduledRounds,
         ruleVersion,
         publicOpponentAdaptations,
         publicOpponentCombatMutationState,

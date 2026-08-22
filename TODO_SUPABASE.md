@@ -11,6 +11,35 @@ invece di restare solo nel messaggio di una conversazione.
 
 ---
 
+## 0. FINE_DEL_MONDO — migration da applicare e secret nuovo
+
+Portato da `ec3d936` (`main`). La feature rende **dinamica la durata del match**: `scheduled_rounds`
+parte da 7 e ogni giocatore può scommetterla una volta, con esito sorteggiato server-side
+(−2 round su `FINE_DEL_MONDO`, +3 su `ERA_PROSPERA`, clamp 5–10).
+
+**Migration:** `supabase/migrations/202608220001_combat_mutations_fine_del_mondo.sql`. Aggiunge
+colonne a `games`, `players`, `round_actions`, `round_results`, `player_creatures`, i validatori
+`is_valid_scheduled_rounds` / `is_valid_fine_del_mondo_activations`, e **ridefinisce** le routine di
+partita (`create_pvp_game`, `join_pvp_game`, `submit_game_round_action`, `advance_game_round`,
+`commit_game_round_resolution`).
+
+```bash
+npx supabase db push
+```
+
+**Secret nuovo, obbligatorio:** `COMBAT_MUTATION_RNG_SECRET`. È la chiave HMAC con cui
+`resolve-round` sorteggia l'esito. Va impostata **solo** come Edge Function secret: se finisce in una
+`VITE_*` il client può prevedere l'esito prima di attivare la mutazione.
+
+```bash
+npx supabase secrets set COMBAT_MUTATION_RNG_SECRET="$(openssl rand -hex 32)"
+```
+
+> ⚠️ **Ordine.** La migration va applicata **prima** di deployare `resolve-round`, altrimenti la
+> function scrive colonne che non esistono. E `RULE_VERSION` è passata a
+> `combat-mutations-fine-del-mondo-v1`: le partite già in corso restano congelate sulla loro
+> versione (`SUPPORTED_RULE_VERSIONS` le ammette ancora), quindi non serve svuotare nulla.
+
 ## 1. Ridistribuire le Edge Function — BLOCCANTE
 
 Il refactor del 2026-08-22 ha cambiato in modo sostanziale il codice server. Fino al deploy, la

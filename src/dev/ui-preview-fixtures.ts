@@ -115,6 +115,7 @@ export function buildPreviewBattleViewModel(selectedGeneId: string): GeneSelecti
             combatMutations: [
                 { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'available' },
                 { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'armed' },
+                { id: 'FINE_DEL_MONDO', label: 'Fine del mondo', shortDescription: 'Scommetti sulla durata: -2 round oppure +3.', iconKey: 'fine-del-mondo', status: 'available' },
             ],
         },
         opponent: {
@@ -122,6 +123,7 @@ export function buildPreviewBattleViewModel(selectedGeneId: string): GeneSelecti
             combatMutations: [
                 { id: 'ELASTIC_LIMBS', label: 'Arti elastici', shortDescription: 'Primo USA Agilità senza esaurimento.', iconKey: 'elastic-limbs', status: 'consumed' },
                 { id: 'ADAPTIVE_CORE', label: 'Nucleo adattivo', shortDescription: 'Dopo il primo EVOLVI, +1 al prossimo USA.', iconKey: 'adaptive-core', status: 'available' },
+                { id: 'FINE_DEL_MONDO', label: 'Fine del mondo', shortDescription: 'Scommetti sulla durata: -2 round oppure +3.', iconKey: 'fine-del-mondo', status: 'consumed' },
             ],
         },
         round: { current: 5, total: 7 },

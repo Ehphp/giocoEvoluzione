@@ -348,7 +348,7 @@ function ConnectedBattleScreen({
   playerVisual,
   opponentVisual,
 }: ConnectedBattleScreenProps) {
-  const { viewModel, onSelectGene, onUseGene, onEvolveGene, onActivateSymbiosis } = useGeneSelectionV2Controller({
+  const { viewModel, onSelectGene, onUseGene, onEvolveGene, onActivateSymbiosis, onActivateFineDelMondo } = useGeneSelectionV2Controller({
     snapshot,
     myScore,
     opponentScore,
@@ -371,6 +371,7 @@ function ConnectedBattleScreen({
         onUseGene={onUseGene}
         onEvolveGene={onEvolveGene}
         onActivateSymbiosis={onActivateSymbiosis}
+        onActivateFineDelMondo={onActivateFineDelMondo}
         onLeaveSession={onLeaveSession}
         isInteractionLocked={isResolutionOpen || isDraftOpen}
       />

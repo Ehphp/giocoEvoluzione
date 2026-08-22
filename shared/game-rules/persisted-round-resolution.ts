@@ -1,4 +1,5 @@
 import { hasClinchedMatch, resolveRound } from './engine.ts'
+import { cloneFineDelMondoActivations, resolveFineDelMondoDuration } from './fine-del-mondo.ts'
 import { resolveMatchOutcome, type StoredRoundValue } from './match.ts'
 import type {
     PlayerRoundAction,
@@ -8,6 +9,7 @@ import type {
     CombatMutationEffect,
     CombatMutationLoadout,
     CombatMutationState,
+    FineDelMondoActivation,
     SymbiosisLink,
     SymbiosisRoundEvent,
 } from './types.ts'
@@ -36,6 +38,10 @@ export type PersistedRoundResolutionData = {
     symbiosisLinksBefore: SymbiosisLink[]
     symbiosisLinksAfter: SymbiosisLink[]
     symbiosisEvents: SymbiosisRoundEvent[]
+    scheduledRoundsBefore: number
+    scheduledRoundsAfter: number
+    fineDelMondoActivationsBefore: FineDelMondoActivation[]
+    fineDelMondoActivationsAfter: FineDelMondoActivation[]
     player1ScoreAfter: number
     player2ScoreAfter: number
     statusAfter: 'REVEALING' | 'FINISHED'
@@ -62,15 +68,27 @@ export function buildPersistedRoundResolution(params: {
     player1CombatMutationState: CombatMutationState
     player2CombatMutationState: CombatMutationState
     symbiosisLinks?: readonly SymbiosisLink[]
+    scheduledRounds?: number
+    fineDelMondoActivations?: readonly FineDelMondoActivation[]
+    fineDelMondoActivationOutcomes?: readonly FineDelMondoActivation[]
     player1Action: PlayerRoundAction
     player2Action: PlayerRoundAction
     priorRoundValues?: StoredRoundValue[]
     startedAt: string | null
     now?: () => string
 }) {
-    if (hasClinchedMatch(params.player1Score, params.player2Score))
+    const scheduledRoundsBefore = params.scheduledRounds ?? 7
+    const fineDelMondoActivationsBefore = cloneFineDelMondoActivations(params.fineDelMondoActivations ?? [])
+    if (hasClinchedMatch(params.player1Score, params.player2Score, params.roundNumber - 1, scheduledRoundsBefore))
         throw new Error('The match was already clinched before this round.')
     const resolution = resolveRound(params)
+    const fineDelMondoDuration = resolveFineDelMondoDuration({
+        scheduledRounds: scheduledRoundsBefore,
+        activationsBefore: fineDelMondoActivationsBefore,
+        requests: resolution.fineDelMondoActivationRequests,
+        resolvedActivations: params.fineDelMondoActivationOutcomes ?? [],
+        resolvedRoundNumber: params.roundNumber,
+    })
     const player1ScoreAfter = params.player1Score + resolution.player1ScoreDelta
     const player2ScoreAfter = params.player2Score + resolution.player2ScoreDelta
     const outcome = resolveMatchOutcome({
@@ -79,6 +97,7 @@ export function buildPersistedRoundResolution(params: {
         player1Score: player1ScoreAfter,
         player2Score: player2ScoreAfter,
         resolvedRoundNumber: params.roundNumber,
+        scheduledRounds: fineDelMondoDuration.scheduledRounds,
         storedRoundValues: [
             ...(params.priorRoundValues ?? []),
             { player1Value: resolution.player1.roundValue, player2Value: resolution.player2.roundValue },
@@ -113,6 +132,10 @@ export function buildPersistedRoundResolution(params: {
             symbiosisLinksBefore: [...(params.symbiosisLinks ?? [])].map((link) => ({ ...link })),
             symbiosisLinksAfter: resolution.symbiosisLinks,
             symbiosisEvents: resolution.symbiosisEvents,
+            scheduledRoundsBefore,
+            scheduledRoundsAfter: fineDelMondoDuration.scheduledRounds,
+            fineDelMondoActivationsBefore,
+            fineDelMondoActivationsAfter: fineDelMondoDuration.activations,
             player1ScoreAfter,
             player2ScoreAfter,
             statusAfter: outcome.finished ? 'FINISHED' : 'REVEALING',
