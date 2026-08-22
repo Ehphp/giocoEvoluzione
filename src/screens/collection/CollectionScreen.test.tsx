@@ -78,7 +78,7 @@ describe('CollectionScreen', () => {
         expect(cards[1]?.classList.contains('is-selected')).toBe(false)
         expect(lineageButtons[0]?.getAttribute('aria-pressed')).toBe('true')
         expect(lineageButtons[1]?.getAttribute('aria-pressed')).toBe('false')
-        expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.webp')
         expect(container.querySelector('#current-creature-title')?.textContent).toBe('Generazione 0')
         expect(container.querySelector('.collection-current__copy')?.textContent).toContain('Forma base')
         expect(container.querySelector('.collection-current__copy')?.textContent).toContain('Forma selezionata')
@@ -89,7 +89,7 @@ describe('CollectionScreen', () => {
         expect(onSelectVisualVersion).toHaveBeenCalledWith({ creatureId: 'creature-1', versionId: 'form-1', currentVersionId: 'form-3' })
 
         act(() => preview.dispatchEvent(new Event('error')))
-        expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        expect(preview.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.webp')
 
         act(() => lineageButtons[1]!.click())
 

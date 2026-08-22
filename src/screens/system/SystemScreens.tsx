@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, srcSetFor } from '../../ui/assets'
 import { AppShell, Button, IconButton, Notice, Panel, Pill } from '../../ui/components'
 import { CloseIcon, SparkIcon } from '../../ui/icons'
 
@@ -12,7 +12,13 @@ const SCENERY = ASSETS.scenery.forest
 function CenteredCard({ children, ...rest }: { children: ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
     return (
         <div className="system-screen">
-            <img className="system-screen__logo" src={ASSETS.branding.logo} alt="Evori" />
+            <img
+                className="system-screen__logo"
+                src={ASSETS.branding.logo}
+                srcSet={srcSetFor(ASSETS.branding.logo)}
+                sizes="min(66vw, 230px)"
+                alt="Evori"
+            />
             <Panel className="system-card" {...rest}>{children}</Panel>
         </div>
     )

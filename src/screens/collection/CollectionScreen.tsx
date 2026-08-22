@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
-import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage, srcSetFor } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
 import { AddIcon, CloseIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
@@ -293,7 +293,14 @@ export function CollectionScreen({
                                 <ProgressBar current={viewModel.player.experience.current} total={viewModel.player.experience.required} label="Esperienza del giocatore" />
                             </div>
                         </div>
-                        <img className="collection-logo" src={ASSETS.branding.logo} alt="Evori" />
+                        {/* A 30px brand mark in the top bar: without `sizes` this alone would pull the 900w file. */}
+                        <img
+                            className="collection-logo"
+                            src={ASSETS.branding.logo}
+                            srcSet={srcSetFor(ASSETS.branding.logo)}
+                            sizes="min(28vw, 30px)"
+                            alt="Evori"
+                        />
                         <div className="collection-topbar__actions">
                             <Pill className={isOnline ? 'is-online' : 'is-offline'}>{isOnline ? 'Online' : 'Offline'}</Pill>
                             <IconButton label="Esci dall account" variant="danger" onClick={onLogout}><ExitIcon /></IconButton>

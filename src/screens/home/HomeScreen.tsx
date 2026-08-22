@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SheetHeader } from '../../ui/components'
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, srcSetFor } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
 import { measureCreatureSubject, type CreatureSubject } from './creature-subject-fit'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
@@ -200,7 +200,14 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                 </header>
 
                 <h1 className="home-brand">
-                    <img className="home-brand__logo" src={ASSETS.branding.logo} alt="Evori" />
+                    {/* `min(78%, 300px)` of a shell capped at --ev-app-max-width, dropping to 170px when short. */}
+                    <img
+                        className="home-brand__logo"
+                        src={ASSETS.branding.logo}
+                        srcSet={srcSetFor(ASSETS.branding.logo)}
+                        sizes="(max-height: 600px) 170px, min(78vw, 300px)"
+                        alt="Evori"
+                    />
                 </h1>
 
                 {viewModel.notices.length ? (

@@ -14,6 +14,8 @@
     "backfill:creature-display-assets": "node --experimental-strip-types tools/backfill-creature-display-assets.ts",
     "rules:generate": "node --experimental-strip-types tools/generate-game-rules-sql.ts && node --experimental-strip-types tools/generate-supabase-reset.ts",
     "rules:check": "node --experimental-strip-types tools/generate-game-rules-sql.ts --check && node --experimental-strip-types tools/generate-supabase-reset.ts --check",
+    "assets:optimize": "node --experimental-strip-types tools/optimize-assets.ts",
+    "assets:check": "node --experimental-strip-types tools/optimize-assets.ts --check",
     "audit:mobile": "node artifacts/mobile-overflow-audit.mjs",
     "preview:shots": "node tools/preview-screenshots.mjs",
     "audit:secrets": "node tools/scan-secrets.mjs",

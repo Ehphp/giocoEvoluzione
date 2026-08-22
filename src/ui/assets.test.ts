@@ -4,7 +4,9 @@ import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } fro
 
 describe('creature assets', () => {
     it('uses the verdant hatchling as every player-facing default', () => {
-        expect(ASSETS.creatures.default).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        // The generated file, not a master: `public/` is served verbatim, so a `.png` here would
+        // mean an unoptimised asset had been wired back in. See tools/optimize-assets.ts.
+        expect(ASSETS.creatures.default).toBe('/assets/battle/creatures/verdant-hatchling.webp')
         expect(ASSETS.creatures.player).toBe(ASSETS.creatures.default)
         expect(ASSETS.creatures.base).toBe(ASSETS.creatures.default)
     })

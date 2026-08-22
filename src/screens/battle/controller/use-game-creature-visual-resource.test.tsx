@@ -115,7 +115,7 @@ describe('useGameCreatureVisualResource', () => {
         })
 
         expect(container.querySelector('output')?.dataset.playerStatus).toBe('ready')
-        expect(container.querySelector('output')?.dataset.playerUrl).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        expect(container.querySelector('output')?.dataset.playerUrl).toBe('/assets/battle/creatures/verdant-hatchling.webp')
     })
 
     it('reloads when realtime adds the remote participant and reaches ready without remount', async () => {

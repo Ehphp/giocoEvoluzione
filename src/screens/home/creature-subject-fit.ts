@@ -1,8 +1,8 @@
 /**
  * Where the animal actually is inside a creature sprite.
  *
- * The sprites do not share a framing: `verdant-hatchling.png` carries 33.5% of its height as
- * transparent margin below the animal, `amethyst-hatchling.png` 35.4%, `base.png` none — and the
+ * The sprites do not share a framing: `verdant-hatchling.webp` carries 33.5% of its height as
+ * transparent margin below the animal, `amethyst-hatchling.webp` 35.4%, the base art none — and the
  * generated evolution visuals are their own thing again. CSS cannot tell margin from animal, so
  * laying the art out by the file's box either leaves the creature small (a sprite that is mostly
  * margin) or drops it through the plaque (a compensation constant measured on a different sprite).

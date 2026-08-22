@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
+import { srcSetFor } from './assets'
 import { CloseIcon } from './icons'
 import { useIsScreenLeaving } from './screen-leaving'
 import { playCue } from './feedback/feedback'
@@ -25,12 +26,22 @@ type AppShellProps = {
 export function AppShell({ sceneryUrl, sceneryFallbackUrl, children, dock, scroll = false, className = '' }: AppShellProps) {
     return (
         <div className={`ev-shell ${dock ? 'ev-shell--docked' : ''} ${className}`}>
+            {/*
+              * The scenery is full-bleed, so `sizes` is simply the viewport — which is also the
+              * default a browser assumes, but stating it keeps the intent readable. Resolving the
+              * candidate set here rather than at the call site is what makes every screen's backdrop
+              * responsive without any screen having to know: `srcSetFor` shrugs at a URL it does not
+              * own, so a computed or signed background still works untouched.
+              */}
             <img
                 className="ev-shell__scenery"
                 src={sceneryUrl}
+                srcSet={srcSetFor(sceneryUrl)}
+                sizes="100vw"
                 alt=""
                 onError={(event) => {
                     if (sceneryFallbackUrl && event.currentTarget.src !== sceneryFallbackUrl) {
+                        event.currentTarget.srcset = ''
                         event.currentTarget.src = sceneryFallbackUrl
                     }
                 }}

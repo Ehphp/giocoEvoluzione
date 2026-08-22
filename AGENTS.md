@@ -279,6 +279,34 @@ hand-drawn `GeneIcon` for the five adaptations.
 Files live under `public/assets/{branding,battle,creatures,game-ui}`.
 Environment illustrations are drawn **16:9** and framed 16:9 everywhere.
 
+### The rasters in `public/` are generated
+
+`public/` is copied **verbatim** by Vite — no hashing, no compression, no warning. A PNG dropped in
+there ships to the store at whatever size it happens to be, which is how a 2.3MB logo sat in the
+bundle. So:
+
+- **Masters live in `assets-source/`, outside `public/`.** They are never served.
+- **`npm run assets:optimize`** writes the WebP derivatives that do ship, from the specs in
+  `tools/optimize-assets.ts`. New artwork means a new spec, not a file copied into `public/`.
+- **`npm run assets:check`** fails on a derivative that is missing, stale, over budget, or orphaned
+  by a renamed spec. `tools/shipped-assets.test.ts` holds the same budgets from the other side, plus
+  "no PNG or JPEG ships at all" and "every path the manifest names is a file the pipeline produces".
+
+**WebP only** — no PNG fallback, no AVIF. WebP predates every OS the stores will run, so a fallback
+is bytes nobody fetches; AVIF would need `<picture>` at every call site to stay safe on iOS 15, and
+after WebP took ~4.5MB off the bundle the rest does not pay for that.
+
+**Widths are justified, not generous.** Each spec carries the reason for its steps. Never emit above
+the master's width — upscaling costs bytes and buys nothing — and do not add a step no store device
+would choose: an unfetched variant is still weight inside the app bundle.
+
+`srcSetFor(src)` returns the candidate set for a path the manifest owns, and `undefined` for anything
+else (an SVG, a signed Supabase URL). That is why `AppShell` can serve every screen's scenery
+responsively without a single screen knowing about it. **A `srcSet` without `sizes` fetches the widest
+candidate** — the browser assumes the image fills the viewport — so pass `sizes` wherever it does not.
+The logo is the cautionary case: 300px on the home screen and 30px in the collection top bar, off one
+manifest entry.
+
 ---
 
 ## 7. Mobile is the target, and the real viewport is smaller than you think
@@ -356,6 +384,7 @@ npx tsc -b                       # types
 npm run lint                     # oxlint
 npm test                         # vitest
 npm run build                    # production build
+npm run assets:check             # shipped artwork is current and inside budget
 
 # Mobile: emulates iPhone SE/12/14 Pro Max, Pixel 5, Galaxy S9+/Tab S4 with touch and DPR.
 # Fails on anything escaping the viewport or its clipping ancestor, silent truncation,
@@ -407,7 +436,8 @@ One test fails on a clean checkout. Confirm with `git stash` before assuming you
 - [ ] No hex, px radius or raw spacing in a component — tokens only.
 - [ ] Built from `src/ui` primitives; no primitive restyled from a screen.
 - [ ] Icons from `src/ui/icons.tsx`; no emoji or text glyphs.
-- [ ] Image paths from `src/ui/assets.ts`.
+- [ ] Image paths from `src/ui/assets.ts`; new artwork has a spec in `tools/optimize-assets.ts`, and
+      any `srcSet` carries a `sizes` that matches how big it actually renders.
 - [ ] No game rule recomputed in a component.
 - [ ] A new screen is registered in `src/app/screen-depth.ts`; motion animates `transform`/`opacity`
       only, off tokens, with `prefers-reduced-motion` covered by collapsing them.
