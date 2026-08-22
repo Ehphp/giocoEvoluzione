@@ -69,6 +69,11 @@ export function ProfileScreen({
     onOpenEvolution,
     onSetCombatMutationLoadout,
 }: ProfileScreenProps) {
+    // --- state -----------------------------------------------------------------
+    const [openMutationSlot, setOpenMutationSlot] = useState<0 | 1 | null>(null)
+    const [isUpdatingMutation, setIsUpdatingMutation] = useState(false)
+    const [mutationError, setMutationError] = useState<string | null>(null)
+    // --- derived ---------------------------------------------------------------
     const experience = getExperienceProgress(creature.experience)
     const stats = useMemo(() => history.reduce((total, item) => ({
         played: total.played + 1,
@@ -77,9 +82,6 @@ export function ProfileScreen({
         losses: total.losses + (item.outcome === 'loss' ? 1 : 0),
     }), { played: 0, wins: 0, draws: 0, losses: 0 }), [history])
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
-    const [openMutationSlot, setOpenMutationSlot] = useState<0 | 1 | null>(null)
-    const [isUpdatingMutation, setIsUpdatingMutation] = useState(false)
-    const [mutationError, setMutationError] = useState<string | null>(null)
     const combatMutationLoadout = requireCombatMutationLoadout(creature.combat_mutation_loadout)
     const activeVisualUrl = visualUrl ?? ASSETS.creatures.default
 

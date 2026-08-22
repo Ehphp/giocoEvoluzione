@@ -26,7 +26,7 @@ The refactor rewired the presentation; it did not change the game. **Keep it tha
 | View models / controllers | `src/components/game-v2/{controller,types.ts}`, `src/components/game-results/{buildMatchResultViewModel,types}.ts`, `src/screens/home/{buildHomeViewModel,types}.ts` | **read and re-wire, do not re-derive** |
 | Presentation config | `src/components/game-v2/gameSelectionAssets.ts`, `src/components/game-v2/components/creatureOrientation.ts` | tune sizing/paths only |
 | Game rules & data | `shared/**`, `src/game/**`, `src/lib/**`, `src/auth/**`, `supabase/**`, `tools/**` | **do not touch for UI work** |
-| Evolution screen (flag-gated) | `src/components/creature-visual-progression/**` | keep functional; it wears the design system too (see §3) |
+| Evolution screen (flag-gated) | `src/components/creature-visual-progression/**` | keep functional; it wears the design system too (see §4) |
 
 If a screen needs a value the view model does not expose, **add it in the view model**, do not
 recompute rules in a component. Scores, affinities, predictions and labels all come from the
@@ -34,7 +34,65 @@ model — a component must never re-implement a game rule.
 
 ---
 
-## 2. Never hard-code a design value
+## 2. File shape: one responsibility, one order
+
+Every file reads in the same order, so you can find a thing by where it sits rather than by
+searching. This section describes what the code already does — it is written down so the next
+outlier is a review comment instead of a silent drift.
+
+**A component file (`.tsx`)**
+
+```
+1  import          external → shared/ → src/ → relative → './Component.css' last
+2  type            Props first, then local types
+3  const           module constants, lookup maps
+4  function        module-level pure helpers (outside the component)
+5  function        sub-components, in the order the export uses them
+6  export function THE COMPONENT
+```
+
+and inside the component:
+
+```
+state      useState, useReducer
+derived    useMemo, useRef, values computed from props/state
+effect     every useEffect, grouped together
+handler    event handlers and async actions
+guard      early returns (loading, empty, error)
+render     the single return
+```
+
+**Each kind appears once, as one block.** Scattering three `useEffect` across a file is what makes
+a component unreadable — if you need a fourth effect in a third place, extract a hook instead.
+
+Two cases legitimately break the straight order, and both must be labelled with a
+`// --- <phase> ---` comment so the reason is visible:
+
+- **Seeded state.** When a `useState` initial value comes from a derived value, that derived value
+  has to precede it, so the file alternates derived → state → derived. `CollectionScreen` is the
+  worked example: `availableLineages` → `resolvedActiveLineageId` → `selectedLineageId`.
+- **Derived values a guard needs.** Every hook must run before any early return, so values only
+  used by the guard sit *after* the effects.
+
+**A non-component module (`.ts`)**
+
+```
+1 import → 2 exported types → 3 constants → 4 private helpers → 5 public API
+```
+
+**Across the whole repository**
+
+- **One responsibility per file.** A file that needs "and" to describe it is two files.
+- **One statement per line.** No `;`-chained statements, no whole functions on one line.
+- **`kebab-case.ts`** for every non-component module, in `src/` as well as `shared/` and
+  `supabase/`. **`PascalCase.tsx`** only for files whose default subject is a component.
+- **Named exports only.** `App.tsx` is the single deliberate `export default`.
+- **A view model lives beside the screen it feeds** — `src/screens/<screen>/build<Screen>ViewModel.ts`,
+  never in a sibling folder.
+
+---
+
+## 3. Never hard-code a design value
 
 Everything visual comes from a token in `src/ui/theme.css`.
 
@@ -53,7 +111,7 @@ on a container and use `var(--gene-color)`, `var(--gene-color-strong)`, `var(--g
 
 ---
 
-## 3. Compose primitives, do not restyle them
+## 4. Compose primitives, do not restyle them
 
 `src/ui/components.tsx` is the vocabulary:
 
@@ -79,7 +137,7 @@ the scene stays visible and readable behind. Reach for `--ev-scrim-focus` and
 
 ---
 
-## 4. Icons and assets
+## 5. Icons and assets
 
 **Icons come from `src/ui/icons.tsx` only.** It re-exports Lucide under product names, plus the
 hand-drawn `GeneIcon` for the five adaptations.
@@ -100,7 +158,7 @@ Environment illustrations are drawn **16:9** and framed 16:9 everywhere.
 
 ---
 
-## 5. Mobile is the target, and the real viewport is smaller than you think
+## 6. Mobile is the target, and the real viewport is smaller than you think
 
 A 390×844 iPhone reports about **390×664** to the page once browser chrome is up, and a notch adds
 47px top + 34px bottom of safe-area inset. Design against that, never against the nominal size.
@@ -124,7 +182,7 @@ overscroll-behavior-y: contain`. Otherwise its content becomes unreachable.
 
 ---
 
-## 6. Overflow is a bug
+## 7. Overflow is a bug
 
 Nothing may be clipped, hidden or pushed off screen. Deliberate truncation is fine **only** when
 the user sees it: `text-overflow: ellipsis` or `-webkit-line-clamp`, plus the full text in `title`
@@ -154,7 +212,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 7. Language and accessibility
+## 8. Language and accessibility
 
 - UI copy is **Italian**. Match the existing register: short, concrete, no exclamation marks
   outside result screens.
@@ -166,7 +224,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 8. Before you call it done
+## 9. Before you call it done
 
 ```bash
 npm run dev                      # required by the audit below
@@ -219,7 +277,7 @@ One test fails on a clean checkout. Confirm with `git stash` before assuming you
 
 ---
 
-## 9. Checklist
+## 10. Checklist
 
 - [ ] No hex, px radius or raw spacing in a component — tokens only.
 - [ ] Built from `src/ui` primitives; no primitive restyled from a screen.

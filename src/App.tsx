@@ -44,6 +44,17 @@ import type { CreatureVisual } from './components/game-v2/gameSelectionAssets'
 import { TOTAL_ROUNDS } from './game/config'
 import { withResolvedCreatureImage } from './ui/assets'
 
+type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
+type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
+type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-evolution'
+type EvolutionRouteTarget = Readonly<{ lineageId: string; creatureId: string }>
+type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null; isBaseVersion?: boolean }
+type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null; shortDescription?: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
+type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNumber: number; visualTrait: string | null; currentVisualVersionId: string; visualHistory: VisualProgressSummary['history'] }>
+
+const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
+const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
+
 function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): number {
   if (!player) {
     return 0
@@ -51,15 +62,6 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 
   return player.slot === 1 ? snapshot.game.player_1_score : snapshot.game.player_2_score
 }
-
-type BusyAction = 'CREATE' | 'CREATE_BOT' | 'JOIN' | null
-type BattleSubmitAction = { trait: TraitType; actionType: 'USE' | 'EVOLVE' } | { actionType: 'ACTIVATE_MUTATION'; sourceTrait: TraitType; targetTrait: TraitType }
-type CurrentScreen = 'home' | 'collection' | 'profile' | 'ranking' | 'creature-evolution'
-
-const isCreatureVisualProgressionEnabled = import.meta.env.VITE_CREATURE_VISUAL_PROGRESSION_ENABLED === 'true'
-const CREATURE_VISUAL_PROGRESSION_HASH = '#creature-evolution'
-
-type EvolutionRouteTarget = Readonly<{ lineageId: string; creatureId: string }>
 
 function evolutionTargetFromHash(): EvolutionRouteTarget | null {
   if (!window.location.hash.startsWith(CREATURE_VISUAL_PROGRESSION_HASH)) return null
@@ -78,10 +80,6 @@ function getInitialScreen(): CurrentScreen {
   if (isCreatureVisualProgressionEnabled && evolutionTargetFromHash()) return 'creature-evolution'
   return 'home'
 }
-
-type OfficialVisual = { signedUrl: string; expiresAt: string; versionNumber: number; versionId: string; visualTraitId?: string | null; isBaseVersion?: boolean }
-type VisualProgressSummary = { track: { progress: number; target: number; status: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: string | null; shortDescription?: string | null }; history: ReadonlyArray<{ id: string; versionNumber: number; visualTraitId: string | null; conceptName: string | null; signedUrl: string; expiresAt: string }> }
-type LineageVisualSummary = Record<string, { visualUrl: string; visualVersionNumber: number; visualTrait: string | null; currentVisualVersionId: string; visualHistory: VisualProgressSummary['history'] }>
 
 function App() {
   const auth = useAuth()

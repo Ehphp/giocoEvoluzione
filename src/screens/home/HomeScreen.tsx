@@ -79,20 +79,30 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
 }
 
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
+    // --- state -----------------------------------------------------------------
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
     const [isCreatureDescriptionOpen, setIsCreatureDescriptionOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
+    // --- derived ---------------------------------------------------------------
     const creatureCarouselRef = useRef<HTMLDivElement>(null)
     const dragStartRef = useRef<{ x: number; scrollLeft: number } | null>(null)
     const visualVersions = viewModel.creature?.visualVersions ?? []
     const currentVisualId = visualVersions.find((version) => version.isCurrent)?.id ?? visualVersions.at(-1)?.id ?? ''
     const currentVisualIndex = visualVersions.findIndex((version) => version.id === currentVisualId)
     const visualVersionKey = visualVersions.map((version) => version.id).join(',')
+    // --- state (seeded from the current visual above) ---------------------------
     const [selectedVisualId, setSelectedVisualId] = useState(currentVisualId)
+    // --- derived ---------------------------------------------------------------
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
     const closeCreatureDescription = useCallback(() => setIsCreatureDescriptionOpen(false), [])
+    const displayName = viewModel.player.displayName ?? 'Allenatore locale'
+    const experience = viewModel.player.experience
+    const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
+        ?? visualVersions.find((version) => version.isCurrent)
+        ?? visualVersions.at(-1)
 
+    // --- effects ---------------------------------------------------------------
     useEffect(() => {
         setBackgroundSource(viewModel.stage.backgroundSrc)
     }, [viewModel.stage.backgroundSrc])
@@ -105,13 +115,7 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
             carousel.scrollLeft = currentVisualIndex * Math.max(carousel.clientWidth, 1)
         }
     }, [currentVisualId, currentVisualIndex, visualVersionKey])
-
-    const displayName = viewModel.player.displayName ?? 'Allenatore locale'
-    const experience = viewModel.player.experience
-    const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
-        ?? visualVersions.find((version) => version.isCurrent)
-        ?? visualVersions.at(-1)
-
+    // --- handlers --------------------------------------------------------------
     function selectVisualAt(index: number) {
         const version = visualVersions[index]
         const carousel = creatureCarouselRef.current

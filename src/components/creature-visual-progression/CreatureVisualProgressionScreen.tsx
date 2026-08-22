@@ -56,6 +56,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const postProcessingRequest = useRef<string | null>(null)
     const postProcessingAttempts = useRef(0)
 
+    // --- derived ---------------------------------------------------------------
     const refresh = useCallback(async () => {
         const result = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as unknown as ProgressResponse
         setProgress(result); setExperimentOnly(result.lastExperiment); setLastFailure(result.lastFailure)
@@ -75,25 +76,6 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const refreshTargetProgress = useCallback(async () => {
         setTargetProgress(await fetchEvolutionTargetProgress(creature.id))
     }, [creature.id])
-
-    useEffect(() => { void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Percorso visuale non disponibile.')) }, [refresh])
-    useEffect(() => { void refreshTargetProgress().catch(() => setTargetProgress([])) }, [refreshTargetProgress])
-
-    async function spendReadyTarget(evolutionTargetId: EvolutionTargetId) {
-        setBusy(true); setError(null)
-        try {
-            await openEvolutionTrackFromReadyTarget(creature.id, evolutionTargetId)
-            await Promise.all([refresh(), refreshTargetProgress()])
-        } catch (nextError) {
-            setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile aprire la trasformazione.')
-        } finally { setBusy(false) }
-    }
-    useEffect(() => {
-        if (progress?.track?.status !== 'GENERATING' || !progress.track.generatedRequestId) return
-        const interval = window.setInterval(() => void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Impossibile aggiornare la generazione.')), 2_000)
-        return () => window.clearInterval(interval)
-    }, [progress?.track?.generatedRequestId, progress?.track?.status, refresh])
-
     const runBackgroundRemoval = useCallback(async (transformationRequestId: string) => {
         if (postProcessingRequest.current === transformationRequestId) return
         if (postProcessingAttempts.current >= 3) {
@@ -129,17 +111,36 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         }
     }, [refresh])
 
-    useEffect(() => {
-        const requestId = progress?.track?.generatedRequestId
-        if (progress?.track?.status === 'POST_PROCESSING' && requestId) void runBackgroundRemoval(requestId)
-    }, [progress?.track?.generatedRequestId, progress?.track?.status, runBackgroundRemoval])
-
     // Only the targets the creature's canonical body plan offers can be accumulated or spent.
     const availableTargetProgress = useMemo(() => {
         const available = progress?.bodyPlan?.availableEvolutionTargets
         return available?.length ? (targetProgress ?? []).filter((entry) => available.includes(entry.evolutionTargetId)) : targetProgress ?? []
     }, [progress?.bodyPlan, targetProgress])
     const currentTarget = useMemo(() => progress?.track?.evolutionTargetId ? targetLabel(progress.track.evolutionTargetId) : progress?.track?.visualTraitId ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
+
+    // --- effects ---------------------------------------------------------------
+    useEffect(() => { void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Percorso visuale non disponibile.')) }, [refresh])
+    useEffect(() => { void refreshTargetProgress().catch(() => setTargetProgress([])) }, [refreshTargetProgress])
+    useEffect(() => {
+        if (progress?.track?.status !== 'GENERATING' || !progress.track.generatedRequestId) return
+        const interval = window.setInterval(() => void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Impossibile aggiornare la generazione.')), 2_000)
+        return () => window.clearInterval(interval)
+    }, [progress?.track?.generatedRequestId, progress?.track?.status, refresh])
+    useEffect(() => {
+        const requestId = progress?.track?.generatedRequestId
+        if (progress?.track?.status === 'POST_PROCESSING' && requestId) void runBackgroundRemoval(requestId)
+    }, [progress?.track?.generatedRequestId, progress?.track?.status, runBackgroundRemoval])
+
+    // --- handlers --------------------------------------------------------------
+    async function spendReadyTarget(evolutionTargetId: EvolutionTargetId) {
+        setBusy(true); setError(null)
+        try {
+            await openEvolutionTrackFromReadyTarget(creature.id, evolutionTargetId)
+            await Promise.all([refresh(), refreshTargetProgress()])
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile aprire la trasformazione.')
+        } finally { setBusy(false) }
+    }
     async function generate() {
         if (!progress?.track) return
         setBusy(true); setError(null); setExperimentOnly(null)
