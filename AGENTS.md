@@ -23,6 +23,7 @@ The refactor rewired the presentation; it did not change the game. **Keep it tha
 | Design system | `src/ui/**` | edit freely |
 | Screens | `src/screens/**` | edit freely |
 | Dev preview | `src/dev/**` | edit freely |
+| App shell state | `src/app/**` — one hook per concern: route, match session, creature visuals, profile activity | **read and re-wire, do not re-derive** |
 | View models / controllers | `src/screens/battle/controller/**`, `src/screens/<screen>/build-*-view-model.ts` and its `types.ts` | **read and re-wire, do not re-derive** |
 | Presentation config | `src/screens/battle/controller/{gene-selection-assets,creature-orientation}.ts` | tune sizing/paths only |
 | Game rules & data | `shared/**`, `src/game/**`, `src/lib/**`, `src/auth/**`, `supabase/**`, `tools/**` | **do not touch for UI work** |
