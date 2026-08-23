@@ -43,6 +43,8 @@ export interface RoundInfoV2 {
 
 export interface RoundEventEffectV2 {
     id: string
+    /** The adaptation itself, so the briefing can show its glyph instead of spelling its name. */
+    trait: TraitType
     label: string
     modifier: number
     value: string
@@ -68,6 +70,12 @@ export interface GeneCardV2 {
     exhausted: boolean
     strongAgainst: string
     weakAgainst: string
+    /**
+     * The same two matchups as adaptations rather than labels. The strip above the orbs reads
+     * `attacker → victim` twice and says nothing in words, so it needs the traits, not their names.
+     */
+    strongAgainstTrait: TraitType
+    weakAgainstTrait: TraitType
     disabledReason?: string
     prediction?: {
         useScore: number

@@ -26,8 +26,7 @@
 }
 
 .duel-header,
-.battle-screen__meta,
-.environment-card,
+.environment-row,
 .battle-screen__decision {
     flex: 0 0 auto;
 }
@@ -87,12 +86,20 @@
     margin-top: var(--ev-s-1);
 }
 
+/*
+ * Three columns, and the middle one is real.
+ *
+ * The VS badge used to float over the seam between the two profiles, which was fine while it was a
+ * 40px disc overlapping 9px of card padding either side. The round dots are 53px against a 22px seam,
+ * so floating them covered the players' names. Giving the cluster its own `auto` column means it can
+ * never overlap anything — and the column sizes itself to however many rounds the match has.
+ */
 .duel-header {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: start;
-    gap: var(--ev-s-5);
+    gap: var(--ev-s-1);
 }
 
 .duel-header__competitor {
@@ -302,20 +309,40 @@
     white-space: nowrap;
 }
 
+/*
+ * The match-progress cluster: the VS badge with the round counter under it. A column of its own, so
+ * the dots sit between the two profiles without sitting *on* them.
+ */
+.duel-header__match {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: var(--ev-s-1);
+    /*
+     * Capped at seven dots' worth, which is the scheduled length of a match. FINE DEL MONDO can push
+     * it to ten, and an `auto` column sizing to *that* would take another 25px off the two names — so
+     * the extra dots wrap onto a second line instead of widening the column.
+     */
+    max-width: calc(var(--ev-pips-dot-size-compact) * 7 + var(--ev-pips-gap-compact) * 6);
+    /* Lines the badge up with the middle of the profile cards beside it. */
+    padding-top: var(--ev-s-2);
+}
+
+.duel-header__rounds .ev-pips {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* An oval, not a disc. The height it gives up is the height the round dots take under it. */
 .duel-header__versus {
-    position: absolute;
-    top: var(--ev-s-6);
-    left: 50%;
-    z-index: 3;
     display: grid;
     place-items: center;
-    width: var(--ev-touch-min);
-    height: var(--ev-touch-min);
-    transform: translate(-50%, -50%);
+    height: var(--ev-battle-vs-height);
+    padding-inline: var(--ev-s-3);
     border-radius: var(--ev-r-pill);
     color: var(--ev-ink);
     font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-lg);
+    font-size: var(--ev-fs-md);
     font-weight: 800;
     font-style: italic;
     background: var(--ev-grad-gold);
@@ -323,54 +350,63 @@
     box-shadow: var(--ev-shadow-md), var(--ev-shadow-glow-gold);
 }
 
-/* -------------------------------------------------------------------------- */
-/* Meta row                                                                    */
-/* -------------------------------------------------------------------------- */
-
-.battle-screen__meta {
-    display: grid;
-    place-items: center;
-    min-height: 26px;
-    margin-top: calc(var(--ev-s-1) * -1);
+/* Compact pips: the cluster's column is what the two profiles have to give up, so it stays narrow. */
+/* On artwork, not on cream: the unlit dots need their own contrast, the lit ones a halo. */
+.duel-header__rounds .ev-pips__dot {
+    background: rgba(255, 255, 255, .32);
+    box-shadow: 0 1px 2px rgba(4, 14, 10, .65), inset 0 1px 1px rgba(0, 0, 0, .3);
 }
 
-.battle-screen__round {
-    min-width: var(--ev-battle-round-pill-min-width);
-    justify-content: center;
+.duel-header__rounds .ev-pips__dot.is-on {
+    background: var(--ev-gold);
+    box-shadow: 0 0 7px color-mix(in srgb, var(--ev-gold) 70%, transparent), 0 1px 2px rgba(4, 14, 10, .5);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Environment card                                                            */
 /* -------------------------------------------------------------------------- */
 
-.environment-card {
+/*
+ * Round briefing, as one row.
+ *
+ * It used to spend around 100px on an eyebrow, a title, two lines of prose and two labelled chips.
+ * The arena is the only elastic block on this screen (§7), so those pixels came straight off the
+ * creatures. What is left is the biome, its two decisive affinities and the next biome, on one line;
+ * the prose moved to `.environment-line`, on the artwork, where it costs a line and no panel.
+ */
+/*
+ * The panel gives its vertical padding to the buttons instead of keeping it. Both regions are tap
+ * targets and §7 floors those at 40px, so the row is as short as it can be: 40px of target plus 4px
+ * of frame. Shrinking the *visible* row any further would only shrink the thing being tapped.
+ */
+.environment-row {
     display: grid;
-    /* Wide briefing plus a narrow preview column, as in the round-ahead layout. */
-    grid-template-columns: minmax(0, 1fr) clamp(66px, 24%, 94px);
-    align-items: stretch;
-    gap: 8px;
-    padding: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ev-s-2);
+    padding: 2px var(--ev-s-2);
 }
 
-.environment-card__main {
+.environment-row__main {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    gap: var(--ev-s-2);
     min-width: 0;
+    min-height: var(--ev-touch-min);
     padding: 0;
-    text-align: left;
     color: inherit;
+    text-align: left;
 }
 
 .environment-thumb {
     display: block;
-    width: 64px;
+    width: 48px;
     aspect-ratio: 16 / 9;
     align-self: center;
     flex: 0 0 auto;
     overflow: hidden;
-    border-radius: var(--ev-r-md);
+    border-radius: var(--ev-r-sm);
     background: var(--ev-cream-sunk);
     border: 2px solid rgba(255, 255, 255, .8);
     box-shadow: var(--ev-shadow-sm);
@@ -384,9 +420,8 @@
 }
 
 .environment-thumb--next {
-    width: 52px;
+    width: 38px;
     border-width: 1.5px;
-    border-radius: var(--ev-r-sm);
 }
 
 /* Opened briefing: the same 16:9 artwork as a full-width banner, framed exactly. */
@@ -396,93 +431,114 @@
     border-radius: var(--ev-r-lg);
 }
 
-.environment-card__copy {
-    display: grid;
-    gap: 2px;
-    min-width: 0;
-}
-
-.environment-card__title {
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-lg);
-    font-weight: 800;
-}
-
-.environment-card__description {
-    color: var(--ev-ink-muted);
-    font-size: var(--ev-fs-xs);
-    line-height: 1.25;
+/*
+ * Two lines, clamped.
+ *
+ * The biome name is the headline of the round, and the real names run to 27 characters — "Ondata di
+ * ceneri vulcaniche" — against the ~90px this row can spare once the glyphs and the preview have
+ * taken theirs. One line would truncate the headline on a 390px phone every time an event with a long
+ * name came up. Two short lines cost 8px of row height and never hide it.
+ */
+.environment-row__title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-    overflow-wrap: anywhere;
-}
-
-.environment-card__info {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    align-self: center;
-    border-radius: var(--ev-r-pill);
-    color: var(--ev-ink-faint);
-    font-size: 20px;
-}
-
-.environment-card__chips {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    min-width: 0;
-    margin-top: 2px;
-}
-
-.environment-card__chips .ev-chip {
-    min-width: 0;
-}
-
-/* Trailing preview column: divider, label, thumbnail and the next biome name. */
-.environment-card__next {
-    display: grid;
-    justify-items: center;
-    align-content: center;
-    gap: 3px;
-    min-width: 0;
-    padding: 2px 0 2px 8px;
-    border-left: 2px solid rgba(160, 138, 92, .22);
-    color: var(--ev-ink);
-    text-align: center;
-}
-
-.environment-card__next .ev-eyebrow {
-    font-size: var(--ev-fs-2xs);
-    letter-spacing: .08em;
-}
-
-.environment-card__next-title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-    max-width: 100%;
     font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-2xs);
+    font-size: var(--ev-fs-sm);
     font-weight: 800;
     line-height: 1.2;
     overflow-wrap: anywhere;
 }
 
-.environment-card__next svg {
-    font-size: 11px;
-    color: var(--ev-ink-faint);
+/*
+ * Affinity as the adaptation's own glyph and its modifier, not its name and a word for it. The gene
+ * row below is read by exactly these glyphs, so the briefing reuses that alphabet instead of
+ * translating it back into prose.
+ */
+.environment-row__effects {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.environment-card__next:disabled {
+.environment-row__effect {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px 2px 4px;
+    border-radius: var(--ev-r-pill);
+    background: var(--gene-color-soft, var(--ev-cream-deep));
+}
+
+.environment-row__effect svg {
+    font-size: 15px;
+    color: var(--gene-color-strong, var(--ev-ink));
+}
+
+.environment-row__effect b {
+    color: var(--gene-color-strong, var(--ev-ink));
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    line-height: 1.4;
+}
+
+/*
+ * Trailing preview: a divider, the next biome's art and its name.
+ *
+ * No percentage width here. A percentage on a grid item resolves against its own grid area, not the
+ * row, so `max-width: 42%` capped this at 42% of the track the track had just sized to *fit it* —
+ * 59px — and the title inside collapsed to nothing. The title's own cap is what bounds the track.
+ */
+.environment-row__next {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: var(--ev-touch-min);
+    padding-left: var(--ev-s-2);
+    border-left: 2px solid rgba(160, 138, 92, .22);
+    color: var(--ev-ink-muted);
+}
+
+/* Two short lines rather than one long one: it buys the active biome's name ~22px of the row. */
+.environment-row__next-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    flex: 0 1 auto;
+    width: 56px;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.environment-row__next:disabled {
     opacity: .55;
+}
+
+/*
+ * The briefing's prose, on the artwork instead of inside the panel. `aria-hidden` in the markup: the
+ * button above already reads it out, so on screen this is a caption, not a second thing to find.
+ */
+.environment-line {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+    text-shadow: var(--ev-shadow-text-on-scene);
+    overflow-wrap: anywhere;
 }
 
 .environment-detail {
@@ -626,236 +682,268 @@
 
 .gene-carousel {
     display: grid;
-    gap: 4px;
+    gap: 6px;
 }
 
-.gene-carousel__track {
-    display: flex;
-    gap: 5px;
-    padding: 7px 2px 3px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-}
-
-.gene-carousel__track::-webkit-scrollbar {
-    display: none;
-}
-
-/* The row carries no heading, so the cards themselves take that height and sit at full size. */
-.gene-card {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    align-content: start;
-    gap: 3px;
-    flex: 1 1 0;
-    min-width: 56px;
-    padding: 9px 4px 6px;
-    border-radius: var(--ev-r-md);
-    color: var(--ev-ink);
-    scroll-snap-align: center;
-    background: linear-gradient(180deg, #fffdf6 0%, var(--gene-color-soft, #f1e7cd) 100%);
-    border: 2px solid rgba(255, 255, 255, .85);
-    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
-    /*
-     * Selecting is not pressing: the card is claiming focus, so it springs into place rather than
-     * settling. `scale` is its own property here, separate from the `translateY`, so both need the
-     * curve — otherwise the lift overshoots while the growth does not, and they visibly disagree.
-     */
-    transition:
-        transform var(--ev-dur-release) var(--ev-ease-spring),
-        scale var(--ev-dur-release) var(--ev-ease-spring),
-        box-shadow var(--ev-dur-base) var(--ev-ease);
-}
-
-.gene-card.is-selected {
-    scale: 1.06;
-    transform: translateY(-3px);
-    border-color: #fff;
-    box-shadow: var(--ev-shadow-md), 0 0 0 2.5px var(--gene-color, var(--ev-player)), 0 0 18px color-mix(in srgb, var(--gene-color, #8be04e) 55%, transparent);
-}
-
-.gene-card.is-exhausted {
-    filter: saturate(.45);
-}
-
-.gene-card:disabled {
-    opacity: .78;
-}
-
-/* The glyph is what the row is read by, so it is the largest thing on the card. */
-.gene-card__icon {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--ev-r-pill);
-    font-size: 29px;
-    background: rgba(255, 255, 255, .7);
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
-}
-
-.gene-card__value {
-    position: absolute;
-    right: -8px;
-    bottom: -5px;
-    min-width: 21px;
-    padding: 0 5px;
-    border-radius: var(--ev-r-pill);
-    color: #fff;
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-xs);
-    line-height: 18px;
-    background: var(--gene-color-strong, var(--ev-ink));
-    border: 1.5px solid #fff;
-}
-
-.gene-card__name {
-    max-width: 100%;
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-xs);
-    font-weight: 800;
-    letter-spacing: .01em;
-    text-transform: uppercase;
-}
-
-.gene-card__level {
-    color: var(--ev-ink-muted);
-    font-size: var(--ev-fs-2xs);
-    font-weight: 700;
-}
-
-.gene-card__affinity {
-    width: 100%;
-    padding: 2px;
-    border-radius: var(--ev-r-sm);
-    font-size: var(--ev-fs-xs);
-    font-weight: 800;
-}
-
-.gene-card__affinity--ideal {
-    color: #2b6b26;
-    background: var(--ev-good-soft);
-}
-
-.gene-card__affinity--suitable {
-    color: #1d5493;
-    background: var(--ev-info-soft);
-}
-
-.gene-card__affinity--unfavorable {
-    color: #97281f;
-    background: var(--ev-bad-soft);
-}
-
-.gene-card__exhausted {
-    position: absolute;
-    top: 5px;
-    right: 4px;
-    padding: 0 4px;
-    border-radius: var(--ev-r-sm);
-    color: #fff;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    background: rgba(46, 62, 44, .7);
-}
-
-/**
+/*
  * Natural-advantage strip.
  *
- * It replaces the bare dots row: the selected gene's own colour, its glyph, and the two facts
- * that decide the round spelled out rather than encoded in arrows alone.
+ * One pattern read twice: `attacker -> victim`. Left, this gene beating the one it counters; right,
+ * the one that counters it beating this gene. No words, deliberately — the row below is already five
+ * glyphs, so the strip reuses that alphabet instead of translating it into names. It replaced the
+ * explanatory card that used to sit *below* the genes, where it separated them from the actions they
+ * feed; up here it is a caption for the row, which is why it is glass on the artwork and not a
+ * second cream surface to read.
  */
 .gene-matchup {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
-    gap: 9px;
-    min-height: 44px;
-    padding: 5px 9px;
-    border-radius: var(--ev-r-lg);
-    color: var(--ev-ink);
-    text-align: left;
-    background: var(--ev-grad-cream);
-    border: 2px solid var(--ev-stroke-light);
-    box-shadow: var(--ev-shadow-sm), var(--ev-lip-cream);
-}
-
-.gene-matchup__glyph {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
+    justify-content: center;
+    gap: var(--ev-s-3);
+    justify-self: center;
+    /* A tap target, so §7's 40px floor applies to the strip as much as to a button. */
+    min-height: var(--ev-touch-min);
+    padding: 3px var(--ev-s-3);
     border-radius: var(--ev-r-pill);
-    font-size: 21px;
-    background: var(--gene-color-soft, var(--ev-cream-deep));
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gene-color, #fff) 45%, transparent);
+    color: var(--ev-on-dark);
+    background: var(--ev-glass);
+    border: 1.5px solid var(--ev-stroke-light-soft);
+    backdrop-filter: blur(10px);
 }
 
-.gene-matchup__facts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+.gene-matchup__pair {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
+    gap: 3px;
 }
 
-.gene-matchup__fact {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    align-items: center;
-    gap: 0 5px;
-    min-width: 0;
+/* The arrow only: the glyphs inside keep their own adaptation colour. */
+.gene-matchup__pair > svg {
+    font-size: 13px;
 }
 
-.gene-matchup__fact svg {
-    grid-row: 1 / 3;
-    font-size: 15px;
-}
-
-.gene-matchup__fact small {
-    color: var(--ev-ink-faint);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .06em;
-    line-height: 1.1;
-    text-transform: uppercase;
-}
-
-.gene-matchup__fact b {
-    max-width: 100%;
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-sm);
-    line-height: 1.4;
-}
-
-.gene-matchup__fact--strong svg {
+.gene-matchup__pair--strong > svg {
     color: var(--ev-good);
 }
 
-.gene-matchup__fact--weak svg {
+.gene-matchup__pair--weak > svg {
     color: var(--ev-bad);
 }
 
 .gene-matchup__divider {
-    width: 2px;
-    height: 24px;
+    width: 1.5px;
+    height: 18px;
     border-radius: var(--ev-r-pill);
-    background: rgba(160, 138, 92, .22);
+    background: var(--ev-stroke-light-soft);
 }
 
 .gene-matchup__info {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    color: var(--ev-ink-faint);
-    font-size: 17px;
+    width: 18px;
+    height: 18px;
+    color: var(--ev-on-dark-muted);
+    font-size: 15px;
+}
+
+/* One adaptation's glyph in its own colour: the unit both the strip and the orbs are read by. */
+.gene-glyph {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ev-r-pill);
+    color: var(--gene-color-strong, var(--ev-ink));
+    font-size: 16px;
+    background: var(--gene-color-soft, var(--ev-cream-deep));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Gene orbs                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Spheres, not cards.
+ *
+ * Everything the old card wrote out is now shown: the round score rides the disc, the level *is* the
+ * frame around it, and affinity is already inside the score. The name is the only word that stays,
+ * because five glyphs with no names is a memory test.
+ *
+ * They bottom-align, and the selected one grows by `scale` rather than by width. That is what lets it
+ * rise above the row without pushing its neighbours or moving the names off one line.
+ */
+.gene-orbs {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    /*
+     * The gap is not taste. The selected disc grows by half of `(size x scale - size)` on each side,
+     * and each badge overhangs its own disc by 2px; anything tighter and the orb that grew covers its
+     * left neighbour's score. At 52px and 1.34 that is 9px + 2px, so 12px clears it.
+     */
+    gap: 12px;
+    /*
+     * Reserved, not guessed. The selected disc's transform-origin is its foot, so the whole of its
+     * growth goes upward and overflows this container by exactly that much. Deriving the room from the
+     * tokens that cause the overflow is what stops a change to the size or the scale from silently
+     * pushing the orb into the strip above — which is what the hard-coded 12px here did.
+     */
+    padding-top: calc(var(--ev-gene-orb-size) * (var(--ev-gene-orb-selected-scale) - 1));
+}
+
+.gene-orb {
+    display: grid;
+    justify-items: center;
+    /*
+     * The lower stud straddles the ring, and a rhombus reaches 0.707 of its side from its centre
+     * rather than 0.5 — so it hangs further below the disc than a round stud would, and further again
+     * on the selected orb, which is scaled. This gap is what it hangs into.
+     */
+    gap: 7px;
+    min-width: 0;
+    padding: 0;
+}
+
+.gene-orb.is-selected {
+    /* The scaled disc overlaps its neighbours by a couple of pixels; it has to be the one on top. */
+    z-index: 1;
+}
+
+.gene-orb__disc {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--ev-gene-orb-size);
+    height: var(--ev-gene-orb-size);
+    border-radius: var(--ev-r-pill);
+    color: var(--gene-color-strong, var(--ev-ink));
+    font-size: calc(var(--ev-gene-orb-size) * .56);
+    background: radial-gradient(circle at 50% 28%, var(--ev-cream-light) 0%, var(--gene-color-soft, var(--ev-cream-deep)) 100%);
+    box-shadow: var(--ev-shadow-sm);
+    /* Grows from its foot, so the name below never moves. */
+    transform-origin: 50% 100%;
+    transition:
+        scale var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-base) var(--ev-ease);
+}
+
+.gene-orb.is-selected .gene-orb__disc {
+    scale: var(--ev-gene-orb-selected-scale);
+    box-shadow: var(--ev-shadow-md), 0 0 16px color-mix(in srgb, var(--gene-color, var(--ev-player)) 55%, transparent);
+}
+
+.gene-orb:active:not(:disabled) .gene-orb__disc {
+    transition: scale var(--ev-dur-press) var(--ev-ease);
+    scale: calc(var(--ev-gene-orb-selected-scale) * .94);
+}
+
+.gene-orb:not(.is-selected):active:not(:disabled) .gene-orb__disc {
+    scale: .94;
+}
+
+/*
+ * Level is a frame, not a caption.
+ *
+ * `MAX_ADAPTATION_LEVEL` is 2 and adaptations start at 0, so three levels have to be told apart: the
+ * frame carries one stud per level, set into the ring. Counting is the whole idea — a rank you have to
+ * learn is not a rank you can read, and 0/1/2 studs needs no legend.
+ *
+ * They sit on the lower-left arc of the ring, between 180 and 270 degrees. That quadrant is the only
+ * one left: the score owns the top right, the name owns the bottom centre, and the top is where the
+ * selected disc grows into. Each stud's offset is `radius x (cos, -sin)` of its angle, written against
+ * `--ev-gene-orb-size` so the studs stay on the ring at every size the orb takes.
+ *
+ * A fourth level is one more `[data-level]` rule and a third angle.
+ */
+.gene-orb__frame {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 2.5px var(--gene-color, var(--ev-player));
+}
+
+/*
+ * `translate` and `rotate` are separate properties, and the spec applies translate before rotate — so
+ * each stud lands on its point of the ring and *then* turns into a rhombus about its own centre. Doing
+ * this in one `transform` would rotate the offset too and swing the studs off the arc.
+ */
+.gene-orb__frame::before,
+.gene-orb__frame::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--ev-gene-orb-stud);
+    height: var(--ev-gene-orb-stud);
+    rotate: 45deg;
+    border-radius: 1.5px;
+    background: var(--gene-color-strong, var(--ev-player-dark));
+    box-shadow: 0 0 0 1.5px var(--ev-cream-light);
+}
+
+/* Level 1 — a single stud at 225 degrees, the middle of the arc. */
+.gene-orb[data-level='1'] .gene-orb__frame::after {
+    content: '';
+    translate:
+        calc(-50% + var(--ev-gene-orb-size) * -.354)
+        calc(-50% + var(--ev-gene-orb-size) * .354);
+}
+
+/* Level 2 — two studs, at 210 and 240 degrees, sitting either side of where the single one was. */
+.gene-orb[data-level='2'] .gene-orb__frame::before {
+    content: '';
+    translate:
+        calc(-50% + var(--ev-gene-orb-size) * -.433)
+        calc(-50% + var(--ev-gene-orb-size) * .25);
+}
+
+.gene-orb[data-level='2'] .gene-orb__frame::after {
+    content: '';
+    translate:
+        calc(-50% + var(--ev-gene-orb-size) * -.25)
+        calc(-50% + var(--ev-gene-orb-size) * .433);
+}
+
+.gene-orb__score {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 20px;
+    padding: 0 4px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    line-height: 17px;
+    background: var(--gene-color-strong, var(--ev-ink));
+    border: 2px solid var(--ev-cream-light);
+}
+
+.gene-orb__name {
+    max-width: calc(var(--ev-gene-orb-size) + 8px);
+    color: var(--ev-on-dark-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    text-shadow: var(--ev-shadow-text-on-scene);
+}
+
+.gene-orb.is-selected .gene-orb__name {
+    color: var(--gene-color, var(--ev-on-dark));
+}
+
+.gene-orb.is-exhausted .gene-orb__disc {
+    filter: saturate(.28);
+}
+
+/* Exhausted reads as "no colour, no score": the badge drops out of the adaptation's hue. */
+.gene-orb.is-exhausted .gene-orb__score {
+    background: var(--ev-ink-faint);
+}
+
+.gene-orb:disabled {
+    opacity: .8;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1078,39 +1166,36 @@
         padding: 4px;
     }
 
-    .environment-card {
-        gap: 8px;
-        padding: 7px;
-    }
-
-    .environment-card > .environment-thumb {
-        width: 52px;
-    }
-
-    .environment-card__description {
-        display: none;
+    .environment-row .environment-thumb {
+        width: 42px;
     }
 
     .arena {
         flex-basis: var(--ev-battle-arena-basis-compact);
     }
 
-    .gene-matchup {
-        min-height: 40px;
-    }
-
-    .gene-card {
-        padding-top: 7px;
-    }
-
-    .ev-action-btn {
-        min-height: 56px;
+    /*
+     * Only the height comes down here. The hint keeps both its lines, because the briefing row freed
+     * around 60px and a 664px phone is the common case — dropping to one line there truncated most
+     * hints on most phones.
+     */
+    .battle-screen {
+        --ev-action-btn-height: 62px;
     }
 }
 
 @media (max-height: 620px) {
-    /* The affinity chips stay one tap away in the environment sheet. */
-    .environment-card__chips {
+    /*
+     * The prose is the first thing to go, and it goes 60px later than it used to: the briefing row
+     * costs 38px where the card cost around 100px, so a 664px phone now keeps the line the card
+     * could not afford. The biome name and its two glyphs carry the round without it.
+     */
+    .environment-line {
+        display: none;
+    }
+
+    /* The affinity glyphs stay one tap away in the environment sheet. */
+    .environment-row__effects {
         display: none;
     }
 
@@ -1123,18 +1208,18 @@
         height: var(--ev-mutation-slot-size-compact);
     }
 
-    .gene-card__icon {
-        width: 34px;
-        height: 34px;
-        font-size: 24px;
+    /*
+     * On the container, not the orb: `.gene-orbs` derives its own reserved space from this, so setting
+     * it on the child would shrink the orbs and leave the reservation sized for the old ones.
+     */
+    .gene-orbs {
+        --ev-gene-orb-size: 46px;
     }
 
-    .gene-card__level {
-        display: none;
-    }
-
-    .ev-action-btn {
-        min-height: 52px;
+    /* Below this a second line genuinely will not fit, so the button asks for less rather than clip. */
+    .battle-screen {
+        --ev-action-btn-height: 52px;
+        --ev-action-btn-hint-lines: 1;
     }
 
     .ev-action-btn__glyph {
@@ -1151,44 +1236,49 @@
     }
 }
 
+/*
+ * The next biome keeps its artwork and loses its name.
+ *
+ * Measured, not guessed: at 390px the preview's 56px title leaves the *active* biome 80px, and two of
+ * the five real names — "Ondata di ceneri vulcaniche", "Collasso risorse nutritive" — do not fit two
+ * lines of that. Dropping the preview's name hands those 61px back and every name fits. The thumbnail
+ * is still the tap target and the full title is in its `aria-label` and in the sheet, so this is
+ * shortened, not hidden (§8). 430px and up has room for both.
+ */
+@media (max-width: 429px) {
+    .environment-row__next-title {
+        display: none;
+    }
+}
+
 @media (max-width: 379px) {
-    /* The briefing gives up a little type size so the biome name never needs an ellipsis. */
-    .environment-card {
-        grid-template-columns: minmax(0, 1fr) clamp(60px, 22%, 94px);
+    .environment-row {
         gap: 6px;
     }
 
-    .environment-card__title {
-        font-size: var(--ev-fs-md);
+    .environment-row__title {
+        font-size: var(--ev-fs-sm);
     }
 
-    .environment-thumb {
-        width: 56px;
+    .environment-row .environment-thumb {
+        width: 40px;
     }
 
     /* All five adaptations still fit side by side on a 320px screen. */
-    .gene-card {
-        min-width: 52px;
-        padding-inline: 2px;
+    .gene-orbs {
+        --ev-gene-orb-size: 46px;
+        /* Smaller orbs grow less, so the badge clearance shrinks with them: 7.8px + 2px, rounded up. */
+        gap: 11px;
     }
 
-    .gene-card__icon {
-        width: 36px;
-        height: 36px;
-        font-size: 26px;
-    }
-
-    .gene-card__name {
+    .gene-orb__name {
         font-size: 9px;
         letter-spacing: -.01em;
     }
 
-    .gene-card__affinity {
-        font-size: var(--ev-fs-2xs);
-    }
-
-    .gene-carousel__track {
-        gap: 4px;
+    .gene-matchup {
+        gap: var(--ev-s-2);
+        padding-inline: var(--ev-s-2);
     }
 
     .duel-card__name {

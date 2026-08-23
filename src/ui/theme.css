@@ -215,12 +215,37 @@
     --ev-mutation-slot-size-compact: 28px;
     --ev-mutation-consumed-opacity: .5;
     --ev-mutation-consumed-grayscale: .85;
-    --ev-battle-round-pill-min-width: 132px;
+    /*
+     * The VS badge is an oval, not a disc: shortening it is what frees the room for the round dots to
+     * sit under it inside the header, instead of taking a row of their own below it.
+     */
+    --ev-battle-vs-height: 26px;
     --ev-battle-arena-basis: 156px;
     --ev-battle-arena-basis-medium: 126px;
     --ev-battle-arena-basis-compact: 102px;
     --ev-battle-arena-basis-tight: 68px;
     --ev-battle-decision-overlap: 22px;
+    /*
+     * The round decision is a fixed-size control surface, not a box that grows with its copy.
+     *
+     * Its hint says something different for every adaptation, and it sits under the one elastic block
+     * on the screen — so a hint that wrapped to two lines for one gene and one line for the next moved
+     * the arena, and the creatures jumped every time the player walked the gene row. A definite height
+     * ends that by construction: nothing inside the button can change the height of anything outside it.
+     * The line count is a token too, because a shorter button has to be told to ask for less prose
+     * rather than clip it.
+     */
+    --ev-action-btn-height: 66px;
+    --ev-action-btn-hint-lines: 2;
+    /*
+     * Gene orbs. The base size is what five of them need to sit side by side on a 320px screen; the
+     * selected one grows by `scale` rather than by width, so it can rise above the row without
+     * pushing its neighbours or re-laying the names out.
+     */
+    --ev-gene-orb-size: 52px;
+    --ev-gene-orb-selected-scale: 1.34;
+    /* The level studs set into the ring: rhombi, one per level, so only the side length varies. */
+    --ev-gene-orb-stud: 8px;
     --ev-z-overlay: 10;
 
     /* Motion. */

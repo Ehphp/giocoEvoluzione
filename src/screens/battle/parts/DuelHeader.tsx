@@ -192,7 +192,23 @@ export function DuelHeader({ player, opponent, round, onRequestLeave, onActivate
                 <DuelCard player={player} role="Tu" side="player" round={round} onRequestLeave={onRequestLeave} />
                 <MutationSlots mutations={player.combatMutations ?? []} side="player" onActivateSymbiosis={onActivateSymbiosis} onActivateFineDelMondo={onActivateFineDelMondo} />
             </div>
-            <span className="duel-header__versus" aria-hidden="true">VS</span>
+            {/*
+              * VS and, under it, one dot per scheduled round lit as the match advances. Its own column
+              * rather than an overlay: the dots are wider than the seam between the profiles, so
+              * floating them there covered the players' names. No text, and no card of its own — the
+              * pill this replaced cost 34px of a 664px screen.
+              */}
+            <div className="duel-header__match">
+                <span className="duel-header__versus" aria-hidden="true">VS</span>
+                <span className="duel-header__rounds">
+                    <Pips
+                        total={round.total}
+                        filled={round.current}
+                        size="compact"
+                        label={`Round ${round.current} di ${round.total}`}
+                    />
+                </span>
+            </div>
             <div className="duel-header__competitor duel-header__competitor--opponent">
                 <DuelCard player={opponent} role="Avversario" side="opponent" round={round} />
                 <MutationSlots mutations={opponent.combatMutations ?? []} side="opponent" />

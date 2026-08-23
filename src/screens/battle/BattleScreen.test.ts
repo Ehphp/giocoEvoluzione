@@ -13,6 +13,8 @@ function makeGene(input: Pick<GeneCardV2, 'id' | 'traitType' | 'name' | 'level' 
         ...gene,
         strongAgainst: 'Avversario naturale',
         weakAgainst: 'Predatore naturale',
+        strongAgainstTrait: 'ARMOR',
+        weakAgainstTrait: 'CAMOUFLAGE',
         prediction: score === undefined
             ? undefined
             : { useScore: score, baseContribution: 2, levelContribution: gene.level, eventModifier: affinityValue ?? 0, reasons: [] },
@@ -53,17 +55,17 @@ function makeViewModel(overrides: Partial<GeneSelectionViewModelV2> = {}): GeneS
             title: 'Evento corrente',
             description: 'Descrizione corrente',
             effects: [
-                { id: 'current-p2', label: 'Ferocia', modifier: 2, value: 'Ideale · Ferocia', tone: 'positive' },
-                { id: 'current-p1', label: 'Agilita', modifier: 1, value: 'Adatto · Agilita', tone: 'neutral' },
-                { id: 'current-n1', label: 'Mimetismo', modifier: 0, value: 'Sfavorevole · Mimetismo', tone: 'negative' },
-                { id: 'current-n2', label: 'Sensi', modifier: 0, value: 'Sfavorevole · Sensi', tone: 'negative' },
+                { id: 'current-p2', trait: 'FEROCITY', label: 'Ferocia', modifier: 2, value: 'Ideale · Ferocia', tone: 'positive' },
+                { id: 'current-p1', trait: 'AGILITY', label: 'Agilita', modifier: 1, value: 'Adatto · Agilita', tone: 'neutral' },
+                { id: 'current-n1', trait: 'CAMOUFLAGE', label: 'Mimetismo', modifier: 0, value: 'Sfavorevole · Mimetismo', tone: 'negative' },
+                { id: 'current-n2', trait: 'SENSES', label: 'Sensi', modifier: 0, value: 'Sfavorevole · Sensi', tone: 'negative' },
             ],
         },
         nextRoundEvent: {
             id: 'next',
             title: 'Evento futuro',
             description: 'Descrizione futura',
-            effects: [{ id: 'next-p2', label: 'Corazza', modifier: 2, value: 'Ideale · Corazza', tone: 'positive' }],
+            effects: [{ id: 'next-p2', trait: 'ARMOR', label: 'Corazza', modifier: 2, value: 'Ideale · Corazza', tone: 'positive' }],
         },
         genes,
         selectedGeneId,
@@ -126,7 +128,21 @@ describe('BattleScreen', () => {
 
         expect(container.querySelector('.duel-card--player')?.textContent).toContain('TB 12')
         expect(container.querySelector('.duel-card--opponent')?.textContent).toContain('TB 10')
-        expect(container.querySelector('.battle-screen__meta')?.textContent).toContain('4/7')
+    })
+
+    it('counts the rounds with dots under the VS badge, inside the header and with no text', () => {
+        render()
+
+        const rounds = container.querySelector('.duel-header__rounds')!
+        const dots = [...rounds.querySelectorAll('.ev-pips__dot')]
+
+        // One dot per scheduled round, lit up to the current one. The count is the only statement.
+        expect(dots).toHaveLength(7)
+        expect(dots.filter((dot) => dot.classList.contains('is-on'))).toHaveLength(4)
+        expect(rounds.textContent).toBe('')
+        expect(rounds.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Round 4 di 7')
+        // Between the two profiles, not in a row of its own: the pill it replaced cost 34px.
+        expect(rounds.closest('.duel-header')).not.toBeNull()
     })
 
     it('integrates the ordered mutation slots under each player panel with semantic states', () => {
@@ -209,31 +225,64 @@ describe('BattleScreen', () => {
     it('renders all five genes in stable order and selects each by tap', () => {
         renderInteractive()
 
-        const cards = [...container.querySelectorAll<HTMLButtonElement>('.gene-card')]
+        const orbs = [...container.querySelectorAll<HTMLButtonElement>('.gene-orb')]
 
-        expect(cards).toHaveLength(5)
-        expect(cards.map((card) => card.querySelector('.gene-card__name')?.textContent)).toEqual(GENES.map((gene) => gene.name))
+        expect(orbs).toHaveLength(5)
+        expect(orbs.map((orb) => orb.querySelector('.gene-orb__name')?.textContent)).toEqual(GENES.map((gene) => gene.name))
 
-        cards.forEach((card, index) => {
-            act(() => card.click())
-            expect([...container.querySelectorAll('.gene-card')][index]?.getAttribute('aria-selected')).toBe('true')
+        orbs.forEach((orb, index) => {
+            act(() => orb.click())
+            expect([...container.querySelectorAll('.gene-orb')][index]?.getAttribute('aria-selected')).toBe('true')
         })
+    })
+
+    it('shows this round\'s score on the orb and the level as a frame, not as words', () => {
+        renderInteractive()
+
+        const orbs = [...container.querySelectorAll<HTMLButtonElement>('.gene-orb')]
+
+        // The one number on the token is the round score, straight from the authoritative prediction.
+        expect(orbs.map((orb) => orb.querySelector('.gene-orb__score')?.textContent)).toEqual(['3', '4', '4', '2', '5'])
+        // Level rides an attribute so the frame is CSS and no level is ever spelled out.
+        expect(orbs.map((orb) => orb.dataset.level)).toEqual(['0', '1', '0', '0', '2'])
+        // Scoped to the row: EVOLVI still says which level it buys, which is the action, not the token.
+        expect(container.querySelector('.gene-orbs')?.textContent).not.toContain('Liv.')
+        // Affinity was a word on the card; it is inside the score now, and stays in the label.
+        expect(orbs[2]?.getAttribute('aria-label')).toContain('Affinita ideale')
     })
 
     it('supports keyboard selection and exposes exhaustion semantically', () => {
         renderInteractive()
 
-        const cards = () => [...container.querySelectorAll<HTMLButtonElement>('.gene-card')]
+        const orbs = () => [...container.querySelectorAll<HTMLButtonElement>('.gene-orb')]
 
-        act(() => cards()[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })))
-        expect(cards()[1]?.getAttribute('aria-selected')).toBe('true')
+        act(() => orbs()[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })))
+        expect(orbs()[1]?.getAttribute('aria-selected')).toBe('true')
 
-        act(() => cards()[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })))
-        expect(cards()[4]?.getAttribute('aria-selected')).toBe('true')
+        act(() => orbs()[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })))
+        expect(orbs()[4]?.getAttribute('aria-selected')).toBe('true')
 
-        expect(cards()[3]?.classList.contains('is-exhausted')).toBe(true)
-        expect(cards()[3]?.getAttribute('aria-label')).toContain('esaurito')
-        expect(cards()[3]?.getAttribute('aria-label')).toContain('sfavorevole')
+        expect(orbs()[3]?.classList.contains('is-exhausted')).toBe(true)
+        expect(orbs()[3]?.getAttribute('aria-label')).toContain('esaurito')
+        expect(orbs()[3]?.getAttribute('aria-label')).toContain('sfavorevole')
+    })
+
+    it('says the two matchups with glyphs above the orbs, and nothing below them', () => {
+        render()
+
+        const strip = container.querySelector('.gene-matchup')!
+        const pairs = [...strip.querySelectorAll('.gene-matchup__pair')]
+
+        // `attacker -> victim`, twice: this gene beating its victim, then its predator beating it.
+        expect(pairs).toHaveLength(2)
+        expect([...pairs[0]!.querySelectorAll('.gene-glyph')].map((g) => (g as HTMLElement).dataset.gene)).toEqual(['FEROCITY', 'ARMOR'])
+        expect([...pairs[1]!.querySelectorAll('.gene-glyph')].map((g) => (g as HTMLElement).dataset.gene)).toEqual(['CAMOUFLAGE', 'FEROCITY'])
+        // No words in the strip itself; the whole statement is in its label.
+        expect(strip.textContent).toBe('')
+        expect(strip.getAttribute('aria-label')).toContain('forte contro Avversario naturale')
+        expect(strip.getAttribute('aria-label')).toContain('teme Predatore naturale')
+        // The strip precedes the orbs: the explanatory card that used to follow them is gone.
+        expect(strip.compareDocumentPosition(container.querySelector('.gene-orbs')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     it('does not reconstruct a score when the authoritative prediction is missing', () => {
@@ -241,8 +290,8 @@ describe('BattleScreen', () => {
 
         render(makeViewModel({ genes: [gene], selectedGeneId: gene.id, selectedGene: gene }))
 
-        expect(container.querySelector('.gene-card__value')?.textContent).toBe('—')
-        expect(container.querySelector('.gene-card')?.getAttribute('aria-label')).toContain('valore ambientale non disponibile')
+        expect(container.querySelector('.gene-orb__score')?.textContent).toBe('—')
+        expect(container.querySelector('.gene-orb')?.getAttribute('aria-label')).toContain('valore ambientale non disponibile')
         expect(container.querySelector('.ev-btn--use')?.textContent).toContain('— PT')
     })
 
@@ -281,23 +330,32 @@ describe('BattleScreen', () => {
 
         expect(container.querySelector('.waiting-panel')?.textContent).toContain('Agilita')
         expect(container.querySelector('.waiting-panel')?.textContent).toContain('1/2')
-        expect(container.querySelector('.gene-card')).toBeNull()
+        expect(container.querySelector('.gene-orb')).toBeNull()
         expect(container.querySelector('.ev-btn--use')).toBeNull()
     })
 
-    it('previews the next biome beside the active one', () => {
+    it('states the briefing on one row, with the affinities as glyphs and the prose outside it', () => {
         render()
 
-        expect(container.querySelector('.environment-card__main')?.textContent).toContain('Evento corrente')
-        // Only the decisive pair stays on the card; the full table lives in the sheet.
-        expect(container.querySelectorAll('.environment-card__chips .ev-chip')).toHaveLength(2)
-        expect(container.querySelector('.environment-card__next')?.textContent).toContain('Evento futuro')
+        const row = container.querySelector('.environment-row')!
+
+        expect(row.querySelector('.environment-row__main')?.textContent).toContain('Evento corrente')
+        expect(row.querySelector('.environment-row__next')?.textContent).toContain('Evento futuro')
+
+        // The decisive pair, shown as the adaptation's own glyph plus its modifier.
+        const effects = [...row.querySelectorAll<HTMLElement>('.environment-row__effect')]
+        expect(effects.map((effect) => effect.dataset.gene)).toEqual(['FEROCITY', 'SENSES'])
+        expect(effects.map((effect) => effect.querySelector('b')?.textContent)).toEqual(['+2', '0'])
+
+        // The prose left the panel for the artwork, so the row costs one line instead of four.
+        expect(row.textContent).not.toContain('Descrizione corrente')
+        expect(container.querySelector('.environment-line')?.textContent).toBe('Descrizione corrente')
     })
 
     it('opens the affinity table of whichever biome was tapped', () => {
         render()
 
-        act(() => container.querySelector<HTMLButtonElement>('.environment-card__main')!.click())
+        act(() => container.querySelector<HTMLButtonElement>('.environment-row__main')!.click())
 
         expect(document.querySelector('.ev-sheet')?.textContent).toContain('Evento corrente')
         expect(document.querySelectorAll('.environment-detail__list li')).toHaveLength(4)
@@ -306,7 +364,7 @@ describe('BattleScreen', () => {
 
         expect(document.querySelector('.environment-detail__list')).toBeNull()
 
-        act(() => container.querySelector<HTMLButtonElement>('.environment-card__next')!.click())
+        act(() => container.querySelector<HTMLButtonElement>('.environment-row__next')!.click())
 
         expect(document.querySelector('.ev-sheet')?.textContent).toContain('Evento futuro')
         expect(document.querySelectorAll('.environment-detail__list li')).toHaveLength(1)
@@ -379,6 +437,6 @@ describe('BattleScreen', () => {
 
         expect(container.textContent).toContain('Sessione obsoleta')
         expect(container.textContent).toContain('Sessione non valida.')
-        expect(container.querySelector('.gene-card')).toBeNull()
+        expect(container.querySelector('.gene-orb')).toBeNull()
     })
 })

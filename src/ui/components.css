@@ -227,12 +227,13 @@
 }
 
 /** Two-line action button: title over a supporting line, with a leading glyph. */
+/* `height`, not `min-height`: see `--ev-action-btn-height` for why that distinction is the fix. */
 .ev-action-btn {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 9px;
-    min-height: 62px;
+    height: var(--ev-action-btn-height);
     padding: 9px;
     text-align: left;
 }
@@ -260,8 +261,18 @@
     letter-spacing: .01em;
 }
 
+/*
+ * Clamped to the button's line budget. No reserved height here on purpose: an earlier attempt floored
+ * this at `calc(font-size * line-height * 2)`, which computes 25px while two real line boxes measure
+ * 26px — the browser rounds each one — so it still shifted by a pixel. The button's definite height is
+ * what holds the layout; this only keeps long copy from overflowing it.
+ */
 .ev-action-btn__hint {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--ev-action-btn-hint-lines);
+    line-clamp: var(--ev-action-btn-hint-lines);
+    overflow: hidden;
     font-family: var(--ev-font-ui);
     font-size: var(--ev-fs-2xs);
     font-weight: 700;

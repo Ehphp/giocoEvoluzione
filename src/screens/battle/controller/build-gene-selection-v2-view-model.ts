@@ -146,6 +146,7 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
             ))
             .map((effect) => ({
                 id: `${roundEvent.id}-${effect.trait}-${effect.modifier}`,
+                trait: effect.trait,
                 label: TRAIT_LABELS[effect.trait],
                 modifier: effect.modifier,
                 value: `${mapAffinity(effect.modifier) === 'ideal' ? 'Ideale' : mapAffinity(effect.modifier) === 'suitable' ? 'Adatto' : 'Sfavorevole'} · ${TRAIT_LABELS[effect.trait]}`,
@@ -165,6 +166,7 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
     if (positive) {
         picked.push({
             id: `${roundEvent.id}-${positive.trait}-pos`,
+            trait: positive.trait,
             label: TRAIT_LABELS[positive.trait],
             modifier: positive.modifier,
             value: `+${positive.modifier} ${TRAIT_LABELS[positive.trait]}`,
@@ -175,6 +177,7 @@ export function buildRoundEventEffects(roundEvent: RoundEventDefinition, include
     if (negative) {
         picked.push({
             id: `${roundEvent.id}-${negative.trait}-neg`,
+            trait: negative.trait,
             label: TRAIT_LABELS[negative.trait],
             modifier: negative.modifier,
             value: `${negative.modifier} ${TRAIT_LABELS[negative.trait]}`,
@@ -253,6 +256,8 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 exhausted: state.exhausted,
                 strongAgainst: TRAIT_LABELS[NATURAL_ADVANTAGE[traitType]],
                 weakAgainst: TRAIT_LABELS[weakAgainst],
+                strongAgainstTrait: NATURAL_ADVANTAGE[traitType],
+                weakAgainstTrait: weakAgainst,
                 disabledReason: usable ? undefined : 'Esaurito: rigeneralo con EVOLVI',
                 prediction: prediction
                     ? {

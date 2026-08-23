@@ -235,7 +235,46 @@ match verdict. Those live where the moment is (`RoundResultOverlay`, `MatchResul
 The sounds are synthesised, not sampled: no assets, no download, works offline. That is a starting
 point. Authored samples replace `SOUND_RECIPES` alone — the cue names are the contract.
 
+### The battle screen shows, it does not caption
+
+The round decision is the densest surface in the app and the arena is the only elastic block on it
+(§7), so anything that spends height or words there costs the creatures. The rule that came out of
+rebuilding it: **if a value can be shown, do not write it.**
+
+- **The adaptations are orbs.** The round score rides the disc, the level *is* the frame around it,
+  affinity is already inside the score, and the name is the only word left. Level is carried by studs
+  set into the ring, one per level, on its lower-left arc — the score owns the top right and the name
+  the bottom. `MAX_ADAPTATION_LEVEL` is 2 and levels start at 0, so **three** levels need three
+  frames; styling only the top one leaves a raw adaptation looking exactly like an evolved one, which
+  is how that information got lost once already.
+- **The matchup is two glyph pairs**, `attacker → victim`, read twice: this gene beating what it
+  counters, then what counters it beating this gene. No words — the row below is already five glyphs,
+  so the strip reuses that alphabet. It sits *above* the orbs; the explanatory card that used to sit
+  below them separated the genes from the actions they feed.
+- **The briefing is one row.** Biome, its two decisive affinities as glyphs, next biome. The prose
+  moved onto the artwork as a caption. ~40px against the ~100px the card cost.
+- **The round counter is dots**, under the VS badge in a column of its own inside the header.
+
+Two things this taught, both worth keeping:
+
+- **A percentage on a grid item resolves against its own grid area**, not the row. `max-width: 42%`
+  on a track that had just sized itself to fit that item capped it at 42% of itself and collapsed its
+  contents to nothing.
+- **Reserve overflow from the tokens that cause it.** The selected orb grows by `scale` from its foot,
+  so it overflows its container upward by exactly the delta; the container's `padding-top` is derived
+  from the size and scale tokens rather than typed as a number, or the two drift and the orb ends up
+  inside the strip above.
+
 ### Presses and lists
+
+**A control is a fixed-size surface.** `--ev-action-btn-height` is a `height`, not a `min-height`,
+and the copy is clamped to `--ev-action-btn-hint-lines` inside it. The round decision's hint says
+something different for every adaptation, and it sits under the elastic arena — so a box that could
+grow with its copy moved the creatures every time the player walked the gene row. Flooring the *text*
+instead only shrank the jump to a pixel: two line boxes measure 26px where
+`font-size * line-height * 2` computes 25px, because the browser rounds each line. Give the control a
+definite height and nothing inside it can move anything outside it, whatever the copy turns out to be.
+A shorter tier asks for fewer lines rather than clipping, and the full text stays in `title` (§7).
 
 **A press is asymmetric.** Down is fast and flat (`--ev-dur-press` with `--ev-ease`); up is slower
 and overshoots (`--ev-dur-release` with `--ev-ease-spring`). One transition cannot bend both ways, so

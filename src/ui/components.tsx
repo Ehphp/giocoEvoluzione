@@ -140,6 +140,11 @@ export function ActionButton({ tone, title, hint, value, glyph, className = '', 
         <button
             type="button"
             className={`ev-btn ev-btn--${tone} ev-action-btn ${className}`}
+            /*
+             * The hint is clamped to the button's line budget, and a short screen gives it one line.
+             * §7 allows that only while the full text stays reachable, so it lives here.
+             */
+            title={hint}
             onClick={(event) => {
                 if (resolvedCue) playCue(resolvedCue)
                 onClick?.(event)

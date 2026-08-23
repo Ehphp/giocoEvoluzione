@@ -78,11 +78,12 @@ export function buildPreviewHomeViewModel(): HomeViewModel {
 }
 
 const PREVIEW_GENE_INPUT: ReadonlyArray<Pick<GeneCardV2, 'traitType' | 'name' | 'affinity' | 'level' | 'exhausted'> & { useScore: number; eventModifier: number }> = [
-    { traitType: 'FEROCITY', name: 'Ferocia', affinity: 'unfavorable', level: 2, exhausted: false, useScore: 3, eventModifier: 0 },
-    { traitType: 'ARMOR', name: 'Corazza', affinity: 'suitable', level: 2, exhausted: false, useScore: 5, eventModifier: 1 },
+    // One gene per level, so the three level frames are all inspectable side by side.
+    { traitType: 'FEROCITY', name: 'Ferocia', affinity: 'unfavorable', level: 0, exhausted: false, useScore: 3, eventModifier: 0 },
+    { traitType: 'ARMOR', name: 'Corazza', affinity: 'suitable', level: 1, exhausted: false, useScore: 5, eventModifier: 1 },
     { traitType: 'AGILITY', name: 'Agilita', affinity: 'ideal', level: 2, exhausted: false, useScore: 7, eventModifier: 2 },
-    { traitType: 'SENSES', name: 'Sensi', affinity: 'ideal', level: 2, exhausted: false, useScore: 5, eventModifier: 2 },
-    { traitType: 'CAMOUFLAGE', name: 'Mimetismo', affinity: 'suitable', level: 1, exhausted: true, useScore: 2, eventModifier: 1 },
+    { traitType: 'SENSES', name: 'Sensi', affinity: 'ideal', level: 1, exhausted: false, useScore: 5, eventModifier: 2 },
+    { traitType: 'CAMOUFLAGE', name: 'Mimetismo', affinity: 'suitable', level: 0, exhausted: true, useScore: 2, eventModifier: 1 },
 ]
 
 export const PREVIEW_GENES: GeneCardV2[] = PREVIEW_GENE_INPUT.map(({ traitType, name, affinity, level, exhausted, useScore, eventModifier }) => ({
@@ -96,6 +97,8 @@ export const PREVIEW_GENES: GeneCardV2[] = PREVIEW_GENE_INPUT.map(({ traitType, 
     exhausted,
     strongAgainst: traitType === 'AGILITY' ? 'Corazza' : 'Sensi',
     weakAgainst: traitType === 'AGILITY' ? 'Mimetismo' : 'Ferocia',
+    strongAgainstTrait: traitType === 'AGILITY' ? 'ARMOR' : 'SENSES',
+    weakAgainstTrait: traitType === 'AGILITY' ? 'CAMOUFLAGE' : 'FEROCITY',
     disabledReason: exhausted ? 'Esaurito: rigeneralo con EVOLVI' : undefined,
     prediction: {
         useScore,
@@ -133,11 +136,11 @@ export function buildPreviewBattleViewModel(selectedGeneId: string): GeneSelecti
             description: 'La nebbia rallenta i movimenti ma aumenta la percezione.',
             imageUrl: getEventAssetByArtKey('event-flash-flood'),
             effects: [
-                { id: 'preview-agility', label: 'Agilita', modifier: 2, value: 'Ideale · Agilita', tone: 'positive' },
-                { id: 'preview-senses', label: 'Sensi', modifier: 2, value: 'Ideale · Sensi', tone: 'positive' },
-                { id: 'preview-armor', label: 'Corazza', modifier: 1, value: 'Adatto · Corazza', tone: 'neutral' },
-                { id: 'preview-camouflage', label: 'Mimetismo', modifier: 1, value: 'Adatto · Mimetismo', tone: 'neutral' },
-                { id: 'preview-ferocity', label: 'Ferocia', modifier: 0, value: 'Sfavorevole · Ferocia', tone: 'negative' },
+                { id: 'preview-agility', trait: 'AGILITY', label: 'Agilita', modifier: 2, value: 'Ideale · Agilita', tone: 'positive' },
+                { id: 'preview-senses', trait: 'SENSES', label: 'Sensi', modifier: 2, value: 'Ideale · Sensi', tone: 'positive' },
+                { id: 'preview-armor', trait: 'ARMOR', label: 'Corazza', modifier: 1, value: 'Adatto · Corazza', tone: 'neutral' },
+                { id: 'preview-camouflage', trait: 'CAMOUFLAGE', label: 'Mimetismo', modifier: 1, value: 'Adatto · Mimetismo', tone: 'neutral' },
+                { id: 'preview-ferocity', trait: 'FEROCITY', label: 'Ferocia', modifier: 0, value: 'Sfavorevole · Ferocia', tone: 'negative' },
             ],
         },
         nextRoundEvent: {
@@ -146,7 +149,7 @@ export function buildPreviewBattleViewModel(selectedGeneId: string): GeneSelecti
             description: 'Il calore prolungato premia il metabolismo efficiente.',
             imageUrl: getEventAssetByArtKey('event-heat-spike'),
             effects: [
-                { id: 'preview-next-ferocity', label: 'Ferocia', modifier: 2, value: 'Ideale · Ferocia', tone: 'positive' },
+                { id: 'preview-next-ferocity', trait: 'FEROCITY', label: 'Ferocia', modifier: 2, value: 'Ideale · Ferocia', tone: 'positive' },
             ],
         },
         genes: PREVIEW_GENES,
