@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
     getCreatureVisualProgress,
@@ -68,11 +68,27 @@ async function loadVisual(creatureId: string) {
 }
 
 /**
+ * Holds on to the previous value while `signature` is unchanged.
+ *
+ * Every profile refresh rebuilds `lineages` from the network, so the array is a new object even
+ * when nothing about it differs — and there are seven ways to trigger a refresh. Depending on its
+ * identity made the thumbnail loader below re-issue two edge calls per lineage each time, for a
+ * list that had not changed.
+ */
+function useStableBySignature<T>(value: T, signature: string): T {
+    const held = useRef({ signature, value })
+    if (held.current.signature !== signature) {
+        held.current = { signature, value }
+    }
+    return held.current.value
+}
+
+/**
  * Owns the generated artwork of the active creature and of every lineage in the collection.
  *
  * Two separate loads on purpose: the active creature's visual is kept fresh on a timer because it
  * is on screen continuously, while the collection's thumbnails are fetched once per lineage list
- * and are allowed to go stale until it changes.
+ * and are reloaded only when that list changes or a visual is adopted.
  */
 export function useCreatureVisuals(input: {
     profile: ProfileRecord | null
@@ -84,8 +100,20 @@ export function useCreatureVisuals(input: {
     const [officialVisual, setOfficialVisual] = useState<OfficialVisual | null>(null)
     const [visualProgress, setVisualProgress] = useState<VisualProgressSummary | null>(null)
     const [lineageVisuals, setLineageVisuals] = useState<LineageVisualSummary>({})
+    /**
+     * Bumped by the two handlers that change a visual. The lineage record carries no version, so a
+     * new artwork is invisible in the list itself: without this the thumbnails would keep showing
+     * the pre-adoption form.
+     */
+    const [visualsRevision, setVisualsRevision] = useState(0)
 
     const { profile, activeCreature, lineages, refreshProfile } = input
+
+    // --- derived: the identity the thumbnail loader actually depends on ---------
+    const stableLineages = useStableBySignature(
+        lineages,
+        lineages.map((lineage) => `${lineage.id}:${lineage.creature.id}`).join('|'),
+    )
 
     // --- effects ---------------------------------------------------------------
     useEffect(() => {
@@ -126,7 +154,7 @@ export function useCreatureVisuals(input: {
     }, [activeCreature, profile])
 
     useEffect(() => {
-        if (!isCreatureVisualProgressionEnabled || !lineages.length) {
+        if (!isCreatureVisualProgressionEnabled || !stableLineages.length) {
             setLineageVisuals({})
             return
         }
@@ -134,7 +162,7 @@ export function useCreatureVisuals(input: {
         let active = true
 
         void Promise.all(
-            lineages.map(async (lineage) => {
+            stableLineages.map(async (lineage) => {
                 const next = await loadVisual(lineage.creature.id)
                 return [
                     lineage.id,
@@ -158,12 +186,13 @@ export function useCreatureVisuals(input: {
         return () => {
             active = false
         }
-    }, [lineages])
+    }, [stableLineages, visualsRevision])
 
     // --- handlers --------------------------------------------------------------
     /** Called after an adoption: drops the stale URL and lets the effect above reload. */
     const onVisualChanged = useCallback(async () => {
         setOfficialVisual(null)
+        setVisualsRevision((revision) => revision + 1)
         await refreshProfile()
     }, [refreshProfile])
 
@@ -175,12 +204,13 @@ export function useCreatureVisuals(input: {
                 targetVersionId: selection.targetVersionId,
                 expectedCurrentVisualVersionId: selection.currentVersionId,
             })
-            // Only the active creature is on screen; the others reload with the lineage list.
+            // Only the active creature is on screen; the others reload with the revision bump.
             if (activeCreature?.id === selection.creatureId) {
                 const next = await loadVisual(selection.creatureId)
                 setOfficialVisual(next.official)
                 setVisualProgress(next.progress)
             }
+            setVisualsRevision((revision) => revision + 1)
             await refreshProfile()
         },
         [activeCreature?.id, refreshProfile],
