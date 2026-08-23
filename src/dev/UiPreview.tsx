@@ -22,8 +22,6 @@ import {
     buildPreviewHomeViewModel,
 } from './ui-preview-fixtures'
 
-import './ui-preview.css'
-
 const noop = () => undefined
 const asyncNoop = async () => undefined
 
@@ -158,6 +156,26 @@ const TRANSITION_STOPS = [
 ] as const satisfies ReadonlyArray<{ id: ScreenId; label: string; render: () => React.JSX.Element }>
 
 /**
+ * Inline rather than in a stylesheet, and that is the whole point: Vite tree-shakes the JS of a
+ * dev-only route out of the production bundle but **never tree-shakes CSS**. A `.css` file imported
+ * from here ships to players even though nothing can render it. Styles that live in the component
+ * leave with it.
+ *
+ * Tokens, not literals — this bar is internal, but §3 still applies.
+ */
+const PREVIEW_MOVES_STYLE: React.CSSProperties = {
+    position: 'fixed',
+    top: 'calc(var(--ev-safe-top) + var(--ev-s-2))',
+    right: 'var(--ev-s-2)',
+    left: 'var(--ev-s-2)',
+    zIndex: 100,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 'var(--ev-s-1)',
+    justifyContent: 'center',
+}
+
+/**
  * The motion layer on its own.
  *
  * The real transitions all sit behind authentication, so this is the only place the three moves can
@@ -173,7 +191,7 @@ function TransitionsPreview() {
             <ScreenTransition screenKey={stop.id} depth={SCREEN_DEPTH[stop.id]}>
                 {stop.render()}
             </ScreenTransition>
-            <nav className="ev-preview-moves" aria-label="Anteprima transizioni">
+            <nav className="ev-preview-moves" style={PREVIEW_MOVES_STYLE} aria-label="Anteprima transizioni">
                 {TRANSITION_STOPS.map((candidate) => (
                     <Button
                         key={candidate.id}

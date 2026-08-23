@@ -100,6 +100,18 @@ describe('shipped assets', () => {
         }
     })
 
+    it('keeps the dev preview out of the production stylesheet', async () => {
+        /*
+         * Vite tree-shakes the JS of a DEV-gated route out of the bundle, but **CSS is never
+         * tree-shaken**: a stylesheet imported from `src/dev/**` ships to players even though nothing
+         * there can render. It happened once. Dev-only styling goes inline in the component, so it
+         * leaves with the JS.
+         */
+        const devFiles = await walk(resolve(process.cwd(), 'src/dev'))
+
+        expect(devFiles.filter((path) => path.endsWith('.css'))).toEqual([])
+    })
+
     it('points the UI manifest only at files the pipeline produces', async () => {
         // A path edited in one place and not the other fails at runtime as a broken image, which is
         // exactly the kind of thing a screenshot review scrolls past.
