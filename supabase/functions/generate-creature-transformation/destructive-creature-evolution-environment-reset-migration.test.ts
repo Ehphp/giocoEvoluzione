@@ -2,19 +2,37 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(resolve('supabase/migrations/202608150001_admin_destructive_creature_evolution_environment_reset.sql'), 'utf8')
-const safeDeleteFix = readFileSync(resolve('supabase/migrations/202608150002_fix_destructive_creature_evolution_reset_safe_deletes.sql'), 'utf8')
-const canonicalSourceMigration = readFileSync(resolve('supabase/migrations/202608150004_update_canonical_creature_source.sql'), 'utf8')
-const canonicalSourceSyncMigration = readFileSync(resolve('supabase/migrations/202608170002_sync_verdant_hatchling_canonical_source.sql'), 'utf8')
+const migration = readFileSync(
+    resolve('supabase/migrations/202608150001_admin_destructive_creature_evolution_environment_reset.sql'),
+    'utf8',
+)
+const safeDeleteFix = readFileSync(
+    resolve('supabase/migrations/202608150002_fix_destructive_creature_evolution_reset_safe_deletes.sql'),
+    'utf8',
+)
+const canonicalSourceMigration = readFileSync(
+    resolve('supabase/migrations/202608150004_update_canonical_creature_source.sql'),
+    'utf8',
+)
+const canonicalSourceSyncMigration = readFileSync(
+    resolve('supabase/migrations/202608170002_sync_verdant_hatchling_canonical_source.sql'),
+    'utf8',
+)
 const tool = readFileSync(resolve('tools/reset-creature-evolution-environment.ts'), 'utf8')
 const seedTool = readFileSync(resolve('tools/seed-creature-transformation-source.ts'), 'utf8')
 
 describe('destructive creature evolution environment reset', () => {
     it('is a service-role-only, explicitly confirmed administration path', () => {
-        expect(migration).toMatch(/create or replace function public\.admin_destructive_reset_creature_evolution_environment\(\)/i)
+        expect(migration).toMatch(
+            /create or replace function public\.admin_destructive_reset_creature_evolution_environment\(\)/i,
+        )
         expect(migration).toMatch(/auth\.role\(\) <> 'service_role'/i)
-        expect(migration).toMatch(/grant execute on function public\.admin_destructive_reset_creature_evolution_environment\(\) to service_role/i)
-        expect(migration).toMatch(/revoke all on function public\.admin_destructive_reset_creature_evolution_environment\(\) from public, anon, authenticated/i)
+        expect(migration).toMatch(
+            /grant execute on function public\.admin_destructive_reset_creature_evolution_environment\(\) to service_role/i,
+        )
+        expect(migration).toMatch(
+            /revoke all on function public\.admin_destructive_reset_creature_evolution_environment\(\) from public, anon, authenticated/i,
+        )
         expect(tool).toContain('--confirm-destructive-reset')
         expect(tool).toContain('SUPABASE_SERVICE_ROLE_KEY')
         expect(tool).toContain("key.startsWith('sb_secret_')")
@@ -32,13 +50,16 @@ describe('destructive creature evolution environment reset', () => {
             'creature_visual_progress_tracks',
             'creature_visual_versions',
             'creature_transformation_requests',
-        ]) expect(migration).toMatch(new RegExp(`delete from public\\.${table} where id is not null`, 'i'))
+        ])
+            expect(migration).toMatch(new RegExp(`delete from public\\.${table} where id is not null`, 'i'))
         expect(migration).toMatch(/insert into public\.creature_lineages[\s\S]*'VERDANT_HATCHLING'/i)
         expect(migration).toMatch(/update public\.player_creatures c[\s\S]*base_creature_key = 'VERDANT_HATCHLING'/i)
         expect(migration).toMatch(/insert into public\.creature_visual_versions[\s\S]*version_number[\s\S]*'ACTIVE'/i)
         expect(migration).toContain("asset_path = 'verdant-hatchling-v1.png'")
         expect(migration).toMatch(/delete from public\.creature_lineages l[\s\S]*reset_lineage_id/i)
-        expect(migration).not.toMatch(/delete from public\.(profiles|games|players|match_rewards|competitive_rating_events)\b/i)
+        expect(migration).not.toMatch(
+            /delete from public\.(profiles|games|players|match_rewards|competitive_rating_events)\b/i,
+        )
     })
 
     it('uses explicit primary-key scopes when a development project enables safe DELETE mode', () => {
@@ -49,14 +70,18 @@ describe('destructive creature evolution environment reset', () => {
 
     it('requires a fresh active base v1 with no tracks before Flux can start again', () => {
         expect(migration).toContain("'flux_start_violations'")
-        expect(migration).toMatch(/v\.version_number = 1[\s\S]*v\.status = 'ACTIVE'[\s\S]*v\.base_creature_key = 'VERDANT_HATCHLING'/i)
+        expect(migration).toMatch(
+            /v\.version_number = 1[\s\S]*v\.status = 'ACTIVE'[\s\S]*v\.base_creature_key = 'VERDANT_HATCHLING'/i,
+        )
         expect(migration).toMatch(/from public\.creature_visual_progress_tracks t[\s\S]*where t\.creature_id = c\.id/i)
         expect(tool).toContain("'flux_start_violations'")
     })
 
     it('uses the new validated creature for new and existing base lineages', () => {
         expect(canonicalSourceMigration).toContain("asset_path = 'verdant-hatchling-v1.png'")
-        expect(canonicalSourceMigration).toContain("asset_sha256 = '5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c'")
+        expect(canonicalSourceMigration).toContain(
+            "asset_sha256 = '5ccad0bef02c1a3326238819861a5c25d93d8e5b1a96604cf2852c8e59bd995c'",
+        )
         expect(canonicalSourceMigration).toMatch(/update public\.creature_visual_versions/i)
         expect(seedTool).toContain('upsert: true')
     })
@@ -64,10 +89,16 @@ describe('destructive creature evolution environment reset', () => {
     it('synchronizes a replacement starter source with every base visual through a service-role RPC', () => {
         expect(canonicalSourceSyncMigration).toContain('sync_verdant_hatchling_canonical_source')
         expect(canonicalSourceSyncMigration).toContain("auth.role() <> 'service_role'")
-        expect(canonicalSourceSyncMigration).toContain("set_config('app.syncing_verdant_hatchling_source', 'true', true)")
-        expect(canonicalSourceSyncMigration).toMatch(/update public\.creature_visual_base_asset_catalog[\s\S]*asset_sha256 = p_asset_sha256/i)
-        expect(canonicalSourceSyncMigration).toMatch(/update public\.creature_visual_versions[\s\S]*version_number = 1/i)
-        expect(seedTool).toContain("sync_verdant_hatchling_canonical_source")
+        expect(canonicalSourceSyncMigration).toContain(
+            "set_config('app.syncing_verdant_hatchling_source', 'true', true)",
+        )
+        expect(canonicalSourceSyncMigration).toMatch(
+            /update public\.creature_visual_base_asset_catalog[\s\S]*asset_sha256 = p_asset_sha256/i,
+        )
+        expect(canonicalSourceSyncMigration).toMatch(
+            /update public\.creature_visual_versions[\s\S]*version_number = 1/i,
+        )
+        expect(seedTool).toContain('sync_verdant_hatchling_canonical_source')
         expect(seedTool).toContain('createHash')
         expect(seedTool).toContain('syncCanonicalManifest(true)')
     })

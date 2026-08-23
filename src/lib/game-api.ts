@@ -135,22 +135,6 @@ export type GameMutationResult = {
     resolveRequired?: boolean
 }
 
-const gameSyncInstrumentation = {
-    getGameSnapshotCalls: 0,
-    resolveRoundCalls: 0,
-}
-const isGameSyncInstrumentationEnabled = import.meta.env.DEV || import.meta.env.MODE === 'test'
-
-/** DEV/test diagnostic counters; production behavior does not depend on them. */
-export function getGameSyncInstrumentation() {
-    return { ...gameSyncInstrumentation }
-}
-
-export function resetGameSyncInstrumentation() {
-    gameSyncInstrumentation.getGameSnapshotCalls = 0
-    gameSyncInstrumentation.resolveRoundCalls = 0
-}
-
 export function isGameSnapshotPlayable(snapshot: GameSnapshot): boolean {
     if (!snapshot.me) {
         return false
@@ -347,7 +331,6 @@ async function ensurePlayerConnected(gameId: string, playerId: string) {
 
 export async function fetchGameSnapshot(gameId: string, playerId: string): Promise<GameSnapshot> {
     const supabase = requireSupabase()
-    if (isGameSyncInstrumentationEnabled) gameSyncInstrumentation.getGameSnapshotCalls += 1
 
     const { data, error } = await supabase.rpc('get_game_snapshot', { p_game_id: gameId })
     if (error) throw new Error(error.message)
@@ -608,7 +591,6 @@ export async function submitRoundAction(input: ({ gameId: string; roundNumber: n
 
 export async function maybeResolveRound(gameId: string, roundNumber: number) {
     const supabase = requireSupabase()
-    if (isGameSyncInstrumentationEnabled) gameSyncInstrumentation.resolveRoundCalls += 1
 
     const { error } = await supabase.functions.invoke('resolve-round', {
         body: {

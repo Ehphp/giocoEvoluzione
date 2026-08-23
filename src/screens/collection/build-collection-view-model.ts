@@ -1,0 +1,53 @@
+import { ASSETS } from '../../ui/assets'
+import { buildCreatureVisualVersions } from '../../components/creature-visual-progression/visual-versions'
+import type { CollectionForm, CollectionViewModel, CollectionViewModelInput } from './types'
+
+/* Elemental types are presentation placeholders until the profile API exposes them. */
+const PLACEHOLDER_TYPES: ReadonlyArray<'Natura'> = ['Natura']
+
+export function buildCollectionViewModel({
+    profile,
+    creature,
+    experience,
+    visualUrl,
+    visualVersionNumber,
+    visualTrait,
+    visualHistory,
+    currentVisualVersionId,
+}: CollectionViewModelInput): CollectionViewModel {
+    const activeGeneration = visualVersionNumber ?? 1
+    const fallbackImage = visualUrl ?? ASSETS.creatures.default
+    const forms: CollectionForm[] = buildCreatureVisualVersions({
+        history: visualHistory,
+        currentVersionId: currentVisualVersionId,
+        currentVersionNumber: activeGeneration,
+        fallback: {
+            id: currentVisualVersionId ?? creature.id,
+            versionNumber: activeGeneration,
+            visualTraitId: visualTrait ?? null,
+            conceptName: null,
+            signedUrl: fallbackImage,
+        },
+    }).map((entry) => ({
+        id: entry.id,
+        generation: entry.versionNumber,
+        name: entry.name,
+        image: entry.signedUrl,
+        types: PLACEHOLDER_TYPES,
+        isUnlocked: true,
+        isActive: entry.isCurrent,
+    }))
+    const activeForm = forms.find((form) => form.isActive) ?? forms.at(-1)!
+
+    return {
+        player: { name: profile.nickname, level: creature.level, experience },
+        currentCreature: {
+            name: creature.name ?? 'Creatura iniziale',
+            generation: activeForm.generation,
+            description: activeForm.name === 'Forma iniziale' ? 'La prima forma della tua stirpe.' : 'La forma più evoluta raggiunta finora.',
+            image: visualUrl ?? activeForm.image ?? fallbackImage,
+            types: activeForm.types,
+        },
+        evolutionForms: forms,
+    }
+}

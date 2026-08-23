@@ -1,11 +1,16 @@
 # AGENTS.md — working on the Evori interface
 
 Rules for anyone (human or agent) touching the UI. They exist so the interface stays coherent
-after the rebuild from `concept.JPG`. The reasoning behind them is in
+as rebuilt from the original concept artwork. The reasoning behind them is in
 [`docs/ui-design-system.md`](docs/ui-design-system.md); this file is the operating manual.
 
 Read this before writing UI code. If a rule blocks something the product needs, change the rule
 here in the same commit — do not quietly work around it.
+
+**Anything that has to be done on the Supabase project** — deploying an Edge Function, adding or
+removing a secret, dropping a database object, changing auth config — goes in
+[`TODO_SUPABASE.md`](TODO_SUPABASE.md). Do not leave it only in a conversation: that work cannot be
+done from the repository, so it needs a written home.
 
 ---
 
@@ -18,10 +23,11 @@ The refactor rewired the presentation; it did not change the game. **Keep it tha
 | Design system | `src/ui/**` | edit freely |
 | Screens | `src/screens/**` | edit freely |
 | Dev preview | `src/dev/**` | edit freely |
-| View models / controllers | `src/components/game-v2/{controller,types.ts}`, `src/components/game-results/{buildMatchResultViewModel,types}.ts`, `src/screens/home/{buildHomeViewModel,types}.ts` | **read and re-wire, do not re-derive** |
-| Presentation config | `src/components/game-v2/gameSelectionAssets.ts`, `src/components/game-v2/components/creatureOrientation.ts` | tune sizing/paths only |
+| App shell state | `src/app/**` — one hook per concern: route, match session, creature visuals, profile activity | **read and re-wire, do not re-derive** |
+| View models / controllers | `src/screens/battle/controller/**`, `src/screens/<screen>/build-*-view-model.ts` and its `types.ts` | **read and re-wire, do not re-derive** |
+| Presentation config | `src/screens/battle/controller/{gene-selection-assets,creature-orientation}.ts` | tune sizing/paths only |
 | Game rules & data | `shared/**`, `src/game/**`, `src/lib/**`, `src/auth/**`, `supabase/**`, `tools/**` | **do not touch for UI work** |
-| Internal tools (flag-gated) | `creature-transformation-lab`, `visual-background-cleanup` | keep functional; they wear the design system too (see §3) |
+| Evolution screen (flag-gated) | `src/components/creature-visual-progression/**` | keep functional; it wears the design system too (see §4) |
 
 If a screen needs a value the view model does not expose, **add it in the view model**, do not
 recompute rules in a component. Scores, affinities, predictions and labels all come from the
@@ -29,7 +35,65 @@ model — a component must never re-implement a game rule.
 
 ---
 
-## 2. Never hard-code a design value
+## 2. File shape: one responsibility, one order
+
+Every file reads in the same order, so you can find a thing by where it sits rather than by
+searching. This section describes what the code already does — it is written down so the next
+outlier is a review comment instead of a silent drift.
+
+**A component file (`.tsx`)**
+
+```
+1  import          external → shared/ → src/ → relative → './Component.css' last
+2  type            Props first, then local types
+3  const           module constants, lookup maps
+4  function        module-level pure helpers (outside the component)
+5  function        sub-components, in the order the export uses them
+6  export function THE COMPONENT
+```
+
+and inside the component:
+
+```
+state      useState, useReducer
+derived    useMemo, useRef, values computed from props/state
+effect     every useEffect, grouped together
+handler    event handlers and async actions
+guard      early returns (loading, empty, error)
+render     the single return
+```
+
+**Each kind appears once, as one block.** Scattering three `useEffect` across a file is what makes
+a component unreadable — if you need a fourth effect in a third place, extract a hook instead.
+
+Two cases legitimately break the straight order, and both must be labelled with a
+`// --- <phase> ---` comment so the reason is visible:
+
+- **Seeded state.** When a `useState` initial value comes from a derived value, that derived value
+  has to precede it, so the file alternates derived → state → derived. `CollectionScreen` is the
+  worked example: `availableLineages` → `resolvedActiveLineageId` → `selectedLineageId`.
+- **Derived values a guard needs.** Every hook must run before any early return, so values only
+  used by the guard sit *after* the effects.
+
+**A non-component module (`.ts`)**
+
+```
+1 import → 2 exported types → 3 constants → 4 private helpers → 5 public API
+```
+
+**Across the whole repository**
+
+- **One responsibility per file.** A file that needs "and" to describe it is two files.
+- **One statement per line.** No `;`-chained statements, no whole functions on one line.
+- **`kebab-case.ts`** for every non-component module, in `src/` as well as `shared/` and
+  `supabase/`. **`PascalCase.tsx`** only for files whose default subject is a component.
+- **Named exports only.** `App.tsx` is the single deliberate `export default`.
+- **A view model lives beside the screen it feeds** — `src/screens/<screen>/build<Screen>ViewModel.ts`,
+  never in a sibling folder.
+
+---
+
+## 3. Never hard-code a design value
 
 Everything visual comes from a token in `src/ui/theme.css`.
 
@@ -48,12 +112,15 @@ on a container and use `var(--gene-color)`, `var(--gene-color-strong)`, `var(--g
 
 ---
 
-## 3. Compose primitives, do not restyle them
+## 4. Compose primitives, do not restyle them
 
 `src/ui/components.tsx` is the vocabulary:
 
 `AppShell` · `Panel` · `Button` · `ActionButton` · `IconButton` · `Chip` · `Pill` · `Badge` ·
 `SectionLabel` · `Avatar` · `ProgressBar` · `Pips` · `Overlay` · `SheetHeader` · `Notice`
+
+`ScreenTransition` is a primitive too, but it lives in its own file because it wraps whole screens
+rather than sitting inside one — see §5.
 
 - Build screens out of these. A screen stylesheet may lay them out; it must not repaint them.
 - Need a new visual behaviour? Add a **variant to the primitive**, not an override in a screen.
@@ -72,9 +139,167 @@ their markup is deliberately dense; the result must still be indistinguishable i
 the scene stays visible and readable behind. Reach for `--ev-scrim-focus` and
 `--ev-shadow-text-on-scene` to give loose copy contrast without reintroducing a card edge.
 
+An overlay belongs to the screen that opened it, and withdraws by itself when that screen starts
+leaving — it portals to the body, so no transform on the outgoing layer could carry it away.
+
 ---
 
-## 4. Icons and assets
+## 5. Motion
+
+There are exactly two ways something new can appear, and the first question is always which one
+this is.
+
+**A layer opens on top of the screen.** It rises from the bottom over a blurred scrim
+(`.ev-sheet` / `.ev-overlay`, `--ev-dur-base`). That is the `Overlay` primitive of §4 and it needs
+no decision: sheets, confirmations, the round result, the evolution draft are all layers.
+
+**A screen replaces another.** It moves horizontally, or cross-fades. Never both, never vertically —
+vertical is spoken for by layers, and reusing it would make a screen change read as a sheet.
+
+Screens never cut. `App.tsx` resolves *which* screen to show and hands it to `ScreenTransition`
+(`src/ui/ScreenTransition.tsx`) with its identity and its depth; the transition layer animates the
+swap. Two layers are on stage for 300ms — the screen arriving, and the one it replaced.
+
+**Adding a screen means adding it to `src/app/screen-depth.ts`.** The depth is not decoration: it
+picks the move, and it is the only input.
+
+| Depth change | Move | Reads as |
+| --- | --- | --- |
+| deeper | `push` | the new screen slides in over the old one, which drifts back |
+| shallower | `pop` | the old screen slides away and uncovers the one beneath |
+| equal | `fade` | a cross-fade |
+
+Two invariants the depth table has to satisfy, both pinned by `screen-depth.test.ts`:
+
+- **Every destination reachable from the dock shares depth 1.** The dock is rendered *inside* each
+  screen, so a slide would drag it along; a cross-fade of two near-identical docks reads as the dock
+  standing still while only the active tab changes. Do not give a dock destination its own depth
+  unless you have first hoisted the dock out of the screens.
+- **Nothing pops on the way *into* something.** A depth table can read perfectly as a stack and
+  still send a route backwards. The result screen did: one level deeper than the battle it followed,
+  which turned "nuova partita" into a pop, because a rematch restarts from the result screen without
+  passing through the home screen. It sits level with the battle instead — the duel resolving, not a
+  further place inside it.
+
+`screen-depth.test.ts` enumerates every screen change the app can perform and asserts its move. Add
+the rows for a new screen there; that table, not the depth numbers, is what says the criterion still
+holds.
+
+Rules that keep it honest:
+
+- **Full-screen motion is `transform` and `opacity` only.** Anything else repaints, and repainting
+  the whole viewport drops frames on a mid-range Android. A *control* may transition `box-shadow` or
+  `filter` — that is how the lip compresses under a press — because the repaint is 46px wide. The
+  test is the area, not the property.
+- **Two stacked layers must never both pass through half opacity** — the ground shows between them
+  and the screen dips. Whichever layer is underneath holds opaque until the one above covers it.
+- **Durations and curves are tokens** (`--ev-dur-*`, `--ev-ease*`). `--ev-ease` is front-loaded and
+  right for a 46px control; a full-screen move uses `--ev-ease-screen`, which spreads the travel
+  across the whole duration instead of flicking and then sitting still.
+- **`prefers-reduced-motion` is handled once**, in `theme.css`, by collapsing the duration *and*
+  the travel tokens. A 1ms slide is a jump; a 1ms cut is a cut. Never add a motion value that
+  bypasses those tokens.
+- The outgoing screen is re-rendered, not re-mounted, so its scroll position and state survive the
+  exit. Do not restructure the layers in a way that changes that — see the test for what it costs.
+
+Watch all three moves with `?ui-preview=transitions`, which is the only place they are reachable
+without a session.
+
+### Sound and vibration
+
+One vocabulary, in `src/ui/feedback/cues.ts`: `tap` · `select` · `back` · `confirm` · `evolve` ·
+`impact` · `win` · `lose` · `alert`. A cue name owns **both** a sound recipe and a vibration pattern,
+so the two can never drift apart. `playCue('confirm')` fires both, or neither if the player has
+switched feedback off.
+
+**Feedback is wired into the primitives, not into screens.** `Button` and `ActionButton` read their
+cue off the `tone` they already carry — tone *is* what the button means (§4), so it is also the right
+source for the sound. `IconButton` follows its variant. Pass `cue` to override, `cue={null}` for
+silence. Do not add a `playCue` next to an `onClick` that a primitive already covers; the reason the
+whole app has feedback from one change is that no call site has to remember.
+
+A screen only plays a cue for something that is not a press: the round clash, an evolution, the
+match verdict. Those live where the moment is (`RoundResultOverlay`, `MatchResultScreen`).
+
+- **Nothing plays unprompted.** Every cue answers a player action. The `AudioContext` is built on the
+  first cue, never at import: one created outside a user gesture stays suspended forever on iOS, so
+  the failure is silent and permanent. Never construct one eagerly.
+- **Silence is an acceptable outcome.** No Web Audio, refused resume, storage unavailable — all
+  degrade quietly. A game that cannot make a noise still plays.
+- **`navigator.vibrate` does not exist on iOS Safari and will not.** Haptics there need the native
+  layer once the app is wrapped for the stores; the swap point is `haptics.ts`, not the call sites.
+- **Verdict cues are for the match, not the round.** Seven fanfares in a duel stop meaning anything.
+- New cue? Add it to *both* tables in `cues.ts` — `cues.test.ts` fails until you do, and also holds
+  the length, gain and vibration budgets.
+
+The sounds are synthesised, not sampled: no assets, no download, works offline. That is a starting
+point. Authored samples replace `SOUND_RECIPES` alone — the cue names are the contract.
+
+### The battle screen shows, it does not caption
+
+The round decision is the densest surface in the app and the arena is the only elastic block on it
+(§7), so anything that spends height or words there costs the creatures. The rule that came out of
+rebuilding it: **if a value can be shown, do not write it.**
+
+- **The adaptations are orbs.** The round score rides the disc, the level *is* the frame around it,
+  affinity is already inside the score, and the name is the only word left. Level is carried by studs
+  set into the ring, one per level, on its lower-left arc — the score owns the top right and the name
+  the bottom. `MAX_ADAPTATION_LEVEL` is 2 and levels start at 0, so **three** levels need three
+  frames; styling only the top one leaves a raw adaptation looking exactly like an evolved one, which
+  is how that information got lost once already.
+- **The matchup is two glyph pairs**, `attacker → victim`, read twice: this gene beating what it
+  counters, then what counters it beating this gene. No words — the row below is already five glyphs,
+  so the strip reuses that alphabet. It sits *above* the orbs; the explanatory card that used to sit
+  below them separated the genes from the actions they feed.
+- **The briefing is one row.** Biome, its two decisive affinities as glyphs, next biome. The prose
+  moved onto the artwork as a caption. ~40px against the ~100px the card cost.
+- **The round counter is dots**, under the VS badge in a column of its own inside the header.
+
+Two things this taught, both worth keeping:
+
+- **A percentage on a grid item resolves against its own grid area**, not the row. `max-width: 42%`
+  on a track that had just sized itself to fit that item capped it at 42% of itself and collapsed its
+  contents to nothing.
+- **Reserve overflow from the tokens that cause it.** The selected orb grows by `scale` from its foot,
+  so it overflows its container upward by exactly the delta; the container's `padding-top` is derived
+  from the size and scale tokens rather than typed as a number, or the two drift and the orb ends up
+  inside the strip above.
+
+### Presses and lists
+
+**A control is a fixed-size surface.** `--ev-action-btn-height` is a `height`, not a `min-height`,
+and the copy is clamped to `--ev-action-btn-hint-lines` inside it. The round decision's hint says
+something different for every adaptation, and it sits under the elastic arena — so a box that could
+grow with its copy moved the creatures every time the player walked the gene row. Flooring the *text*
+instead only shrank the jump to a pixel: two line boxes measure 26px where
+`font-size * line-height * 2` computes 25px, because the browser rounds each line. Give the control a
+definite height and nothing inside it can move anything outside it, whatever the copy turns out to be.
+A shorter tier asks for fewer lines rather than clipping, and the full text stays in `title` (§7).
+
+**A press is asymmetric.** Down is fast and flat (`--ev-dur-press` with `--ev-ease`); up is slower
+and overshoots (`--ev-dur-release` with `--ev-ease-spring`). One transition cannot bend both ways, so
+the release timing lives on the base rule and the press timing on `:active`. Getting this backwards —
+one shared timing — is exactly what makes a button feel dead.
+
+**The lip compresses; it does not travel.** A pressed control sinks *into* its own edge:
+`--ev-lip` becomes `--ev-lip-pressed` while the surface moves down by `--ev-press-sink`. Moving the
+whole thing down, lip included, reads as sliding. A tone that carries its own elevation
+(`--ev-btn--cream`, `--ev-btn--ghost`) needs its own pressed elevation, placed *after* the base
+`:active` rule — same specificity, so order decides.
+
+Anything pressable that is not an `ev-btn` — the draft options, the gene cards — wears the same
+curves off the same tokens. A second press feel is a second visual system.
+
+**Lists assemble.** Put `ev-stagger` on a container and its direct children cascade in. The delays
+are enumerated by position in `components.css`, so adopting it is one class on the container and
+nothing in the rows — the same reason feedback lives in the primitives. Rows past the enumerated ones
+share `--ev-stagger-max`, so a long list arrives instead of trickling. Keep the animation
+`backwards`, never `both`: a row still holding a transform is a containing block for every
+`position: fixed` inside it.
+
+---
+
+## 6. Icons and assets
 
 **Icons come from `src/ui/icons.tsx` only.** It re-exports Lucide under product names, plus the
 hand-drawn `GeneIcon` for the five adaptations.
@@ -93,9 +318,37 @@ hand-drawn `GeneIcon` for the five adaptations.
 Files live under `public/assets/{branding,battle,creatures,game-ui}`.
 Environment illustrations are drawn **16:9** and framed 16:9 everywhere.
 
+### The rasters in `public/` are generated
+
+`public/` is copied **verbatim** by Vite — no hashing, no compression, no warning. A PNG dropped in
+there ships to the store at whatever size it happens to be, which is how a 2.3MB logo sat in the
+bundle. So:
+
+- **Masters live in `assets-source/`, outside `public/`.** They are never served.
+- **`npm run assets:optimize`** writes the WebP derivatives that do ship, from the specs in
+  `tools/optimize-assets.ts`. New artwork means a new spec, not a file copied into `public/`.
+- **`npm run assets:check`** fails on a derivative that is missing, stale, over budget, or orphaned
+  by a renamed spec. `tools/shipped-assets.test.ts` holds the same budgets from the other side, plus
+  "no PNG or JPEG ships at all" and "every path the manifest names is a file the pipeline produces".
+
+**WebP only** — no PNG fallback, no AVIF. WebP predates every OS the stores will run, so a fallback
+is bytes nobody fetches; AVIF would need `<picture>` at every call site to stay safe on iOS 15, and
+after WebP took ~4.5MB off the bundle the rest does not pay for that.
+
+**Widths are justified, not generous.** Each spec carries the reason for its steps. Never emit above
+the master's width — upscaling costs bytes and buys nothing — and do not add a step no store device
+would choose: an unfetched variant is still weight inside the app bundle.
+
+`srcSetFor(src)` returns the candidate set for a path the manifest owns, and `undefined` for anything
+else (an SVG, a signed Supabase URL). That is why `AppShell` can serve every screen's scenery
+responsively without a single screen knowing about it. **A `srcSet` without `sizes` fetches the widest
+candidate** — the browser assumes the image fills the viewport — so pass `sizes` wherever it does not.
+The logo is the cautionary case: 300px on the home screen and 30px in the collection top bar, off one
+manifest entry.
+
 ---
 
-## 5. Mobile is the target, and the real viewport is smaller than you think
+## 7. Mobile is the target, and the real viewport is smaller than you think
 
 A 390×844 iPhone reports about **390×664** to the page once browser chrome is up, and a notch adds
 47px top + 34px bottom of safe-area inset. Design against that, never against the nominal size.
@@ -119,7 +372,7 @@ overscroll-behavior-y: contain`. Otherwise its content becomes unreachable.
 
 ---
 
-## 6. Overflow is a bug
+## 8. Overflow is a bug
 
 Nothing may be clipped, hidden or pushed off screen. Deliberate truncation is fine **only** when
 the user sees it: `text-overflow: ellipsis` or `-webkit-line-clamp`, plus the full text in `title`
@@ -149,7 +402,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 7. Language and accessibility
+## 9. Language and accessibility
 
 - UI copy is **Italian**. Match the existing register: short, concrete, no exclamation marks
   outside result screens.
@@ -161,7 +414,7 @@ is transparent padding baked into the asset, and the fix belongs to the display-
 
 ---
 
-## 8. Before you call it done
+## 10. Before you call it done
 
 ```bash
 npm run dev                      # required by the audit below
@@ -170,6 +423,7 @@ npx tsc -b                       # types
 npm run lint                     # oxlint
 npm test                         # vitest
 npm run build                    # production build
+npm run assets:check             # shipped artwork is current and inside budget
 
 # Mobile: emulates iPhone SE/12/14 Pro Max, Pixel 5, Galaxy S9+/Tab S4 with touch and DPR.
 # Fails on anything escaping the viewport or its clipping ancestor, silent truncation,
@@ -179,7 +433,6 @@ npm run audit:mobile -- battle safe-area
 npm run audit:mobile -- battle landscape
 npm run audit:mobile -- battle "sheet:.environment-card__main"
 npm run audit:mobile -- draft            # the battle-start overlay
-npm run audit:mobile -- lab              # the transformation lab
 ```
 
 Routes: `/` (auth), `home`, `battle`, `profile`, `evolution`.
@@ -189,32 +442,46 @@ Modes: *(none)* · `safe-area` · `landscape` · `sheet:<css-selector>`.
 modes, plus any overlay it can open.**
 
 Inspect screens without a backend session with
-`?ui-preview=home|battle|profile|evolution|draft|lab` (development only, fixtures in
-`src/dev/uiPreviewFixtures.ts`). `draft` is the battle-start overlay over a live battle screen;
-`lab` is the transformation lab. The `evolution` and `lab` routes still call the transformation
-API — stub `**/functions/v1/**` to reach their later states.
+`?ui-preview=home|battle|collection|profile|ranking|evolution|draft|transitions` (development only,
+fixtures in `src/dev/ui-preview-fixtures.ts`). `draft` is the battle-start overlay over a live
+battle screen; `transitions` is the motion layer of §5, and the only way to watch a screen change
+without logging in.
+The `evolution` route still calls the transformation API — stub `**/functions/v1/**` to reach its
+later states.
+
+To capture every preview route headless in one pass (Chromium, no session needed):
+
+```bash
+npm run dev &                            # or any port, then set PREVIEW_URL
+npm run preview:shots                    # writes artifacts/preview/<route>.png
+```
+
+It fails the run on any console error or uncaught exception, so a route that renders but throws
+is not a passing route.
 
 ### Known pre-existing failures
 
-Three tests across two files fail on a clean checkout. Confirm with `git stash` before assuming
-your change caused one.
+One test fails on a clean checkout. Confirm with `git stash` before assuming your change caused it.
 
 - `supabase/functions/generate-creature-transformation/security-hardening.test.ts` fails on
-  `expect(authProvider).not.toContain('.auth.signUp(')`. It lives in auth logic, not the UI.
-  Leave it; do not "fix" it by editing the UI.
-- `FluxEvolutionChainSimulator.test.tsx` (2) fails in its `window.localStorage.clear()` helper on
-  environments where the jsdom `localStorage` is unavailable (containers without
-  `--localstorage-file`). It is an environment limitation, not a component failure.
+  `expect(authProvider).not.toContain('.auth.signUp(')`. `AuthProvider` does call `signUp`, and
+  the login screen offers "Registrati" — so either the guard is stale or public signup came back
+  unintentionally. It is an auth-policy decision, not a UI bug: do not "fix" it by editing the UI.
 
 ---
 
-## 9. Checklist
+## 11. Checklist
 
 - [ ] No hex, px radius or raw spacing in a component — tokens only.
 - [ ] Built from `src/ui` primitives; no primitive restyled from a screen.
 - [ ] Icons from `src/ui/icons.tsx`; no emoji or text glyphs.
-- [ ] Image paths from `src/ui/assets.ts`.
+- [ ] Image paths from `src/ui/assets.ts`; new artwork has a spec in `tools/optimize-assets.ts`, and
+      any `srcSet` carries a `sizes` that matches how big it actually renders.
 - [ ] No game rule recomputed in a component.
+- [ ] A new screen is registered in `src/app/screen-depth.ts`; motion animates `transform`/`opacity`
+      only, off tokens, with `prefers-reduced-motion` covered by collapsing them.
+- [ ] Presses get their cue from the primitive, not from a `playCue` beside the `onClick`; no
+      `AudioContext` is built before a player acts.
 - [ ] Touch targets ≥ 40×40; accessible names present.
 - [ ] The screen's only elastic block is decorative.
 - [ ] The surface owns its scrolling; the document still cannot scroll.

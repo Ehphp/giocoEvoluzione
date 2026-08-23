@@ -2,53 +2,323 @@ import { STANDARD_SCHEDULED_ROUNDS } from './catalog.ts'
 import { resolveRound } from './engine.ts'
 import { resolveMatchOutcome, type StoredRoundValue } from './match.ts'
 import { createInitialAdaptations, getRoundEventById } from './state.ts'
-import { createSeededRandom, getLegalBotActions, type BotPolicy, type BotRoundAction, type OfflineBotPolicy, type PublicRoundHistory } from './bot-policies.ts'
-import type { AdaptationCollection, CombatMutationLoadout, CombatMutationState, EnvironmentalCrisisDefinition, SymbiosisLink, SymbiosisRoundEvent } from './types.ts'
+import {
+    createSeededRandom,
+    getLegalBotActions,
+    type BotPolicy,
+    type BotRoundAction,
+    type OfflineBotPolicy,
+    type PublicRoundHistory,
+} from './bot-policies.ts'
+import type {
+    AdaptationCollection,
+    CombatMutationLoadout,
+    CombatMutationState,
+    EnvironmentalCrisisDefinition,
+    SymbiosisLink,
+    SymbiosisRoundEvent,
+} from './types.ts'
 
-export type SimulatedMatchState = { leftScore: number; rightScore: number; leftAdaptations: AdaptationCollection; rightAdaptations: AdaptationCollection; leftCombatMutationLoadout: CombatMutationLoadout; rightCombatMutationLoadout: CombatMutationLoadout; leftCombatMutationState: CombatMutationState; rightCombatMutationState: CombatMutationState; symbiosisLinks: SymbiosisLink[]; roundNumber: number; scheduledRounds: number }
-export type SimulatedRound = PublicRoundHistory & { event: EnvironmentalCrisisDefinition; winnerId: 'left' | 'right' | null; leftScoreBefore: number; rightScoreBefore: number; leftAdaptationsBefore: AdaptationCollection; rightAdaptationsBefore: AdaptationCollection; leftAdaptationsAfter: AdaptationCollection; rightAdaptationsAfter: AdaptationCollection; leftCombatMutationLoadout: CombatMutationLoadout; rightCombatMutationLoadout: CombatMutationLoadout; leftCombatMutationStateBefore: CombatMutationState; rightCombatMutationStateBefore: CombatMutationState; leftCombatMutationStateAfter: CombatMutationState; rightCombatMutationStateAfter: CombatMutationState; symbiosisLinksBefore: SymbiosisLink[]; symbiosisLinksAfter: SymbiosisLink[]; symbiosisEvents: SymbiosisRoundEvent[]; leftMutationEffects: ReturnType<typeof resolveRound>['player1']['mutationEffects']; rightMutationEffects: ReturnType<typeof resolveRound>['player2']['mutationEffects']; leftBreakdown: ReturnType<typeof resolveRound>['player1']['breakdown']; rightBreakdown: ReturnType<typeof resolveRound>['player2']['breakdown']; leftReason?: string; rightReason?: string }
-export type SimulateMatchInput = { leftPolicy: BotPolicy; rightPolicy: BotPolicy; eventSequence: readonly string[]; seed: number; ruleVersion: string; initialState: Pick<SimulatedMatchState, 'leftCombatMutationLoadout' | 'rightCombatMutationLoadout' | 'leftCombatMutationState' | 'rightCombatMutationState'> & Partial<Omit<SimulatedMatchState, 'leftCombatMutationLoadout' | 'rightCombatMutationLoadout' | 'leftCombatMutationState' | 'rightCombatMutationState'>>; priorRoundValues?: StoredRoundValue[]; trace?: boolean; offline?: boolean }
-export type SimulatedMatchReport = { winner: 'left' | 'right' | null; finalScore: { left: number; right: number }; rounds: number; tiebreak: boolean; endReason: string | null; finalAdaptations: { left: AdaptationCollection; right: AdaptationCollection }; combatMutationLoadouts: { left: CombatMutationLoadout; right: CombatMutationLoadout }; finalCombatMutationStates: { left: CombatMutationState; right: CombatMutationState }; symbiosisLinks: SymbiosisLink[]; trace: SimulatedRound[] }
+export type SimulatedMatchState = {
+    leftScore: number
+    rightScore: number
+    leftAdaptations: AdaptationCollection
+    rightAdaptations: AdaptationCollection
+    leftCombatMutationLoadout: CombatMutationLoadout
+    rightCombatMutationLoadout: CombatMutationLoadout
+    leftCombatMutationState: CombatMutationState
+    rightCombatMutationState: CombatMutationState
+    symbiosisLinks: SymbiosisLink[]
+    roundNumber: number
+    scheduledRounds: number
+}
+export type SimulatedRound = PublicRoundHistory & {
+    event: EnvironmentalCrisisDefinition
+    winnerId: 'left' | 'right' | null
+    leftScoreBefore: number
+    rightScoreBefore: number
+    leftAdaptationsBefore: AdaptationCollection
+    rightAdaptationsBefore: AdaptationCollection
+    leftAdaptationsAfter: AdaptationCollection
+    rightAdaptationsAfter: AdaptationCollection
+    leftCombatMutationLoadout: CombatMutationLoadout
+    rightCombatMutationLoadout: CombatMutationLoadout
+    leftCombatMutationStateBefore: CombatMutationState
+    rightCombatMutationStateBefore: CombatMutationState
+    leftCombatMutationStateAfter: CombatMutationState
+    rightCombatMutationStateAfter: CombatMutationState
+    symbiosisLinksBefore: SymbiosisLink[]
+    symbiosisLinksAfter: SymbiosisLink[]
+    symbiosisEvents: SymbiosisRoundEvent[]
+    leftMutationEffects: ReturnType<typeof resolveRound>['player1']['mutationEffects']
+    rightMutationEffects: ReturnType<typeof resolveRound>['player2']['mutationEffects']
+    leftBreakdown: ReturnType<typeof resolveRound>['player1']['breakdown']
+    rightBreakdown: ReturnType<typeof resolveRound>['player2']['breakdown']
+    leftReason?: string
+    rightReason?: string
+}
+export type SimulateMatchInput = {
+    leftPolicy: BotPolicy
+    rightPolicy: BotPolicy
+    eventSequence: readonly string[]
+    seed: number
+    ruleVersion: string
+    initialState: Pick<
+        SimulatedMatchState,
+        | 'leftCombatMutationLoadout'
+        | 'rightCombatMutationLoadout'
+        | 'leftCombatMutationState'
+        | 'rightCombatMutationState'
+    > &
+        Partial<
+            Omit<
+                SimulatedMatchState,
+                | 'leftCombatMutationLoadout'
+                | 'rightCombatMutationLoadout'
+                | 'leftCombatMutationState'
+                | 'rightCombatMutationState'
+            >
+        >
+    priorRoundValues?: StoredRoundValue[]
+    trace?: boolean
+    offline?: boolean
+}
+export type SimulatedMatchReport = {
+    winner: 'left' | 'right' | null
+    finalScore: { left: number; right: number }
+    rounds: number
+    tiebreak: boolean
+    endReason: string | null
+    finalAdaptations: { left: AdaptationCollection; right: AdaptationCollection }
+    combatMutationLoadouts: { left: CombatMutationLoadout; right: CombatMutationLoadout }
+    finalCombatMutationStates: { left: CombatMutationState; right: CombatMutationState }
+    symbiosisLinks: SymbiosisLink[]
+    trace: SimulatedRound[]
+}
 
-function cloneAdaptations(value: AdaptationCollection): AdaptationCollection { return Object.fromEntries(Object.entries(value).map(([trait, state]) => [trait, { ...state }])) as AdaptationCollection }
-function cloneCombatMutationState(value: CombatMutationState): CombatMutationState { return { ...value } }
-function cloneSymbiosisLinks(value: readonly SymbiosisLink[]): SymbiosisLink[] { return value.map((link) => ({ ...link })) }
-function hashPolicyId(value: string): number { let hash = 2166136261; for (let index = 0; index < value.length; index += 1) { hash ^= value.charCodeAt(index); hash = Math.imul(hash, 16777619) } return hash >>> 0 }
+function cloneAdaptations(value: AdaptationCollection): AdaptationCollection {
+    return Object.fromEntries(
+        Object.entries(value).map(([trait, state]) => [trait, { ...state }]),
+    ) as AdaptationCollection
+}
+function cloneCombatMutationState(value: CombatMutationState): CombatMutationState {
+    return { ...value }
+}
+function cloneSymbiosisLinks(value: readonly SymbiosisLink[]): SymbiosisLink[] {
+    return value.map((link) => ({ ...link }))
+}
+function hashPolicyId(value: string): number {
+    let hash = 2166136261
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index)
+        hash = Math.imul(hash, 16777619)
+    }
+    return hash >>> 0
+}
 /** A policy keeps its deterministic stream after a left/right swap. */
-function randomForPolicy(seed: number, policyId: string, roundNumber: number): () => number { return createSeededRandom(seed ^ hashPolicyId(policyId) ^ Math.imul(roundNumber, 0x9e3779b9)) }
-function actionFor(policy: BotPolicy, input: { side: 'left' | 'right'; state: SimulatedMatchState; event: EnvironmentalCrisisDefinition; nextEvent: EnvironmentalCrisisDefinition | null; remainingEvents: EnvironmentalCrisisDefinition[]; history: PublicRoundHistory[]; random: () => number; offline: boolean; ruleVersion: string }): ReturnType<BotPolicy['selectAction']> {
+function randomForPolicy(seed: number, policyId: string, roundNumber: number): () => number {
+    return createSeededRandom(seed ^ hashPolicyId(policyId) ^ Math.imul(roundNumber, 0x9e3779b9))
+}
+function actionFor(
+    policy: BotPolicy,
+    input: {
+        side: 'left' | 'right'
+        state: SimulatedMatchState
+        event: EnvironmentalCrisisDefinition
+        nextEvent: EnvironmentalCrisisDefinition | null
+        remainingEvents: EnvironmentalCrisisDefinition[]
+        history: PublicRoundHistory[]
+        random: () => number
+        offline: boolean
+        ruleVersion: string
+    },
+): ReturnType<BotPolicy['selectAction']> {
     const own = input.side === 'left' ? input.state.leftAdaptations : input.state.rightAdaptations
-    const ownCombatMutationState = input.side === 'left' ? input.state.leftCombatMutationState : input.state.rightCombatMutationState
-    const ownCombatMutationLoadout = input.side === 'left' ? input.state.leftCombatMutationLoadout : input.state.rightCombatMutationLoadout
+    const ownCombatMutationState =
+        input.side === 'left' ? input.state.leftCombatMutationState : input.state.rightCombatMutationState
+    const ownCombatMutationLoadout =
+        input.side === 'left' ? input.state.leftCombatMutationLoadout : input.state.rightCombatMutationLoadout
     const opponent = input.side === 'left' ? input.state.rightAdaptations : input.state.leftAdaptations
-    const opponentCombatMutationState = input.side === 'left' ? input.state.rightCombatMutationState : input.state.leftCombatMutationState
-    const opponentCombatMutationLoadout = input.side === 'left' ? input.state.rightCombatMutationLoadout : input.state.leftCombatMutationLoadout
-    const context = { roundNumber: input.state.roundNumber, scheduledRounds: input.state.scheduledRounds, ownScore: input.side === 'left' ? input.state.leftScore : input.state.rightScore, opponentScore: input.side === 'left' ? input.state.rightScore : input.state.leftScore, ruleVersion: input.ruleVersion, adaptations: cloneAdaptations(own), combatMutationState: cloneCombatMutationState(ownCombatMutationState), combatMutationLoadout: ownCombatMutationLoadout, publicOpponentAdaptations: cloneAdaptations(opponent), publicOpponentCombatMutationState: cloneCombatMutationState(opponentCombatMutationState), publicOpponentCombatMutationLoadout: opponentCombatMutationLoadout, roundEvent: input.event, nextRoundEvent: input.nextEvent, publicHistory: input.history, legalActions: getLegalBotActions(own), random: input.random }
+    const opponentCombatMutationState =
+        input.side === 'left' ? input.state.rightCombatMutationState : input.state.leftCombatMutationState
+    const opponentCombatMutationLoadout =
+        input.side === 'left' ? input.state.rightCombatMutationLoadout : input.state.leftCombatMutationLoadout
+    const context = {
+        roundNumber: input.state.roundNumber,
+        scheduledRounds: input.state.scheduledRounds,
+        ownScore: input.side === 'left' ? input.state.leftScore : input.state.rightScore,
+        opponentScore: input.side === 'left' ? input.state.rightScore : input.state.leftScore,
+        ruleVersion: input.ruleVersion,
+        adaptations: cloneAdaptations(own),
+        combatMutationState: cloneCombatMutationState(ownCombatMutationState),
+        combatMutationLoadout: ownCombatMutationLoadout,
+        publicOpponentAdaptations: cloneAdaptations(opponent),
+        publicOpponentCombatMutationState: cloneCombatMutationState(opponentCombatMutationState),
+        publicOpponentCombatMutationLoadout: opponentCombatMutationLoadout,
+        roundEvent: input.event,
+        nextRoundEvent: input.nextEvent,
+        publicHistory: input.history,
+        legalActions: getLegalBotActions(own),
+        random: input.random,
+    }
     const privileged = policy as OfflineBotPolicy
-    const decision = input.offline && privileged.selectPrivilegedAction ? privileged.selectPrivilegedAction({ ...context, remainingEvents: input.remainingEvents }) : policy.selectAction(context)
+    const decision =
+        input.offline && privileged.selectPrivilegedAction
+            ? privileged.selectPrivilegedAction({ ...context, remainingEvents: input.remainingEvents })
+            : policy.selectAction(context)
     const legal = getLegalBotActions(own)
-    if (!legal.some((action) => action.trait === decision.trait && action.actionType === decision.actionType)) throw new Error(`Policy ${policy.id} returned an illegal action.`)
+    if (!legal.some((action) => action.trait === decision.trait && action.actionType === decision.actionType))
+        throw new Error(`Policy ${policy.id} returned an illegal action.`)
     return decision
 }
 /** Pure deterministic adapter around the same resolveRound/resolveMatchOutcome used in production. */
 export function simulateMatch(input: SimulateMatchInput): SimulatedMatchReport {
     if (!input.eventSequence.length) throw new Error('simulateMatch requires at least one event.')
-    const state: SimulatedMatchState = { leftScore: input.initialState.leftScore ?? 0, rightScore: input.initialState.rightScore ?? 0, leftAdaptations: cloneAdaptations(input.initialState.leftAdaptations ?? createInitialAdaptations()), rightAdaptations: cloneAdaptations(input.initialState.rightAdaptations ?? createInitialAdaptations()), leftCombatMutationLoadout: [...input.initialState.leftCombatMutationLoadout], rightCombatMutationLoadout: [...input.initialState.rightCombatMutationLoadout], leftCombatMutationState: cloneCombatMutationState(input.initialState.leftCombatMutationState), rightCombatMutationState: cloneCombatMutationState(input.initialState.rightCombatMutationState), symbiosisLinks: cloneSymbiosisLinks(input.initialState.symbiosisLinks ?? []), roundNumber: input.initialState.roundNumber ?? 1, scheduledRounds: input.initialState.scheduledRounds ?? STANDARD_SCHEDULED_ROUNDS }
-    const history: PublicRoundHistory[] = []; const values: StoredRoundValue[] = [...(input.priorRoundValues ?? [])]; const trace: SimulatedRound[] = []
-    let outcome = resolveMatchOutcome({ player1Id: 'left', player2Id: 'right', player1Score: state.leftScore, player2Score: state.rightScore, resolvedRoundNumber: Math.max(0, state.roundNumber - 1), scheduledRounds: state.scheduledRounds, storedRoundValues: values })
+    const state: SimulatedMatchState = {
+        leftScore: input.initialState.leftScore ?? 0,
+        rightScore: input.initialState.rightScore ?? 0,
+        leftAdaptations: cloneAdaptations(input.initialState.leftAdaptations ?? createInitialAdaptations()),
+        rightAdaptations: cloneAdaptations(input.initialState.rightAdaptations ?? createInitialAdaptations()),
+        leftCombatMutationLoadout: [...input.initialState.leftCombatMutationLoadout],
+        rightCombatMutationLoadout: [...input.initialState.rightCombatMutationLoadout],
+        leftCombatMutationState: cloneCombatMutationState(input.initialState.leftCombatMutationState),
+        rightCombatMutationState: cloneCombatMutationState(input.initialState.rightCombatMutationState),
+        symbiosisLinks: cloneSymbiosisLinks(input.initialState.symbiosisLinks ?? []),
+        roundNumber: input.initialState.roundNumber ?? 1,
+        scheduledRounds: input.initialState.scheduledRounds ?? STANDARD_SCHEDULED_ROUNDS,
+    }
+    const history: PublicRoundHistory[] = []
+    const values: StoredRoundValue[] = [...(input.priorRoundValues ?? [])]
+    const trace: SimulatedRound[] = []
+    let outcome = resolveMatchOutcome({
+        player1Id: 'left',
+        player2Id: 'right',
+        player1Score: state.leftScore,
+        player2Score: state.rightScore,
+        resolvedRoundNumber: Math.max(0, state.roundNumber - 1),
+        scheduledRounds: state.scheduledRounds,
+        storedRoundValues: values,
+    })
     while (!outcome.finished && state.roundNumber <= state.scheduledRounds) {
         const event = getRoundEventById(input.eventSequence[(state.roundNumber - 1) % input.eventSequence.length]!)
-        const nextEvent = state.roundNumber < state.scheduledRounds ? getRoundEventById(input.eventSequence[state.roundNumber % input.eventSequence.length]!) : null
-        const remainingEvents = Array.from({ length: state.scheduledRounds - state.roundNumber + 1 }, (_, index) => getRoundEventById(input.eventSequence[(state.roundNumber - 1 + index) % input.eventSequence.length]!))
-        const leftScoreBefore = state.leftScore; const rightScoreBefore = state.rightScore; const leftAdaptationsBefore = cloneAdaptations(state.leftAdaptations); const rightAdaptationsBefore = cloneAdaptations(state.rightAdaptations); const leftCombatMutationStateBefore = cloneCombatMutationState(state.leftCombatMutationState); const rightCombatMutationStateBefore = cloneCombatMutationState(state.rightCombatMutationState); const symbiosisLinksBefore = cloneSymbiosisLinks(state.symbiosisLinks)
-        const leftDecision = actionFor(input.leftPolicy, { side: 'left', state, event, nextEvent, remainingEvents, history, random: randomForPolicy(input.seed, input.leftPolicy.id, state.roundNumber), offline: input.offline ?? false, ruleVersion: input.ruleVersion })
-        const rightDecision = actionFor(input.rightPolicy, { side: 'right', state, event, nextEvent, remainingEvents, history, random: randomForPolicy(input.seed, input.rightPolicy.id, state.roundNumber), offline: input.offline ?? false, ruleVersion: input.ruleVersion })
-        const resolution = resolveRound({ roundNumber: state.roundNumber, scheduledRounds: state.scheduledRounds, roundEvent: event, player1Id: 'left', player2Id: 'right', player1Traits: state.leftAdaptations, player2Traits: state.rightAdaptations, ruleVersion: input.ruleVersion, player1CombatMutationLoadout: state.leftCombatMutationLoadout, player2CombatMutationLoadout: state.rightCombatMutationLoadout, player1CombatMutationState: state.leftCombatMutationState, player2CombatMutationState: state.rightCombatMutationState, symbiosisLinks: state.symbiosisLinks, player1Action: { playerId: 'left', ...leftDecision }, player2Action: { playerId: 'right', ...rightDecision } })
-        state.leftScore += resolution.player1ScoreDelta; state.rightScore += resolution.player2ScoreDelta; state.leftAdaptations = resolution.player1.traits; state.rightAdaptations = resolution.player2.traits; state.leftCombatMutationState = resolution.player1.combatMutationState; state.rightCombatMutationState = resolution.player2.combatMutationState; state.symbiosisLinks = cloneSymbiosisLinks(resolution.symbiosisLinks)
-        const publicRound = { roundNumber: state.roundNumber, eventId: event.id, leftAction: leftDecision as BotRoundAction, rightAction: rightDecision as BotRoundAction, leftValue: resolution.player1.roundValue, rightValue: resolution.player2.roundValue }
-        history.push(publicRound); values.push({ player1Value: resolution.player1.roundValue, player2Value: resolution.player2.roundValue })
-        if (input.trace) trace.push({ ...publicRound, event, winnerId: resolution.winnerId as 'left' | 'right' | null, leftScoreBefore, rightScoreBefore, leftAdaptationsBefore, rightAdaptationsBefore, leftAdaptationsAfter: resolution.player1.traits, rightAdaptationsAfter: resolution.player2.traits, leftCombatMutationLoadout: state.leftCombatMutationLoadout, rightCombatMutationLoadout: state.rightCombatMutationLoadout, leftCombatMutationStateBefore, rightCombatMutationStateBefore, leftCombatMutationStateAfter: resolution.player1.combatMutationState, rightCombatMutationStateAfter: resolution.player2.combatMutationState, symbiosisLinksBefore, symbiosisLinksAfter: cloneSymbiosisLinks(resolution.symbiosisLinks), symbiosisEvents: resolution.symbiosisEvents, leftMutationEffects: resolution.player1.mutationEffects, rightMutationEffects: resolution.player2.mutationEffects, leftBreakdown: resolution.player1.breakdown, rightBreakdown: resolution.player2.breakdown, leftReason: leftDecision.reason, rightReason: rightDecision.reason })
-        outcome = resolveMatchOutcome({ player1Id: 'left', player2Id: 'right', player1Score: state.leftScore, player2Score: state.rightScore, resolvedRoundNumber: state.roundNumber, scheduledRounds: state.scheduledRounds, storedRoundValues: values }); state.roundNumber += 1
+        const nextEvent =
+            state.roundNumber < state.scheduledRounds
+                ? getRoundEventById(input.eventSequence[state.roundNumber % input.eventSequence.length]!)
+                : null
+        const remainingEvents = Array.from({ length: state.scheduledRounds - state.roundNumber + 1 }, (_, index) =>
+            getRoundEventById(input.eventSequence[(state.roundNumber - 1 + index) % input.eventSequence.length]!),
+        )
+        const leftScoreBefore = state.leftScore
+        const rightScoreBefore = state.rightScore
+        const leftAdaptationsBefore = cloneAdaptations(state.leftAdaptations)
+        const rightAdaptationsBefore = cloneAdaptations(state.rightAdaptations)
+        const leftCombatMutationStateBefore = cloneCombatMutationState(state.leftCombatMutationState)
+        const rightCombatMutationStateBefore = cloneCombatMutationState(state.rightCombatMutationState)
+        const symbiosisLinksBefore = cloneSymbiosisLinks(state.symbiosisLinks)
+        const leftDecision = actionFor(input.leftPolicy, {
+            side: 'left',
+            state,
+            event,
+            nextEvent,
+            remainingEvents,
+            history,
+            random: randomForPolicy(input.seed, input.leftPolicy.id, state.roundNumber),
+            offline: input.offline ?? false,
+            ruleVersion: input.ruleVersion,
+        })
+        const rightDecision = actionFor(input.rightPolicy, {
+            side: 'right',
+            state,
+            event,
+            nextEvent,
+            remainingEvents,
+            history,
+            random: randomForPolicy(input.seed, input.rightPolicy.id, state.roundNumber),
+            offline: input.offline ?? false,
+            ruleVersion: input.ruleVersion,
+        })
+        const resolution = resolveRound({
+            roundNumber: state.roundNumber,
+            scheduledRounds: state.scheduledRounds,
+            roundEvent: event,
+            player1Id: 'left',
+            player2Id: 'right',
+            player1Traits: state.leftAdaptations,
+            player2Traits: state.rightAdaptations,
+            ruleVersion: input.ruleVersion,
+            player1CombatMutationLoadout: state.leftCombatMutationLoadout,
+            player2CombatMutationLoadout: state.rightCombatMutationLoadout,
+            player1CombatMutationState: state.leftCombatMutationState,
+            player2CombatMutationState: state.rightCombatMutationState,
+            symbiosisLinks: state.symbiosisLinks,
+            player1Action: { playerId: 'left', ...leftDecision },
+            player2Action: { playerId: 'right', ...rightDecision },
+        })
+        state.leftScore += resolution.player1ScoreDelta
+        state.rightScore += resolution.player2ScoreDelta
+        state.leftAdaptations = resolution.player1.traits
+        state.rightAdaptations = resolution.player2.traits
+        state.leftCombatMutationState = resolution.player1.combatMutationState
+        state.rightCombatMutationState = resolution.player2.combatMutationState
+        state.symbiosisLinks = cloneSymbiosisLinks(resolution.symbiosisLinks)
+        const publicRound = {
+            roundNumber: state.roundNumber,
+            eventId: event.id,
+            leftAction: leftDecision as BotRoundAction,
+            rightAction: rightDecision as BotRoundAction,
+            leftValue: resolution.player1.roundValue,
+            rightValue: resolution.player2.roundValue,
+        }
+        history.push(publicRound)
+        values.push({ player1Value: resolution.player1.roundValue, player2Value: resolution.player2.roundValue })
+        if (input.trace)
+            trace.push({
+                ...publicRound,
+                event,
+                winnerId: resolution.winnerId as 'left' | 'right' | null,
+                leftScoreBefore,
+                rightScoreBefore,
+                leftAdaptationsBefore,
+                rightAdaptationsBefore,
+                leftAdaptationsAfter: resolution.player1.traits,
+                rightAdaptationsAfter: resolution.player2.traits,
+                leftCombatMutationLoadout: state.leftCombatMutationLoadout,
+                rightCombatMutationLoadout: state.rightCombatMutationLoadout,
+                leftCombatMutationStateBefore,
+                rightCombatMutationStateBefore,
+                leftCombatMutationStateAfter: resolution.player1.combatMutationState,
+                rightCombatMutationStateAfter: resolution.player2.combatMutationState,
+                symbiosisLinksBefore,
+                symbiosisLinksAfter: cloneSymbiosisLinks(resolution.symbiosisLinks),
+                symbiosisEvents: resolution.symbiosisEvents,
+                leftMutationEffects: resolution.player1.mutationEffects,
+                rightMutationEffects: resolution.player2.mutationEffects,
+                leftBreakdown: resolution.player1.breakdown,
+                rightBreakdown: resolution.player2.breakdown,
+                leftReason: leftDecision.reason,
+                rightReason: rightDecision.reason,
+            })
+        outcome = resolveMatchOutcome({
+            player1Id: 'left',
+            player2Id: 'right',
+            player1Score: state.leftScore,
+            player2Score: state.rightScore,
+            resolvedRoundNumber: state.roundNumber,
+            scheduledRounds: state.scheduledRounds,
+            storedRoundValues: values,
+        })
+        state.roundNumber += 1
     }
-    return { winner: outcome.winnerId as 'left' | 'right' | null, finalScore: { left: state.leftScore, right: state.rightScore }, rounds: history.length, tiebreak: outcome.reason === 'ROUND_VALUE_TIEBREAK', endReason: outcome.reason, finalAdaptations: { left: state.leftAdaptations, right: state.rightAdaptations }, combatMutationLoadouts: { left: state.leftCombatMutationLoadout, right: state.rightCombatMutationLoadout }, finalCombatMutationStates: { left: state.leftCombatMutationState, right: state.rightCombatMutationState }, symbiosisLinks: cloneSymbiosisLinks(state.symbiosisLinks), trace }
+    return {
+        winner: outcome.winnerId as 'left' | 'right' | null,
+        finalScore: { left: state.leftScore, right: state.rightScore },
+        rounds: history.length,
+        tiebreak: outcome.reason === 'ROUND_VALUE_TIEBREAK',
+        endReason: outcome.reason,
+        finalAdaptations: { left: state.leftAdaptations, right: state.rightAdaptations },
+        combatMutationLoadouts: { left: state.leftCombatMutationLoadout, right: state.rightCombatMutationLoadout },
+        finalCombatMutationStates: { left: state.leftCombatMutationState, right: state.rightCombatMutationState },
+        symbiosisLinks: cloneSymbiosisLinks(state.symbiosisLinks),
+        trace,
+    }
 }

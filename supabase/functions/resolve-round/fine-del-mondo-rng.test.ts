@@ -17,6 +17,8 @@ describe('FINE_DEL_MONDO RNG', () => {
     })
 
     it('returns only a persisted FINE_DEL_MONDO outcome', async () => {
-        await expect(drawFineDelMondoOutcome({ ...input, playerId: 'player-2' })).resolves.toMatch(/^(FINE_DEL_MONDO|ERA_PROSPERA)$/)
+        await expect(drawFineDelMondoOutcome({ ...input, playerId: 'player-2' })).resolves.toMatch(
+            /^(FINE_DEL_MONDO|ERA_PROSPERA)$/,
+        )
     })
 })

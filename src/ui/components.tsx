@@ -1,7 +1,11 @@
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
+import { srcSetFor } from './assets'
 import { CloseIcon } from './icons'
+import { useIsScreenLeaving } from './screen-leaving'
+import { playCue } from './feedback/feedback'
+import type { Cue } from './feedback/cues'
 
 import './components.css'
 
@@ -22,12 +26,22 @@ type AppShellProps = {
 export function AppShell({ sceneryUrl, sceneryFallbackUrl, children, dock, scroll = false, className = '' }: AppShellProps) {
     return (
         <div className={`ev-shell ${dock ? 'ev-shell--docked' : ''} ${className}`}>
+            {/*
+              * The scenery is full-bleed, so `sizes` is simply the viewport — which is also the
+              * default a browser assumes, but stating it keeps the intent readable. Resolving the
+              * candidate set here rather than at the call site is what makes every screen's backdrop
+              * responsive without any screen having to know: `srcSetFor` shrugs at a URL it does not
+              * own, so a computed or signed background still works untouched.
+              */}
             <img
                 className="ev-shell__scenery"
                 src={sceneryUrl}
+                srcSet={srcSetFor(sceneryUrl)}
+                sizes="100vw"
                 alt=""
                 onError={(event) => {
                     if (sceneryFallbackUrl && event.currentTarget.src !== sceneryFallbackUrl) {
+                        event.currentTarget.srcset = ''
                         event.currentTarget.src = sceneryFallbackUrl
                     }
                 }}
@@ -65,18 +79,42 @@ export function Panel({ variant = 'cream', flat = false, compact = false, classN
 
 export type ButtonTone = 'use' | 'evolve' | 'gold' | 'info' | 'cream' | 'ghost' | 'danger'
 
+/**
+ * What a press sounds like, read off the tone the button already carries.
+ *
+ * Tone is not decoration here — it is what the button *means* (§4), so it is also the right source
+ * for the cue. A call site that needs something else passes `cue`; `cue={null}` presses in silence.
+ */
+const TONE_CUES: Readonly<Record<ButtonTone, Cue>> = {
+    use: 'confirm',
+    gold: 'confirm',
+    evolve: 'evolve',
+    danger: 'alert',
+    info: 'tap',
+    cream: 'tap',
+    ghost: 'tap',
+}
+
 type ButtonProps = {
     tone?: ButtonTone
     block?: boolean
     size?: 'md' | 'sm'
     className?: string
+    /** Overrides the cue the tone implies. `null` presses silently. */
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
-export function Button({ tone = 'use', block = false, size = 'md', className = '', type = 'button', children, ...rest }: ButtonProps) {
+export function Button({ tone = 'use', block = false, size = 'md', className = '', type = 'button', cue, onClick, children, ...rest }: ButtonProps) {
+    const resolvedCue = cue === undefined ? TONE_CUES[tone] : cue
+
     return (
         <button
             type={type}
             className={`ev-btn ev-btn--${tone} ${block ? 'ev-btn--block' : ''} ${size === 'sm' ? 'ev-btn--sm' : ''} ${className}`}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
             {...rest}
         >
             {children}
@@ -91,12 +129,28 @@ type ActionButtonProps = {
     value?: string
     glyph: ReactNode
     className?: string
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 /** Large two-line call to action used for the round decision. */
-export function ActionButton({ tone, title, hint, value, glyph, className = '', ...rest }: ActionButtonProps) {
+export function ActionButton({ tone, title, hint, value, glyph, className = '', cue, onClick, ...rest }: ActionButtonProps) {
+    const resolvedCue = cue === undefined ? TONE_CUES[tone] : cue
+
     return (
-        <button type="button" className={`ev-btn ev-btn--${tone} ev-action-btn ${className}`} {...rest}>
+        <button
+            type="button"
+            className={`ev-btn ev-btn--${tone} ev-action-btn ${className}`}
+            /*
+             * The hint is clamped to the button's line budget, and a short screen gives it one line.
+             * §7 allows that only while the full text stays reachable, so it lives here.
+             */
+            title={hint}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
+            {...rest}
+        >
             <span className="ev-action-btn__glyph" aria-hidden="true">{glyph}</span>
             <span className="ev-action-btn__copy">
                 <span className="ev-action-btn__title">{title}</span>
@@ -114,18 +168,25 @@ type IconButtonProps = {
     variant?: 'glass' | 'cream' | 'danger'
     size?: 'md' | 'lg'
     className?: string
+    cue?: Cue | null
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 /**
  * Circular icon-only control.
  */
-export function IconButton({ label, variant = 'glass', size = 'md', className = '', children, ...rest }: IconButtonProps) {
+export function IconButton({ label, variant = 'glass', size = 'md', className = '', cue, onClick, children, ...rest }: IconButtonProps) {
+    const resolvedCue = cue === undefined ? (variant === 'danger' ? 'alert' : 'tap') : cue
+
     return (
         <button
             type="button"
             className={`ev-icon-btn ${variant === 'glass' ? '' : `ev-icon-btn--${variant}`} ${size === 'lg' ? 'ev-icon-btn--lg' : ''} ${className}`}
             aria-label={label}
             title={label}
+            onClick={(event) => {
+                if (resolvedCue) playCue(resolvedCue)
+                onClick?.(event)
+            }}
             {...rest}
         >
             {children}
@@ -234,7 +295,13 @@ type OverlayProps = {
     width?: 'app' | 'narrow'
 }
 
-/** Modal layer rendered into the document body, with Escape and backdrop dismissal. */
+/**
+ * Modal layer rendered into the document body, with Escape and backdrop dismissal.
+ *
+ * An overlay belongs to the screen that opened it. Because it portals to the body it sits outside
+ * that screen's animating layer, so it cannot leave with it — it would hang at full opacity over
+ * the arriving screen and then blink out. It therefore closes the moment its screen starts leaving.
+ */
 export function Overlay({
     label,
     onClose,
@@ -245,8 +312,11 @@ export function Overlay({
     width = 'app',
 }: OverlayProps) {
     const contentRef = useRef<HTMLDivElement>(null)
+    const isScreenLeaving = useIsScreenLeaving()
 
     useEffect(() => {
+        if (isScreenLeaving) return
+
         const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
         contentRef.current?.focus()
@@ -264,7 +334,11 @@ export function Overlay({
             document.body.style.overflow = previousOverflow
             document.removeEventListener('keydown', handleKeyDown)
         }
-    }, [onClose])
+    }, [isScreenLeaving, onClose])
+
+    if (isScreenLeaving) {
+        return null
+    }
 
     return createPortal(
         <div

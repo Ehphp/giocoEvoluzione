@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { TRAIT_LABELS } from '../../game/config'
-import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
-import { getResultActionLabel } from '../../components/game-results/buildMatchResultViewModel'
+import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
+import { getResultActionLabel } from './build-match-result-view-model'
 import { getCombatMutationEffectDescription } from '../../game/round-result-explainer'
-import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from '../../components/game-results/types'
+import type { MatchResultOutcome, MatchResultRound, MatchResultViewModel, ResultAction, ResultRoundParticipant } from './types'
 import type { MatchRewardRecord, PlayerCreatureRecord } from '../../lib/profile-api'
 import { getExperienceProgress, PROGRESSION } from '../../lib/progression'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
+import { playCue } from '../../ui/feedback/feedback'
 import { ChevronIcon, CloseIcon, GeneIcon, MeteorIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './MatchResultScreen.css'
@@ -164,6 +165,19 @@ export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy
     const opponentLabel = OUTCOME_COPY[opposingOutcome(viewModel.outcome)].label
     const [openRoundId, setOpenRoundId] = useState<string | null>(null)
 
+    /*
+     * The one place the verdict fanfares play. The outcome never changes under a mounted result
+     * screen — a rematch unmounts it, since the new game passes through the battle or the waiting
+     * room first — so this fires exactly once per match. A draw stays quiet: nothing to announce.
+     */
+    useEffect(() => {
+        if (viewModel.outcome === 'win') {
+            playCue('win')
+        } else if (viewModel.outcome === 'loss') {
+            playCue('lose')
+        }
+    }, [viewModel.outcome])
+
     return (
         <AppShell sceneryUrl={viewModel.background} sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback} scroll>
             <section className={`result-screen result-screen--${viewModel.outcome}`} aria-label="Risultato della partita">
@@ -226,7 +240,7 @@ export function MatchResultScreen({ viewModel, onLeaveSession, onNewGame, isBusy
                 {viewModel.rounds.length ? (
                     <>
                         <SectionLabel>Andamento round</SectionLabel>
-                        <ol className="result-history">
+                        <ol className="result-history ev-stagger">
                             {viewModel.rounds.map((round) => (
                                 <HistoryRow
                                     key={round.id}

@@ -15,20 +15,33 @@ describe('evolution target taxonomy migration', () => {
         for (const legacy of LEGACY_TARGET_IDS) expect(migration).toContain(`when '${legacy}' then`)
         expect(migration).toMatch(/when 'SKIN' then 'SKIN_AND_COVERING'/)
         // Every table that persists a target id is converted.
-        for (const table of ['creature_visual_progress_tracks', 'creature_transformation_requests', 'creature_visual_versions', 'creature_evolution_target_progress', 'creature_evolution_target_progress_events', 'players']) {
+        for (const table of [
+            'creature_visual_progress_tracks',
+            'creature_transformation_requests',
+            'creature_visual_versions',
+            'creature_evolution_target_progress',
+            'creature_evolution_target_progress_events',
+            'players',
+        ]) {
             expect(migration, table).toMatch(new RegExp(`update public\\.${table}`))
         }
         // The snapshot payload is converted too, so the metadata trigger cannot restore a legacy id.
         expect(migration).toMatch(/jsonb_set\(concept_snapshot, '\{evolutionTargetId\}'/)
-        expect(migration).not.toMatch(/delete from public\.creature_visual_versions|delete from public\.creature_transformation_requests/)
+        expect(migration).not.toMatch(
+            /delete from public\.creature_visual_versions|delete from public\.creature_transformation_requests/,
+        )
         expect(migration).toMatch(/drop function public\.map_legacy_evolution_target_id/)
-        expect(migration).toMatch(/disable trigger creature_visual_versions_immutable[\s\S]*update public\.creature_visual_versions[\s\S]*enable trigger creature_visual_versions_immutable/i)
+        expect(migration).toMatch(
+            /disable trigger creature_visual_versions_immutable[\s\S]*update public\.creature_visual_versions[\s\S]*enable trigger creature_visual_versions_immutable/i,
+        )
     })
 
     it('sums the banked wins when two legacy limb counters merge into one', () => {
         expect(migration).toMatch(/array_agg\(id order by id\)\)\[1\] as keep_id/)
         expect(migration).toMatch(/sum\(wins\) as merged_wins/)
-        expect(migration).toMatch(/delete from public\.creature_evolution_target_progress\s+where id not in \(select keep_id/)
+        expect(migration).toMatch(
+            /delete from public\.creature_evolution_target_progress\s+where id not in \(select keep_id/,
+        )
     })
 
     it('re-applies every constraint and function with the new taxonomy only', () => {
@@ -36,7 +49,14 @@ describe('evolution target taxonomy migration', () => {
 
         expect(migration).toContain(`check (evolution_target_id in (${newTargets}))`)
         expect(migration).toContain(`evolution_draft_options <@ array[${newTargets}]::text[]`)
-        for (const routine of ['draw_evolution_draft_options', 'get_creature_evolution_target_progress', 'open_evolution_track_from_ready_target', 'select_creature_visual_progress_track', 'resolve_creature_visual_progress_track_trait', 'reserve_creature_transformation_request']) {
+        for (const routine of [
+            'draw_evolution_draft_options',
+            'get_creature_evolution_target_progress',
+            'open_evolution_track_from_ready_target',
+            'select_creature_visual_progress_track',
+            'resolve_creature_visual_progress_track_trait',
+            'reserve_creature_transformation_request',
+        ]) {
             expect(migration, routine).toMatch(new RegExp(`function public\\.${routine}`))
         }
         // No legacy id survives in the constraints or in any routine the runtime calls: they
@@ -53,7 +73,9 @@ describe('evolution target taxonomy migration', () => {
         expect(migration).toContain("return jsonb_build_object('outcome','DAILY_BUDGET_REACHED')")
         expect(migration).toContain("return jsonb_build_object('outcome','REAL_IMAGE_USER_CONCURRENCY_REACHED')")
         expect(migration).toContain("return jsonb_build_object('outcome','REAL_IMAGE_GLOBAL_CONCURRENCY_REACHED')")
-        expect(migration).toMatch(/pg_advisory_xact_lock\(hashtextextended\(p_profile_id::text \|\| ':' \|\| p_idempotency_key, 0\)\)/)
+        expect(migration).toMatch(
+            /pg_advisory_xact_lock\(hashtextextended\(p_profile_id::text \|\| ':' \|\| p_idempotency_key, 0\)\)/,
+        )
     })
 
     it('draws exactly the targets the client accepts, so the battle-start draft keeps being offered', () => {

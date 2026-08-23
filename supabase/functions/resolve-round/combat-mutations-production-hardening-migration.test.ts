@@ -3,12 +3,17 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(resolve('supabase/migrations/202608210002_combat_mutations_production_hardening.sql'), 'utf8')
+const migration = readFileSync(
+    resolve('supabase/migrations/202608210002_combat_mutations_production_hardening.sql'),
+    'utf8',
+)
 
 describe('combat mutations production hardening migration contract', () => {
     it('uses total validators and rejects permissive CHECK NULL semantics', () => {
         expect(migration).toContain("jsonb_typeof(value) is distinct from 'object'")
-        expect(migration).toContain("value ?& array['elasticLimbsUsed', 'adaptiveCoreStatus', 'armoredMemoryUsed', 'recoverySurgeUsed']")
+        expect(migration).toContain(
+            "value ?& array['elasticLimbsUsed', 'adaptiveCoreStatus', 'armoredMemoryUsed', 'recoverySurgeUsed']",
+        )
         expect(migration).toContain('key <> all')
         expect(migration).toContain('is true)')
     })

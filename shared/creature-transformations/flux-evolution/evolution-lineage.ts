@@ -1,5 +1,11 @@
 import type { PreviousCreatureTransformationSummary } from '../creature-visual-versions.ts'
-import { EVOLUTION_TARGET_BY_ID, evolutionTargetFamily, isEvolutionTargetId, type EvolutionTargetFamily, type EvolutionTargetId } from '../evolution-targets.ts'
+import {
+    EVOLUTION_TARGET_BY_ID,
+    evolutionTargetFamily,
+    isEvolutionTargetId,
+    type EvolutionTargetFamily,
+    type EvolutionTargetId,
+} from '../evolution-targets.ts'
 import type { BodyPlanMutationId } from './body-plan-mutations.ts'
 
 /**
@@ -39,8 +45,11 @@ export function buildEvolutionLineageContext(input: {
     previousTransformations: readonly PreviousCreatureTransformationSummary[]
 }): EvolutionLineageContext {
     const family = evolutionTargetFamily(input.evolutionTargetId)
-    const entries = [...input.previousTransformations].map(toEntry).sort((left, right) => left.versionNumber - right.versionNumber)
-    const latestTargetState = entries.filter((entry) => entry.evolutionTargetId === input.evolutionTargetId).at(-1) ?? null
+    const entries = [...input.previousTransformations]
+        .map(toEntry)
+        .sort((left, right) => left.versionNumber - right.versionNumber)
+    const latestTargetState =
+        entries.filter((entry) => entry.evolutionTargetId === input.evolutionTargetId).at(-1) ?? null
     return Object.freeze({ evolutionTargetId: input.evolutionTargetId, family, currentTargetState: latestTargetState })
 }
 
@@ -64,7 +73,9 @@ export function recentTargetMutationReferences(input: {
 }
 
 function describeEntry(entry: EvolutionLineageEntry): string {
-    const region = entry.evolutionTargetId ? EVOLUTION_TARGET_BY_ID[entry.evolutionTargetId].promptRegion : 'earlier evolution'
+    const region = entry.evolutionTargetId
+        ? EVOLUTION_TARGET_BY_ID[entry.evolutionTargetId].promptRegion
+        : 'earlier evolution'
     return `v${entry.versionNumber} - ${region}: ${entry.conceptName}${entry.mutationIdea ? ` (${entry.mutationIdea})` : ''}`
 }
 

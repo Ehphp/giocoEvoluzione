@@ -4,7 +4,10 @@ export const GAME_STATUSES = ['WAITING', 'CHOOSING', 'REVEALING', 'ROUND_RESULT'
 export const GAME_MODES = ['PVP', 'VS_BOT'] as const
 export const PLAYER_TYPES = ['HUMAN', 'BOT'] as const
 export { COMBAT_MUTATION_IDS } from './combat-mutations.ts'
-import type { CombatMutationId as CatalogCombatMutationId, CombatMutationDefinition as CatalogCombatMutationDefinition } from './combat-mutations.ts'
+import type {
+    CombatMutationId as CatalogCombatMutationId,
+    CombatMutationDefinition as CatalogCombatMutationDefinition,
+} from './combat-mutations.ts'
 
 export type AdaptationId = (typeof ADAPTATION_IDS)[number]
 export type ActionType = (typeof ACTION_TYPES)[number]
@@ -15,13 +18,24 @@ export type CombatMutationId = CatalogCombatMutationId
 /** Exactly two equipped mutations, stored in their persisted Slot 1 / Slot 2 order. */
 export type CombatMutationLoadout = readonly [CombatMutationId, CombatMutationId]
 export type AdaptiveCoreStatus = 'DORMANT' | 'ARMED' | 'CONSUMED'
-export type WorldDefinition = { id: string; name: string; planetName: string; backgroundArtKey: string; paletteKey: string }
+export type WorldDefinition = {
+    id: string
+    name: string
+    planetName: string
+    backgroundArtKey: string
+    paletteKey: string
+}
 
 export type AdaptationLevel = 0 | 1 | 2
 export type AdaptationState = { level: AdaptationLevel; exhausted: boolean }
 export type AdaptationCollection = Record<AdaptationId, AdaptationState>
 /** Per-match runtime state. Equipped mutations remain separate and are snapshotted on players. */
-export type CombatMutationState = { elasticLimbsUsed: boolean; adaptiveCoreStatus: AdaptiveCoreStatus; armoredMemoryUsed: boolean; recoverySurgeUsed: boolean }
+export type CombatMutationState = {
+    elasticLimbsUsed: boolean
+    adaptiveCoreStatus: AdaptiveCoreStatus
+    armoredMemoryUsed: boolean
+    recoverySurgeUsed: boolean
+}
 export type CombatMutationEffect =
     | { id: 'ELASTIC_LIMBS'; effect: 'AGILITY_PRESERVED' }
     | { id: 'ADAPTIVE_CORE'; effect: 'CORE_ARMED' }
@@ -29,13 +43,24 @@ export type CombatMutationEffect =
     | { id: 'ARMORED_MEMORY'; effect: 'ARMOR_PRESERVED' }
     | { id: 'RECOVERY_SURGE'; effect: 'EVOLVE_ROUND_BONUS'; value: 1 }
 
-export type AdaptationDefinition = { id: AdaptationId; label: string; description: string; assetKey: string; displayOrder: number }
+export type AdaptationDefinition = {
+    id: AdaptationId
+    label: string
+    description: string
+    assetKey: string
+    displayOrder: number
+}
 export type CombatMutationDefinition = CatalogCombatMutationDefinition
 export type EnvironmentalCrisisEffect = { trait: AdaptationId; modifier: 0 | 1 | 2; reason: string }
 export type EnvironmentalCrisisDefinition = {
-    id: string; title: string; shortDescription: string
+    id: string
+    title: string
+    shortDescription: string
     category: 'CLIMATE' | 'GEOLOGICAL' | 'BIOLOGICAL' | 'ASTRONOMICAL' | 'ECOLOGICAL'
-    artKey: string; tags: string[]; modifiers: Record<AdaptationId, 0 | 1 | 2>; effects: EnvironmentalCrisisEffect[]
+    artKey: string
+    tags: string[]
+    modifiers: Record<AdaptationId, 0 | 1 | 2>
+    effects: EnvironmentalCrisisEffect[]
 }
 
 export type RoundValueBreakdown = {
@@ -64,9 +89,11 @@ export type FineDelMondoActivateMutationRoundAction = {
     actionType: 'ACTIVATE_MUTATION'
     mutationId: 'FINE_DEL_MONDO'
 }
-export type PlayerRoundAction = DirectPlayerRoundAction | ActivateMutationRoundAction | FineDelMondoActivateMutationRoundAction
+export type PlayerRoundAction =
+    DirectPlayerRoundAction | ActivateMutationRoundAction | FineDelMondoActivateMutationRoundAction
 export type DirectRoundAction = Omit<DirectPlayerRoundAction, 'playerId'>
-export type ActivateMutationAction = Omit<ActivateMutationRoundAction, 'playerId'> | Omit<FineDelMondoActivateMutationRoundAction, 'playerId'>
+export type ActivateMutationAction =
+    Omit<ActivateMutationRoundAction, 'playerId'> | Omit<FineDelMondoActivateMutationRoundAction, 'playerId'>
 export type RoundAction = DirectRoundAction | ActivateMutationAction
 
 /** Match-scoped state: ownership also proves that its owner's SYMBIOSIS is consumed. */
@@ -98,25 +125,45 @@ export type FineDelMondoActivation = {
     outcome: FineDelMondoOutcome
 }
 export type FineDelMondoActivationRequest = Pick<FineDelMondoActivation, 'ownerPlayerId' | 'activatedRound'>
-export type ResolvedPlayerRound = PlayerRoundAction & { roundValue: number; breakdown: RoundValueBreakdown; traits: AdaptationCollection; combatMutationState: CombatMutationState; mutationEffects: CombatMutationEffect[] }
+export type ResolvedPlayerRound = PlayerRoundAction & {
+    roundValue: number
+    breakdown: RoundValueBreakdown
+    traits: AdaptationCollection
+    combatMutationState: CombatMutationState
+    mutationEffects: CombatMutationEffect[]
+}
 export type ResolveRoundInput = {
-    roundNumber: number; roundEvent: EnvironmentalCrisisDefinition; player1Id: string; player2Id: string
-    player1Traits: AdaptationCollection; player2Traits: AdaptationCollection
+    roundNumber: number
+    roundEvent: EnvironmentalCrisisDefinition
+    player1Id: string
+    player2Id: string
+    player1Traits: AdaptationCollection
+    player2Traits: AdaptationCollection
     /** Frozen by the match row and accepted only when supported by the engine. */
     ruleVersion: string
-    player1CombatMutationState: CombatMutationState; player2CombatMutationState: CombatMutationState
-    player1CombatMutationLoadout: CombatMutationLoadout; player2CombatMutationLoadout: CombatMutationLoadout
+    player1CombatMutationState: CombatMutationState
+    player2CombatMutationState: CombatMutationState
+    player1CombatMutationLoadout: CombatMutationLoadout
+    player2CombatMutationLoadout: CombatMutationLoadout
     /** Required by persisted matches; optional only for compatibility with legacy pure callers. */
     symbiosisLinks?: readonly SymbiosisLink[]
     /** Canonical match duration. Optional only for legacy pure callers. */
     scheduledRounds?: number
     /** Match-scoped consumption history for FINE_DEL_MONDO. */
     fineDelMondoActivations?: readonly FineDelMondoActivation[]
-    player1Action: PlayerRoundAction; player2Action: PlayerRoundAction; alreadyResolved?: boolean
+    player1Action: PlayerRoundAction
+    player2Action: PlayerRoundAction
+    alreadyResolved?: boolean
 }
 export type RoundResolution = {
-    roundNumber: number; roundEvent: EnvironmentalCrisisDefinition; player1: ResolvedPlayerRound; player2: ResolvedPlayerRound
-    winnerId: string | null; awardedPoints: number; player1ScoreDelta: number; player2ScoreDelta: number
+    roundNumber: number
+    roundEvent: EnvironmentalCrisisDefinition
+    player1: ResolvedPlayerRound
+    player2: ResolvedPlayerRound
+    winnerId: string | null
+    awardedPoints: number
+    player1ScoreDelta: number
+    player2ScoreDelta: number
     symbiosisLinks: SymbiosisLink[]
     symbiosisEvents: SymbiosisRoundEvent[]
     fineDelMondoActivationRequests: FineDelMondoActivationRequest[]

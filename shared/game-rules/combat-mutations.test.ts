@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { BOT_COMBAT_MUTATION_LOADOUT, RULE_VERSION, buildPersistedRoundResolution, createInitialAdaptations, createInitialCombatMutationState, getLegalBotActions, getRoundEventById, resolveRound, type CombatMutationState, type ResolveRoundInput } from './index.ts'
+import {
+    BOT_COMBAT_MUTATION_LOADOUT,
+    RULE_VERSION,
+    buildPersistedRoundResolution,
+    createInitialAdaptations,
+    createInitialCombatMutationState,
+    getLegalBotActions,
+    getRoundEventById,
+    resolveRound,
+    type CombatMutationState,
+    type ResolveRoundInput,
+} from './index.ts'
 
 const event = getRoundEventById('HEAT_SPIKE')
-const action = (playerId: string, trait: 'FEROCITY' | 'ARMOR' | 'AGILITY' | 'SENSES' | 'CAMOUFLAGE', actionType: 'USE' | 'EVOLVE') => ({ playerId, trait, actionType })
+const action = (
+    playerId: string,
+    trait: 'FEROCITY' | 'ARMOR' | 'AGILITY' | 'SENSES' | 'CAMOUFLAGE',
+    actionType: 'USE' | 'EVOLVE',
+) => ({ playerId, trait, actionType })
 
 function resolve(overrides: Partial<ResolveRoundInput> = {}) {
     return resolveRound({
@@ -29,7 +44,10 @@ describe('Combat Mutations MVP', () => {
         const result = resolve()
 
         expect(result.player1.traits.AGILITY.exhausted).toBe(false)
-        expect(result.player1.combatMutationState).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'DORMANT' })
+        expect(result.player1.combatMutationState).toMatchObject({
+            elasticLimbsUsed: true,
+            adaptiveCoreStatus: 'DORMANT',
+        })
         expect(result.player1.mutationEffects).toEqual([{ id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' }])
     })
 
@@ -78,17 +96,24 @@ describe('Combat Mutations MVP', () => {
 
         expect(firstUse.player1.breakdown.mutationBonus).toBe(1)
         expect(firstUse.player1.combatMutationState.adaptiveCoreStatus).toBe('CONSUMED')
-        expect(firstUse.player1.mutationEffects).toEqual([{ id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 }])
+        expect(firstUse.player1.mutationEffects).toEqual([
+            { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
+        ])
         expect(secondUse.player1.breakdown.mutationBonus).toBe(0)
         expect(secondUse.player1.combatMutationState.adaptiveCoreStatus).toBe('CONSUMED')
     })
 
     it('resolves Elastic Limbs and Adaptive Core together on the same AGILITY USE', () => {
-        const result = resolve({ player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' } })
+        const result = resolve({
+            player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' },
+        })
 
         expect(result.player1.breakdown.mutationBonus).toBe(1)
         expect(result.player1.traits.AGILITY.exhausted).toBe(false)
-        expect(result.player1.combatMutationState).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+        expect(result.player1.combatMutationState).toMatchObject({
+            elasticLimbsUsed: true,
+            adaptiveCoreStatus: 'CONSUMED',
+        })
         expect(result.player1.mutationEffects).toEqual([
             { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
             { id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' },
@@ -105,7 +130,8 @@ describe('Combat Mutations MVP', () => {
             player2Action: action('p2', 'FEROCITY', 'EVOLVE'),
         })
         const swapped = resolve({
-            player1Id: 'p2', player2Id: 'p1',
+            player1Id: 'p2',
+            player2Id: 'p1',
             player1CombatMutationState: rightState,
             player2CombatMutationState: leftState,
             player1Action: action('p2', 'FEROCITY', 'EVOLVE'),
@@ -124,22 +150,35 @@ describe('Combat Mutations MVP', () => {
         const input = {
             roundNumber: 1,
             roundEvent: event,
-            player1Id: 'p1', player2Id: 'p2', player1Score: 0, player2Score: 0,
-            player1Traits: createInitialAdaptations(), player2Traits: createInitialAdaptations(),
+            player1Id: 'p1',
+            player2Id: 'p2',
+            player1Score: 0,
+            player2Score: 0,
+            player1Traits: createInitialAdaptations(),
+            player2Traits: createInitialAdaptations(),
             ruleVersion: RULE_VERSION,
             player1CombatMutationState: { ...createInitialCombatMutationState(), adaptiveCoreStatus: 'ARMED' as const },
             player2CombatMutationState: createInitialCombatMutationState(),
             player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
             player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
-            player1Action: action('p1', 'AGILITY', 'USE'), player2Action: action('p2', 'ARMOR', 'EVOLVE'),
-            priorRoundValues: [], startedAt: null, now: () => '2026-08-20T00:00:00.000Z',
+            player1Action: action('p1', 'AGILITY', 'USE'),
+            player2Action: action('p2', 'ARMOR', 'EVOLVE'),
+            priorRoundValues: [],
+            startedAt: null,
+            now: () => '2026-08-20T00:00:00.000Z',
         }
         const persisted = buildPersistedRoundResolution(input)
 
         expect(buildPersistedRoundResolution(input)).toEqual(persisted)
-        expect(persisted.resolution_data.player1CombatMutationStateBefore).toMatchObject({ elasticLimbsUsed: false, adaptiveCoreStatus: 'ARMED' })
+        expect(persisted.resolution_data.player1CombatMutationStateBefore).toMatchObject({
+            elasticLimbsUsed: false,
+            adaptiveCoreStatus: 'ARMED',
+        })
         expect(persisted.resolution_data.player2CombatMutationStateBefore).toEqual(createInitialCombatMutationState())
-        expect(persisted.resolution_data.player1CombatMutationStateAfter).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+        expect(persisted.resolution_data.player1CombatMutationStateAfter).toMatchObject({
+            elasticLimbsUsed: true,
+            adaptiveCoreStatus: 'CONSUMED',
+        })
         expect(persisted.resolution_data.player1MutationEffects).toEqual([
             { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
             { id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' },
@@ -217,7 +256,10 @@ describe('Combat Mutations MVP', () => {
             player1Action: action('p1', 'AGILITY', 'EVOLVE'),
         })
         expect(coreAndRecovery.player1.breakdown.mutationBonus).toBe(1)
-        expect(coreAndRecovery.player1.combatMutationState).toMatchObject({ adaptiveCoreStatus: 'ARMED', recoverySurgeUsed: true })
+        expect(coreAndRecovery.player1.combatMutationState).toMatchObject({
+            adaptiveCoreStatus: 'ARMED',
+            recoverySurgeUsed: true,
+        })
 
         const notEquipped = resolve({ player1CombatMutationLoadout: ['ADAPTIVE_CORE', 'ARMORED_MEMORY'] })
         expect(notEquipped.player1.traits.AGILITY.exhausted).toBe(true)

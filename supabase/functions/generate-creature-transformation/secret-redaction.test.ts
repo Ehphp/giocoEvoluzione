@@ -4,7 +4,8 @@ import { redactErrorMessage, redactSensitiveText } from './secret-redaction.ts'
 
 describe('secret redaction', () => {
     it('redacts credential-like query parameters and headers before telemetry or persistence', () => {
-        const message = 'request failed at https://example.test/callback?fal_callback_token=private-callback-token-value&trace=1; Authorization: Bearer private-access-token'
+        const message =
+            'request failed at https://example.test/callback?fal_callback_token=private-callback-token-value&trace=1; Authorization: Bearer private-access-token'
         const redacted = redactSensitiveText(message)
 
         expect(redacted).toContain('fal_callback_token=[redacted]')

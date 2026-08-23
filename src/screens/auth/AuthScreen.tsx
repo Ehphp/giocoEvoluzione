@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
-import { GAME_SELECTION_ASSETS } from '../../components/game-v2/gameSelectionAssets'
+import { GAME_SELECTION_ASSETS } from '../battle/controller/gene-selection-assets'
 import { ASSETS } from '../../ui/assets'
 import { AppShell, Button, Notice, Panel } from '../../ui/components'
 

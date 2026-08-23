@@ -14,7 +14,14 @@ import {
 import { BODY_PLANS } from './flux-evolution/body-plan-registry.ts'
 import { VISUAL_TRAIT_BY_ID } from './visual-traits.ts'
 
-const CORE_TARGETS = ['TAIL', 'LIMBS_AND_FEET', 'HEAD_AND_CROWN', 'BODY_SHAPE', 'DORSAL_STRUCTURES', 'SKIN_AND_COVERING'] as const
+const CORE_TARGETS = [
+    'TAIL',
+    'LIMBS_AND_FEET',
+    'HEAD_AND_CROWN',
+    'BODY_SHAPE',
+    'DORSAL_STRUCTURES',
+    'SKIN_AND_COVERING',
+] as const
 
 describe('evolution target taxonomy', () => {
     it('exposes the visually interpretable core targets plus body-plan specific ones', () => {
@@ -49,7 +56,11 @@ describe('evolution target taxonomy', () => {
 
             expect(direction, targetId).not.toBeNull()
             expect(isGeneratableEvolutionDirection({ evolutionTargetId: targetId, ...direction! })).toBe(true)
-            expect(EVOLUTION_TARGET_BY_ID[targetId].primaryBodyAreas.some((area) => VISUAL_TRAIT_BY_ID[direction!.visualTraitId].allowedBodyAreas.includes(area))).toBe(true)
+            expect(
+                EVOLUTION_TARGET_BY_ID[targetId].primaryBodyAreas.some((area) =>
+                    VISUAL_TRAIT_BY_ID[direction!.visualTraitId].allowedBodyAreas.includes(area),
+                ),
+            ).toBe(true)
         }
     })
 
@@ -57,24 +68,35 @@ describe('evolution target taxonomy', () => {
         const first = resolveEvolutionDirection({ evolutionTargetId: 'LIMBS_AND_FEET', seed: 'key-1' })!
         const second = resolveEvolutionDirection({
             evolutionTargetId: 'LIMBS_AND_FEET',
-            previousTransformations: [{ evolutionTargetId: 'LIMBS_AND_FEET', visualTraitId: first.visualTraitId, evolutionFunction: first.evolutionFunction }],
+            previousTransformations: [
+                {
+                    evolutionTargetId: 'LIMBS_AND_FEET',
+                    visualTraitId: first.visualTraitId,
+                    evolutionFunction: first.evolutionFunction,
+                },
+            ],
             seed: 'key-1',
         })!
 
-        expect(`${second.visualTraitId}:${second.evolutionFunction}`).not.toBe(`${first.visualTraitId}:${first.evolutionFunction}`)
+        expect(`${second.visualTraitId}:${second.evolutionFunction}`).not.toBe(
+            `${first.visualTraitId}:${first.evolutionFunction}`,
+        )
     })
 
     it('keeps DEFENSE abstract instead of resolving it as impact adaptation', () => {
         expect(DEPRECATED_EVOLUTION_FUNCTION_IDS).toContain('IMPACT_ABSORPTION')
         expect(EVOLUTION_FUNCTION_VISUAL_TRAITS.DEFENSE).toEqual(['ANATOMICAL_EVOLUTION'])
-        expect(isGeneratableEvolutionDirection({
-            evolutionTargetId: 'TAIL',
-            evolutionFunction: 'DEFENSE',
-            visualTraitId: 'ANATOMICAL_EVOLUTION',
-        })).toBe(true)
+        expect(
+            isGeneratableEvolutionDirection({
+                evolutionTargetId: 'TAIL',
+                evolutionFunction: 'DEFENSE',
+                visualTraitId: 'ANATOMICAL_EVOLUTION',
+            }),
+        ).toBe(true)
 
-        const defenseDirection = Array.from({ length: 64 }, (_, index) => resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed: `defense-${index}` }))
-            .find((direction) => direction?.evolutionFunction === 'DEFENSE')
+        const defenseDirection = Array.from({ length: 64 }, (_, index) =>
+            resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed: `defense-${index}` }),
+        ).find((direction) => direction?.evolutionFunction === 'DEFENSE')
         expect(defenseDirection).toEqual({ evolutionFunction: 'DEFENSE', visualTraitId: 'ANATOMICAL_EVOLUTION' })
     })
 

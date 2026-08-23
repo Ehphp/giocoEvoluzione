@@ -5,7 +5,9 @@ import { createClient } from '@supabase/supabase-js'
 import { requireServiceRoleKey, requireSupabaseUrl, serviceRoleFetch } from './reset-creature-evolution-environment.ts'
 
 const SOURCE_BUCKET = 'creature-transformation-sources'
-const sourceAssetPath = resolve(import.meta.dirname, '../public/assets/battle/creatures/verdant-hatchling.png')
+// The PNG master, not the shipped WebP: this uploads the canonical source the transformation
+// pipeline generates from, and the object name is its own sha256. A re-encode would rename it.
+const sourceAssetPath = resolve(import.meta.dirname, '../assets-source/battle/creatures/verdant-hatchling.png')
 const supabaseUrl = requireSupabaseUrl(process.env.SUPABASE_URL)
 const serviceRoleKey = requireServiceRoleKey(process.env.SUPABASE_SERVICE_ROLE_KEY)
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -66,5 +68,7 @@ const { error: uploadError } = await bucket.upload(sourceObject, sourceBytes, {
 })
 if (uploadError) throw new Error(`Aggiornamento sorgente non riuscito: ${uploadError.message}`)
 const manifest = await syncCanonicalManifest(false)
-console.log(`Sorgente canonica aggiornata: ${SOURCE_BUCKET}/${sourceObject} (${sourceMetadata.width}x${sourceMetadata.height}, sha256 ${sourceSha256}).`)
+console.log(
+    `Sorgente canonica aggiornata: ${SOURCE_BUCKET}/${sourceObject} (${sourceMetadata.width}x${sourceMetadata.height}, sha256 ${sourceSha256}).`,
+)
 console.log(`Manifest e versioni base sincronizzati: ${JSON.stringify(manifest)}`)

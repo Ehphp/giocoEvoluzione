@@ -19,11 +19,21 @@ describe('benchmark and review migration', () => {
     it('defines score-constrained RLS reviews with a service-role-only idempotent upsert', () => {
         expect(migration).toContain('create table public.creature_transformation_experiment_reviews')
         expect(migration).toContain('unique (transformation_request_id, reviewer_profile_id)')
-        expect(migration).toContain('identity_preservation_score smallint not null check (identity_preservation_score between 1 and 5)')
-        expect(migration).toContain("verdict text not null check (verdict in ('REJECTED', 'PROMISING', 'ACCEPTABLE_EXPERIMENT', 'FINAL_ASSET_CANDIDATE'))")
-        expect(migration).toContain('alter table public.creature_transformation_experiment_reviews enable row level security')
-        expect(migration).toContain('revoke all on table public.creature_transformation_experiment_reviews from public, anon, authenticated')
-        expect(migration).toContain('grant all privileges on table public.creature_transformation_experiment_reviews to service_role')
+        expect(migration).toContain(
+            'identity_preservation_score smallint not null check (identity_preservation_score between 1 and 5)',
+        )
+        expect(migration).toContain(
+            "verdict text not null check (verdict in ('REJECTED', 'PROMISING', 'ACCEPTABLE_EXPERIMENT', 'FINAL_ASSET_CANDIDATE'))",
+        )
+        expect(migration).toContain(
+            'alter table public.creature_transformation_experiment_reviews enable row level security',
+        )
+        expect(migration).toContain(
+            'revoke all on table public.creature_transformation_experiment_reviews from public, anon, authenticated',
+        )
+        expect(migration).toContain(
+            'grant all privileges on table public.creature_transformation_experiment_reviews to service_role',
+        )
         expect(migration).toContain('on conflict (transformation_request_id, reviewer_profile_id) do update')
         expect(migration).not.toMatch(/grant\s+.*creature_transformation_experiment_reviews\s+to\s+authenticated/i)
     })
@@ -33,6 +43,8 @@ describe('benchmark and review migration', () => {
         expect(colorEvolutionMigration).toContain('COLOR_EVOLUTION_TOO_WEAK')
         expect(colorEvolutionMigration).toContain('COLOR_EVOLUTION_INCOHERENT')
         expect(colorEvolutionMigration).toContain('PALETTE_CHANGED')
-        expect(colorEvolutionMigration).toContain('create or replace function public.upsert_creature_transformation_experiment_review')
+        expect(colorEvolutionMigration).toContain(
+            'create or replace function public.upsert_creature_transformation_experiment_review',
+        )
     })
 })

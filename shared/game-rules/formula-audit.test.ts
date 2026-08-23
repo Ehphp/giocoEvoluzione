@@ -17,7 +17,10 @@ import {
 } from './index.ts'
 
 function auditEvent(affinityByGene: Partial<Record<AdaptationId, 0 | 1 | 2>> = {}): EnvironmentalCrisisDefinition {
-    const modifiers = Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, affinityByGene[gene] ?? 0])) as Record<AdaptationId, 0 | 1 | 2>
+    const modifiers = Object.fromEntries(ADAPTATION_IDS.map((gene) => [gene, affinityByGene[gene] ?? 0])) as Record<
+        AdaptationId,
+        0 | 1 | 2
+    >
     return {
         id: 'FORMULA_AUDIT',
         title: 'Formula audit',
@@ -30,18 +33,33 @@ function auditEvent(affinityByGene: Partial<Record<AdaptationId, 0 | 1 | 2>> = {
     }
 }
 
-const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE') => ({ playerId, trait, actionType })
+const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE') => ({
+    playerId,
+    trait,
+    actionType,
+})
 
 describe('exhaustion formula audit', () => {
     it.each(
-        ([0, 1, 2] as const).flatMap((level) => ([0, 1, 2] as const).flatMap((affinity) => ([0, 2] as const).map((matchup) => ({ level, affinity, matchup })))),
+        ([0, 1, 2] as const).flatMap((level) =>
+            ([0, 1, 2] as const).flatMap((affinity) =>
+                ([0, 2] as const).map((matchup) => ({ level, affinity, matchup })),
+            ),
+        ),
     )('computes USE=2+level+affinity+matchup for $level/$affinity/$matchup', ({ level, affinity, matchup }) => {
         const adaptations = createInitialAdaptations()
         adaptations.FEROCITY.level = level
-        const breakdown = getValidatedAdaptationUseBreakdown(auditEvent({ FEROCITY: affinity }), adaptations, 'FEROCITY', matchup)
+        const breakdown = getValidatedAdaptationUseBreakdown(
+            auditEvent({ FEROCITY: affinity }),
+            adaptations,
+            'FEROCITY',
+            matchup,
+        )
 
         expect(breakdown.total).toBe(2 + level + affinity + matchup)
-        expect(breakdown.total).toBe(breakdown.baseContribution + breakdown.levelContribution + breakdown.eventModifier + breakdown.matchupBonus)
+        expect(breakdown.total).toBe(
+            breakdown.baseContribution + breakdown.levelContribution + breakdown.eventModifier + breakdown.matchupBonus,
+        )
     })
 
     it.each(ADAPTATION_IDS.flatMap((own) => ADAPTATION_IDS.map((opponent) => ({ own, opponent }))))(
@@ -80,54 +98,62 @@ describe('exhaustion formula audit', () => {
     })
 
     it('rejects a persisted round after the match was already clinched', () => {
-        expect(() => buildPersistedRoundResolution({
-            roundNumber: 5,
-            roundEvent: auditEvent(),
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score: 4,
-            player2Score: 0,
-            player1Traits: createInitialAdaptations(),
-            player2Traits: createInitialAdaptations(),
-            ruleVersion: RULE_VERSION,
-            player1CombatMutationState: createInitialCombatMutationState(),
-            player2CombatMutationState: createInitialCombatMutationState(),
-            player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
-            player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
-            player1Action: action('p1', 'FEROCITY', 'USE'),
-            player2Action: action('p2', 'ARMOR', 'EVOLVE'),
-            priorRoundValues: [],
-            startedAt: null,
-        })).toThrow('already clinched')
+        expect(() =>
+            buildPersistedRoundResolution({
+                roundNumber: 5,
+                roundEvent: auditEvent(),
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score: 4,
+                player2Score: 0,
+                player1Traits: createInitialAdaptations(),
+                player2Traits: createInitialAdaptations(),
+                ruleVersion: RULE_VERSION,
+                player1CombatMutationState: createInitialCombatMutationState(),
+                player2CombatMutationState: createInitialCombatMutationState(),
+                player1CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+                player2CombatMutationLoadout: BOT_COMBAT_MUTATION_LOADOUT,
+                player1Action: action('p1', 'FEROCITY', 'USE'),
+                player2Action: action('p2', 'ARMOR', 'EVOLVE'),
+                priorRoundValues: [],
+                startedAt: null,
+            }),
+        ).toThrow('already clinched')
     })
 
     it('rejects malformed stored round values instead of choosing a tiebreak winner', () => {
-        expect(() => resolveMatchOutcome({
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score: 3,
-            player2Score: 3,
-            resolvedRoundNumber: 7,
-            storedRoundValues: [{ player1Value: Number.NaN, player2Value: Number.NaN }],
-        })).toThrow('stored round value')
+        expect(() =>
+            resolveMatchOutcome({
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score: 3,
+                player2Score: 3,
+                resolvedRoundNumber: 7,
+                storedRoundValues: [{ player1Value: Number.NaN, player2Value: Number.NaN }],
+            }),
+        ).toThrow('stored round value')
     })
 
     it('rejects malformed scores and resolved round numbers instead of finishing spuriously', () => {
-        expect(() => resolveMatchOutcome({
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score: Number.NaN,
-            player2Score: 3,
-            resolvedRoundNumber: 7,
-            storedRoundValues: [],
-        })).toThrow('match state')
-        expect(() => resolveMatchOutcome({
-            player1Id: 'p1',
-            player2Id: 'p2',
-            player1Score: 3,
-            player2Score: 3,
-            resolvedRoundNumber: Number.NaN,
-            storedRoundValues: [],
-        })).toThrow('match state')
+        expect(() =>
+            resolveMatchOutcome({
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score: Number.NaN,
+                player2Score: 3,
+                resolvedRoundNumber: 7,
+                storedRoundValues: [],
+            }),
+        ).toThrow('match state')
+        expect(() =>
+            resolveMatchOutcome({
+                player1Id: 'p1',
+                player2Id: 'p2',
+                player1Score: 3,
+                player2Score: 3,
+                resolvedRoundNumber: Number.NaN,
+                storedRoundValues: [],
+            }),
+        ).toThrow('match state')
     })
 })

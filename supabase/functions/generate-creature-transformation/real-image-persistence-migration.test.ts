@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 describe('real image pilot persistence migration', () => {
     it('adds only asset readiness and validation warnings to the request ledger', () => {
-        expect(migration).toContain("add column asset_readiness text check (asset_readiness is null or asset_readiness in ('FINAL_ASSET', 'EXPERIMENT_ONLY'))")
+        expect(migration).toContain(
+            "add column asset_readiness text check (asset_readiness is null or asset_readiness in ('FINAL_ASSET', 'EXPERIMENT_ONLY'))",
+        )
         expect(migration).toContain("add column validation_warnings jsonb not null default '[]'::jsonb")
         expect(migration).not.toMatch(/prompt\s+text|bytea|signed_url|api_key|authorization/i)
     })

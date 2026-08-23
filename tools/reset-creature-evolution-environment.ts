@@ -13,7 +13,15 @@ type StorageError = Readonly<{ message: string }> | null
 type StorageEntry = Readonly<{ name: string; id: string | null }>
 
 export interface StorageBucketClient {
-    list(path?: string, options?: { limit?: number; offset?: number; sortBy?: { column: string; order: 'asc' | 'desc' }; search?: string }): Promise<{ data: readonly StorageEntry[] | null; error: StorageError }>
+    list(
+        path?: string,
+        options?: {
+            limit?: number
+            offset?: number
+            sortBy?: { column: string; order: 'asc' | 'desc' }
+            search?: string
+        },
+    ): Promise<{ data: readonly StorageEntry[] | null; error: StorageError }>
     remove(paths: readonly string[]): Promise<{ data: unknown; error: StorageError }>
 }
 
@@ -36,7 +44,9 @@ export type DestructiveResetReport = Readonly<{
 }>
 
 function record(value: unknown): Record<string, unknown> | null {
-    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : null
 }
 
 function integer(value: unknown, field: string): number {
@@ -72,10 +82,15 @@ export function requireSupabaseUrl(value: string | undefined): string {
 }
 
 export function requireServiceRoleKey(value: string | undefined): string {
-    if (!value) throw new Error('SUPABASE_SERVICE_ROLE_KEY deve essere impostata esclusivamente nell ambiente locale o CI protetto.')
+    if (!value)
+        throw new Error(
+            'SUPABASE_SERVICE_ROLE_KEY deve essere impostata esclusivamente nell ambiente locale o CI protetto.',
+        )
     const key = value.trim()
     if (key.startsWith('sb_publishable_')) {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY contiene una chiave sb_publishable_. Per questo reset usa una Secret key sb_secret_ dal progetto corretto, non una Publishable key.')
+        throw new Error(
+            'SUPABASE_SERVICE_ROLE_KEY contiene una chiave sb_publishable_. Per questo reset usa una Secret key sb_secret_ dal progetto corretto, non una Publishable key.',
+        )
     }
     return key
 }
@@ -112,7 +127,7 @@ export async function listAllStorageObjectPaths(bucket: StorageBucketClient, pat
         visitedFolders.add(folder)
         const nestedFolders: string[] = []
 
-        for (let offset = 0; ; ) {
+        for (let offset = 0; ;) {
             const { data, error } = await bucket.list(folder, {
                 limit: LIST_PAGE_SIZE,
                 offset,
@@ -121,7 +136,10 @@ export async function listAllStorageObjectPaths(bucket: StorageBucketClient, pat
             if (error) throw new Error(`Impossibile elencare ${EXPERIMENT_BUCKET}/${folder || '.'}: ${error.message}`)
             const page = data ?? []
             for (const entry of page) {
-                if (!entry.name) throw new Error(`Il listing di ${EXPERIMENT_BUCKET}/${folder || '.'} contiene un oggetto senza nome.`)
+                if (!entry.name)
+                    throw new Error(
+                        `Il listing di ${EXPERIMENT_BUCKET}/${folder || '.'} contiene un oggetto senza nome.`,
+                    )
                 const childPath = joinStoragePath(folder, entry.name)
                 if (entry.id === null) nestedFolders.push(childPath)
                 else objects.add(childPath)
@@ -144,7 +162,9 @@ function batches<T>(items: readonly T[], size: number): T[][] {
 }
 
 /** Removes all physical bucket objects and verifies an empty recursive listing. */
-export async function emptyExperimentBucket(bucket: StorageBucketClient): Promise<{ deleted: number; remaining: number }> {
+export async function emptyExperimentBucket(
+    bucket: StorageBucketClient,
+): Promise<{ deleted: number; remaining: number }> {
     let deleted = 0
     for (let pass = 0; pass < MAX_EMPTY_BUCKET_PASSES; pass += 1) {
         const paths = await listAllStorageObjectPaths(bucket)
@@ -157,7 +177,9 @@ export async function emptyExperimentBucket(bucket: StorageBucketClient): Promis
     }
     const remaining = await listAllStorageObjectPaths(bucket)
     if (remaining.length !== 0) {
-        throw new Error(`Il bucket ${EXPERIMENT_BUCKET} non e vuoto dopo ${MAX_EMPTY_BUCKET_PASSES} passaggi (${remaining.length} oggetti residui).`)
+        throw new Error(
+            `Il bucket ${EXPERIMENT_BUCKET} non e vuoto dopo ${MAX_EMPTY_BUCKET_PASSES} passaggi (${remaining.length} oggetti residui).`,
+        )
     }
     return { deleted, remaining: 0 }
 }
@@ -166,7 +188,9 @@ async function verifyCanonicalSource(bucket: StorageBucketClient): Promise<void>
     const { data, error } = await bucket.list('', { limit: LIST_PAGE_SIZE, search: CANONICAL_SOURCE_OBJECT })
     if (error) throw new Error(`Impossibile verificare il bucket canonico ${SOURCE_BUCKET}: ${error.message}`)
     if (!(data ?? []).some((entry) => entry.id !== null && entry.name === CANONICAL_SOURCE_OBJECT)) {
-        throw new Error(`Il source asset canonico ${SOURCE_BUCKET}/${CANONICAL_SOURCE_OBJECT} non e presente: reset bloccato.`)
+        throw new Error(
+            `Il source asset canonico ${SOURCE_BUCKET}/${CANONICAL_SOURCE_OBJECT} non e presente: reset bloccato.`,
+        )
     }
 }
 
@@ -188,7 +212,8 @@ function verificationFrom(value: unknown): Record<string, unknown> {
         'noncanonical_lineages',
         'evolution_drafts_remaining',
         'flux_start_violations',
-    ]) requireZero(verification[field], field)
+    ])
+        requireZero(verification[field], field)
     return verification
 }
 
@@ -199,24 +224,33 @@ function resetReportFrom(value: unknown): Record<string, unknown> {
     return reset
 }
 
-export async function resetCreatureEvolutionEnvironment(supabase: ResetSupabaseClient): Promise<DestructiveResetReport> {
+export async function resetCreatureEvolutionEnvironment(
+    supabase: ResetSupabaseClient,
+): Promise<DestructiveResetReport> {
     // Verify the protected canonical source before making the DB reset irreversible.
     await verifyCanonicalSource(supabase.storage.from(SOURCE_BUCKET))
 
-    const { data: resetData, error: resetError } = await supabase.rpc('admin_destructive_reset_creature_evolution_environment')
+    const { data: resetData, error: resetError } = await supabase.rpc(
+        'admin_destructive_reset_creature_evolution_environment',
+    )
     if (resetError) throw new Error(`Reset DB non riuscito: ${resetError.message}`)
     const reset = resetReportFrom(resetData)
 
     // Storage is deliberately outside Postgres, so this is immediately followed
     // by a recursive listing-based wipe and a second DB invariant verification.
     const storage = await emptyExperimentBucket(supabase.storage.from(EXPERIMENT_BUCKET))
-    const { data: verificationData, error: verificationError } = await supabase.rpc('admin_verify_creature_evolution_environment_reset')
+    const { data: verificationData, error: verificationError } = await supabase.rpc(
+        'admin_verify_creature_evolution_environment_reset',
+    )
     if (verificationError) throw new Error(`Verifica DB finale non riuscita: ${verificationError.message}`)
     verificationFrom(verificationData)
 
     return {
         storageObjectsDeleted: storage.deleted,
-        transformationRequestsDeleted: integer(reset.transformation_requests_deleted, 'transformation_requests_deleted'),
+        transformationRequestsDeleted: integer(
+            reset.transformation_requests_deleted,
+            'transformation_requests_deleted',
+        ),
         visualVersionsDeleted: integer(reset.visual_versions_deleted, 'visual_versions_deleted'),
         visualTracksDeleted: integer(reset.visual_tracks_deleted, 'visual_tracks_deleted'),
         targetProgressDeleted: integer(reset.target_progress_deleted, 'target_progress_deleted'),

@@ -6,15 +6,17 @@ function chunk(type: string, data: number[]): number[] {
     return [...uint32(data.length), ...[...type].map((character) => character.charCodeAt(0)), ...data, 0, 0, 0, 0]
 }
 
-export function createTestPng(options: {
-    width?: number
-    height?: number
-    colorType?: number
-    bitDepth?: number
-    includeIhdr?: boolean
-    includeIdat?: boolean
-    includeTransparency?: boolean
-} = {}): Uint8Array {
+export function createTestPng(
+    options: {
+        width?: number
+        height?: number
+        colorType?: number
+        bitDepth?: number
+        includeIhdr?: boolean
+        includeIdat?: boolean
+        includeTransparency?: boolean
+    } = {},
+): Uint8Array {
     const width = options.width ?? 1024
     const height = options.height ?? 1536
     const colorType = options.colorType ?? 6
@@ -30,11 +32,13 @@ export function createTestPng(options: {
 }
 
 /** Small, fully decodable opaque RGB PNG for foreground/framing validator tests. */
-export async function createForegroundTestPng(options: {
-    width?: number
-    height?: number
-    subject?: { left: number, top: number, right: number, bottom: number }
-} = {}): Promise<Uint8Array> {
+export async function createForegroundTestPng(
+    options: {
+        width?: number
+        height?: number
+        subject?: { left: number; top: number; right: number; bottom: number }
+    } = {},
+): Promise<Uint8Array> {
     const width = options.width ?? 40
     const height = options.height ?? 60
     const subject = options.subject ?? { left: 8, top: 10, right: width - 9, bottom: height - 11 }
@@ -52,6 +56,20 @@ export async function createForegroundTestPng(options: {
     }
     const stream = new Response(raw).body
     if (!stream) throw new Error('Lo stream PNG di test non e disponibile.')
-    const compressed = new Uint8Array(await new Response(stream.pipeThrough(new CompressionStream('deflate'))).arrayBuffer())
-    return new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, ...chunk('IHDR', [...uint32(width), ...uint32(height), 8, 2, 0, 0, 0]), ...chunk('IDAT', [...compressed]), ...chunk('IEND', [])])
+    const compressed = new Uint8Array(
+        await new Response(stream.pipeThrough(new CompressionStream('deflate'))).arrayBuffer(),
+    )
+    return new Uint8Array([
+        137,
+        80,
+        78,
+        71,
+        13,
+        10,
+        26,
+        10,
+        ...chunk('IHDR', [...uint32(width), ...uint32(height), 8, 2, 0, 0, 0]),
+        ...chunk('IDAT', [...compressed]),
+        ...chunk('IEND', []),
+    ])
 }

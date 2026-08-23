@@ -22,6 +22,12 @@
     margin-bottom: var(--ev-s-1);
 }
 
+/* Two controls share the trailing grid cell; the header stays a three-column bar. */
+.profile-topbar__actions {
+    display: flex;
+    gap: var(--ev-s-2);
+}
+
 .profile-topbar__title {
     display: grid;
     gap: var(--ev-s-1);
@@ -226,11 +232,6 @@
     display: grid;
     justify-items: stretch;
     gap: var(--ev-s-2);
-}
-
-.profile-actions__cleanup {
-    justify-self: center;
-    width: calc(100% - var(--ev-s-6) * 2);
 }
 
 /* -------------------------------------------------------------------------- */

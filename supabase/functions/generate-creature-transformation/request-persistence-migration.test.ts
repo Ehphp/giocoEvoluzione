@@ -10,12 +10,14 @@ describe('creature transformation request persistence migration', () => {
         expect(migration).toContain('using (profile_id = auth.uid())')
         expect(migration).toContain('grant select on public.creature_transformation_requests to authenticated')
         expect(migration).not.toMatch(/for\s+(insert|update|delete)\s+to\s+authenticated/i)
-        expect(migration).not.toMatch(/grant\s+(insert|update|delete|all)\s+on\s+public\.creature_transformation_requests\s+to\s+authenticated/i)
+        expect(migration).not.toMatch(
+            /grant\s+(insert|update|delete|all)\s+on\s+public\.creature_transformation_requests\s+to\s+authenticated/i,
+        )
     })
 
     it('uses advisory locking, UTC quota checks and constrained state transitions inside server-only RPCs', () => {
         expect(migration).toContain('pg_advisory_xact_lock')
-        expect(migration).toContain("v_day_start::date::text, 1")
+        expect(migration).toContain('v_day_start::date::text, 1')
         expect(migration).toContain("'DAILY_LIMIT_REACHED'")
         expect(migration).toContain("'DAILY_BUDGET_REACHED'")
         expect(migration).toContain("status in ('RESERVED', 'RUNNING', 'SUCCEEDED', 'FAILED')")

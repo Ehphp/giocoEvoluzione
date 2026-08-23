@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { resolveEdgeRound } from '../../supabase/functions/resolve-round/round-domain.ts'
-import { BOT_COMBAT_MUTATION_LOADOUT, RULE_VERSION, createInitialAdaptations, createInitialCombatMutationState, getRoundEventById } from './index.ts'
+import {
+    BOT_COMBAT_MUTATION_LOADOUT,
+    RULE_VERSION,
+    createInitialAdaptations,
+    createInitialCombatMutationState,
+    getRoundEventById,
+} from './index.ts'
 
 describe('resolve-round pure domain adapter', () => {
     it('delegates the persisted resolution to the shared domain', () => {
@@ -33,7 +39,8 @@ describe('resolve-round pure domain adapter', () => {
             roundEvent: getRoundEventById('HEAT_SPIKE'),
             player1Id: 'p1',
             player2Id: 'p2',
-            player1Score: 0, player2Score: 0,
+            player1Score: 0,
+            player2Score: 0,
             player1Traits: createInitialAdaptations(),
             player2Traits: createInitialAdaptations(),
             ruleVersion: RULE_VERSION,
@@ -46,7 +53,10 @@ describe('resolve-round pure domain adapter', () => {
             startedAt: null,
         })
 
-        expect(result.resolution_data.player1CombatMutationStateAfter).toMatchObject({ elasticLimbsUsed: true, adaptiveCoreStatus: 'CONSUMED' })
+        expect(result.resolution_data.player1CombatMutationStateAfter).toMatchObject({
+            elasticLimbsUsed: true,
+            adaptiveCoreStatus: 'CONSUMED',
+        })
         expect(result.resolution_data.player1MutationEffects).toEqual([
             { id: 'ADAPTIVE_CORE', effect: 'ROUND_VALUE_BONUS', value: 1 },
             { id: 'ELASTIC_LIMBS', effect: 'AGILITY_PRESERVED' },

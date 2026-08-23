@@ -7,25 +7,32 @@ const MAX_WEBHOOK_CLOCK_SKEW_SECONDS = 300
 type FetchLike = typeof fetch
 type Jwk = Readonly<{ x: string }>
 type JwksSource = 'remote' | 'fallback'
-export type FalWebhookSignatureRejection = 'HEADERS_INVALID' | 'TIMESTAMP_OUT_OF_RANGE' | 'SIGNATURE_ENCODING_INVALID' | 'BODY_DIGEST_FAILED' | 'JWKS_UNAVAILABLE' | 'SIGNATURE_MISMATCH'
+export type FalWebhookSignatureRejection =
+    | 'HEADERS_INVALID'
+    | 'TIMESTAMP_OUT_OF_RANGE'
+    | 'SIGNATURE_ENCODING_INVALID'
+    | 'BODY_DIGEST_FAILED'
+    | 'JWKS_UNAVAILABLE'
+    | 'SIGNATURE_MISMATCH'
 
-let cache: Readonly<{ keys: readonly Jwk[], expiresAt: number, source: JwksSource }> | null = null
+let cache: Readonly<{ keys: readonly Jwk[]; expiresAt: number; source: JwksSource }> | null = null
 
 function hex(bytes: Uint8Array): string {
     return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-function hexBytes(value: string): Uint8Array | null {
+function hexBytes(value: string): Uint8Array<ArrayBuffer> | null {
     if (!/^[a-fA-F0-9]{128}$/.test(value)) return null
     const bytes = new Uint8Array(value.length / 2)
-    for (let index = 0; index < bytes.length; index += 1) bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16)
+    for (let index = 0; index < bytes.length; index += 1)
+        bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16)
     return bytes
 }
 
-function base64UrlBytes(value: string): Uint8Array | null {
+function base64UrlBytes(value: string): Uint8Array<ArrayBuffer> | null {
     if (!/^[A-Za-z0-9_-]{43,44}$/.test(value)) return null
     try {
-        const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4)
+        const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (value.length % 4)) % 4)
         const binary = atob(padded)
         return Uint8Array.from(binary, (entry) => entry.charCodeAt(0))
     } catch {
@@ -39,14 +46,16 @@ function requiredHeader(headers: Headers, name: string): string | null {
 }
 
 function publicKeysFromPayload(payload: unknown): readonly Jwk[] {
-    const keys = payload && typeof payload === 'object' && Array.isArray((payload as { keys?: unknown }).keys)
-        ? (payload as { keys: unknown[] }).keys.flatMap((entry) => {
-            const key = entry && typeof entry === 'object' && typeof (entry as { x?: unknown }).x === 'string'
-                ? { x: (entry as { x: string }).x }
-                : null
-            return key && base64UrlBytes(key.x)?.length === 32 ? [Object.freeze(key)] : []
-        })
-        : []
+    const keys =
+        payload && typeof payload === 'object' && Array.isArray((payload as { keys?: unknown }).keys)
+            ? (payload as { keys: unknown[] }).keys.flatMap((entry) => {
+                  const key =
+                      entry && typeof entry === 'object' && typeof (entry as { x?: unknown }).x === 'string'
+                          ? { x: (entry as { x: string }).x }
+                          : null
+                  return key && base64UrlBytes(key.x)?.length === 32 ? [Object.freeze(key)] : []
+              })
+            : []
     return Object.freeze(keys)
 }
 
@@ -59,7 +68,11 @@ function fallbackPublicKeys(fallbackJwksJson: string | undefined): readonly Jwk[
     }
 }
 
-async function publicKeys(fetchImplementation: FetchLike, now: () => number, fallbackJwksJson: string | undefined): Promise<Readonly<{ keys: readonly Jwk[], source: JwksSource }>> {
+async function publicKeys(
+    fetchImplementation: FetchLike,
+    now: () => number,
+    fallbackJwksJson: string | undefined,
+): Promise<Readonly<{ keys: readonly Jwk[]; source: JwksSource }>> {
     const current = now()
     if (cache && cache.expiresAt > current) return cache
     try {
@@ -88,28 +101,42 @@ export async function verifyFalWebhookSignature(input: {
     fetchImplementation?: FetchLike
     now?: () => number
     fallbackJwksJson?: string
-}): Promise<Readonly<{ valid: true, providerRequestId: string, jwksSource: JwksSource }> | Readonly<{ valid: false, reason: FalWebhookSignatureRejection }>> {
+}): Promise<
+    | Readonly<{ valid: true; providerRequestId: string; jwksSource: JwksSource }>
+    | Readonly<{ valid: false; reason: FalWebhookSignatureRejection }>
+> {
     const providerRequestId = requiredHeader(input.headers, 'x-fal-webhook-request-id')
     const userId = requiredHeader(input.headers, 'x-fal-webhook-user-id')
     const timestamp = requiredHeader(input.headers, 'x-fal-webhook-timestamp')
     const signature = requiredHeader(input.headers, 'x-fal-webhook-signature')
-    if (!providerRequestId || !userId || !timestamp || !signature || !/^\d{1,12}$/.test(timestamp)) return { valid: false, reason: 'HEADERS_INVALID' }
+    if (!providerRequestId || !userId || !timestamp || !signature || !/^\d{1,12}$/.test(timestamp))
+        return { valid: false, reason: 'HEADERS_INVALID' }
     const now = input.now ?? (() => Date.now())
     const timestampSeconds = Number(timestamp)
-    if (!Number.isSafeInteger(timestampSeconds) || Math.abs(Math.floor(now() / 1000) - timestampSeconds) > MAX_WEBHOOK_CLOCK_SKEW_SECONDS) return { valid: false, reason: 'TIMESTAMP_OUT_OF_RANGE' }
+    if (
+        !Number.isSafeInteger(timestampSeconds) ||
+        Math.abs(Math.floor(now() / 1000) - timestampSeconds) > MAX_WEBHOOK_CLOCK_SKEW_SECONDS
+    )
+        return { valid: false, reason: 'TIMESTAMP_OUT_OF_RANGE' }
     const signatureBytes = hexBytes(signature)
     if (!signatureBytes) return { valid: false, reason: 'SIGNATURE_ENCODING_INVALID' }
     let digest: ArrayBuffer
     try {
         // Keep the body exactly as received without making a second copy of a potentially large
         // webhook payload. Some Web Crypto typings require an ArrayBuffer-backed view here.
-        const rawBody = new Uint8Array(input.rawBody.buffer as ArrayBuffer, input.rawBody.byteOffset, input.rawBody.byteLength)
+        const rawBody = new Uint8Array(
+            input.rawBody.buffer as ArrayBuffer,
+            input.rawBody.byteOffset,
+            input.rawBody.byteLength,
+        )
         digest = await crypto.subtle.digest('SHA-256', rawBody)
     } catch {
         return { valid: false, reason: 'BODY_DIGEST_FAILED' }
     }
-    const message = new TextEncoder().encode([providerRequestId, userId, timestamp, hex(new Uint8Array(digest))].join('\n'))
-    let keySet: Readonly<{ keys: readonly Jwk[], source: JwksSource }>
+    const message = new TextEncoder().encode(
+        [providerRequestId, userId, timestamp, hex(new Uint8Array(digest))].join('\n'),
+    )
+    let keySet: Readonly<{ keys: readonly Jwk[]; source: JwksSource }>
     try {
         keySet = await publicKeys(input.fetchImplementation ?? fetch, now, input.fallbackJwksJson)
     } catch {
@@ -120,7 +147,8 @@ export async function verifyFalWebhookSignature(input: {
         if (!key) continue
         try {
             const publicKey = await crypto.subtle.importKey('raw', key, { name: 'Ed25519' }, false, ['verify'])
-            if (await crypto.subtle.verify({ name: 'Ed25519' }, publicKey, signatureBytes, message)) return { valid: true, providerRequestId, jwksSource: keySet.source }
+            if (await crypto.subtle.verify({ name: 'Ed25519' }, publicKey, signatureBytes, message))
+                return { valid: true, providerRequestId, jwksSource: keySet.source }
         } catch {
             // Try the next rotating Fal key.
         }

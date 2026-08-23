@@ -14,18 +14,30 @@ export function createMatchCompletionEvents(input: {
 }): MatchCompletionEvent[] {
     return input.participants.flatMap((participant) => {
         if (!participant.profileId || !participant.creatureId) return []
-        return [{
-            gameId: input.gameId,
-            profileId: participant.profileId,
-            creatureId: participant.creatureId,
-            outcome: input.winnerPlayerId === null ? 'DRAW' : input.winnerPlayerId === participant.id ? 'WIN' : 'LOSS',
-            completedAt: input.completedAt,
-        } satisfies MatchCompletionEvent]
+        return [
+            {
+                gameId: input.gameId,
+                profileId: participant.profileId,
+                creatureId: participant.creatureId,
+                outcome:
+                    input.winnerPlayerId === null ? 'DRAW' : input.winnerPlayerId === participant.id ? 'WIN' : 'LOSS',
+                completedAt: input.completedAt,
+            } satisfies MatchCompletionEvent,
+        ]
     })
 }
 
+/**
+ * `PromiseLike`, not `Promise`: the Supabase client's `rpc()` returns a thenable query builder
+ * that only becomes a promise when awaited, so requiring a full `Promise` here would reject the
+ * real client.
+ */
+type MatchCompletionRpcClient = {
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<{ error: { message?: string } | null }>
+}
+
 export async function recordCreatureVisualProgressFromMatchCompletion(
-    supabaseAdmin: { rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message?: string } | null }> },
+    supabaseAdmin: MatchCompletionRpcClient,
     event: MatchCompletionEvent,
 ): Promise<void> {
     const { error } = await supabaseAdmin.rpc('record_creature_visual_progress_from_match_completion', {
@@ -45,7 +57,7 @@ export async function recordCreatureVisualProgressFromMatchCompletion(
  * counter to credit. Losses and draws are still recorded, so the match is only ever counted once.
  */
 export async function recordEvolutionTargetWinFromMatchCompletion(
-    supabaseAdmin: { rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message?: string } | null }> },
+    supabaseAdmin: MatchCompletionRpcClient,
     event: MatchCompletionEvent,
     winsRequired: number,
 ): Promise<void> {

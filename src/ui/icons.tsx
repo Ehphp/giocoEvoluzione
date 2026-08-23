@@ -2,11 +2,9 @@ import type { SVGProps } from 'react'
 import {
     ArrowDown,
     ArrowLeft,
-    ArrowRight,
     ArrowUp,
     Backpack,
     ChevronRight,
-    Clock,
     Dna,
     Eye,
     Info,
@@ -24,6 +22,8 @@ import {
     Swords,
     Trophy,
     User,
+    Volume2,
+    VolumeX,
     X,
     Zap,
 } from 'lucide-react'
@@ -267,7 +267,6 @@ export const TrophyIcon = Trophy
 export const DnaIcon = Dna
 export const EyeIcon = Eye
 export const BoltIcon = Zap
-export const ClockIcon = Clock
 export const InfoIcon = Info
 export const ChevronIcon = ChevronRight
 export const CloseIcon = X
@@ -279,9 +278,11 @@ export const ShieldCheckIcon = ShieldCheck
 export const ArrowUpIcon = ArrowUp
 export const ArrowDownIcon = ArrowDown
 export const BackIcon = ArrowLeft
-export const ArrowRightIcon = ArrowRight
 export const NatureIcon = Leaf
 export const VenomIcon = Skull
 export const FireIcon = Flame
 export const MeteorIcon = Rocket
 export const AddIcon = Plus
+/** Sound *and* vibration: one preference covers both — see `src/ui/feedback/feedback.ts`. */
+export const FeedbackOnIcon = Volume2
+export const FeedbackOffIcon = VolumeX

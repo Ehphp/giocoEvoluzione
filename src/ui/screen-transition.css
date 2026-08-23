@@ -1,0 +1,156 @@
+/**
+ * Screen changes.
+ *
+ * Two full-bleed layers stacked in the same box: the screen arriving, and — for the length of one
+ * transition — the screen it replaced. Both animate `opacity` and `transform` only, so the whole
+ * move stays on the compositor.
+ *
+ * The move is chosen by navigation depth, not by taste:
+ *
+ *   push  going deeper — the new screen slides in over the old one, which drifts back a little
+ *   pop   coming back  — mirrored: the old screen slides away and uncovers the one beneath
+ *   fade  same depth   — a cross-fade, which is what keeps the dock still while the player moves
+ *                        between its destinations. A slide would drag the dock along with it.
+ *
+ * The opacity ramps are staggered rather than symmetric. Two layers both passing through 0.5 would
+ * let the dark ground show between them, so the screen dips halfway through every move. Whichever
+ * layer is underneath therefore holds opaque until the one above it has covered it.
+ */
+
+.ev-screen-swap {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.ev-screen-layer {
+    position: absolute;
+    inset: 0;
+}
+
+/*
+ * `backwards` and not `both`: the arriving layer must be free of its transform once it settles, or
+ * it stays a containing block for anything positioned against the viewport.
+ */
+.ev-screen-layer--entering {
+    z-index: 1;
+    animation: ev-screen-enter-fade var(--ev-dur-screen) var(--ev-ease-screen) backwards;
+}
+
+/* `forwards` holds the outgoing layer invisible in the gap between its last frame and its unmount. */
+.ev-screen-layer--leaving {
+    z-index: 0;
+    pointer-events: none;
+    will-change: opacity, transform;
+    animation: ev-screen-leave-fade var(--ev-dur-screen) var(--ev-ease-screen) forwards;
+}
+
+.ev-screen-swap[data-move='push'] > .ev-screen-layer--entering {
+    animation-name: ev-screen-enter-push;
+}
+
+.ev-screen-swap[data-move='push'] > .ev-screen-layer--leaving {
+    animation-name: ev-screen-leave-push;
+}
+
+/* Popping reverses the stack: the screen being dismissed travels over the one it uncovers. */
+.ev-screen-swap[data-move='pop'] > .ev-screen-layer--entering {
+    z-index: 0;
+    animation-name: ev-screen-enter-pop;
+}
+
+.ev-screen-swap[data-move='pop'] > .ev-screen-layer--leaving {
+    z-index: 1;
+    animation-name: ev-screen-leave-pop;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cross-fade — arriving screen blooms in over an outgoing one that holds      */
+/* -------------------------------------------------------------------------- */
+
+@keyframes ev-screen-enter-fade {
+    from {
+        opacity: 0;
+        transform: scale(var(--ev-screen-bloom));
+    }
+}
+
+@keyframes ev-screen-leave-fade {
+    0%,
+    55% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Push — arriving screen covers the one it came from                          */
+/* -------------------------------------------------------------------------- */
+
+@keyframes ev-screen-enter-push {
+    from {
+        opacity: 0;
+        transform: translate3d(var(--ev-screen-shift), 0, 0);
+    }
+}
+
+/*
+ * `transform` is declared only at the ends so it drifts across the whole move; the mid keyframe
+ * carries opacity alone. Declaring both at 45% would pin the drift for the first half of it.
+ */
+@keyframes ev-screen-leave-push {
+    0% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+
+    45% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(calc(var(--ev-screen-shift-parallax) * -1), 0, 0);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pop — departing screen slides off the one underneath, which is already solid */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The arriving layer is underneath here, so it has to be opaque well before the departing one
+ * finishes clearing it — otherwise the ground shows through the gap.
+ */
+@keyframes ev-screen-enter-pop {
+    0% {
+        opacity: 0;
+        transform: translate3d(calc(var(--ev-screen-shift-parallax) * -1), 0, 0);
+    }
+
+    45% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes ev-screen-leave-pop {
+    from {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate3d(var(--ev-screen-shift), 0, 0);
+    }
+}

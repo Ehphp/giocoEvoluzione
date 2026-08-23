@@ -1,10 +1,34 @@
-import { ADAPTATION_CATALOG, BASE_USE_VALUE as SHARED_BASE_USE_VALUE, LEVEL_BONUS as SHARED_LEVEL_BONUS, MAX_ADAPTATION_LEVEL as SHARED_MAX_ADAPTATION_LEVEL, TOTAL_ROUNDS as SHARED_TOTAL_ROUNDS } from '../../shared/game-rules/catalog.ts'
-import { createInitialAdaptations, generateRoundEventSequence, getAdaptationLabel, normalizeAdaptationCollection } from '../../shared/game-rules/state.ts'
+import {
+    ADAPTATION_CATALOG,
+    BASE_USE_VALUE as SHARED_BASE_USE_VALUE,
+    LEVEL_BONUS as SHARED_LEVEL_BONUS,
+    MAX_ADAPTATION_LEVEL as SHARED_MAX_ADAPTATION_LEVEL,
+    TOTAL_ROUNDS as SHARED_TOTAL_ROUNDS,
+} from '../../shared/game-rules/catalog.ts'
+import {
+    createInitialAdaptations,
+    generateRoundEventSequence,
+    getAdaptationLabel,
+    normalizeAdaptationCollection,
+} from '../../shared/game-rules/state.ts'
 import { ADAPTATION_IDS, type AdaptationCollection, type AdaptationId } from '../../shared/game-rules/types.ts'
-export const TRAITS = ADAPTATION_IDS; export const TOTAL_ROUNDS = SHARED_TOTAL_ROUNDS; export const FINAL_ROUND_NUMBER = TOTAL_ROUNDS; export const BASE_USE_VALUE = SHARED_BASE_USE_VALUE; export const MAX_TRAIT_LEVEL = SHARED_MAX_ADAPTATION_LEVEL; export const LEVEL_BONUS = SHARED_LEVEL_BONUS; export const ROOM_CODE_LENGTH = 5
-export const TRAIT_LABELS: Record<AdaptationId, string> = Object.fromEntries(ADAPTATION_IDS.map((adaptation) => [adaptation, getAdaptationLabel(adaptation)])) as Record<AdaptationId, string>
-export const CREATURE_ASSETS = { BASE: '/assets/creatures/base.png', FEROCITY: '/assets/game-ui/genes/gene-resilience.svg', ARMOR: '/assets/game-ui/genes/gene-resilience.svg', AGILITY: '/assets/game-ui/genes/gene-mobility.svg', SENSES: '/assets/game-ui/genes/gene-senses.svg', CAMOUFLAGE: '/assets/game-ui/genes/gene-aquatic.svg' } as const
-export type DominantTrait = AdaptationId | 'BASE'; export function createInitialTraits(): AdaptationCollection { return createInitialAdaptations() }; export { generateRoundEventSequence }
-export function normalizeTraitCollection(value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined): AdaptationCollection { return normalizeAdaptationCollection(value) }
-export function getDominantTrait(traits: Partial<Record<AdaptationId, { level?: number } | null>> | null | undefined, previous?: DominantTrait): DominantTrait { const levels = ADAPTATION_IDS.map((trait) => ({ trait, level: Number.isFinite(traits?.[trait]?.level) ? traits![trait]!.level! : 0 })); const max = Math.max(0, ...levels.map((entry) => entry.level)); const candidates = levels.filter((entry) => entry.level === max).map((entry) => entry.trait); return !max ? 'BASE' : previous && previous !== 'BASE' && candidates.includes(previous) ? previous : candidates[0] ?? 'BASE' }
+export const TRAITS = ADAPTATION_IDS
+export const TOTAL_ROUNDS = SHARED_TOTAL_ROUNDS
+export const FINAL_ROUND_NUMBER = TOTAL_ROUNDS
+export const BASE_USE_VALUE = SHARED_BASE_USE_VALUE
+export const MAX_TRAIT_LEVEL = SHARED_MAX_ADAPTATION_LEVEL
+export const LEVEL_BONUS = SHARED_LEVEL_BONUS
+export const ROOM_CODE_LENGTH = 5
+export const TRAIT_LABELS: Record<AdaptationId, string> = Object.fromEntries(
+    ADAPTATION_IDS.map((adaptation) => [adaptation, getAdaptationLabel(adaptation)]),
+) as Record<AdaptationId, string>
+export function createInitialTraits(): AdaptationCollection {
+    return createInitialAdaptations()
+}
+export { generateRoundEventSequence }
+export function normalizeTraitCollection(
+    value: Partial<Record<AdaptationId, { level?: unknown; exhausted?: unknown }>> | null | undefined,
+): AdaptationCollection {
+    return normalizeAdaptationCollection(value)
+}
 export { ADAPTATION_CATALOG as TRAIT_CATALOG }

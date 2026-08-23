@@ -6,9 +6,11 @@ import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { CollectionScreen } from '../screens/collection/CollectionScreen'
 import { LeaderboardScreen } from '../screens/ranking/LeaderboardScreen'
 import { CreatureVisualProgressionScreen } from '../components/creature-visual-progression/CreatureVisualProgressionScreen'
-import { CreatureTransformationLab } from '../components/creature-transformation-lab/CreatureTransformationLab'
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
-import type { UiPreviewRoute } from './uiPreviewRoute'
+import { ScreenTransition } from '../ui/ScreenTransition'
+import { Button } from '../ui/components'
+import { SCREEN_DEPTH, type ScreenId } from '../app/screen-depth'
+import type { UiPreviewRoute } from './ui-preview-route'
 import {
     PREVIEW_CREATURE,
     PREVIEW_GENES,
@@ -18,7 +20,7 @@ import {
     PREVIEW_VISUAL_HISTORY,
     buildPreviewBattleViewModel,
     buildPreviewHomeViewModel,
-} from './uiPreviewFixtures'
+} from './ui-preview-fixtures'
 
 const noop = () => undefined
 const asyncNoop = async () => undefined
@@ -58,6 +60,7 @@ function BattlePreview() {
             onUseGene={asyncNoop}
             onEvolveGene={asyncNoop}
             onActivateSymbiosis={async () => false}
+            onActivateFineDelMondo={async () => false}
             onLeaveSession={noop}
         />
     )
@@ -79,7 +82,6 @@ function ProfilePreview() {
             visualVersionNumber={3}
             visualTrait="Arti slanciati"
             onOpenEvolution={noop}
-            onOpenBackgroundCleanup={noop}
         />
     )
 }
@@ -144,12 +146,65 @@ function EvolutionPreview() {
     )
 }
 
+const TRANSITION_STOPS = [
+    { id: 'home', label: 'Home', render: () => <HomePreview /> },
+    { id: 'collection', label: 'Collezione', render: () => <CollectionPreview /> },
+    { id: 'profile', label: 'Creatura', render: () => <ProfilePreview /> },
+    { id: 'ranking', label: 'Classifica', render: () => <RankingPreview /> },
+    { id: 'creature-evolution', label: 'Evoluzione', render: () => <EvolutionPreview /> },
+    { id: 'battle', label: 'Battaglia', render: () => <BattlePreview /> },
+] as const satisfies ReadonlyArray<{ id: ScreenId; label: string; render: () => React.JSX.Element }>
+
 /**
- * The lab talks to the transformation API on mount. Without a session those calls fail, which is
- * fine for design iteration: the panels, controls and the error state all render.
+ * Inline rather than in a stylesheet, and that is the whole point: Vite tree-shakes the JS of a
+ * dev-only route out of the production bundle but **never tree-shakes CSS**. A `.css` file imported
+ * from here ships to players even though nothing can render it. Styles that live in the component
+ * leave with it.
+ *
+ * Tokens, not literals — this bar is internal, but §3 still applies.
  */
-function LabPreview() {
-    return <CreatureTransformationLab creature={PREVIEW_CREATURE} onBack={noop} />
+const PREVIEW_MOVES_STYLE: React.CSSProperties = {
+    position: 'fixed',
+    top: 'calc(var(--ev-safe-top) + var(--ev-s-2))',
+    right: 'var(--ev-s-2)',
+    left: 'var(--ev-s-2)',
+    zIndex: 100,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 'var(--ev-s-1)',
+    justifyContent: 'center',
+}
+
+/**
+ * The motion layer on its own.
+ *
+ * The real transitions all sit behind authentication, so this is the only place the three moves can
+ * be watched side by side: cross-fade between the dock's destinations, push into the evolution
+ * screen or a battle, pop back out.
+ */
+function TransitionsPreview() {
+    const [stopId, setStopId] = useState<ScreenId>('home')
+    const stop = TRANSITION_STOPS.find((candidate) => candidate.id === stopId) ?? TRANSITION_STOPS[0]
+
+    return (
+        <>
+            <ScreenTransition screenKey={stop.id} depth={SCREEN_DEPTH[stop.id]}>
+                {stop.render()}
+            </ScreenTransition>
+            <nav className="ev-preview-moves" style={PREVIEW_MOVES_STYLE} aria-label="Anteprima transizioni">
+                {TRANSITION_STOPS.map((candidate) => (
+                    <Button
+                        key={candidate.id}
+                        tone={candidate.id === stopId ? 'gold' : 'cream'}
+                        size="sm"
+                        onClick={() => setStopId(candidate.id)}
+                    >
+                        {`${candidate.label} · ${SCREEN_DEPTH[candidate.id]}`}
+                    </Button>
+                ))}
+            </nav>
+        </>
+    )
 }
 
 /** Development-only rendering of the product screens, used for design iteration. */
@@ -178,8 +233,8 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
         return <DraftPreview />
     }
 
-    if (route === 'lab') {
-        return <LabPreview />
+    if (route === 'transitions') {
+        return <TransitionsPreview />
     }
 
     return <HomePreview />

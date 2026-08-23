@@ -19,6 +19,21 @@ describe('LeaderboardScreen', () => {
         container.remove()
     })
 
+    it('lets the list assemble instead of appearing all at once', () => {
+        act(() => {
+            root.render(createElement(LeaderboardScreen, {
+                onBack: vi.fn(),
+                onOpenCollection: vi.fn(),
+                onOpenProfile: vi.fn(),
+                onLogout: vi.fn(),
+                previewEntries: [{ position: 1, nickname: 'Aquila', skillRating: 1086 }],
+            }))
+        })
+
+        // The cascade is a class on the container and nothing in the rows; dropping it is silent.
+        expect(container.querySelector('.leaderboard-list')?.classList.contains('ev-stagger')).toBe(true)
+    })
+
     it('renders the supplied competitive leaderboard in rating order', () => {
         act(() => {
             root.render(createElement(LeaderboardScreen, {

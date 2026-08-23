@@ -160,6 +160,12 @@
     /* Chunky "toy" lip under pressable surfaces. */
     --ev-lip: inset 0 -4px 0 rgba(0, 0, 0, .22), inset 0 2px 0 rgba(255, 255, 255, .38);
     --ev-lip-cream: inset 0 -3px 0 rgba(160, 138, 92, .28), inset 0 2px 0 rgba(255, 255, 255, .9);
+    /*
+     * The same lip, compressed. A pressed control sinks *into* its own edge — moving the whole thing
+     * down, lip included, reads as sliding rather than depressing.
+     */
+    --ev-lip-pressed: inset 0 -1px 0 rgba(0, 0, 0, .26), inset 0 1px 0 rgba(255, 255, 255, .28);
+    --ev-lip-cream-pressed: inset 0 -1px 0 rgba(160, 138, 92, .34), inset 0 1px 0 rgba(255, 255, 255, .7);
 
     /* Type scale. */
     --ev-fs-2xs: .625rem;
@@ -209,12 +215,37 @@
     --ev-mutation-slot-size-compact: 28px;
     --ev-mutation-consumed-opacity: .5;
     --ev-mutation-consumed-grayscale: .85;
-    --ev-battle-round-pill-min-width: 132px;
+    /*
+     * The VS badge is an oval, not a disc: shortening it is what frees the room for the round dots to
+     * sit under it inside the header, instead of taking a row of their own below it.
+     */
+    --ev-battle-vs-height: 26px;
     --ev-battle-arena-basis: 156px;
     --ev-battle-arena-basis-medium: 126px;
     --ev-battle-arena-basis-compact: 102px;
     --ev-battle-arena-basis-tight: 68px;
     --ev-battle-decision-overlap: 22px;
+    /*
+     * The round decision is a fixed-size control surface, not a box that grows with its copy.
+     *
+     * Its hint says something different for every adaptation, and it sits under the one elastic block
+     * on the screen — so a hint that wrapped to two lines for one gene and one line for the next moved
+     * the arena, and the creatures jumped every time the player walked the gene row. A definite height
+     * ends that by construction: nothing inside the button can change the height of anything outside it.
+     * The line count is a token too, because a shorter button has to be told to ask for less prose
+     * rather than clip it.
+     */
+    --ev-action-btn-height: 66px;
+    --ev-action-btn-hint-lines: 2;
+    /*
+     * Gene orbs. The base size is what five of them need to sit side by side on a 320px screen; the
+     * selected one grows by `scale` rather than by width, so it can rise above the row without
+     * pushing its neighbours or re-laying the names out.
+     */
+    --ev-gene-orb-size: 52px;
+    --ev-gene-orb-selected-scale: 1.34;
+    /* The level studs set into the ring: rhombi, one per level, so only the side length varies. */
+    --ev-gene-orb-stud: 8px;
     --ev-z-overlay: 10;
 
     /* Motion. */
@@ -222,6 +253,44 @@
     --ev-dur-fast: 120ms;
     --ev-dur-base: 220ms;
     --ev-dur-slow: 420ms;
+
+    /*
+     * Screen changes.
+     *
+     * `--ev-ease` is deliberately front-loaded — it snaps, which is what a 46px button wants. A
+     * whole screen crossing 390px wants the opposite: it is done 82% of the way through 30% of
+     * `--ev-ease`, so the move would flick and then sit still for the rest of its duration. This
+     * curve spreads the travel across the whole 300ms instead, which is what makes it read as one
+     * surface moving rather than a cut.
+     *
+     * Both layers share it, so a push stays rigid: two curves would visibly shear them apart.
+     */
+    --ev-ease-screen: cubic-bezier(.25, .46, .45, .94);
+    --ev-dur-screen: 300ms;
+
+    /*
+     * Presses. A control goes down fast and comes back slowly, and the return overshoots — that
+     * asymmetry is the whole difference between a button that responds and one that feels sprung.
+     * Both halves are needed: the press-in timing lives on `:active`, the release on the base rule.
+     */
+    --ev-ease-spring: cubic-bezier(.34, 1.5, .64, 1);
+    --ev-dur-press: 80ms;
+    --ev-dur-release: 260ms;
+    --ev-press-sink: 3px;
+    --ev-press-scale: .972;
+
+    /*
+     * Lists assemble instead of appearing. `--ev-stagger-max` caps the cascade: past it every
+     * remaining row shares one delay, so a long list never keeps the player waiting for its tail.
+     */
+    --ev-stagger-step: 34ms;
+    --ev-stagger-max: 340ms;
+    --ev-stagger-rise: 10px;
+    /* The arriving screen travels; the departing one only drifts, and that gap reads as depth. */
+    --ev-screen-shift: 15%;
+    --ev-screen-shift-parallax: 5%;
+    /* How far a cross-fading screen blooms up from. Small: the dock must not appear to move. */
+    --ev-screen-bloom: .985;
 }
 
 /** Per-gene theming: set `data-gene` on any element to expose its hue as local tokens. */
@@ -260,5 +329,23 @@
         --ev-dur-fast: 1ms;
         --ev-dur-base: 1ms;
         --ev-dur-slow: 1ms;
+        --ev-dur-screen: 1ms;
+        /* Collapse the travel too: a 1ms slide is a jump, a 1ms cut is a cut. */
+        --ev-screen-shift: 0%;
+        --ev-screen-shift-parallax: 0%;
+        --ev-screen-bloom: 1;
+
+        /*
+         * The press keeps its sink and its scale. Those are not decoration — they are how a control
+         * says it registered the touch — and direct manipulation is what reduced motion exempts.
+         * What goes is the spring: the timings collapse, so the state changes without travelling.
+         */
+        --ev-dur-press: 1ms;
+        --ev-dur-release: 1ms;
+
+        /* The cascade goes entirely: a list appears at once. */
+        --ev-stagger-step: 0ms;
+        --ev-stagger-max: 0ms;
+        --ev-stagger-rise: 0px;
     }
 }

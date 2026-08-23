@@ -4,9 +4,6 @@ import type {
     CreatureTransformationRequest,
     CreatureVisualProgressResponse,
     GenerateUnlockedTransformationRequest,
-    GenerateFluxEvolutionChainStepRequest,
-    RunSeedreamDiagnosticRequest,
-    SelectCreatureVisualProgressTrackRequest,
     GetCreatureVisualProgressRequest,
     GetCurrentCreatureVisualRequest,
     GetGameCreatureVisualsRequest,
@@ -14,21 +11,13 @@ import type {
     RollbackCreatureVisualVersionRequest,
     AdoptCreatureTransformationResponse,
     GetTransformationRequestStatusRequest,
-    GetCreatureTransformationLabUsageRequest,
-    GetGeneratedImageCatalogRequest,
     SubmitBackgroundRemovalCandidateRequest,
-    ListVisualBackgroundCleanupRequest,
-    SubmitVisualBackgroundCleanupRequest,
-    ListVisualBackgroundCleanupResponse,
-    SubmitVisualBackgroundCleanupResponse,
     TransformationRequestStatusResponse,
-    CreatureTransformationLabUsageResponse,
-    GeneratedImageCatalogResponse,
     CurrentCreatureVisualApiResponse,
     GameCreatureVisualsResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
-import { reuseCreatureVisualUrl } from './creature-visual-url-cache'
+import { reuseCreatureVisualHistoryUrls, reuseCreatureVisualUrl } from './creature-visual-url-cache'
 
 type FunctionInvokeError = Error & { context?: unknown }
 
@@ -154,26 +143,14 @@ export async function getCreatureTransformationRequestStatus(
     return invokeCreatureTransformation<TransformationRequestStatusResponse>(request, invoker)
 }
 
-export async function getCreatureTransformationLabUsage(
-    request: GetCreatureTransformationLabUsageRequest = { operation: 'GET_LAB_USAGE' },
+export async function getCreatureVisualProgress(
+    request: GetCreatureVisualProgressRequest,
     invoker?: CreatureTransformationFunctionInvoker,
-): Promise<CreatureTransformationLabUsageResponse> {
-    return invokeCreatureTransformation<CreatureTransformationLabUsageResponse>(request, invoker)
-}
-
-export async function getGeneratedImageCatalog(
-    request: GetGeneratedImageCatalogRequest = { operation: 'GET_GENERATED_IMAGE_CATALOG' },
-    invoker?: CreatureTransformationFunctionInvoker,
-): Promise<GeneratedImageCatalogResponse> {
-    return invokeCreatureTransformation<GeneratedImageCatalogResponse>(request, invoker)
-}
-
-export async function selectCreatureVisualProgressTrack(request: SelectCreatureVisualProgressTrackRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<CreatureVisualProgressResponse> {
-    return invokeCreatureTransformation<CreatureVisualProgressResponse>(request, invoker)
-}
-
-export async function getCreatureVisualProgress(request: GetCreatureVisualProgressRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<CreatureVisualProgressResponse> {
-    return invokeCreatureTransformation<CreatureVisualProgressResponse>(request, invoker)
+): Promise<CreatureVisualProgressResponse> {
+    const response = await invokeCreatureTransformation<CreatureVisualProgressResponse>(request, invoker)
+    // The history is the heaviest carrier of signed URLs, so it is where a fresh signature costs
+    // the most: without this every profile refresh re-downloads every past form.
+    return { ...response, history: reuseCreatureVisualHistoryUrls(response.history) }
 }
 
 export async function getCurrentCreatureVisual(request: GetCurrentCreatureVisualRequest, invoker?: CreatureTransformationFunctionInvoker) {
@@ -190,25 +167,8 @@ export async function generateUnlockedCreatureTransformation(request: GenerateUn
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { accepted: true }>>(request, invoker)
 }
 
-export async function generateFluxEvolutionChainStep(request: GenerateFluxEvolutionChainStepRequest, invoker?: CreatureTransformationFunctionInvoker) {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { accepted: true }>>(request, invoker)
-}
-
-/** Runs an isolated Seedream parity diagnostic. Its result is always experiment-only. */
-export async function runSeedreamDiagnostic(request: RunSeedreamDiagnosticRequest, invoker?: CreatureTransformationFunctionInvoker) {
-    return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { accepted: true }>>(request, invoker)
-}
-
 export async function submitBackgroundRemovalCandidate(request: SubmitBackgroundRemovalCandidateRequest, invoker?: CreatureTransformationFunctionInvoker) {
     return invokeCreatureTransformation<Extract<CreatureTransformationApiResponse, { candidate: unknown }>>(request, invoker)
-}
-
-export async function listVisualBackgroundCleanup(request: ListVisualBackgroundCleanupRequest = { operation: 'LIST_VISUAL_BACKGROUND_CLEANUP' }, invoker?: CreatureTransformationFunctionInvoker): Promise<ListVisualBackgroundCleanupResponse> {
-    return invokeCreatureTransformation<ListVisualBackgroundCleanupResponse>(request, invoker)
-}
-
-export async function submitVisualBackgroundCleanup(request: SubmitVisualBackgroundCleanupRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<SubmitVisualBackgroundCleanupResponse> {
-    return invokeCreatureTransformation<SubmitVisualBackgroundCleanupResponse>(request, invoker)
 }
 
 export async function adoptCreatureTransformation(request: AdoptCreatureTransformationRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<AdoptCreatureTransformationResponse> {

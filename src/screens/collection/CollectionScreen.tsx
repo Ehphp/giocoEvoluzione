@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
-import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
+import { ASSETS, fallbackToDefaultCreatureImage, srcSetFor } from '../../ui/assets'
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, Chip, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
 import { AddIcon, CloseIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
-import { buildCollectionViewModel } from './buildCollectionViewModel'
+import { buildCollectionViewModel } from './build-collection-view-model'
 import type { CollectionForm } from './types'
 
 import './CollectionScreen.css'
@@ -98,7 +98,7 @@ function LineageTimeline({ forms, selectedFormId, onSelectForm }: FormSelectionP
 
 function FormCatalog({ forms, selectedFormId, onSelectForm }: FormSelectionProps) {
     return (
-        <section className="collection-catalog" aria-label="Catalogo delle forme sbloccate">
+        <section className="collection-catalog ev-stagger" aria-label="Catalogo delle forme sbloccate">
             {forms.map((form) => {
                 const isSelected = form.id === selectedFormId
 
@@ -145,6 +145,7 @@ export function CollectionScreen({
     onSelectVisualVersion,
     lineageVisuals,
 }: CollectionScreenProps) {
+    // --- derived: which lineages exist and which one is active ------------------
     const availableLineages = useMemo(() => lineages?.length ? lineages : [{
         id: creature.lineage_id,
         profile_id: creature.profile_id,
@@ -155,6 +156,7 @@ export function CollectionScreen({
         creature,
     }], [creature, lineages])
     const resolvedActiveLineageId = activeLineageId ?? availableLineages[0]!.id
+    // --- state (selectedLineageId is seeded from the derived active lineage) ----
     const [selectedLineageId, setSelectedLineageId] = useState(resolvedActiveLineageId)
     const [isCreatingLineage, setIsCreatingLineage] = useState(false)
     const [lineageCreationError, setLineageCreationError] = useState<string | null>(null)
@@ -163,6 +165,7 @@ export function CollectionScreen({
     const [lineageDeletionError, setLineageDeletionError] = useState<string | null>(null)
     const [isSelectingVisualVersion, setIsSelectingVisualVersion] = useState(false)
     const [visualSelectionError, setVisualSelectionError] = useState<string | null>(null)
+    // --- derived: the selected lineage and its view model ----------------------
     const selectedLineage = availableLineages.find((lineage) => lineage.id === selectedLineageId) ?? availableLineages[0]!
     const selectedVisual = lineageVisuals?.[selectedLineage.id]
     const selectedCreature = selectedLineage.creature
@@ -178,7 +181,9 @@ export function CollectionScreen({
     })
     const activeFormId = viewModel.evolutionForms.find((form) => form.isActive)?.id ?? viewModel.evolutionForms.at(-1)?.id ?? ''
     const initialSelectedFormId = activeFormId
+    // --- state (seeded from the view model) ------------------------------------
     const [selectedFormId, setSelectedFormId] = useState(initialSelectedFormId)
+    // --- effects ---------------------------------------------------------------
     useEffect(() => {
         if (!availableLineages.some((lineage) => lineage.id === selectedLineageId)) {
             setSelectedLineageId(resolvedActiveLineageId)
@@ -187,15 +192,18 @@ export function CollectionScreen({
     useEffect(() => {
         setSelectedFormId(activeFormId)
     }, [activeFormId, selectedLineage.id])
+    // --- derived: needed by the guard below, so it must follow the hooks -------
     const selectedForm = viewModel.evolutionForms.find((form) => form.id === selectedFormId)
         ?? viewModel.evolutionForms.find((form) => form.isActive)
         ?? viewModel.evolutionForms.at(-1)
+
 
     if (!selectedForm) return null
 
     const selectedVisualHistory = selectedVisual?.visualHistory ?? (selectedLineage.id === resolvedActiveLineageId ? visualHistory : undefined)
     const currentSelectedVisualVersionId = selectedVisual?.currentVisualVersionId ?? (selectedLineage.id === resolvedActiveLineageId ? currentVisualVersionId : null)
     const canSetSelectedForm = Boolean(onSelectVisualVersion && currentSelectedVisualVersionId && selectedVisualHistory?.some((entry) => entry.id === selectedForm.id) && selectedForm.id !== currentSelectedVisualVersionId)
+    // --- handlers --------------------------------------------------------------
 
     function handleNavigate(tab: DockTab) {
         if (tab === 'battle') onBack()
@@ -285,7 +293,14 @@ export function CollectionScreen({
                                 <ProgressBar current={viewModel.player.experience.current} total={viewModel.player.experience.required} label="Esperienza del giocatore" />
                             </div>
                         </div>
-                        <img className="collection-logo" src={ASSETS.branding.logo} alt="Evori" />
+                        {/* A 30px brand mark in the top bar: without `sizes` this alone would pull the 900w file. */}
+                        <img
+                            className="collection-logo"
+                            src={ASSETS.branding.logo}
+                            srcSet={srcSetFor(ASSETS.branding.logo)}
+                            sizes="min(28vw, 30px)"
+                            alt="Evori"
+                        />
                         <div className="collection-topbar__actions">
                             <Pill className={isOnline ? 'is-online' : 'is-offline'}>{isOnline ? 'Online' : 'Offline'}</Pill>
                             <IconButton label="Esci dall account" variant="danger" onClick={onLogout}><ExitIcon /></IconButton>

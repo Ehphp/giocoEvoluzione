@@ -2,7 +2,7 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildGuestHomeViewModel } from './buildHomeViewModel'
+import { buildGuestHomeViewModel } from './build-home-view-model'
 import { HomeScreen } from './HomeScreen'
 import type { HomeActions, HomeViewModel } from './types'
 
@@ -44,7 +44,7 @@ function createVisualLineageViewModel(): HomeViewModel {
         name: 'Verdante',
         image: {
             src: '/assets/form-3.png',
-            fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
+            fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp',
             alt: 'Verdante, Generazione 2',
         },
         visualVersions: [
@@ -52,14 +52,14 @@ function createVisualLineageViewModel(): HomeViewModel {
                 id: 'form-1',
                 generation: 1,
                 name: 'Forma base',
-                image: { src: '/assets/form-1.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png', alt: 'Verdante, Generazione 0' },
+                image: { src: '/assets/form-1.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp', alt: 'Verdante, Generazione 0' },
                 isCurrent: false,
             },
             {
                 id: 'form-3',
                 generation: 3,
                 name: 'Arti slanciati',
-                image: { src: '/assets/form-3.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png', alt: 'Verdante, Generazione 2' },
+                image: { src: '/assets/form-3.png', fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp', alt: 'Verdante, Generazione 2' },
                 isCurrent: true,
             },
         ],
@@ -100,7 +100,7 @@ describe('HomeScreen', () => {
 
         const logo = container.querySelector<HTMLImageElement>('.home-brand__logo')!
 
-        expect(logo.getAttribute('src')).toBe('/assets/branding/evori-logo.png')
+        expect(logo.getAttribute('src')).toBe('/assets/branding/evori-logo.webp')
         expect(logo.getAttribute('alt')).toBe('Evori')
         expect(container.querySelector('[data-testid="home-creature-stage"]')).not.toBeNull()
         expect(container.querySelectorAll('.home-stage__creature')).toHaveLength(1)
@@ -252,7 +252,7 @@ describe('HomeScreen', () => {
             evolution: { current: 2, total: 5 },
             image: {
                 src: '/assets/missing-creature.png',
-                fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
+                fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp',
                 alt: 'Verdante',
             },
             visualVersions: [{
@@ -261,7 +261,7 @@ describe('HomeScreen', () => {
                 name: 'Forma iniziale',
                 image: {
                     src: '/assets/missing-creature.png',
-                    fallbackSrc: '/assets/battle/creatures/verdant-hatchling.png',
+                    fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp',
                     alt: 'Verdante',
                 },
                 isCurrent: true,
@@ -279,7 +279,7 @@ describe('HomeScreen', () => {
 
         act(() => creatureImage.dispatchEvent(new Event('error')))
 
-        expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.png')
+        expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.webp')
     })
 
     it('opens the active creature description when its image is selected', () => {

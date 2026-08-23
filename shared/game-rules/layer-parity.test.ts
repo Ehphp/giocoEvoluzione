@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildGeneSelectionV2ViewModel } from '../../src/components/game-v2/controller/buildGeneSelectionV2ViewModel.ts'
+import { buildGeneSelectionV2ViewModel } from '../../src/screens/battle/controller/build-gene-selection-v2-view-model.ts'
 import { getValidatedTraitUseBreakdown } from '../../src/game/scoring.ts'
 import { getWorldById } from '../../src/game/worlds.ts'
 import type { GameRecord, GameSnapshot, PlayerRecord, RoundResultRecord } from '../../src/lib/game-api.ts'
@@ -47,7 +47,11 @@ function eventWith(modifiers: Partial<Record<AdaptationId, 0 | 1 | 2>> = {}): En
     }
 }
 
-const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): DirectPlayerRoundAction => ({ playerId, trait, actionType })
+const action = (playerId: string, trait: AdaptationId, actionType: 'USE' | 'EVOLVE'): DirectPlayerRoundAction => ({
+    playerId,
+    trait,
+    actionType,
+})
 
 function withState(trait: AdaptationId, level: AdaptationLevel, exhausted: boolean): AdaptationCollection {
     const adaptations = createInitialAdaptations()
@@ -441,8 +445,8 @@ describe('deterministic cross-layer oracle', () => {
         }
         expect(frontend.canUse).toBe(!scenario.player1Traits[scenario.player1Action.trait].exhausted)
         expect(frontend.canEvolve).toBe(
-            scenario.player1Traits[scenario.player1Action.trait].level < 2
-            || scenario.player1Traits[scenario.player1Action.trait].exhausted,
+            scenario.player1Traits[scenario.player1Action.trait].level < 2 ||
+                scenario.player1Traits[scenario.player1Action.trait].exhausted,
         )
     })
 
@@ -487,12 +491,14 @@ describe('deterministic cross-layer oracle', () => {
         }
         const frontend = buildFrontendModel(scenario)
 
-        expect(getValidatedActionBreakdown(
-            scenario.roundEvent,
-            scenario.player1Traits,
-            scenario.player1Action.trait,
-            'EVOLVE',
-        ).total).toBe(1)
+        expect(
+            getValidatedActionBreakdown(
+                scenario.roundEvent,
+                scenario.player1Traits,
+                scenario.player1Action.trait,
+                'EVOLVE',
+            ).total,
+        ).toBe(1)
         expect(frontend.canEvolve).toBe(false)
         expect(() => resolveRound(roundInput)).toThrow('no transition')
         expect(() => buildPersistedRoundResolution(persistedInput)).toThrow('no transition')

@@ -18,6 +18,8 @@ describe('visual progression migration', () => {
         expect(migration).toMatch(/rollback_creature_visual_version/i)
         expect(migration).toMatch(/alter table public\.creature_visual_versions enable row level security/i)
         expect(migration).toMatch(/revoke all on public\.creature_visual_versions.*authenticated/is)
-        expect(migration).not.toMatch(/grant (insert|update|delete) on public\.creature_visual_versions to authenticated/i)
+        expect(migration).not.toMatch(
+            /grant (insert|update|delete) on public\.creature_visual_versions to authenticated/i,
+        )
     })
 })

@@ -1,4 +1,7 @@
-import type { CreatureSemanticIdentity, ResolvedCreatureSource } from '../../../shared/creature-transformations/contracts.ts'
+import type {
+    CreatureSemanticIdentity,
+    ResolvedCreatureSource,
+} from '../../../shared/creature-transformations/contracts.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import type { BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
@@ -15,10 +18,17 @@ export const TEST_CREATURE_IDENTITY: CreatureSemanticIdentity = {
 }
 
 /** A resolved source whose canonical body plan is derived exactly as production derives it. */
-export function createResolvedCreatureSource(overrides: Partial<ResolvedCreatureSource> & { previousTransformations?: PreviousCreatureTransformationSummary[] } = {}): ResolvedCreatureSource {
+export function createResolvedCreatureSource(
+    overrides: Partial<ResolvedCreatureSource> & {
+        previousTransformations?: PreviousCreatureTransformationSummary[]
+    } = {},
+): ResolvedCreatureSource {
     const previousTransformations = overrides.previousTransformations ?? []
-    const adoptedBodyPlanMutationIds = overrides.adoptedBodyPlanMutationIds
-        ?? previousTransformations.flatMap((entry): BodyPlanMutationId[] => (entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : []))
+    const adoptedBodyPlanMutationIds =
+        overrides.adoptedBodyPlanMutationIds ??
+        previousTransformations.flatMap((entry): BodyPlanMutationId[] =>
+            entry.bodyPlanMutationId ? [entry.bodyPlanMutationId] : [],
+        )
     return {
         identity: TEST_CREATURE_IDENTITY,
         sourceImagePath: 'verdant-hatchling-v1.png',
@@ -28,13 +38,20 @@ export function createResolvedCreatureSource(overrides: Partial<ResolvedCreature
         currentVersionNumber: 1,
         previousTransformations,
         adoptedBodyPlanMutationIds,
-        bodyPlan: resolveCanonicalBodyPlan({ baseCreatureKey: TEST_CREATURE_IDENTITY.baseCreatureKey, adoptedBodyPlanMutationIds }),
+        bodyPlan: resolveCanonicalBodyPlan({
+            baseCreatureKey: TEST_CREATURE_IDENTITY.baseCreatureKey,
+            adoptedBodyPlanMutationIds,
+        }),
         ...overrides,
     }
 }
 
 export function createTestResolver(source = createResolvedCreatureSource()) {
-    return { async resolve() { return source } }
+    return {
+        async resolve() {
+            return source
+        },
+    }
 }
 
 /** Accepts the canonical source render on odd calls and the raw FLUX render on even ones. */
@@ -62,12 +79,24 @@ export class FluxTestValidator extends ImageValidator {
 
 export function createTestStorage(overrides: Record<string, unknown> = {}) {
     return {
-        async readCanonicalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
-        async readExperimentalSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
-        async readVisualVersionSource() { return { bytes: createTestPng(), mimeType: 'image/png' as const } },
-        async saveRawResult() { return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
-        async createVisualVersionSignedUrl() { return { signedUrl: 'https://signed.example/source.png', expiresAt: '2030-01-01T00:00:00.000Z' } },
-        async createRawResultObjectPath() { return `experiments/raw/profile-1/${'a'.repeat(64)}.png` },
+        async readCanonicalSource() {
+            return { bytes: createTestPng(), mimeType: 'image/png' as const }
+        },
+        async readExperimentalSource() {
+            return { bytes: createTestPng(), mimeType: 'image/png' as const }
+        },
+        async readVisualVersionSource() {
+            return { bytes: createTestPng(), mimeType: 'image/png' as const }
+        },
+        async saveRawResult() {
+            return { signedUrl: 'https://signed.example/raw.png', expiresAt: '2030-01-01T00:00:00.000Z' }
+        },
+        async createVisualVersionSignedUrl() {
+            return { signedUrl: 'https://signed.example/source.png', expiresAt: '2030-01-01T00:00:00.000Z' }
+        },
+        async createRawResultObjectPath() {
+            return `experiments/raw/profile-1/${'a'.repeat(64)}.png`
+        },
         ...overrides,
     }
 }

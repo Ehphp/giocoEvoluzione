@@ -1,4 +1,5 @@
 import { Badge } from './components'
+import { playCue } from './feedback/feedback'
 import { BattleIcon, CollectionIcon, LockIcon, ProfileIcon, RankingIcon, ShopIcon } from './icons'
 
 /**
@@ -59,7 +60,10 @@ export function Dock({ active, capabilities, onNavigate, badges, locked = false 
                             aria-current={isActive ? 'page' : undefined}
                             aria-label={isAvailable ? item.label : `${item.label} — disponibile presto`}
                             disabled={isDisabled}
-                            onClick={() => onNavigate(item.id)}
+                            onClick={() => {
+                                playCue('tap')
+                                onNavigate(item.id)
+                            }}
                         >
                             <span className="ev-dock__icon" aria-hidden="true">{item.icon}</span>
                             <span>{item.label}</span>

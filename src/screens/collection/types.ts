@@ -1,5 +1,5 @@
 import type { PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
-import type { CreatureVisualVersionSource } from '../../components/creature-visual-progression/visualVersions'
+import type { CreatureVisualVersionSource } from '../../components/creature-visual-progression/visual-versions'
 
 export type CollectionForm = {
     id: string

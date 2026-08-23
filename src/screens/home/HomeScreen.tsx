@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { Dock, type DockTab } from '../../ui/Dock'
 import { AppShell, Avatar, Button, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SheetHeader } from '../../ui/components'
 import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
-import { ASSETS } from '../../ui/assets'
+import { ASSETS, srcSetFor } from '../../ui/assets'
 import { PlayModesSheet } from './parts/PlayModesSheet'
-import { measureCreatureSubject, type CreatureSubject } from './creatureSubjectFit'
+import { measureCreatureSubject, type CreatureSubject } from './creature-subject-fit'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
 
 import './HomeScreen.css'
@@ -15,7 +15,12 @@ type HomeScreenProps = {
     actions: HomeActions
 }
 
-function CreatureArt({ image }: { image: HomeCreatureImage }) {
+/**
+ * The carousel mounts one of these per past form. Only the form on screen is worth fetching, and
+ * only that one is worth measuring: the measurement loads its own copy of the sprite, so measuring
+ * every slide would double an already unnecessary download.
+ */
+function CreatureArt({ image, isActive }: { image: HomeCreatureImage; isActive: boolean }) {
     const [source, setSource] = useState(image.src)
     const [hasFailed, setHasFailed] = useState(false)
     const [subject, setSubject] = useState<CreatureSubject | null>(null)
@@ -31,6 +36,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
      * the file rather than by the creature in it.
      */
     useEffect(() => {
+        if (!isActive) return
         let isCurrent = true
 
         setSubject(null)
@@ -41,7 +47,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
         })
 
         return () => { isCurrent = false }
-    }, [source])
+    }, [isActive, source])
 
     const style = {
         '--home-creature-scale': image.scale ?? 1,
@@ -64,6 +70,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
             className={`home-stage__creature ${subject ? 'home-stage__creature--fitted' : ''}`}
             src={source}
             alt={image.alt}
+            loading={isActive ? 'eager' : 'lazy'}
             style={style}
             onError={() => {
                 if (source !== image.fallbackSrc) {
@@ -79,20 +86,30 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
 }
 
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
+    // --- state -----------------------------------------------------------------
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
     const [isCreatureDescriptionOpen, setIsCreatureDescriptionOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
+    // --- derived ---------------------------------------------------------------
     const creatureCarouselRef = useRef<HTMLDivElement>(null)
     const dragStartRef = useRef<{ x: number; scrollLeft: number } | null>(null)
     const visualVersions = viewModel.creature?.visualVersions ?? []
     const currentVisualId = visualVersions.find((version) => version.isCurrent)?.id ?? visualVersions.at(-1)?.id ?? ''
     const currentVisualIndex = visualVersions.findIndex((version) => version.id === currentVisualId)
     const visualVersionKey = visualVersions.map((version) => version.id).join(',')
+    // --- state (seeded from the current visual above) ---------------------------
     const [selectedVisualId, setSelectedVisualId] = useState(currentVisualId)
+    // --- derived ---------------------------------------------------------------
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
     const closeCreatureDescription = useCallback(() => setIsCreatureDescriptionOpen(false), [])
+    const displayName = viewModel.player.displayName ?? 'Allenatore locale'
+    const experience = viewModel.player.experience
+    const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
+        ?? visualVersions.find((version) => version.isCurrent)
+        ?? visualVersions.at(-1)
 
+    // --- effects ---------------------------------------------------------------
     useEffect(() => {
         setBackgroundSource(viewModel.stage.backgroundSrc)
     }, [viewModel.stage.backgroundSrc])
@@ -105,13 +122,7 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
             carousel.scrollLeft = currentVisualIndex * Math.max(carousel.clientWidth, 1)
         }
     }, [currentVisualId, currentVisualIndex, visualVersionKey])
-
-    const displayName = viewModel.player.displayName ?? 'Allenatore locale'
-    const experience = viewModel.player.experience
-    const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
-        ?? visualVersions.find((version) => version.isCurrent)
-        ?? visualVersions.at(-1)
-
+    // --- handlers --------------------------------------------------------------
     function selectVisualAt(index: number) {
         const version = visualVersions[index]
         const carousel = creatureCarouselRef.current
@@ -196,7 +207,14 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                 </header>
 
                 <h1 className="home-brand">
-                    <img className="home-brand__logo" src={ASSETS.branding.logo} alt="Evori" />
+                    {/* `min(78%, 300px)` of a shell capped at --ev-app-max-width, dropping to 170px when short. */}
+                    <img
+                        className="home-brand__logo"
+                        src={ASSETS.branding.logo}
+                        srcSet={srcSetFor(ASSETS.branding.logo)}
+                        sizes="(max-height: 600px) 170px, min(78vw, 300px)"
+                        alt="Evori"
+                    />
                 </h1>
 
                 {viewModel.notices.length ? (
@@ -279,9 +297,9 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                                     onClick={() => setIsCreatureDescriptionOpen(true)}
                                                     data-testid="home-creature-description-trigger"
                                                 >
-                                                    <CreatureArt image={version.image} />
+                                                    <CreatureArt image={version.image} isActive />
                                                 </button>
-                                            ) : <CreatureArt image={version.image} />}
+                                            ) : <CreatureArt image={version.image} isActive={version.id === selectedVisual?.id} />}
                                         </div>
                                     )
                                 })}
