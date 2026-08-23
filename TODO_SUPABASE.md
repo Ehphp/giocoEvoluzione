@@ -11,6 +11,33 @@ invece di restare solo nel messaggio di una conversazione.
 
 ---
 
+# Ordine di esecuzione
+
+Le sezioni numerate qui sotto sono la spiegazione del *perché*; questa è la sequenza del *cosa*.
+L'ordine non è cosmetico: tre passaggi rompono qualcosa se anticipati.
+
+Il `git push` non è un prerequisito. Sia `supabase db push` sia `supabase functions deploy` leggono
+la copia locale, non il remoto. Conviene comunque pushare **prima**, così il codice che finisce in
+produzione è tracciabile e recuperabile.
+
+| # | Azione | Dettaglio | Perché qui |
+|---|---|---|---|
+| 1 | Verificare i secret richiesti | [§3](#3-secret-da-verificare--la-pipeline-non-parte-senza-questi) | **Prima** del deploy: se manca una delle due variabili di costo la pipeline risponde 503 e sembra che il deploy abbia rotto tutto |
+| 2 | `supabase secrets set COMBAT_MUTATION_RNG_SECRET=…` | [§0](#0-fine_del_mondo--migration-da-applicare-e-secret-nuovo) | `resolve-round` non sorteggia senza la chiave HMAC |
+| 3 | Controllare che non ci siano richieste di trasformazione in volo | [§1](#1-ridistribuire-le-edge-function--bloccante) | Una richiesta creata prima e finalizzata dopo il deploy viene marcata fallita |
+| 4 | `npx supabase db push` | [§0](#0-fine_del_mondo--migration-da-applicare-e-secret-nuovo) | **Prima** del deploy di `resolve-round`, che altrimenti scrive colonne inesistenti |
+| 5 | Deployare **tutte e quattro** le Edge Function | [§1](#1-ridistribuire-le-edge-function--bloccante) | Unico deploy: copre sia il refactor sia FINE_DEL_MONDO sia l'egress |
+| 6 | Smoke test: una generazione completa end-to-end | — | Conferma 1–5 prima di rimuovere qualsiasi cosa |
+| 7 | `npm run backfill:creature-display-assets` | [§7](#7-egress--backfill-dei-display-asset) | Indipendente dal deploy, ma senza il display asset le versioni vecchie continuano a servire il master |
+| 8 | Rimuovere i secret morti | [§2](#2-secret-da-rimuovere-dopo-il-deploy) | **Solo dopo** che lo smoke test è passato: servono al codice attualmente deployato |
+| 9 | Migration che elimina le funzioni orfane | [§4](#4-funzioni-di-database-rimaste-senza-chiamante) | Pulizia, nessuna urgenza, migration dedicata |
+| 10 | Decidere sulla registrazione pubblica | [§5](#5-registrazione-pubblica--decisione-aperta) | Scelta di prodotto, non di refactor. È l'unico test rosso della suite |
+
+Il passo 6 non è formalità: 1–5 sono i quattro modi in cui questo deploy può fallire in silenzio
+(secret mancante, migration non applicata, function dimenticata, richiesta in volo).
+
+---
+
 ## 0. FINE_DEL_MONDO — migration da applicare e secret nuovo
 
 Portato da `ec3d936` (`main`). La feature rende **dinamica la durata del match**: `scheduled_rounds`
@@ -43,15 +70,29 @@ npx supabase secrets set COMBAT_MUTATION_RNG_SECRET="$(openssl rand -hex 32)"
 ## 1. Ridistribuire le Edge Function — BLOCCANTE
 
 Il refactor del 2026-08-22 ha cambiato in modo sostanziale il codice server. Fino al deploy, la
-produzione gira sulla versione precedente e le voci 2–3 non vanno toccate (i vecchi secret servono
-ancora al codice deployato).
+produzione gira sulla versione precedente e la voce 2 non va toccata (i vecchi secret servono ancora
+al codice deployato).
+
+**Vanno deployate tutte e quattro**, non due:
 
 ```bash
 npx supabase functions deploy generate-creature-transformation
 npx supabase functions deploy fal-creature-transformation-finalizer
+npx supabase functions deploy fal-creature-transformation-webhook
+npx supabase functions deploy resolve-round
 ```
 
-`fal-creature-transformation-webhook` non è stata modificata.
+Le ultime due erano fuori dall'elenco per due ragioni diverse, entrambe sbagliate:
+
+- **`resolve-round`** è la function che esegue FINE_DEL_MONDO (`b481031` ha toccato `index.ts` e
+  `bot-policy.ts`). Comparivano solo come avvertenza sull'ordine in §0, mai come azione. Senza questo
+  deploy la feature non esiste in produzione, migration applicata o no.
+- **`fal-creature-transformation-webhook`** ha solo riformattazioni nel suo `index.ts`, ed è per
+  questo che l'avevo dichiarata invariata — ma è il ragionamento sbagliato. Il webhook importa cinque
+  moduli da `generate-creature-transformation/`, e **tutti e cinque sono cambiati**, incluso
+  `fal-flux-image-provider.ts` (−314 righe) e il repository delle richieste, dove §6 ha corretto
+  un'unione non discriminabile. Le Edge Function vengono bundlate al deploy: senza ridistribuirla, il
+  webhook continua a girare su una copia congelata di quei moduli.
 
 Cosa cambia nel contratto, dopo il deploy:
 
@@ -193,22 +234,19 @@ ciò che prima era assunto (il formato del candidato e l'invariante della firma)
 quattro entrypoint, poi `npm uninstall --no-save deno`. Da valutare se renderlo permanente e
 agganciarlo a `npm run lint`, ora che la baseline è zero e una regressione salterebbe subito.
 
-## 7. Egress — backfill dei display asset e redeploy
+## 7. Egress — backfill dei display asset
 
 Il 2026-08-23 il tier free ha superato i 5 GB/mese di egress. Il tooltip del picco (21 ago, 2.58 GB
 in un giorno) attribuisce **97.2% a Storage** — 2.505 GB — contro 2.4% PostgREST, 0.2% Functions,
 0.2% Auth, 0.0% Realtime. Quindi il problema non è il numero di query: è **quali immagini vengono
 servite, quante volte**.
 
-Le correzioni sono nel codice (vedi il commit di questa sezione). Due cose restano da fare qui.
+Le correzioni sono nel codice (commit `412c6a9` e `76b8e59`). Restano il deploy — che è il **passo 5
+del runbook**, non un deploy a parte — e il backfill qui sotto.
 
-### 7.1 Redeploy — senza questo, due delle tre correzioni non hanno effetto
+### 7.1 Cosa cambia con il deploy di `generate-creature-transformation`
 
-```bash
-npx supabase functions deploy generate-creature-transformation
-```
-
-Cambia due comportamenti lato server:
+Due comportamenti lato server. Finché non è deployata, due delle tre correzioni non hanno effetto:
 
 - `GET_VISUAL_PROGRESS` firmava il **master** (PNG 1024×1536 con alpha) per ogni voce di history,
   mentre il visual corrente accanto serviva già il display asset (WebP ~768px). La history è una
@@ -224,8 +262,12 @@ Le versioni visuali create prima della pipeline del display asset non ne hanno u
 fallback al master: corretto come comportamento, ma è esattamente il download pesante che stiamo
 cercando di evitare. Vanno generate.
 
+**Prerequisito:** lo script legge `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_URL` (o
+`VITE_SUPABASE_URL`). La service role key **non è nel `.env`** — è stata tenuta fuori quando l'ho
+ripulito, e va tenuta fuori: passala solo per l'esecuzione, non scriverla nel file.
+
 ```bash
-npm run backfill:creature-display-assets
+SUPABASE_SERVICE_ROLE_KEY='…' npm run backfill:creature-display-assets
 ```
 
 Per sapere quante sono, prima:
