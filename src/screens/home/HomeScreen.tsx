@@ -15,7 +15,12 @@ type HomeScreenProps = {
     actions: HomeActions
 }
 
-function CreatureArt({ image }: { image: HomeCreatureImage }) {
+/**
+ * The carousel mounts one of these per past form. Only the form on screen is worth fetching, and
+ * only that one is worth measuring: the measurement loads its own copy of the sprite, so measuring
+ * every slide would double an already unnecessary download.
+ */
+function CreatureArt({ image, isActive }: { image: HomeCreatureImage; isActive: boolean }) {
     const [source, setSource] = useState(image.src)
     const [hasFailed, setHasFailed] = useState(false)
     const [subject, setSubject] = useState<CreatureSubject | null>(null)
@@ -31,6 +36,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
      * the file rather than by the creature in it.
      */
     useEffect(() => {
+        if (!isActive) return
         let isCurrent = true
 
         setSubject(null)
@@ -41,7 +47,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
         })
 
         return () => { isCurrent = false }
-    }, [source])
+    }, [isActive, source])
 
     const style = {
         '--home-creature-scale': image.scale ?? 1,
@@ -64,6 +70,7 @@ function CreatureArt({ image }: { image: HomeCreatureImage }) {
             className={`home-stage__creature ${subject ? 'home-stage__creature--fitted' : ''}`}
             src={source}
             alt={image.alt}
+            loading={isActive ? 'eager' : 'lazy'}
             style={style}
             onError={() => {
                 if (source !== image.fallbackSrc) {
@@ -290,9 +297,9 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                                     onClick={() => setIsCreatureDescriptionOpen(true)}
                                                     data-testid="home-creature-description-trigger"
                                                 >
-                                                    <CreatureArt image={version.image} />
+                                                    <CreatureArt image={version.image} isActive />
                                                 </button>
-                                            ) : <CreatureArt image={version.image} />}
+                                            ) : <CreatureArt image={version.image} isActive={version.id === selectedVisual?.id} />}
                                         </div>
                                     )
                                 })}

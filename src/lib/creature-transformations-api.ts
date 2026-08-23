@@ -17,7 +17,7 @@ import type {
     GameCreatureVisualsResponse,
 } from '../../shared/creature-transformations/index.ts'
 import { requireSupabase } from './supabase'
-import { reuseCreatureVisualUrl } from './creature-visual-url-cache'
+import { reuseCreatureVisualHistoryUrls, reuseCreatureVisualUrl } from './creature-visual-url-cache'
 
 type FunctionInvokeError = Error & { context?: unknown }
 
@@ -143,8 +143,14 @@ export async function getCreatureTransformationRequestStatus(
     return invokeCreatureTransformation<TransformationRequestStatusResponse>(request, invoker)
 }
 
-export async function getCreatureVisualProgress(request: GetCreatureVisualProgressRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<CreatureVisualProgressResponse> {
-    return invokeCreatureTransformation<CreatureVisualProgressResponse>(request, invoker)
+export async function getCreatureVisualProgress(
+    request: GetCreatureVisualProgressRequest,
+    invoker?: CreatureTransformationFunctionInvoker,
+): Promise<CreatureVisualProgressResponse> {
+    const response = await invokeCreatureTransformation<CreatureVisualProgressResponse>(request, invoker)
+    // The history is the heaviest carrier of signed URLs, so it is where a fresh signature costs
+    // the most: without this every profile refresh re-downloads every past form.
+    return { ...response, history: reuseCreatureVisualHistoryUrls(response.history) }
 }
 
 export async function getCurrentCreatureVisual(request: GetCurrentCreatureVisualRequest, invoker?: CreatureTransformationFunctionInvoker) {

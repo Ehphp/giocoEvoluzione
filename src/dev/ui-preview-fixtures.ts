@@ -48,15 +48,15 @@ export const PREVIEW_LEADERBOARD: CompetitiveLeaderboardEntry[] = [
 ]
 
 export const PREVIEW_VISUAL_HISTORY = [
-    { id: 'preview-visual-1', versionNumber: 1, visualTraitId: null, conceptName: 'Forma base', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-2', versionNumber: 2, visualTraitId: 'ARMOR', conceptName: 'Scaglie dorsali', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-3', versionNumber: 3, visualTraitId: 'AGILITY', conceptName: 'Arti slanciati', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-4', versionNumber: 4, visualTraitId: 'CAMOUFLAGE', conceptName: 'Manto del sottobosco', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-5', versionNumber: 5, visualTraitId: 'FEROCITY', conceptName: 'Artigli selvatici', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-6', versionNumber: 6, visualTraitId: 'ARMOR', conceptName: 'Corazza antica', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-7', versionNumber: 7, visualTraitId: 'SENSES', conceptName: 'Sguardo notturno', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-8', versionNumber: 8, visualTraitId: 'AGILITY', conceptName: 'Passo fulmineo', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
-    { id: 'preview-visual-9', versionNumber: 9, visualTraitId: 'SENSES', conceptName: 'Corona di cristallo', signedUrl: ASSETS.creatures.default, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-1', versionNumber: 1, visualTraitId: null, conceptName: 'Forma base', signedUrl: `${ASSETS.creatures.default}?form=1`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-2', versionNumber: 2, visualTraitId: 'ARMOR', conceptName: 'Scaglie dorsali', signedUrl: `${ASSETS.creatures.default}?form=2`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-3', versionNumber: 3, visualTraitId: 'AGILITY', conceptName: 'Arti slanciati', signedUrl: `${ASSETS.creatures.default}?form=3`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-4', versionNumber: 4, visualTraitId: 'CAMOUFLAGE', conceptName: 'Manto del sottobosco', signedUrl: `${ASSETS.creatures.default}?form=4`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-5', versionNumber: 5, visualTraitId: 'FEROCITY', conceptName: 'Artigli selvatici', signedUrl: `${ASSETS.creatures.default}?form=5`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-6', versionNumber: 6, visualTraitId: 'ARMOR', conceptName: 'Corazza antica', signedUrl: `${ASSETS.creatures.default}?form=6`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-7', versionNumber: 7, visualTraitId: 'SENSES', conceptName: 'Sguardo notturno', signedUrl: `${ASSETS.creatures.default}?form=7`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-8', versionNumber: 8, visualTraitId: 'AGILITY', conceptName: 'Passo fulmineo', signedUrl: `${ASSETS.creatures.default}?form=8`, expiresAt: '2030-01-01T00:00:00.000Z' },
+    { id: 'preview-visual-9', versionNumber: 9, visualTraitId: 'SENSES', conceptName: 'Corona di cristallo', signedUrl: `${ASSETS.creatures.default}?form=9`, expiresAt: '2030-01-01T00:00:00.000Z' },
 ] as const
 
 export function buildPreviewHomeViewModel(): HomeViewModel {

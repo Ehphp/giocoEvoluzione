@@ -401,22 +401,50 @@ function visualProgressionAccessFailure(
     return null
 }
 
+/**
+ * A version has a display asset once its candidate has been finalized: a ~768px WebP beside the
+ * 1024×1536 master PNG. Every client-facing signed URL must resolve to the display asset when one
+ * exists — the master is authoring material and an order of magnitude heavier.
+ */
+function hasDisplayAsset(version: StoredVisualVersion): boolean {
+    return Boolean(
+        version.displayAssetPath &&
+            version.displayAssetSha256 &&
+            version.displayMimeType === 'image/webp' &&
+            version.displayWidth &&
+            version.displayHeight,
+    )
+}
+
+/**
+ * Twelve hours. The client keeps reusing a signed URL while it is valid and the browser caches it
+ * by that URL, so the signature lifetime — not the object's cache-control — is what decides how
+ * often the artwork is refetched. At the previous five minutes the home screen re-read and
+ * re-downloaded every visible creature roughly every four minutes for as long as it stayed open.
+ *
+ * The tradeoff is that a leaked URL stays usable for longer. These are creature sprites, already
+ * shown to the player and to their opponent, so the exposure is the artwork itself.
+ */
+const DISPLAYABLE_VISUAL_URL_TTL_SECONDS = 12 * 60 * 60
+
+function signDisplayableVersion(
+    input: CreatureTransformationEdgeOrchestrationInput,
+    version: StoredVisualVersion,
+) {
+    const displayAvailable = hasDisplayAsset(version)
+    return input.storage.createVisualVersionSignedUrl({
+        assetPath: displayAvailable ? version.displayAssetPath! : version.assetPath,
+        isBaseVersion: !displayAvailable && version.visualTraitId === null,
+        expiresInSeconds: DISPLAYABLE_VISUAL_URL_TTL_SECONDS,
+    })
+}
+
 async function toCurrentVisualResponse(
     input: CreatureTransformationEdgeOrchestrationInput,
     version: StoredVisualVersion,
 ) {
-    const displayAvailable = Boolean(
-        version.displayAssetPath &&
-        version.displayAssetSha256 &&
-        version.displayMimeType === 'image/webp' &&
-        version.displayWidth &&
-        version.displayHeight,
-    )
-    const assetPath = displayAvailable ? version.displayAssetPath! : version.assetPath
-    const signed = await input.storage.createVisualVersionSignedUrl({
-        assetPath,
-        isBaseVersion: !displayAvailable && version.visualTraitId === null,
-    })
+    const displayAvailable = hasDisplayAsset(version)
+    const signed = await signDisplayableVersion(input, version)
     return {
         creatureId: version.creatureId,
         versionId: version.id,
@@ -439,10 +467,10 @@ async function toVisualHistoryResponse(
     const versions = await input.visualRepository.listVisualHistory({ profileId, creatureId })
     return Promise.all(
         versions.map(async (version) => {
-            const signed = await input.storage.createVisualVersionSignedUrl({
-                assetPath: version.assetPath,
-                isBaseVersion: version.visualTraitId === null,
-            })
+            // The history is rendered as a strip of past forms, so it is the heaviest consumer of
+            // these URLs — it used to sign the master for every entry while the current visual
+            // beside it served the display asset.
+            const signed = await signDisplayableVersion(input, version)
             return {
                 id: version.id,
                 versionNumber: version.versionNumber,

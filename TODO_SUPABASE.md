@@ -192,3 +192,53 @@ ciò che prima era assunto (il formato del candidato e l'invariante della firma)
 `node_modules/.bin/deno check --no-lock supabase/functions/<funzione>/index.ts` per ognuno dei
 quattro entrypoint, poi `npm uninstall --no-save deno`. Da valutare se renderlo permanente e
 agganciarlo a `npm run lint`, ora che la baseline è zero e una regressione salterebbe subito.
+
+## 7. Egress — backfill dei display asset e redeploy
+
+Il 2026-08-23 il tier free ha superato i 5 GB/mese di egress. Il tooltip del picco (21 ago, 2.58 GB
+in un giorno) attribuisce **97.2% a Storage** — 2.505 GB — contro 2.4% PostgREST, 0.2% Functions,
+0.2% Auth, 0.0% Realtime. Quindi il problema non è il numero di query: è **quali immagini vengono
+servite, quante volte**.
+
+Le correzioni sono nel codice (vedi il commit di questa sezione). Due cose restano da fare qui.
+
+### 7.1 Redeploy — senza questo, due delle tre correzioni non hanno effetto
+
+```bash
+npx supabase functions deploy generate-creature-transformation
+```
+
+Cambia due comportamenti lato server:
+
+- `GET_VISUAL_PROGRESS` firmava il **master** (PNG 1024×1536 con alpha) per ogni voce di history,
+  mentre il visual corrente accanto serviva già il display asset (WebP ~768px). La history è una
+  striscia di tutte le forme passate: era il consumatore più pesante e il più sbagliato.
+- Il TTL degli URL firmati passa da **300 s a 12 h**. Questa è la leva vera: il browser indicizza la
+  cache sull'URL completo, firma inclusa, quindi con una firma che ruota ogni 5 minuti nessun
+  `cacheControl` sull'oggetto può servire a qualcosa. Il trade-off è che un URL trafugato resta
+  valido più a lungo; sono sprite di creature, già mostrati al giocatore e al suo avversario.
+
+### 7.2 Backfill dei display asset — necessario per le versioni vecchie
+
+Le versioni visuali create prima della pipeline del display asset non ne hanno uno, e il codice fa
+fallback al master: corretto come comportamento, ma è esattamente il download pesante che stiamo
+cercando di evitare. Vanno generate.
+
+```bash
+npm run backfill:creature-display-assets
+```
+
+Per sapere quante sono, prima:
+
+```sql
+select count(*) filter (where display_asset_path is null) as senza_display,
+       count(*) as totali
+from creature_visual_versions;
+```
+
+Nota: `cacheControl` era già `31536000` nel backfill (`tools/backfill-creature-display-assets.ts`);
+mancava nell'**upload vivo** (`supabase-creature-transformation-storage.ts`), che usava il default
+Supabase di un'ora. Ora è allineato — quindi gli oggetti già scritti dalla pipeline viva prima di
+questo deploy portano ancora `max-age=3600`. Non è un problema da correggere a mano: al primo
+`upsert` successivo l'header si aggiorna, e finché il TTL della firma era 5 minuti quell'header non
+stava comunque cambiando nulla.

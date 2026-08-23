@@ -52,6 +52,9 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
         expect(mock.client.from).toHaveBeenCalledWith(CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET)
         expect(mock.upload).toHaveBeenCalledWith(objectPath, expect.any(Uint8Array), {
             contentType: 'image/png',
+            // A signed URL is unique per signature, so a long-lived object cache cannot serve
+            // stale bytes: the artwork is only cacheable at all because of this.
+            cacheControl: '31536000',
             upsert: true,
         })
         expect(mock.upload).not.toHaveBeenCalledWith('verdant-hatchling-v1.png', expect.anything(), expect.anything())
@@ -99,6 +102,7 @@ describe('SupabaseCreatureTransformationStorageAdapter', () => {
         expect(path).toMatch(/^experiments\/raw\/profile-1\/[a-f0-9]{64}\.jpg$/)
         expect(mock.upload).toHaveBeenCalledWith(path, expect.any(Uint8Array), {
             contentType: 'image/jpeg',
+            cacheControl: '31536000',
             upsert: true,
         })
         expect(mock.createSignedUrl).toHaveBeenCalledWith(path, 120)

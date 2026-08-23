@@ -1,5 +1,8 @@
 import { sha256Hex } from '../../../shared/creature-transformations/image-validator.ts'
 
+/** A year, in seconds. Only has to outlive the signed URL that addresses the object. */
+const OBJECT_CACHE_CONTROL_SECONDS = '31536000'
+
 export const CREATURE_TRANSFORMATION_SOURCE_BUCKET = 'creature-transformation-sources'
 export const CREATURE_TRANSFORMATION_EXPERIMENT_BUCKET = 'creature-transformation-experiments'
 
@@ -234,6 +237,11 @@ export class SupabaseCreatureTransformationStorageAdapter {
         try {
             upload = await this.client.from(this.experimentBucket).upload(objectPath, image, {
                 contentType,
+                // Supabase defaults to one hour. A signed URL is unique per signature, so the
+                // browser cache is keyed by it and a re-upload under the same object name cannot
+                // be served stale: the next read carries a different URL. This only has to outlive
+                // the URL itself, which is what makes the artwork cacheable at all.
+                cacheControl: OBJECT_CACHE_CONTROL_SECONDS,
                 upsert: true,
             })
         } catch (error) {
