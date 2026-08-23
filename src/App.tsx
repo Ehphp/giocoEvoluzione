@@ -29,6 +29,7 @@ import { useProfileActivity } from './app/use-profile-activity'
 import { useMatchSession, type BattleSubmitAction } from './app/use-match-session'
 import { ScreenTransition } from './ui/ScreenTransition'
 import { SCREEN_DEPTH, type ScreenId } from './app/screen-depth'
+import { isColdStart } from './app/cold-start'
 
 type ResolvedScreen = Readonly<{ id: ScreenId; node: ReactNode }>
 
@@ -167,7 +168,7 @@ function App() {
    * the transition layer can tell a genuine screen change from an ordinary re-render.
    */
   function resolveScreen(): ResolvedScreen {
-    if (isLoading || auth.status === 'loading' || auth.status === 'initializing') {
+    if (isColdStart({ isRestoringSession: isLoading, authStatus: auth.status, hasProfile: Boolean(auth.profile) })) {
       return { id: 'boot', node: <BootScreen /> }
     }
 
