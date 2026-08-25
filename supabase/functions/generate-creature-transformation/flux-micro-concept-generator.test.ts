@@ -88,6 +88,25 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toContain('AUTHORIZED BODY-PLAN MUTATION')
     })
 
+    it('makes SKIN_AND_COVERING surface-first without applying its boundary to TAIL', () => {
+        const skinPrompt = composeFluxMicroConceptInstructions(input)
+        const tailPrompt = composeFluxMicroConceptInstructions({
+            identity: TEST_CREATURE_IDENTITY,
+            plan: planFor('TAIL'),
+        })
+
+        expect(skinPrompt).toContain('SKIN SURFACE-FIRST BOUNDARY')
+        expect(skinPrompt).toMatch(/conformal, anatomy-following covering mutation/i)
+        expect(skinPrompt).toMatch(/dominant palette and pigmentation, biological patterns, scale morphology and grain/i)
+        expect(skinPrompt).toMatch(/dermal texture, skin thickness, translucency, iridescence and sheen/i)
+        expect(skinPrompt).toMatch(/attached and conformal to the existing body surface/i)
+        expect(skinPrompt).toMatch(/dorsal spines, horns, crests, fins/i)
+        expect(skinPrompt).toMatch(/long projecting plates, new appendages or other protruding structures/i)
+        expect(skinPrompt).toMatch(/substantially change the silhouette/i)
+        expect(skinPrompt).toMatch(/Do not change body shape, topology, pose, stance, limb structure, tail structure/i)
+        expect(tailPrompt).not.toContain('SKIN SURFACE-FIRST BOUNDARY')
+    })
+
     it('adds observed state only as secondary repair context and leaves the selected target primary', () => {
         const prompt = composeFluxMicroConceptInstructions({
             ...input,
