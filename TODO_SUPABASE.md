@@ -284,3 +284,22 @@ Supabase di un'ora. Ora è allineato — quindi gli oggetti già scritti dalla p
 questo deploy portano ancora `max-age=3600`. Non è un problema da correggere a mano: al primo
 `upsert` successivo l'header si aggiorna, e finché il TTL della firma era 5 minuti quell'header non
 stava comunque cambiando nulla.
+
+## 8. Catalogo delle funzioni evolutive — migration da applicare
+
+La migration `supabase/migrations/202608250001_expand_evolution_function_catalog.sql` amplia da
+8 a 14 il catalogo production delle funzioni evolutive con `CAMOUFLAGE`, `MANEUVERABILITY`,
+`ENDURANCE`, `ACCELERATION`, `IMPACT_RESISTANCE` e `OXYGEN_EFFICIENCY`.
+
+La colonna è già `text`, ma la RPC `reserve_creature_transformation_request` mantiene una
+allowlist esplicita: senza applicare la migration, la pipeline deriverebbe una nuova funzione e la
+prenotazione verrebbe rifiutata con `invalid evolution function`. La migration ridefinisce solo
+quel validator e conserva `IMPACT_ABSORPTION` come valore storico leggibile, senza reinserirlo nel
+resolver.
+
+Applicare con il prossimo deploy database, prima di deployare le Edge Function che possono
+selezionare il catalogo ampliato:
+
+```bash
+npx supabase db push
+```

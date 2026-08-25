@@ -8,7 +8,10 @@ import {
 } from '../../../shared/creature-transformations/flux-evolution/evolution-lineage.ts'
 import type { FluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import type { CreatureSemanticIdentity } from '../../../shared/creature-transformations/contracts.ts'
-import { EVOLUTION_TARGET_BY_ID } from '../../../shared/creature-transformations/evolution-targets.ts'
+import {
+    EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS,
+    EVOLUTION_TARGET_BY_ID,
+} from '../../../shared/creature-transformations/evolution-targets.ts'
 
 type FetchLike = typeof fetch
 
@@ -190,6 +193,10 @@ export function composeFluxMicroConceptInstructions(
     const mutableAppearance = input.identity.mutableVisualFeatures.length
         ? input.identity.mutableVisualFeatures.join('; ')
         : 'current surface appearance and coloration'
+    const functionalDescription = EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS[plan.evolutionFunction]
+    const functionalDirection = functionalDescription
+        ? `${plan.evolutionFunction} — ${functionalDescription}`
+        : plan.evolutionFunction
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
@@ -219,7 +226,7 @@ export function composeFluxMicroConceptInstructions(
             : [
                   'TOPOLOGY: For a normal anatomical mutation, preserve the anatomy contract exactly. Keep each existing target structure continuous and rooted at its current attachment point. Structures integrated into and anchored to the selected target are allowed; do not describe independently rooted appendages, new anatomical roots, extra tails, tentacles, limbs, wings or heads. A tail remains one continuous tail unless an authorized body-plan mutation explicitly says otherwise.',
               ]),
-        `Functional direction: ${plan.evolutionFunction}. Use the biological function to invent the mutation, but describe visible anatomy rather than explaining its purpose. It is not a limit on the concrete morphology.`,
+        `Functional direction: ${functionalDirection}. Use the biological function to invent the mutation, but describe visible anatomy rather than explaining its purpose. It is not a limit on the concrete morphology.`,
         'BIOLOGICAL PRIOR: Prefer naturally grown animal anatomy and biological tissues. Evolutionary structures must look grown from this creature itself. Avoid manufactured, mechanical, metallic, technological or worn structures unless the concept explicitly requires them. Biological carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid.',
         ...(structural && !tailStructural
             ? [

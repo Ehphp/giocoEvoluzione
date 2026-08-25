@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS } from '../../../shared/creature-transformations/evolution-targets.ts'
 import { BODY_PLANS } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
 import {
@@ -134,6 +135,26 @@ describe('FluxMicroConceptGenerator', () => {
             /carapaces, chitin, bone, keratin, scales, mineralized skin, spines and biological plates remain valid/i,
         )
         expect(prompt).not.toContain('IMPACT_ADAPTATION')
+    })
+
+    it('gives each new biological direction neutral functional context', () => {
+        for (const evolutionFunction of [
+            'CAMOUFLAGE',
+            'MANEUVERABILITY',
+            'ENDURANCE',
+            'ACCELERATION',
+            'IMPACT_RESISTANCE',
+            'OXYGEN_EFFICIENCY',
+        ] as const) {
+            const description = EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS[evolutionFunction]!
+            const prompt = composeFluxMicroConceptInstructions({
+                identity: TEST_CREATURE_IDENTITY,
+                plan: { ...planFor('TAIL'), evolutionFunction, visualTraitId: 'ANATOMICAL_EVOLUTION' },
+            })
+
+            expect(prompt).toContain(`Functional direction: ${evolutionFunction}`)
+            expect(prompt).toContain(description)
+        }
     })
 
     it('keeps a normal BODY_SHAPE concept inside the existing creature presentation', () => {

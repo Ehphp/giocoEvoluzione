@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
     DEPRECATED_EVOLUTION_FUNCTION_IDS,
+    EVOLUTION_FUNCTION_IDS,
+    EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS,
     EVOLUTION_FUNCTION_VISUAL_TRAITS,
     EVOLUTION_TARGETS,
     EVOLUTION_TARGET_BY_ID,
@@ -21,6 +23,15 @@ const CORE_TARGETS = [
     'BODY_SHAPE',
     'DORSAL_STRUCTURES',
     'SKIN_AND_COVERING',
+] as const
+
+const NEW_EVOLUTION_FUNCTION_IDS = [
+    'CAMOUFLAGE',
+    'MANEUVERABILITY',
+    'ENDURANCE',
+    'ACCELERATION',
+    'IMPACT_RESISTANCE',
+    'OXYGEN_EFFICIENCY',
 ] as const
 
 describe('evolution target taxonomy', () => {
@@ -80,6 +91,72 @@ describe('evolution target taxonomy', () => {
 
         expect(`${second.visualTraitId}:${second.evolutionFunction}`).not.toBe(
             `${first.visualTraitId}:${first.evolutionFunction}`,
+        )
+    })
+
+    it('keeps the six new biological functions in the same neutral, generatable pool', () => {
+        expect(EVOLUTION_FUNCTION_IDS).toHaveLength(14)
+        expect(EVOLUTION_FUNCTION_IDS).toEqual(expect.arrayContaining([...NEW_EVOLUTION_FUNCTION_IDS]))
+
+        for (const evolutionFunction of NEW_EVOLUTION_FUNCTION_IDS) {
+            expect(EVOLUTION_FUNCTION_VISUAL_TRAITS[evolutionFunction]).toEqual(['ANATOMICAL_EVOLUTION'])
+            expect(
+                isGeneratableEvolutionDirection({
+                    evolutionTargetId: 'TAIL',
+                    evolutionFunction,
+                    visualTraitId: 'ANATOMICAL_EVOLUTION',
+                }),
+            ).toBe(true)
+        }
+    })
+
+    it('selects every function from one deterministic, unweighted resolver pool', () => {
+        const selected = new Set(
+            Array.from({ length: 512 }, (_, index) =>
+                resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed: `function-pool-${index}` })?.evolutionFunction,
+            ),
+        )
+        selected.delete(undefined)
+
+        expect(selected).toEqual(new Set(EVOLUTION_FUNCTION_IDS))
+        for (const evolutionFunction of NEW_EVOLUTION_FUNCTION_IDS) expect(selected).toContain(evolutionFunction)
+    })
+
+    it('keeps selection deterministic and avoids an adopted new function', () => {
+        for (const evolutionFunction of NEW_EVOLUTION_FUNCTION_IDS) {
+            const selected = Array.from({ length: 512 }, (_, index) => {
+                const seed = `adopted-${evolutionFunction}-${index}`
+                return { seed, direction: resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed }) }
+            }).find((candidate) => candidate.direction?.evolutionFunction === evolutionFunction)
+
+            expect(selected, evolutionFunction).toBeDefined()
+            const first = selected!.direction!
+            const repeated = resolveEvolutionDirection({ evolutionTargetId: 'TAIL', seed: selected!.seed })
+            const afterAdoption = resolveEvolutionDirection({
+                evolutionTargetId: 'TAIL',
+                seed: selected!.seed,
+                previousTransformations: [
+                    {
+                        evolutionTargetId: 'TAIL',
+                        visualTraitId: first.visualTraitId,
+                        evolutionFunction: first.evolutionFunction,
+                    },
+                ],
+            })
+
+            expect(repeated).toEqual(first)
+            expect(afterAdoption).not.toEqual(first)
+        }
+    })
+
+    it('keeps the new functional descriptions biologically neutral', () => {
+        const descriptions = NEW_EVOLUTION_FUNCTION_IDS.map(
+            (evolutionFunction) => EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS[evolutionFunction],
+        )
+
+        expect(descriptions.every((description) => typeof description === 'string' && description.length > 0)).toBe(true)
+        expect(descriptions.join(' ')).not.toMatch(
+            /palette|colou?r|pigment|skin|scale|fin|spine|wing|armou?r|shell|feather/i,
         )
     })
 

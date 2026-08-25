@@ -47,9 +47,30 @@ export const EVOLUTION_FUNCTION_IDS = Object.freeze([
     'THERMOREGULATION',
     'ENERGY_STORAGE',
     'AQUATIC_ADAPTATION',
+    'CAMOUFLAGE',
+    'MANEUVERABILITY',
+    'ENDURANCE',
+    'ACCELERATION',
+    'IMPACT_RESISTANCE',
+    'OXYGEN_EFFICIENCY',
 ] as const)
 
 export type EvolutionFunctionId = (typeof EVOLUTION_FUNCTION_IDS)[number]
+
+/**
+ * Extra functional context for the Concept. These directions remain biological pressures: the
+ * selected target and anatomy contract continue to decide where and how they become visible.
+ */
+export const EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS: Readonly<
+    Partial<Record<EvolutionFunctionId, string>>
+> = Object.freeze({
+    CAMOUFLAGE: 'Reduce detectability and improve concealment',
+    MANEUVERABILITY: 'Improve directional control and movement precision',
+    ENDURANCE: 'Sustain prolonged activity efficiently',
+    ACCELERATION: 'Improve rapid or explosive movement',
+    IMPACT_RESISTANCE: 'Absorb and distribute mechanical impacts',
+    OXYGEN_EFFICIENCY: 'Improve oxygen acquisition, transport or utilisation',
+})
 
 /** Kept solely to read historical requests and lineage without rewriting them. */
 export const DEPRECATED_EVOLUTION_FUNCTION_IDS = Object.freeze(['IMPACT_ABSORPTION'] as const)
@@ -71,6 +92,12 @@ export const EVOLUTION_FUNCTION_VISUAL_TRAITS: Readonly<Record<EvolutionFunction
         THERMOREGULATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
         ENERGY_STORAGE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
         AQUATIC_ADAPTATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        CAMOUFLAGE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        MANEUVERABILITY: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        ENDURANCE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        ACCELERATION: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        IMPACT_RESISTANCE: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
+        OXYGEN_EFFICIENCY: Object.freeze(['ANATOMICAL_EVOLUTION'] as const),
     })
 
 export type EvolutionTargetDefinition = Readonly<{
