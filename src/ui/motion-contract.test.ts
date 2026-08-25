@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import battle from '../screens/battle/BattleScreen.css?raw'
 import components from './components.css?raw'
+import home from '../screens/home/HomeScreen.css?raw'
 import screenTransition from './screen-transition.css?raw'
 import theme from './theme.css?raw'
 
@@ -100,6 +101,32 @@ describe('stable layout', () => {
         expect(hint).toContain('-webkit-line-clamp: var(--ev-action-btn-hint-lines)')
         expect(hint).not.toContain('min-height')
         expect(battle).toContain('--ev-action-btn-hint-lines: 1')
+    })
+})
+
+describe('stage sizing', () => {
+    it('keeps the forms rail from inflating the column the creature is measured against', () => {
+        /*
+         * The rail and the artwork share a grid column. An implicit `auto` track is sized by its
+         * widest item's max-content, and the rail's max-content is every unlocked form laid side by
+         * side — so a long lineage stretched the column far past the viewport, the artwork inherited
+         * that width through `width: 100%`, and `100cqw` stopped bounding anything. The fitted sprite
+         * rendered enormous and ran off the right edge. A `1fr` track with a zero minimum cannot be
+         * inflated from inside it. Nothing about this is visible in jsdom, hence the text.
+         */
+        expect(block(home, '.home-stage')).toContain('grid-template-columns: minmax(0, 1fr)')
+        expect(block(home, '.home-forms')).toContain('overflow-x: auto')
+        // `max-width` was the bug's disguise: it resolved against the track the rail had inflated.
+        expect(block(home, '.home-forms')).not.toContain('max-width')
+    })
+
+    it('bounds the unmeasured sprite by the padded box, not the box around it', () => {
+        // An absolute box resolves against its containing block's *padding* box, so the slide's
+        // padding has to come off by hand or the sprite jumps size the moment the measurement lands.
+        const creature = block(home, '.home-stage__creature')
+
+        expect(creature).toContain('inset: var(--home-slide-pad)')
+        expect(creature).toContain('calc(100% - var(--home-slide-pad) * 2)')
     })
 })
 

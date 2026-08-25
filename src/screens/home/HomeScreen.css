@@ -130,11 +130,21 @@
 /* Creature stage                                                              */
 /* -------------------------------------------------------------------------- */
 
-/* The creature over the rail of forms it has been through. */
+/*
+ * The creature over the rail of forms it has been through.
+ *
+ * `minmax(0, 1fr)` on the column, and it is load-bearing: an implicit `auto` track is sized by its
+ * widest item's max-content, and the rail's max-content is every form laid out at once. A long
+ * lineage therefore blew the column far past the viewport, the art row inherited that width through
+ * `width: 100%`, and `100cqw` — the bound that keeps the fitted sprite on screen — stopped meaning
+ * anything. The creature rendered enormous and ran off to the right. A `1fr` track with a zero
+ * minimum cannot be inflated from the inside; the rail scrolls instead, which was always the plan.
+ */
 .home-stage {
     position: relative;
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     justify-items: center;
     gap: var(--ev-s-2);
     /* Elastic: the creature stage yields space before the identity bar or the call to action. */
@@ -203,8 +213,11 @@
  */
 .home-forms {
     display: flex;
+    /* `safe`, so a lineage too long to centre falls back to the start rather than hiding its head. */
+    justify-content: safe center;
     gap: var(--ev-s-2);
-    max-width: 100%;
+    width: 100%;
+    min-width: 0;
     padding: 2px var(--ev-s-1);
     overflow-x: auto;
     overscroll-behavior-x: contain;
