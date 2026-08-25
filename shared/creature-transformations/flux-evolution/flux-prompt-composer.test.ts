@@ -119,6 +119,48 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(nonTailPrompt).not.toContain('TAIL LOCALITY AND INTEGRATION')
     })
 
+    it('lets SKIN_AND_COVERING redesign global covering without releasing anatomy or presentation', () => {
+        const skinContract = buildAnatomyContract({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'SKIN_AND_COVERING',
+        })
+        const skinPrompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: skinContract,
+            microConcept: dynamicConcept,
+        })
+
+        expect(skinPrompt).toContain('SKIN AND COVERING AUTHORITY')
+        expect(skinPrompt).toMatch(/across the entire existing anatomy/i)
+        expect(skinPrompt).toMatch(/dominant palette, pigmentation, patterns, skin and surface texture/i)
+        expect(skinPrompt).toMatch(/biological covering or material appearance/i)
+        expect(skinPrompt).toMatch(/current source-image colour is mutable covering, not an individual identity invariant/i)
+        expect(skinPrompt).not.toContain('body coloration')
+        expect(skinPrompt).toMatch(
+            /Preserve the individual identity, recognisable face, eye arrangement, head shape, topology, limb counts and roots, body silhouette and body shape, posture, stance, proportions, camera angle and facing direction/i,
+        )
+        expect(skinPrompt).toMatch(/Do not add, remove, relocate or reshape anatomical structures/i)
+        expect(skinPrompt).toContain('Keep exactly 4 limbs, in 2 symmetrical pairs')
+        expect(skinPrompt).toContain('Keep exactly 1 tail.')
+        expect(skinPrompt).toContain('Keep the four-legged quadrupedal body plan.')
+        expect(skinPrompt).toMatch(/exact same camera angle, 3\/4 view, facing direction and overall pose/i)
+        expect(skinPrompt).toContain('New appendages or structural anatomy changes are invalid on this target.')
+    })
+
+    it('keeps the existing TAIL colour-preservation wording unchanged', () => {
+        const tailContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' })
+        const tailPrompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: tailContract,
+            microConcept: dynamicConcept,
+        })
+
+        expect(tailPrompt).toContain(
+            'Only the minimum local anatomical continuity, tail-root integration or tightly linked target material or colour propagation is allowed.',
+        )
+        expect(tailPrompt).not.toContain('SKIN AND COVERING AUTHORITY')
+    })
+
     it('states tail split topology from source through authorized change to output', () => {
         const tailSplitContract = buildAnatomyContract({
             bodyPlan: BODY_PLANS.QUADRUPED,

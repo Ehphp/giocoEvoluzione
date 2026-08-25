@@ -138,7 +138,9 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         'BIOLOGICAL PRIOR',
         'Prefer living animal tissue and naturally grown anatomy.\n\nEvolutionary structures must look grown from the creature itself.\n\nNo metal, machinery, technology, manufactured accessories or artificial materials unless explicitly required by the mutation.',
         'NON-TARGET PRESERVATION',
-        tailPresentationLock
+        contract.target === 'SKIN_AND_COVERING'
+            ? 'SKIN AND COVERING AUTHORITY\n\nThe selected target may redesign the skin and body covering across the entire existing anatomy. You may globally change the dominant palette, pigmentation, patterns, skin and surface texture, and biological covering or material appearance on the head, neck, torso, limbs and tail. The current source-image colour is mutable covering, not an individual identity invariant for this target.\n\nANATOMY AND PRESENTATION LOCK\n\nPreserve the individual identity, recognisable face, eye arrangement, head shape, topology, limb counts and roots, body silhouette and body shape, posture, stance, proportions, camera angle and facing direction. Do not add, remove, relocate or reshape anatomical structures. The covering must follow the existing anatomy.'
+            : tailPresentationLock
             ? 'Preserve the head, face, neck proportions, torso proportions, limb roots, limb placement, original stance and overall body presentation.\n\nDo not redesign the creature to present the tail mutation.\n\nOnly the minimum local anatomical continuity, tail-root integration or tightly linked target material or colour propagation is allowed.'
             : structural
               ? 'Preserve unrelated body regions by default.\n\nDo not redesign anatomy outside the authorized structural change.\n\nOnly the supporting integration required by that exact mutation is allowed.'
