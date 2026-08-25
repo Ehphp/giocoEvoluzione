@@ -12,7 +12,7 @@ import { GAME_SELECTION_ASSETS } from '../../screens/battle/controller/gene-sele
 import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } from '../../ui/assets'
 import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
 import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'
-import { AppShell, Button, Chip, IconButton, Notice, Panel, ProgressBar, SectionLabel } from '../../ui/components'
+import { AppShell, Button, Chip, Notice, Panel, ProgressBar, ScreenHeader, SectionLabel } from '../../ui/components'
 import { ChevronIcon, DnaIcon, EvolutionTargetIcon, SparkIcon } from '../../ui/icons'
 
 import './CreatureVisualProgressionScreen.css'
@@ -177,19 +177,11 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         <AppShell
             sceneryUrl={ASSETS.scenery.forest}
             sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback}
+            docked
             scroll
         >
             <section className="evolution-screen" aria-labelledby="visual-progression-title">
-                <header className="evolution-topbar">
-                    <IconButton label="Torna indietro" onClick={onBack}>
-                        <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
-                    </IconButton>
-                    <div className="evolution-topbar__title">
-                        <span className="ev-eyebrow ev-eyebrow--light">Progressione visuale</span>
-                        <h1 id="visual-progression-title">Evoluzione della creatura</h1>
-                    </div>
-                    <span className="evolution-topbar__spacer" aria-hidden="true" />
-                </header>
+                <ScreenHeader id="visual-progression-title" eyebrow="Progressione visuale" title="Evoluzione della creatura" />
 
                 {error ? <Notice tone="error">{error}</Notice> : null}
 

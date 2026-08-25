@@ -9,7 +9,9 @@ import { CreatureVisualProgressionScreen } from '../components/creature-visual-p
 import { EvolutionDraftOverlay } from '../screens/battle/parts/EvolutionDraftOverlay'
 import { ScreenTransition } from '../ui/ScreenTransition'
 import { Button } from '../ui/components'
+import { Dock } from '../ui/Dock'
 import { SCREEN_DEPTH, type ScreenId } from '../app/screen-depth'
+import { getDockPlacement } from '../app/dock-tab'
 import type { UiPreviewRoute } from './ui-preview-route'
 import {
     PREVIEW_CREATURE,
@@ -25,6 +27,25 @@ import {
 const noop = () => undefined
 const asyncNoop = async () => undefined
 
+/**
+ * The app's dock, as the app renders it: once, outside whatever screen is showing. Repeating that
+ * arrangement here is what keeps the preview honest — a dock rendered inside the screen would show
+ * its active pill already arrived, which is the exact bug hoisting it out of the screens fixed.
+ */
+function PreviewDock({ screen }: { screen: ScreenId }) {
+    const dock = getDockPlacement(screen)
+
+    if (!dock.isShown) return null
+
+    return (
+        <Dock
+            active={dock.active}
+            capabilities={{ collection: true, ranking: true, profile: true }}
+            onNavigate={noop}
+        />
+    )
+}
+
 function HomePreview() {
     return (
         <HomeScreen
@@ -37,9 +58,6 @@ function HomePreview() {
                 onCreateBotGame: noop,
                 onJoinGame: noop,
                 onLeaveSession: noop,
-                onOpenProfile: noop,
-                onOpenCollection: noop,
-                onOpenRanking: noop,
                 onLogout: noop,
             }}
         />
@@ -47,7 +65,7 @@ function HomePreview() {
 }
 
 function RankingPreview() {
-    return <LeaderboardScreen onBack={noop} onOpenCollection={noop} onOpenProfile={noop} onLogout={noop} previewEntries={PREVIEW_LEADERBOARD} />
+    return <LeaderboardScreen previewEntries={PREVIEW_LEADERBOARD} />
 }
 
 function BattlePreview() {
@@ -74,10 +92,6 @@ function ProfilePreview() {
             history={PREVIEW_HISTORY}
             isLoadingHistory={false}
             errorMessage={null}
-            onBack={noop}
-            onOpenCollection={noop}
-            onOpenRanking={noop}
-            onLogout={noop}
             visualUrl={PREVIEW_VISUAL_HISTORY[2].signedUrl}
             visualVersionNumber={3}
             visualTrait="Arti slanciati"
@@ -99,11 +113,6 @@ function CollectionPreview() {
         <CollectionScreen
             profile={PREVIEW_PROFILE}
             creature={PREVIEW_CREATURE}
-            isOnline
-            onBack={noop}
-            onOpenProfile={noop}
-            onOpenRanking={noop}
-            onLogout={noop}
             visualUrl={PREVIEW_VISUAL_HISTORY[8].signedUrl}
             visualVersionNumber={9}
             visualTrait="SENSES"
@@ -191,6 +200,7 @@ function TransitionsPreview() {
             <ScreenTransition screenKey={stop.id} depth={SCREEN_DEPTH[stop.id]}>
                 {stop.render()}
             </ScreenTransition>
+            <PreviewDock screen={stop.id} />
             <nav className="ev-preview-moves" style={PREVIEW_MOVES_STYLE} aria-label="Anteprima transizioni">
                 {TRANSITION_STOPS.map((candidate) => (
                     <Button
@@ -214,19 +224,19 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
     }
 
     if (route === 'profile') {
-        return <ProfilePreview />
+        return <><ProfilePreview /><PreviewDock screen="profile" /></>
     }
 
     if (route === 'collection') {
-        return <CollectionPreview />
+        return <><CollectionPreview /><PreviewDock screen="collection" /></>
     }
 
     if (route === 'ranking') {
-        return <RankingPreview />
+        return <><RankingPreview /><PreviewDock screen="ranking" /></>
     }
 
     if (route === 'evolution') {
-        return <EvolutionPreview />
+        return <><EvolutionPreview /><PreviewDock screen="creature-evolution" /></>
     }
 
     if (route === 'draft') {
@@ -237,5 +247,5 @@ export function UiPreview({ route }: { route: UiPreviewRoute }) {
         return <TransitionsPreview />
     }
 
-    return <HomePreview />
+    return <><HomePreview /><PreviewDock screen="home" /></>
 }

@@ -1,6 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
-
-import { Avatar, Button, IconButton, Panel, Pips } from '../../../ui/components'
+import { Avatar, Button, IconButton, Pips, PopoverMenu } from '../../../ui/components'
 import { BackIcon, BoltIcon, EyeIcon, MeteorIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
 import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../controller/types'
 
@@ -87,66 +85,34 @@ function MutationSlots({ mutations, side, onActivateSymbiosis, onActivateFineDel
 }
 
 function PlayerProfileMenu({ player, status, onRequestLeave }: { player: DuelPlayerV2; status: DuelPlayerV2['status']; onRequestLeave: () => void }) {
-    const [isOpen, setIsOpen] = useState(false)
-    const menuId = useId()
-    const menuRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-        if (!isOpen) {
-            return undefined
-        }
-
-        const closeOnOutsidePointer = (event: PointerEvent) => {
-            if (!menuRef.current?.contains(event.target as Node)) {
-                setIsOpen(false)
-            }
-        }
-        const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                setIsOpen(false)
-            }
-        }
-
-        document.addEventListener('pointerdown', closeOnOutsidePointer)
-        document.addEventListener('keydown', closeOnEscape)
-
-        return () => {
-            document.removeEventListener('pointerdown', closeOnOutsidePointer)
-            document.removeEventListener('keydown', closeOnEscape)
-        }
-    }, [isOpen])
-
     return (
-        <div ref={menuRef} className="duel-card__profile-menu">
-            <button
-                type="button"
-                className="duel-card__profile-trigger"
-                aria-label={`Apri azioni per ${player.name}`}
-                aria-haspopup="menu"
-                aria-controls={menuId}
-                aria-expanded={isOpen}
-                onClick={() => setIsOpen((open) => !open)}
-            >
-                <Avatar name={player.name} src={player.creatureVisual?.src ?? player.avatarUrl} size={42} />
-                <span className={`duel-card__state duel-card__state--${status}`} title={statusLabel(status)} aria-hidden="true" />
-            </button>
-            {isOpen ? (
-                <Panel id={menuId} variant="glass" compact className="duel-card__profile-popover" role="menu" aria-label={`Azioni di ${player.name}`}>
-                    <Button
-                        tone="ghost"
-                        size="sm"
-                        role="menuitem"
-                        onClick={() => {
-                            setIsOpen(false)
-                            onRequestLeave()
-                        }}
-                    >
-                        <BackIcon aria-hidden="true" />
-                        Esci dalla partita
-                    </Button>
-                </Panel>
-            ) : null}
-        </div>
+        <PopoverMenu
+            className="duel-card__profile-menu"
+            triggerClassName="duel-card__profile-trigger"
+            label={`Azioni di ${player.name}`}
+            triggerLabel={`Apri azioni per ${player.name}`}
+            trigger={
+                <>
+                    <Avatar name={player.name} src={player.creatureVisual?.src ?? player.avatarUrl} size={42} />
+                    <span className={`duel-card__state duel-card__state--${status}`} title={statusLabel(status)} aria-hidden="true" />
+                </>
+            }
+        >
+            {(close) => (
+                <Button
+                    tone="ghost"
+                    size="sm"
+                    role="menuitem"
+                    onClick={() => {
+                        close()
+                        onRequestLeave()
+                    }}
+                >
+                    <BackIcon aria-hidden="true" />
+                    Esci dalla partita
+                </Button>
+            )}
+        </PopoverMenu>
     )
 }
 

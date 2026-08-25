@@ -1,6 +1,6 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LeaderboardScreen } from './LeaderboardScreen'
 
@@ -22,10 +22,6 @@ describe('LeaderboardScreen', () => {
     it('lets the list assemble instead of appearing all at once', () => {
         act(() => {
             root.render(createElement(LeaderboardScreen, {
-                onBack: vi.fn(),
-                onOpenCollection: vi.fn(),
-                onOpenProfile: vi.fn(),
-                onLogout: vi.fn(),
                 previewEntries: [{ position: 1, nickname: 'Aquila', skillRating: 1086 }],
             }))
         })
@@ -37,10 +33,6 @@ describe('LeaderboardScreen', () => {
     it('renders the supplied competitive leaderboard in rating order', () => {
         act(() => {
             root.render(createElement(LeaderboardScreen, {
-                onBack: vi.fn(),
-                onOpenCollection: vi.fn(),
-                onOpenProfile: vi.fn(),
-                onLogout: vi.fn(),
                 previewEntries: [
                     { position: 1, nickname: 'Aquila', skillRating: 1086 },
                     { position: 2, nickname: 'Naturalista', skillRating: 1000 },

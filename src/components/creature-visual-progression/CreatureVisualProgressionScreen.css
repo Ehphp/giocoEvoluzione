@@ -10,32 +10,7 @@
     margin-top: var(--ev-s-2);
 }
 
-.evolution-topbar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--ev-s-3);
-    margin-bottom: var(--ev-s-1);
-}
-
-.evolution-topbar__title {
-    display: grid;
-    gap: 1px;
-    justify-items: center;
-    min-width: 0;
-    text-align: center;
-}
-
-.evolution-topbar h1 {
-    max-width: 100%;
-    color: #fff;
-    font-size: var(--ev-fs-xl);
-    text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
-}
-
-.evolution-topbar__spacer {
-    width: 40px;
-}
+/* The header is `.ev-screen-header` in components.css, and the dock is the way back out. */
 
 /* -------------------------------------------------------------------------- */
 /* Cards                                                                       */

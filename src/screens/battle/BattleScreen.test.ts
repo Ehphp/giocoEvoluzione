@@ -405,26 +405,26 @@ describe('BattleScreen', () => {
         const requestLeave = () => {
             const trigger = container.querySelector<HTMLButtonElement>('.duel-card__profile-trigger')!
             act(() => trigger.click())
-            const action = container.querySelector<HTMLButtonElement>('.duel-card__profile-popover button')!
+            const action = container.querySelector<HTMLButtonElement>('.ev-menu__popover button')!
             act(() => action.click())
         }
 
         requestLeave()
 
-        expect(document.querySelector('.battle-leave-confirm')).not.toBeNull()
+        expect(document.querySelector('.ev-confirm')).not.toBeNull()
         expect(leaveCalls).toBe(0)
 
-        const cancel = [...document.querySelectorAll<HTMLButtonElement>('.battle-leave-confirm button')]
+        const cancel = [...document.querySelectorAll<HTMLButtonElement>('.ev-confirm button')]
             .find((button) => button.textContent?.includes('Continua a giocare'))!
 
         act(() => cancel.click())
 
-        expect(document.querySelector('.battle-leave-confirm')).toBeNull()
+        expect(document.querySelector('.ev-confirm')).toBeNull()
         expect(leaveCalls).toBe(0)
 
         requestLeave()
 
-        const confirm = [...document.querySelectorAll<HTMLButtonElement>('.battle-leave-confirm button')]
+        const confirm = [...document.querySelectorAll<HTMLButtonElement>('.ev-confirm button')]
             .find((button) => button.textContent?.includes('Esci dalla partita'))!
 
         act(() => confirm.click())

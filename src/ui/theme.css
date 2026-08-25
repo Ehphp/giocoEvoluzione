@@ -193,13 +193,13 @@
     --ev-sheet-width-narrow: 336px;
     --ev-safe-top: env(safe-area-inset-top, 0px);
     --ev-safe-bottom: env(safe-area-inset-bottom, 0px);
-    --ev-dock-height: 68px;
+    /* Icon-only slots: one glyph plus its padding, where it used to be a glyph over a caption. */
+    --ev-dock-height: 56px;
     --ev-touch-min: 40px;
     --ev-catalog-tile-min: 112px;
     --ev-scroll-max-tall: 560px;
     --ev-scroll-max-medium: 360px;
     --ev-scroll-max-compact: 260px;
-    --ev-collection-avatar-size: 52px;
     --ev-collection-hero-art-width: 56%;
     --ev-collection-timeline-art-size: 54px;
     --ev-collection-hero-art-height: 176px;

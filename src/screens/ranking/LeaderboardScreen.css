@@ -4,26 +4,6 @@
     gap: var(--ev-s-3);
 }
 
-.leaderboard-topbar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--ev-s-3);
-}
-
-.leaderboard-topbar__title {
-    display: grid;
-    justify-items: center;
-    min-width: 0;
-    text-align: center;
-}
-
-.leaderboard-topbar__title h1 {
-    color: var(--ev-cream-light);
-    font-size: var(--ev-fs-xl);
-    text-shadow: var(--ev-shadow-text-on-scene);
-}
-
 .leaderboard-intro {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

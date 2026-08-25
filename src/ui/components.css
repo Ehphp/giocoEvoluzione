@@ -65,6 +65,31 @@
 }
 
 /* -------------------------------------------------------------------------- */
+/* Screen header                                                               */
+/* -------------------------------------------------------------------------- */
+
+.ev-screen-header {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    color: var(--ev-on-dark);
+    text-align: center;
+    text-shadow: var(--ev-shadow-text-on-scene);
+}
+
+.ev-screen-header h1 {
+    max-width: 100%;
+    font-size: var(--ev-fs-2xl);
+}
+
+.ev-screen-header p {
+    margin: 0;
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-xs);
+    font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Panel                                                                       */
 /* -------------------------------------------------------------------------- */
 
@@ -324,22 +349,72 @@
     border-color: rgba(160, 138, 92, .32);
 }
 
-/** The exit/logout treatment, identical on every screen. */
+/**
+ * The exit/logout treatment, identical on every screen: the same red as a danger button, and the
+ * same toy lip. It used to be a tinted glass chip, which read as another piece of chrome next to
+ * the avatar rather than as the one control that ends the session.
+ */
 .ev-icon-btn--danger {
-    color: #ffd9d4;
-    background: color-mix(in srgb, var(--ev-danger-dark) 64%, rgba(8, 24, 19, .78));
-    border-color: color-mix(in srgb, var(--ev-danger-light) 52%, transparent);
-    backdrop-filter: blur(10px);
+    color: #fff;
+    background: var(--ev-grad-danger);
+    border-color: rgba(255, 255, 255, .5);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip);
 }
 
+/* Now that it has a lip, it sinks into it like the buttons do instead of only squashing. */
 .ev-icon-btn--danger:active:not(:disabled) {
-    filter: brightness(1.12);
+    transform: translateY(var(--ev-press-sink)) scale(var(--ev-press-scale));
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-pressed);
+    filter: brightness(.96);
 }
 
 .ev-icon-btn--lg {
     width: 44px;
     height: 44px;
     font-size: 21px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Popover menu                                                                */
+/* -------------------------------------------------------------------------- */
+
+.ev-menu {
+    position: relative;
+}
+
+/* Only the focus ring lives here: each trigger brings its own look, so nothing to override. */
+.ev-menu__trigger {
+    display: block;
+    color: inherit;
+}
+
+.ev-menu__trigger:focus-visible {
+    outline: var(--ev-focus-ring) solid var(--ev-cream-light);
+    outline-offset: var(--ev-s-1);
+}
+
+.ev-menu__popover {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + var(--ev-s-2));
+    display: grid;
+    gap: 4px;
+    width: max-content;
+    max-width: min(64vw, var(--ev-sheet-width-narrow));
+}
+
+.ev-menu__popover--start {
+    left: calc(var(--ev-s-1) * -1);
+}
+
+/* Hung from the right edge, for a trigger that already sits against the right margin. */
+.ev-menu__popover--end {
+    right: calc(var(--ev-s-1) * -1);
+}
+
+.ev-menu__popover .ev-btn {
+    justify-content: start;
+    white-space: nowrap;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -513,6 +588,57 @@
 /* Progress                                                                    */
 /* -------------------------------------------------------------------------- */
 
+/* The box is the portrait plus a band of ring on every side. */
+.ev-avatar-progress {
+    --ev-ring-band: 4px;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: calc(var(--ev-avatar-size, 46px) + var(--ev-ring-band) * 2);
+    height: calc(var(--ev-avatar-size, 46px) + var(--ev-ring-band) * 2);
+    flex: 0 0 auto;
+}
+
+/*
+ * `closest-side` is what makes the band a constant width: it pins the gradient ray to half the box,
+ * so the hole is always exactly `--ev-ring-band` short of the edge whatever size the avatar is.
+ * Without it the ray runs to the corner and the ring thins out as the avatar grows.
+ */
+.ev-avatar-progress__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--ev-r-pill);
+    background: conic-gradient(
+        var(--ev-player-light) calc(var(--ev-ring-ratio, 0) * 360deg),
+        rgba(6, 20, 15, .45) 0
+    );
+    mask: radial-gradient(
+        closest-side circle,
+        transparent calc(100% - var(--ev-ring-band)),
+        #000 calc(100% - var(--ev-ring-band))
+    );
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45));
+}
+
+/* On the rim at four-thirty, where it overlaps the ring rather than the face. */
+.ev-avatar-progress__level {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    min-width: 17px;
+    padding: 0 3px;
+    border-radius: var(--ev-r-pill);
+    color: #24160a;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+    background: var(--ev-grad-gold);
+    border: 1.5px solid rgba(255, 255, 255, .78);
+    box-shadow: var(--ev-shadow-sm);
+}
+
 .ev-progress {
     position: relative;
     height: 10px;
@@ -566,8 +692,13 @@
 /* Dock                                                                        */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Fixed to the viewport, not to a screen. The dock is rendered once above the whole app rather
+ * than by each destination, which is what lets the active pill travel between slots: a per-screen
+ * dock is a fresh element every navigation, so its pill could only ever appear already arrived.
+ */
 .ev-dock {
-    position: absolute;
+    position: fixed;
     right: 0;
     bottom: 0;
     left: 0;
@@ -579,14 +710,17 @@
 }
 
 .ev-dock__bar {
+    --ev-dock-pad: 6px;
+    --ev-dock-gap: 2px;
+    position: relative;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     align-items: center;
-    gap: 2px;
+    gap: var(--ev-dock-gap);
     width: min(100%, var(--ev-app-max-width));
     height: var(--ev-dock-height);
-    padding: 6px;
+    padding: var(--ev-dock-pad);
     border-radius: var(--ev-r-xl);
     background: var(--ev-grad-cream);
     border: 2px solid var(--ev-stroke-light);
@@ -594,46 +728,69 @@
     pointer-events: auto;
 }
 
+/**
+ * One pill that travels, rather than a background that blinks on under whichever slot won.
+ *
+ * It rides the same duration and curve as the screen change it accompanies, because it *is* that
+ * change: the dock is the one thing that stays put while the screens move, so the mark sliding
+ * across it is what connects where you were to where you are. Two timings would read as two events.
+ *
+ * Absolute rather than a grid item, so the slot count stays a number in `calc` — `repeat()` cannot
+ * take a custom property, and hard-coding five columns here would silently misplace the pill the
+ * day a sixth destination ships.
+ */
+.ev-dock__pill {
+    position: absolute;
+    top: var(--ev-dock-pad);
+    bottom: var(--ev-dock-pad);
+    left: var(--ev-dock-pad);
+    /* `100%` of an absolute box is its containing block's *padding* box, hence the two pads back. */
+    width: calc(
+        (100% - var(--ev-dock-pad) * 2 - (var(--ev-dock-slots) - 1) * var(--ev-dock-gap))
+        / var(--ev-dock-slots)
+    );
+    border-radius: var(--ev-r-md);
+    background: var(--ev-grad-nav);
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip);
+    /* The percentage resolves against the pill's own width, which is exactly one slot. */
+    translate: calc(var(--ev-dock-active, 0) * (100% + var(--ev-dock-gap))) 0;
+    transition: translate var(--ev-dur-screen) var(--ev-ease-screen);
+    pointer-events: none;
+}
+
+/* Icon-only: the glyph is the whole target, so it is centred in the slot rather than sat above copy. */
 .ev-dock__item {
     position: relative;
     display: grid;
-    justify-items: center;
-    align-content: center;
-    gap: 2px;
+    place-items: center;
     height: 100%;
     padding: 2px;
     border-radius: var(--ev-r-md);
     color: var(--ev-ink-muted);
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-2xs);
-    font-weight: 700;
-    letter-spacing: .01em;
-    transition: transform var(--ev-dur-release) var(--ev-ease-spring);
-}
-
-.ev-dock__item span:last-child {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        color var(--ev-dur-screen) var(--ev-ease-screen);
 }
 
 .ev-dock__icon {
     display: grid;
     place-items: center;
-    font-size: 21px;
-}
-
-.ev-dock__item.is-active {
-    color: #fff;
-    background: var(--ev-grad-nav);
-    box-shadow: var(--ev-shadow-sm), var(--ev-lip);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+    font-size: 25px;
 }
 
 .ev-dock__item:disabled {
     color: var(--ev-ink-faint);
     opacity: .72;
+}
+
+/*
+ * After `:disabled`, and that is the whole reason it works: the active slot is disabled (you cannot
+ * navigate to where you already are) and the two carry equal specificity, so order is what keeps the
+ * current icon white instead of dimming it into its own pill.
+ */
+.ev-dock__item.is-active {
+    color: #fff;
+    opacity: 1;
 }
 
 .ev-dock__item:active:not(:disabled):not(.is-active) {
@@ -727,6 +884,39 @@
 
 .ev-eyebrow--light {
     color: var(--ev-on-dark-muted);
+}
+
+/** The undo-less confirmation: red mark, question, then the two stacked answers. */
+.ev-confirm {
+    display: grid;
+    justify-items: center;
+    gap: var(--ev-s-3);
+    text-align: center;
+}
+
+.ev-confirm__mark {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--ev-r-pill);
+    color: #fff;
+    font-size: 26px;
+    background: var(--ev-grad-danger);
+    border: 2px solid rgba(255, 255, 255, .8);
+    box-shadow: var(--ev-shadow-md);
+}
+
+.ev-confirm p {
+    color: var(--ev-ink-muted);
+    font-size: var(--ev-fs-sm);
+}
+
+.ev-confirm__actions {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    margin-top: var(--ev-s-1);
 }
 
 @keyframes ev-fade {

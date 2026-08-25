@@ -18,11 +18,6 @@
     /* Short viewports scroll rather than hiding the gene row or the actions. */
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-width: none;
-}
-
-.battle-screen::-webkit-scrollbar {
-    display: none;
 }
 
 .duel-header,
@@ -50,41 +45,7 @@
 /* Duel header                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/* -------------------------------------------------------------------------- */
-/* Leave confirmation                                                          */
-/* -------------------------------------------------------------------------- */
-
-.battle-leave-confirm {
-    display: grid;
-    justify-items: center;
-    gap: var(--ev-s-3);
-    text-align: center;
-}
-
-.battle-leave-confirm__mark {
-    display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: var(--ev-r-pill);
-    color: #fff;
-    font-size: 26px;
-    background: var(--ev-grad-danger);
-    border: 2px solid rgba(255, 255, 255, .8);
-    box-shadow: var(--ev-shadow-md);
-}
-
-.battle-leave-confirm p {
-    color: var(--ev-ink-muted);
-    font-size: var(--ev-fs-sm);
-}
-
-.battle-leave-confirm__actions {
-    display: grid;
-    gap: 6px;
-    width: 100%;
-    margin-top: var(--ev-s-1);
-}
+/* The leave confirmation is `.ev-confirm` in components.css — the same dialog answers for logout. */
 
 /*
  * Three columns, and the middle one is real.
@@ -211,36 +172,15 @@
     display: block;
 }
 
+/* The popover itself is `.ev-menu` in components.css; only the avatar trigger is local. */
 .duel-card__profile-menu {
-    position: relative;
     flex: 0 0 auto;
 }
 
 .duel-card__profile-trigger {
     position: relative;
-    display: block;
     padding: 0;
     border-radius: var(--ev-r-pill);
-    color: inherit;
-    background: transparent;
-}
-
-.duel-card__profile-trigger:focus-visible {
-    outline: var(--ev-focus-ring) solid var(--ev-cream-light);
-    outline-offset: var(--ev-s-1);
-}
-
-.duel-card__profile-popover {
-    position: absolute;
-    z-index: 5;
-    top: calc(100% + var(--ev-s-2));
-    left: calc(var(--ev-s-1) * -1);
-    width: max-content;
-    max-width: min(52vw, var(--ev-sheet-width-narrow));
-}
-
-.duel-card__profile-popover .ev-btn {
-    white-space: nowrap;
 }
 
 .duel-card__state {

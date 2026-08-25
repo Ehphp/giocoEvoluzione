@@ -14,6 +14,7 @@ import {
     Flame,
     Leaf,
     LogOut,
+    PawPrint,
     Skull,
     ShieldCheck,
     Signpost,
@@ -262,6 +263,8 @@ export const ShopIcon = Store
 export const CollectionIcon = Backpack
 export const BattleIcon = Swords
 export const RankingIcon = Trophy
+/* The dock destination is the creature, not the account — a paw reads as one without picking a species. */
+export const CreatureIcon = PawPrint
 export const ProfileIcon = User
 export const TrophyIcon = Trophy
 export const DnaIcon = Dna

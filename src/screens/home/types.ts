@@ -30,12 +30,12 @@ export type HomeViewModel = {
         avatarUrl?: string
         accountLevel?: number
         experience?: { current: number; required: number }
-        rankLabel?: string
+        /** The skill rating, already formatted. The trophy beside it is what names it. */
+        rating?: string
     }
     creature: {
         id?: string
         name: string
-        shortDescription?: string
         image: HomeCreatureImage
         visualVersions: ReadonlyArray<HomeCreatureVisualVersion>
         level?: number
@@ -45,9 +45,6 @@ export type HomeViewModel = {
     stage: {
         backgroundSrc: string
         backgroundFallbackSrc: string
-    }
-    connection: {
-        isOnline: boolean
     }
     resources: Array<{
         id: string
@@ -90,8 +87,5 @@ export type HomeActions = {
     onCreateBotGame: () => void
     onJoinGame: () => void
     onLeaveSession: () => void
-    onOpenProfile: () => void
-    onOpenCollection: () => void
-    onOpenRanking: () => void
     onLogout: () => void
 }

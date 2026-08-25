@@ -28,9 +28,6 @@ function createActions(): HomeActions {
         onCreateBotGame: vi.fn(),
         onJoinGame: vi.fn(),
         onLeaveSession: vi.fn(),
-        onOpenProfile: vi.fn(),
-        onOpenCollection: vi.fn(),
-        onOpenRanking: vi.fn(),
         onLogout: vi.fn(),
     }
 }
@@ -108,40 +105,31 @@ describe('HomeScreen', () => {
         expect(container.querySelector('#player-name')).toBeNull()
     })
 
-    it('locks the destinations that are not shipped yet and keeps battle current', () => {
+    it('keeps the account settings behind the player row instead of on the top bar', () => {
         render()
 
-        const items = [...container.querySelectorAll<HTMLButtonElement>('.ev-dock__item')]
+        expect(container.querySelector('.ev-menu__popover')).toBeNull()
 
-        expect(items.map((item) => item.textContent)).toEqual(['Negozio', 'Collezione', 'Battaglia', 'Classifica', 'Creatura'])
-        expect(items.find((item) => item.classList.contains('is-active'))?.textContent).toBe('Battaglia')
-        expect(items.every((item) => item.disabled)).toBe(true)
+        const trigger = container.querySelector<HTMLButtonElement>('.home-identity')!
+
+        expect(trigger.getAttribute('aria-expanded')).toBe('false')
+        act(() => trigger.click())
+
+        const items = [...container.querySelectorAll<HTMLButtonElement>('.ev-menu__popover button')]
+
+        expect(items.map((item) => item.textContent)).toEqual(['Audio attivo', 'Esci dall account'])
+        expect(trigger.getAttribute('aria-expanded')).toBe('true')
     })
 
-    it('opens the profile from the dock once the capability is available', () => {
-        const viewModel = createViewModel()
-        viewModel.capabilities = { ...viewModel.capabilities, profile: true }
-        const actions = render(viewModel)
+    it('asks to sign out rather than doing it: the menu only raises the request', () => {
+        const actions = render()
 
-        const profileTab = [...container.querySelectorAll<HTMLButtonElement>('.ev-dock__item')].at(-1)!
+        act(() => container.querySelector<HTMLButtonElement>('.home-identity')!.click())
+        act(() => container.querySelector<HTMLButtonElement>('.home-account__logout')!.click())
 
-        expect(profileTab.disabled).toBe(false)
-        act(() => profileTab.click())
-
-        expect(actions.onOpenProfile).toHaveBeenCalledTimes(1)
-    })
-
-    it('opens the competitive leaderboard from the dock once the capability is available', () => {
-        const viewModel = createViewModel()
-        viewModel.capabilities = { ...viewModel.capabilities, rankings: true }
-        const actions = render(viewModel)
-
-        const rankingTab = [...container.querySelectorAll<HTMLButtonElement>('.ev-dock__item')][3]!
-
-        expect(rankingTab.disabled).toBe(false)
-        act(() => rankingTab.click())
-
-        expect(actions.onOpenRanking).toHaveBeenCalledTimes(1)
+        expect(actions.onLogout).toHaveBeenCalledTimes(1)
+        // And it puts itself away first: the confirmation is an overlay, and two must not stack.
+        expect(container.querySelector('.ev-menu__popover')).toBeNull()
     })
 
     it('forwards guest form values and every existing game action', () => {
@@ -245,7 +233,7 @@ describe('HomeScreen', () => {
     it('supports authenticated data and falls back when a creature image fails', () => {
         const viewModel = createViewModel()
         viewModel.mode = 'authenticated'
-        viewModel.player = { displayName: 'Ada', accountLevel: 4, rankLabel: 'Esploratrice' }
+        viewModel.player = { displayName: 'Ada', accountLevel: 4, rating: '1.240', experience: { current: 30, required: 120 } }
         viewModel.creature = {
             name: 'Verdante',
             level: 4,
@@ -275,32 +263,24 @@ describe('HomeScreen', () => {
 
         expect(document.querySelector('#player-name')).toBeNull()
         expect(container.textContent).toContain('Ada')
-        expect(container.textContent).toContain('Livello 4')
+        // The level is the badge on the avatar's ring now, not a line of caption under the creature.
+        expect(container.querySelector('.ev-avatar-progress__level')?.textContent).toBe('4')
+        expect(container.querySelector('.ev-avatar-progress__ring')?.getAttribute('aria-valuenow')).toBe('30')
 
         act(() => creatureImage.dispatchEvent(new Event('error')))
 
         expect(creatureImage.getAttribute('src')).toBe('/assets/battle/creatures/verdant-hatchling.webp')
     })
 
-    it('opens the active creature description when its image is selected', () => {
-        const viewModel = createVisualLineageViewModel()
-        viewModel.creature = { ...viewModel.creature!, shortDescription: 'Una creatura quadrupede dalle scaglie verdi, con una lunga coda piumata e morbide corna arancioni.' }
-
-        render(viewModel)
-        const trigger = container.querySelector<HTMLButtonElement>('[data-testid="home-creature-description-trigger"]')
-
-        expect(trigger?.getAttribute('aria-label')).toBe('Leggi la descrizione di Verdante')
-        expect(document.querySelector('[role="dialog"]')).toBeNull()
-
-        act(() => trigger?.click())
-
-        expect(document.querySelector('[role="dialog"]')?.textContent).toContain('lunga coda piumata')
-    })
-
-    it('does not make the creature interactive when the active version has no description', () => {
+    it('shows the creature and nothing else: no caption, and no dialog behind it', () => {
         render(createVisualLineageViewModel())
 
-        expect(container.querySelector('[data-testid="home-creature-description-trigger"]')).toBeNull()
+        act(() => container.querySelector<HTMLElement>('.home-stage__creature')!.click())
+
+        expect(container.querySelector('.home-stage__plaque')).toBeNull()
+        // The rail below is tappable; the artwork itself is not.
+        expect(container.querySelectorAll('.home-stage__carousel button')).toHaveLength(0)
+        expect(document.querySelector('[role="dialog"]')).toBeNull()
     })
 
     it('starts the Home carousel on the current, most recent unlocked form', () => {
@@ -308,7 +288,26 @@ describe('HomeScreen', () => {
 
         expect(container.querySelector('[data-testid="home-creature-form-form-3"]')?.getAttribute('aria-hidden')).toBe('false')
         expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('true')
-        expect(container.querySelector('.home-stage__plaque')?.textContent).toContain('Generazione 2')
+    })
+
+    it('reaches a past form from the rail in one tap, without adopting it', () => {
+        const viewModel = createVisualLineageViewModel()
+        render(viewModel)
+
+        const rail = [...container.querySelectorAll<HTMLButtonElement>('[data-testid="home-forms-rail"] button')]
+
+        // Same URLs the carousel uses, so the two share one download rather than costing a second.
+        expect(rail.map((item) => item.querySelector('img')?.getAttribute('src')))
+            .toEqual(['/assets/form-1.png', '/assets/form-3.png'])
+        expect(rail.map((item) => item.textContent)).toEqual(['Gen 0', 'Attuale'])
+        expect(rail[1]!.getAttribute('aria-selected')).toBe('true')
+
+        act(() => rail[0]!.click())
+
+        expect(rail[0]!.getAttribute('aria-selected')).toBe('true')
+        expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('false')
+        // Looking is not switching: the creature you play with is untouched.
+        expect(viewModel.creature?.visualVersions.find((version) => version.isCurrent)?.id).toBe('form-3')
     })
 
     it('updates the Home preview through scroll snap without changing the active creature', () => {
@@ -323,7 +322,6 @@ describe('HomeScreen', () => {
         })
 
         expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('false')
-        expect(container.querySelector('.home-stage__plaque')?.textContent).toContain('Generazione 0')
         expect(viewModel.creature?.visualVersions.find((version) => version.isCurrent)?.id).toBe('form-3')
         expect(Object.values(actions).every((action) => !vi.isMockFunction(action) || action.mock.calls.length === 0)).toBe(true)
     })

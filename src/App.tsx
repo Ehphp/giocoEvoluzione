@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { hasSupabaseConfig } from './lib/supabase'
 
@@ -27,8 +27,11 @@ import { isCreatureVisualProgressionEnabled, useEvolutionRoute } from './app/use
 import { useCreatureVisuals } from './app/use-creature-visuals'
 import { useProfileActivity } from './app/use-profile-activity'
 import { useMatchSession, type BattleSubmitAction } from './app/use-match-session'
+import { ConfirmDialog } from './ui/components'
+import { Dock } from './ui/Dock'
 import { ScreenTransition } from './ui/ScreenTransition'
 import { SCREEN_DEPTH, type ScreenId } from './app/screen-depth'
+import { getDockPlacement } from './app/dock-tab'
 import { isColdStart } from './app/cold-start'
 
 type ResolvedScreen = Readonly<{ id: ScreenId; node: ReactNode }>
@@ -43,6 +46,7 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
 
 function App() {
   const auth = useAuth()
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const activeCreature = auth.activeLineage?.creature ?? null
   const { currentScreen, setCurrentScreen, evolutionTarget, openEvolution, leaveEvolution } = useEvolutionRoute()
   const evolutionCreature = evolutionTarget === null
@@ -116,7 +120,6 @@ function App() {
         officialVisualUrl: officialVisual?.signedUrl,
         visualVersionNumber: visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber,
         visualTrait: visualProgress?.currentVersion.visualTraitId ?? officialVisual?.visualTraitId ?? null,
-        currentVisualShortDescription: visualProgress?.currentVersion.shortDescription ?? null,
         visualHistory: visualProgress?.history,
         currentVisualVersionId: visualProgress?.currentVersion.id ?? officialVisual?.versionId,
       })
@@ -138,7 +141,12 @@ function App() {
     await refreshProfile()
   }
 
+  /**
+   * Signing out is asked for on four screens and confirmed in one place, so the question reads the
+   * same wherever it is triggered — and so the confirmation survives the screen unmounting under it.
+   */
   async function handleLogout() {
+    setIsLogoutConfirmOpen(false)
     session.reset()
     setCurrentScreen('home')
     resetProfileActivity()
@@ -212,10 +220,6 @@ function App() {
             history={history}
             isLoadingHistory={isLoadingHistory}
             errorMessage={historyError}
-            onBack={() => setCurrentScreen('home')}
-            onOpenCollection={() => setCurrentScreen('collection')}
-            onOpenRanking={() => setCurrentScreen('ranking')}
-            onLogout={() => void handleLogout()}
             visualUrl={officialVisual?.signedUrl}
             visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
             visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
@@ -233,11 +237,6 @@ function App() {
           <CollectionScreen
             profile={auth.profile}
             creature={activeCreature}
-            isOnline={isOnline}
-            onBack={() => setCurrentScreen('home')}
-            onOpenProfile={() => setCurrentScreen('profile')}
-            onOpenRanking={() => setCurrentScreen('ranking')}
-            onLogout={() => void handleLogout()}
             visualUrl={officialVisual?.signedUrl}
             visualVersionNumber={visualProgress?.currentVersion.versionNumber ?? officialVisual?.versionNumber}
             visualTrait={visualProgress?.currentVersion.visualTraitId ?? null}
@@ -260,12 +259,7 @@ function App() {
       return {
         id: 'ranking',
         node: (
-          <LeaderboardScreen
-            onBack={() => setCurrentScreen('home')}
-            onOpenCollection={() => setCurrentScreen('collection')}
-            onOpenProfile={() => setCurrentScreen('profile')}
-            onLogout={() => void handleLogout()}
-          />
+          <LeaderboardScreen />
         ),
       }
     }
@@ -284,10 +278,7 @@ function App() {
               onCreateBotGame: () => void session.createBotGame(),
               onJoinGame: () => void session.joinRoom(),
               onLeaveSession: session.leaveSession,
-              onOpenProfile: () => setCurrentScreen('profile'),
-              onOpenCollection: () => setCurrentScreen('collection'),
-              onOpenRanking: () => setCurrentScreen('ranking'),
-              onLogout: () => void handleLogout(),
+              onLogout: () => setIsLogoutConfirmOpen(true),
             }}
           />
         ),
@@ -357,11 +348,39 @@ function App() {
   }
 
   const screen = resolveScreen()
+  const dock = getDockPlacement(screen.id)
+  const isSignedIn = Boolean(auth.profile && activeCreature)
 
   return (
-    <ScreenTransition screenKey={screen.id} depth={SCREEN_DEPTH[screen.id]}>
-      {screen.node}
-    </ScreenTransition>
+    <>
+      <ScreenTransition screenKey={screen.id} depth={SCREEN_DEPTH[screen.id]}>
+        {screen.node}
+      </ScreenTransition>
+      {dock.isShown ? (
+        <Dock
+          active={dock.active}
+          /* Battle is always reachable; the rest need an account behind them. No shop has shipped. */
+          capabilities={{ shop: false, collection: isSignedIn, ranking: isSignedIn, profile: isSignedIn }}
+          onNavigate={(tab) => {
+            if (tab === 'battle') setCurrentScreen('home')
+            if (tab === 'collection') setCurrentScreen('collection')
+            if (tab === 'ranking') setCurrentScreen('ranking')
+            if (tab === 'profile') setCurrentScreen('profile')
+          }}
+        />
+      ) : null}
+      {isLogoutConfirmOpen ? (
+        <ConfirmDialog
+          label="Conferma uscita dall account"
+          title="Uscire dall account?"
+          description="La sessione locale viene chiusa. Per tornare a giocare devi accedere di nuovo."
+          confirmLabel="Esci dall account"
+          cancelLabel="Resta collegato"
+          onConfirm={() => void handleLogout()}
+          onCancel={() => setIsLogoutConfirmOpen(false)}
+        />
+      ) : null}
+    </>
   )
 }
 

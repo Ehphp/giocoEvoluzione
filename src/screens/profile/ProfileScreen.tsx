@@ -6,11 +6,8 @@ import { getExperienceProgress } from '../../lib/progression'
 import { COMBAT_MUTATION_CATALOG } from '../../../shared/game-rules/catalog.ts'
 import type { CombatMutationId, CombatMutationLoadout } from '../../../shared/game-rules/types.ts'
 import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
-import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Button, Chip, IconButton, Notice, Overlay, Panel, ProgressBar, SectionLabel } from '../../ui/components'
-import { playCue } from '../../ui/feedback/feedback'
-import { useFeedbackPreference } from '../../ui/feedback/use-feedback'
-import { ChevronIcon, DnaIcon, ExitIcon, FeedbackOffIcon, FeedbackOnIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
+import { AppShell, Button, Chip, Notice, Overlay, Panel, ProgressBar, ScreenHeader, SectionLabel } from '../../ui/components'
+import { ChevronIcon, DnaIcon, SparkIcon, TrophyIcon } from '../../ui/icons'
 
 import './ProfileScreen.css'
 
@@ -20,10 +17,6 @@ type ProfileScreenProps = {
     history: ProfileMatchHistoryItem[]
     isLoadingHistory: boolean
     errorMessage: string | null
-    onBack: () => void
-    onOpenCollection: () => void
-    onOpenRanking: () => void
-    onLogout: () => void
     visualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
@@ -61,10 +54,6 @@ export function ProfileScreen({
     history,
     isLoadingHistory,
     errorMessage,
-    onBack,
-    onOpenCollection,
-    onOpenRanking,
-    onLogout,
     visualUrl,
     visualVersionNumber,
     visualTrait,
@@ -86,18 +75,6 @@ export function ProfileScreen({
     const winRate = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0
     const combatMutationLoadout = requireCombatMutationLoadout(creature.combat_mutation_loadout)
     const activeVisualUrl = visualUrl ?? ASSETS.creatures.default
-    const { isEnabled: isFeedbackEnabled, toggle: toggleFeedback } = useFeedbackPreference()
-
-    /**
-     * Confirms with the cue only when switching *on*. `playCue` reads the preference straight from
-     * the module rather than from React state, so by this line it already holds the new value: turning
-     * feedback on announces itself, turning it off goes quiet, and neither needs a branch here.
-     */
-    function handleToggleFeedback() {
-        toggleFeedback()
-        playCue('confirm')
-    }
-
     async function selectCombatMutation(mutation: CombatMutationId) {
         if (openMutationSlot === null || !onSetCombatMutationLoadout || isUpdatingMutation || combatMutationLoadout[1 - openMutationSlot] === mutation) return
         const next = openMutationSlot === 0
@@ -115,58 +92,15 @@ export function ProfileScreen({
         }
     }
 
-    function handleNavigate(tab: DockTab) {
-        if (tab === 'battle') {
-            onBack()
-        }
-
-        if (tab === 'collection') {
-            onOpenCollection()
-        }
-
-        if (tab === 'ranking') {
-            onOpenRanking()
-        }
-    }
-
-    const dock = (
-        <Dock
-            active="profile"
-            capabilities={{ collection: true, ranking: true, profile: true }}
-            onNavigate={handleNavigate}
-        />
-    )
-
     return (
         <AppShell
             sceneryUrl={ASSETS.scenery.forest}
             sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback}
-            dock={dock}
+            docked
             scroll
         >
             <section className="profile-screen" aria-labelledby="profile-title">
-                <header className="profile-topbar">
-                    <IconButton label="Torna alla home" onClick={onBack}>
-                        <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
-                    </IconButton>
-                    <div className="profile-topbar__title">
-                        <span className="ev-eyebrow ev-eyebrow--light">Creatura attiva</span>
-                        <h1 id="profile-title" className="ev-truncate">{profile.nickname}</h1>
-                    </div>
-                    <div className="profile-topbar__actions">
-                        <IconButton
-                            label={isFeedbackEnabled ? 'Disattiva audio e vibrazione' : 'Attiva audio e vibrazione'}
-                            aria-pressed={isFeedbackEnabled}
-                            cue={null}
-                            onClick={handleToggleFeedback}
-                        >
-                            {isFeedbackEnabled ? <FeedbackOnIcon /> : <FeedbackOffIcon />}
-                        </IconButton>
-                        <IconButton label="Esci dall account" variant="danger" onClick={onLogout}>
-                            <ExitIcon />
-                        </IconButton>
-                    </div>
-                </header>
+                <ScreenHeader id="profile-title" eyebrow="Creatura attiva" title={profile.nickname} />
 
                 <Panel className="profile-hero" compact>
                     <figure className="profile-hero__stage">

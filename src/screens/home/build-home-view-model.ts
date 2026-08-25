@@ -76,9 +76,6 @@ export function buildGuestHomeViewModel({
             backgroundSrc: ASSETS.scenery.forest,
             backgroundFallbackSrc: HOME_BACKGROUND_FALLBACK,
         },
-        connection: {
-            isOnline,
-        },
         resources: [],
         shortcuts: [],
         navigation: [
@@ -111,7 +108,6 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
     officialVisualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
-    currentVisualShortDescription?: string | null
     visualHistory?: ReadonlyArray<CreatureVisualVersionSource>
     currentVisualVersionId?: string | null
 }): HomeViewModel {
@@ -157,7 +153,7 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             displayName: input.profile.nickname,
             accountLevel: input.creature.level,
             experience,
-            rankLabel: `Rating ${new Intl.NumberFormat('it-IT').format(input.profile.skill_rating)}`,
+            rating: new Intl.NumberFormat('it-IT').format(input.profile.skill_rating),
         },
         creature: {
             ...base.creature!,
@@ -165,7 +161,6 @@ export function buildAuthenticatedHomeViewModel(input: BuildGuestHomeViewModelIn
             visualVersions,
             id: input.creature.id,
             name: input.creature.name ?? 'Creatura iniziale',
-            ...(input.currentVisualShortDescription ? { shortDescription: input.currentVisualShortDescription } : {}),
             level: input.creature.level,
             experience,
         },

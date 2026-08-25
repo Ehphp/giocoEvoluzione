@@ -26,7 +26,7 @@ describe('ProfileScreen combat mutation loadout', () => {
             root.render(createElement(ProfileScreen, {
                 profile: { id: 'profile', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
                 creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
-                history: [], isLoadingHistory: false, errorMessage: null, onBack: vi.fn(), onOpenCollection: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(), onSetCombatMutationLoadout,
+                history: [], isLoadingHistory: false, errorMessage: null, onSetCombatMutationLoadout,
             }))
         })
 

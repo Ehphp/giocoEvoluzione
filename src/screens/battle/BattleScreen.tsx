@@ -8,8 +8,8 @@ import {
 } from './controller/gene-selection-assets'
 import type { GeneSelectionViewModelV2 } from './controller/types'
 import type { TraitType } from '../../game/types'
-import { AppShell, Button, Notice, Overlay, Panel } from '../../ui/components'
-import { CloseIcon, MeteorIcon } from '../../ui/icons'
+import { AppShell, Button, ConfirmDialog, Notice, Overlay, Panel } from '../../ui/components'
+import { MeteorIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
 import { DuelHeader } from './parts/DuelHeader'
@@ -68,17 +68,15 @@ export function BattleScreen({
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
 
     const leaveConfirm = isLeaveConfirmOpen ? (
-        <Overlay label="Conferma uscita dalla partita" align="center" onClose={() => setIsLeaveConfirmOpen(false)}>
-            <Panel className="battle-leave-confirm">
-                <span className="battle-leave-confirm__mark" aria-hidden="true"><CloseIcon /></span>
-                <h2>Uscire dalla partita?</h2>
-                <p>La partita in corso viene abbandonata e il round non verra completato.</p>
-                <div className="battle-leave-confirm__actions">
-                    <Button tone="danger" block onClick={onLeaveSession}>Esci dalla partita</Button>
-                    <Button tone="cream" block onClick={() => setIsLeaveConfirmOpen(false)}>Continua a giocare</Button>
-                </div>
-            </Panel>
-        </Overlay>
+        <ConfirmDialog
+            label="Conferma uscita dalla partita"
+            title="Uscire dalla partita?"
+            description="La partita in corso viene abbandonata e il round non verra completato."
+            confirmLabel="Esci dalla partita"
+            cancelLabel="Continua a giocare"
+            onConfirm={onLeaveSession}
+            onCancel={() => setIsLeaveConfirmOpen(false)}
+        />
     ) : null
 
     const openSymbiosisPicker = () => {

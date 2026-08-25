@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { getExperienceProgress } from '../../lib/progression'
 import type { CreatureLineageRecord, PlayerCreatureRecord, ProfileRecord } from '../../lib/profile-api'
-import { ASSETS, fallbackToDefaultCreatureImage, srcSetFor } from '../../ui/assets'
-import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, Chip, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SectionLabel } from '../../ui/components'
-import { AddIcon, CloseIcon, ExitIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
+import { ASSETS, fallbackToDefaultCreatureImage } from '../../ui/assets'
+import { AppShell, Button, Chip, IconButton, Notice, Overlay, Panel, ScreenHeader, SectionLabel } from '../../ui/components'
+import { AddIcon, CloseIcon, FireIcon, NatureIcon, VenomIcon } from '../../ui/icons'
 import { buildCollectionViewModel } from './build-collection-view-model'
 import type { CollectionForm } from './types'
 
@@ -22,11 +21,6 @@ type VisualHistoryEntry = {
 type CollectionScreenProps = {
     profile: ProfileRecord
     creature: PlayerCreatureRecord
-    isOnline: boolean
-    onBack: () => void
-    onOpenProfile: () => void
-    onOpenRanking: () => void
-    onLogout: () => void
     visualUrl?: string | null
     visualVersionNumber?: number | null
     visualTrait?: string | null
@@ -126,11 +120,6 @@ function FormCatalog({ forms, selectedFormId, onSelectForm }: FormSelectionProps
 export function CollectionScreen({
     profile,
     creature,
-    isOnline,
-    onBack,
-    onOpenProfile,
-    onOpenRanking,
-    onLogout,
     visualUrl,
     visualVersionNumber,
     visualTrait,
@@ -205,12 +194,6 @@ export function CollectionScreen({
     const canSetSelectedForm = Boolean(onSelectVisualVersion && currentSelectedVisualVersionId && selectedVisualHistory?.some((entry) => entry.id === selectedForm.id) && selectedForm.id !== currentSelectedVisualVersionId)
     // --- handlers --------------------------------------------------------------
 
-    function handleNavigate(tab: DockTab) {
-        if (tab === 'battle') onBack()
-        if (tab === 'profile') onOpenProfile()
-        if (tab === 'ranking') onOpenRanking()
-    }
-
     async function handleCreateLineage() {
         if (!onCreateLineage || isCreatingLineage) return
 
@@ -280,37 +263,13 @@ export function CollectionScreen({
 
     return (
         <>
-            <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} dock={
-                <Dock active="collection" capabilities={{ collection: true, profile: true, ranking: true }} onNavigate={handleNavigate} />
-            } scroll>
+            <AppShell sceneryUrl={ASSETS.scenery.forest} sceneryFallbackUrl={ASSETS.scenery.fallback} docked scroll>
                 <main className="collection-screen" aria-labelledby="collection-title">
-                    <header className="collection-topbar">
-                        <div className="collection-identity">
-                            <Avatar name={viewModel.player.name} className="collection-identity__avatar" />
-                            <div className="collection-identity__copy">
-                                <strong className="ev-truncate">{viewModel.player.name}</strong>
-                                <span>LIVELLO {viewModel.player.level}</span>
-                                <ProgressBar current={viewModel.player.experience.current} total={viewModel.player.experience.required} label="Esperienza del giocatore" />
-                            </div>
-                        </div>
-                        {/* A 30px brand mark in the top bar: without `sizes` this alone would pull the 900w file. */}
-                        <img
-                            className="collection-logo"
-                            src={ASSETS.branding.logo}
-                            srcSet={srcSetFor(ASSETS.branding.logo)}
-                            sizes="min(28vw, 30px)"
-                            alt="Evori"
-                        />
-                        <div className="collection-topbar__actions">
-                            <Pill className={isOnline ? 'is-online' : 'is-offline'}>{isOnline ? 'Online' : 'Offline'}</Pill>
-                            <IconButton label="Esci dall account" variant="danger" onClick={onLogout}><ExitIcon /></IconButton>
-                        </div>
-                    </header>
-
-                    <header className="collection-heading">
-                        <h1 id="collection-title">Collezione</h1>
-                        <p>{viewModel.evolutionForms.length} forme scoperte · Generazione {viewModel.currentCreature.generation - 1}</p>
-                    </header>
+                    <ScreenHeader
+                        id="collection-title"
+                        title="Collezione"
+                        subtitle={`${viewModel.evolutionForms.length} forme scoperte · Generazione ${viewModel.currentCreature.generation - 1}`}
+                    />
 
                     <section className="collection-lineage-section" aria-label="Stirpi">
                         <div className="collection-lineage-section__heading">

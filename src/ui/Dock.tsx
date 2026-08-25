@@ -1,6 +1,6 @@
 import { Badge } from './components'
 import { playCue } from './feedback/feedback'
-import { BattleIcon, CollectionIcon, LockIcon, ProfileIcon, RankingIcon, ShopIcon } from './icons'
+import { BattleIcon, CollectionIcon, CreatureIcon, LockIcon, RankingIcon, ShopIcon } from './icons'
 
 /**
  * Primary destination bar.
@@ -8,6 +8,10 @@ import { BattleIcon, CollectionIcon, LockIcon, ProfileIcon, RankingIcon, ShopIco
  * The five slots mirror the product concept; the three shipped surfaces (play, profile) are
  * live and the rest render locked until their capability is enabled, so no layout changes
  * are needed when they ship.
+ *
+ * Icons only. The labels repeated what five unmistakable glyphs already said and cost the dock a
+ * whole line of height; they live on as the accessible name of each button, which is where a
+ * screen reader looks for them anyway.
  */
 
 export type DockTab = 'shop' | 'collection' | 'battle' | 'ranking' | 'profile'
@@ -30,11 +34,12 @@ const DOCK_ITEMS: DockItem[] = [
     { id: 'collection', label: 'Collezione', icon: <CollectionIcon /> },
     { id: 'battle', label: 'Battaglia', icon: <BattleIcon /> },
     { id: 'ranking', label: 'Classifica', icon: <RankingIcon /> },
-    { id: 'profile', label: 'Creatura', icon: <ProfileIcon /> },
+    { id: 'profile', label: 'Creatura', icon: <CreatureIcon /> },
 ]
 
 type DockProps = {
-    active: DockTab
+    /** The slot to light up, or `null` on a screen that is inside something rather than one of them. */
+    active: DockTab | null
     capabilities: DockCapabilities
     onNavigate: (tab: DockTab) => void
     badges?: Partial<Record<DockTab, number>>
@@ -43,9 +48,20 @@ type DockProps = {
 }
 
 export function Dock({ active, capabilities, onNavigate, badges, locked = false }: DockProps) {
+    const activeIndex = active === null ? -1 : DOCK_ITEMS.findIndex((item) => item.id === active)
+
     return (
         <nav className="ev-dock" aria-label="Navigazione principale">
-            <div className="ev-dock__bar">
+            <div
+                className="ev-dock__bar"
+                /* The pill is placed in CSS from these two: which slot it sits on, out of how many. */
+                style={{
+                    ['--ev-dock-slots' as string]: DOCK_ITEMS.length,
+                    ['--ev-dock-active' as string]: Math.max(0, activeIndex),
+                }}
+            >
+                {/* No pill where nothing is current: there is no slot for it to sit on. */}
+                {activeIndex >= 0 ? <span className="ev-dock__pill" aria-hidden="true" /> : null}
                 {DOCK_ITEMS.map((item) => {
                     const isActive = item.id === active
                     const isAvailable = item.id === 'battle' ? true : Boolean(capabilities[item.id])
@@ -66,7 +82,6 @@ export function Dock({ active, capabilities, onNavigate, badges, locked = false 
                             }}
                         >
                             <span className="ev-dock__icon" aria-hidden="true">{item.icon}</span>
-                            <span>{item.label}</span>
                             {badge ? <Badge className="ev-dock__badge">{badge}</Badge> : null}
                             {!isAvailable ? <span className="ev-dock__lock" aria-hidden="true"><LockIcon /></span> : null}
                         </button>

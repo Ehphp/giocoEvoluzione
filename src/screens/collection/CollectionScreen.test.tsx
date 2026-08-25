@@ -43,11 +43,6 @@ describe('CollectionScreen', () => {
                     created_at: '2026-01-01T00:00:00.000Z',
                     updated_at: '2026-01-01T00:00:00.000Z',
                 },
-                isOnline: true,
-                onBack: vi.fn(),
-                onOpenProfile: vi.fn(),
-                onOpenRanking: vi.fn(),
-                onLogout: vi.fn(),
                 visualUrl: '/assets/current-form.png',
                 visualVersionNumber: 3,
                 currentVisualVersionId: 'form-3',
@@ -115,7 +110,7 @@ describe('CollectionScreen', () => {
                     { id: 'lineage-a', profile_id: 'profile-1', name: 'Stirpe verde', base_creature_key: 'VERDANT_HATCHLING', created_at: '2026-01-01', updated_at: '2026-01-01', creature },
                     { id: 'lineage-b', profile_id: 'profile-1', name: 'Stirpe viola', base_creature_key: 'VERDANT_HATCHLING', created_at: '2026-01-01', updated_at: '2026-01-01', creature: secondCreature },
                 ],
-                activeLineageId: 'lineage-a', onSetActiveLineage, onOpenEvolution, isOnline: true, onBack: vi.fn(), onOpenProfile: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(),
+                activeLineageId: 'lineage-a', onSetActiveLineage, onOpenEvolution,
                 lineageVisuals: {
                     'lineage-a': { visualUrl: '/a-2.png', visualVersionNumber: 2, visualTrait: null, currentVisualVersionId: 'a-2', visualHistory: [{ id: 'a-1', versionNumber: 1, visualTraitId: null, conceptName: 'Base A', signedUrl: '/a-1.png' }, { id: 'a-2', versionNumber: 2, visualTraitId: 'AGILITY', conceptName: 'A2', signedUrl: '/a-2.png' }] },
                     'lineage-b': { visualUrl: '/b-3.png', visualVersionNumber: 3, visualTrait: null, currentVisualVersionId: 'b-3', visualHistory: [{ id: 'b-1', versionNumber: 1, visualTraitId: null, conceptName: 'Base B', signedUrl: '/b-1.png' }, { id: 'b-3', versionNumber: 3, visualTraitId: 'ARMOR', conceptName: 'B3', signedUrl: '/b-3.png' }] },
@@ -141,7 +136,7 @@ describe('CollectionScreen', () => {
             root.render(createElement(CollectionScreen, {
                 profile: { id: 'profile-1', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
                 creature: { id: 'creature-1', profile_id: 'profile-1', lineage_id: 'lineage-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, created_at: '2026-01-01', updated_at: '2026-01-01' },
-                isOnline: true, onBack: vi.fn(), onOpenProfile: vi.fn(), onOpenRanking: vi.fn(), onLogout: vi.fn(), onCreateLineage,
+                onCreateLineage,
             }))
         })
 

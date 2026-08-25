@@ -10,38 +10,7 @@
     margin-top: var(--ev-s-2);
 }
 
-/* -------------------------------------------------------------------------- */
-/* Top bar                                                                     */
-/* -------------------------------------------------------------------------- */
-
-.profile-topbar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--ev-s-3);
-    margin-bottom: var(--ev-s-1);
-}
-
-/* Two controls share the trailing grid cell; the header stays a three-column bar. */
-.profile-topbar__actions {
-    display: flex;
-    gap: var(--ev-s-2);
-}
-
-.profile-topbar__title {
-    display: grid;
-    gap: var(--ev-s-1);
-    justify-items: center;
-    min-width: 0;
-    text-align: center;
-}
-
-.profile-topbar h1 {
-    max-width: 100%;
-    color: var(--ev-on-dark);
-    font-size: var(--ev-fs-xl);
-    text-shadow: var(--ev-shadow-text-on-scene);
-}
+/* The header is `.ev-screen-header` in components.css: every dock destination wears it. */
 
 /* -------------------------------------------------------------------------- */
 /* Hero                                                                        */

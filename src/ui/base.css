@@ -124,12 +124,18 @@ button:disabled {
     outline-offset: 2px;
 }
 
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+/*
+ * No scrollbar anywhere, on anything. Scrolling is untouched — only the indicator goes: this is a
+ * game, and a rail or a sheet that scrolls says so by moving under the thumb, not by growing a
+ * gutter that shifts the layout beside it.
+ *
+ * Global, so no component has to remember. `*` rather than `:root`, because `scrollbar-width` is
+ * not inherited and every scroll container has to declare it for itself.
+ */
+* {
+    scrollbar-width: none;
 }
 
-::-webkit-scrollbar-thumb {
-    border-radius: var(--ev-r-pill);
-    background: rgba(255, 255, 255, .22);
+::-webkit-scrollbar {
+    display: none;
 }

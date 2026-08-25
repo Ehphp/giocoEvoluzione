@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
-import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, Avatar, Button, IconButton, Notice, Overlay, Panel, Pill, ProgressBar, SheetHeader } from '../../ui/components'
-import { BattleIcon, ExitIcon, SparkIcon } from '../../ui/icons'
+import { AppShell, AvatarProgress, Button, Notice, PopoverMenu } from '../../ui/components'
+import { BattleIcon, ChevronIcon, ExitIcon, FeedbackOffIcon, FeedbackOnIcon, RankingIcon } from '../../ui/icons'
 import { ASSETS, srcSetFor } from '../../ui/assets'
+import { playCue } from '../../ui/feedback/feedback'
+import { useFeedbackPreference } from '../../ui/feedback/use-feedback'
 import { PlayModesSheet } from './parts/PlayModesSheet'
 import { measureCreatureSubject, type CreatureSubject } from './creature-subject-fit'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
@@ -88,7 +89,6 @@ function CreatureArt({ image, isActive }: { image: HomeCreatureImage; isActive: 
 export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     // --- state -----------------------------------------------------------------
     const [isPlayModesOpen, setIsPlayModesOpen] = useState(false)
-    const [isCreatureDescriptionOpen, setIsCreatureDescriptionOpen] = useState(false)
     const [backgroundSource, setBackgroundSource] = useState(viewModel.stage.backgroundSrc)
     // --- derived ---------------------------------------------------------------
     const creatureCarouselRef = useRef<HTMLDivElement>(null)
@@ -102,7 +102,7 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     // --- derived ---------------------------------------------------------------
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
-    const closeCreatureDescription = useCallback(() => setIsCreatureDescriptionOpen(false), [])
+    const { isEnabled: isFeedbackEnabled, toggle: toggleFeedback } = useFeedbackPreference()
     const displayName = viewModel.player.displayName ?? 'Allenatore locale'
     const experience = viewModel.player.experience
     const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
@@ -145,77 +145,113 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
         setSelectedVisualId(visualVersions[index]!.id)
     }
 
-    function handleNavigate(tab: DockTab) {
-        if (tab === 'profile') {
-            actions.onOpenProfile()
-        }
-
-        if (tab === 'collection') {
-            actions.onOpenCollection()
-        }
-
-        if (tab === 'ranking') {
-            actions.onOpenRanking()
-        }
-    }
-
-    const dock = (
-        <Dock
-            active="battle"
-            capabilities={{
-                shop: viewModel.capabilities.collection,
-                collection: viewModel.capabilities.collection,
-                ranking: viewModel.capabilities.rankings,
-                profile: viewModel.capabilities.profile,
-            }}
-            onNavigate={handleNavigate}
-        />
-    )
-
     return (
         <AppShell
             sceneryUrl={backgroundSource}
             sceneryFallbackUrl={viewModel.stage.backgroundFallbackSrc}
-            dock={dock}
+            docked
             className="home-shell"
             scroll
         >
             <div className="home-screen" aria-busy={viewModel.playModes.isBusy}>
+                {/*
+                  * One row for everything that is not the creature: the brand mark, who you are, and
+                  * the way out. The logo used to own a row of its own at up to 300px wide and the
+                  * identity card stacked three lines under a connection badge — between them they
+                  * took most of a phone screen to say nothing the player did not already know.
+                  * Offline is reported by a notice below when it actually happens.
+                  */}
                 <header className="home-topbar">
-                    <div className="home-identity">
-                        <Avatar name={displayName} src={viewModel.player.avatarUrl} size={40} />
-                        <div className="home-identity__copy">
-                            <strong className="ev-truncate">{displayName}</strong>
-                            <span className="home-identity__rank">{viewModel.player.rankLabel ?? 'Ospite locale'}</span>
-                            {experience ? (
-                                <ProgressBar
-                                    current={experience.current}
-                                    total={experience.required}
-                                    label={`Esperienza ${experience.current} su ${experience.required}`}
+                    <h1 className="home-brand">
+                        <img
+                            className="home-brand__logo"
+                            src={ASSETS.branding.logo}
+                            srcSet={srcSetFor(ASSETS.branding.logo)}
+                            /* A 108px mark: without `sizes` this alone would pull the widest file. */
+                            sizes="108px"
+                            alt="Evori"
+                        />
+                    </h1>
+                    {/*
+                      * The player's own row is the way into their own settings — sound and signing
+                      * out used to be two permanent buttons repeated across screens, which is a lot
+                      * of chrome for two things nobody touches twice a session.
+                      */}
+                    <PopoverMenu
+                        className="home-account"
+                        triggerClassName="home-identity"
+                        align="end"
+                        label={`Account di ${displayName}`}
+                        triggerLabel={`Apri le opzioni di ${displayName}`}
+                        trigger={
+                            <>
+                                <AvatarProgress
+                                    name={displayName}
+                                    src={viewModel.player.avatarUrl}
+                                    size={32}
+                                    level={viewModel.player.accountLevel}
+                                    current={experience?.current ?? 0}
+                                    total={experience?.required ?? 0}
+                                    label={experience
+                                        ? `Esperienza ${experience.current} su ${experience.required}`
+                                        : 'Esperienza non disponibile'}
                                 />
-                            ) : null}
-                        </div>
-                    </div>
-                    <div className="home-topbar__side">
-                        <Pill className={viewModel.connection.isOnline ? 'is-online' : 'is-offline'}>
-                            {viewModel.connection.isOnline ? 'Online' : 'Offline'}
-                        </Pill>
-                        <IconButton label="Esci dall account" variant="danger" onClick={actions.onLogout}>
-                            <ExitIcon />
-                        </IconButton>
-                    </div>
+                                <div className="home-identity__copy">
+                                    <strong className="ev-truncate">{displayName}</strong>
+                                    {/* The trophy is the word "Rating": it fits where the word did not. */}
+                                    {viewModel.player.rating ? (
+                                        <span className="home-identity__rank" aria-label={`Punteggio classifica ${viewModel.player.rating}`}>
+                                            <RankingIcon aria-hidden="true" />
+                                            <span className="ev-truncate">{viewModel.player.rating}</span>
+                                        </span>
+                                    ) : (
+                                        <span className="home-identity__rank ev-truncate">Ospite locale</span>
+                                    )}
+                                </div>
+                                <ChevronIcon className="home-identity__more" aria-hidden="true" />
+                            </>
+                        }
+                    >
+                        {(closeAccount) => (
+                            <>
+                                {/*
+                                  * `cue={null}`: the toggle confirms with a cue only when switching
+                                  * *on*. `playCue` reads the preference straight from the module
+                                  * rather than from React state, so by that line it already holds
+                                  * the new value — on announces itself, off goes quiet, no branch.
+                                  */}
+                                <Button
+                                    tone="ghost"
+                                    size="sm"
+                                    role="menuitem"
+                                    aria-pressed={isFeedbackEnabled}
+                                    cue={null}
+                                    onClick={() => {
+                                        toggleFeedback()
+                                        playCue('confirm')
+                                    }}
+                                >
+                                    {isFeedbackEnabled ? <FeedbackOnIcon aria-hidden="true" /> : <FeedbackOffIcon aria-hidden="true" />}
+                                    {isFeedbackEnabled ? 'Audio attivo' : 'Audio disattivato'}
+                                </Button>
+                                <Button
+                                    tone="ghost"
+                                    size="sm"
+                                    role="menuitem"
+                                    cue="alert"
+                                    className="home-account__logout"
+                                    onClick={() => {
+                                        closeAccount()
+                                        actions.onLogout()
+                                    }}
+                                >
+                                    <ExitIcon aria-hidden="true" />
+                                    Esci dall account
+                                </Button>
+                            </>
+                        )}
+                    </PopoverMenu>
                 </header>
-
-                <h1 className="home-brand">
-                    {/* `min(78%, 300px)` of a shell capped at --ev-app-max-width, dropping to 170px when short. */}
-                    <img
-                        className="home-brand__logo"
-                        src={ASSETS.branding.logo}
-                        srcSet={srcSetFor(ASSETS.branding.logo)}
-                        sizes="(max-height: 600px) 170px, min(78vw, 300px)"
-                        alt="Evori"
-                    />
-                </h1>
 
                 {viewModel.notices.length ? (
                     <div className="home-notices">
@@ -224,15 +260,7 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                 ) : null}
 
                 {viewModel.creature ? (
-                    <section className="home-stage" aria-label="La tua creatura" data-testid="home-creature-stage">
-                        {/*
-                          * The art has its own box and the plaque sits below it, as siblings. The
-                          * creature used to be positioned over the plaque and pulled back up by a
-                          * constant measured off one sprite — but the sprites do not share a
-                          * framing (some carry a third of their height as transparent margin,
-                          * others none), so that constant dropped the unpadded ones through the
-                          * plaque. Stacked boxes cannot overlap whatever the sprite looks like.
-                          */}
+                    <section className="home-stage" aria-label={`La tua creatura, ${viewModel.creature.name}`} data-testid="home-creature-stage">
                         <div className="home-stage__art">
                             <span className="home-stage__halo" aria-hidden="true" />
                             <div
@@ -275,66 +303,59 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                 onPointerCancel={() => { dragStartRef.current = null }}
                                 data-testid="home-creature-carousel"
                             >
-                                {visualVersions.map((version) => {
-                                    const canInspect = Boolean(
-                                        viewModel.creature?.shortDescription
-                                        && version.id === selectedVisual?.id
-                                        && version.isCurrent,
-                                    )
-
-                                    return (
-                                        <div
-                                            key={version.id}
-                                            className="home-stage__slide"
-                                            aria-hidden={version.id !== selectedVisual?.id}
-                                            data-testid={`home-creature-form-${version.id}`}
-                                        >
-                                            {canInspect ? (
-                                                <button
-                                                    type="button"
-                                                    className="home-stage__inspect"
-                                                    aria-label={`Leggi la descrizione di ${viewModel.creature?.name ?? 'questa creatura'}`}
-                                                    onClick={() => setIsCreatureDescriptionOpen(true)}
-                                                    data-testid="home-creature-description-trigger"
-                                                >
-                                                    <CreatureArt image={version.image} isActive />
-                                                </button>
-                                            ) : <CreatureArt image={version.image} isActive={version.id === selectedVisual?.id} />}
-                                        </div>
-                                    )
-                                })}
+                                {visualVersions.map((version) => (
+                                    <div
+                                        key={version.id}
+                                        className="home-stage__slide"
+                                        aria-hidden={version.id !== selectedVisual?.id}
+                                        data-testid={`home-creature-form-${version.id}`}
+                                    >
+                                        <CreatureArt image={version.image} isActive={version.id === selectedVisual?.id} />
+                                    </div>
+                                ))}
                             </div>
-                            {visualVersions.length > 1 ? (
-                                <span className="home-stage__position" role="status" aria-live="polite" aria-label={`Forma ${visualVersions.findIndex((version) => version.id === selectedVisual?.id) + 1} di ${visualVersions.length}`}>
-                                    {visualVersions.map((version) => <i key={version.id} className={version.id === selectedVisual?.id ? 'is-current' : ''} />)}
-                                </span>
-                            ) : null}
                         </div>
-                        <div className="home-stage__plaque">
-                            <span className="ev-eyebrow ev-eyebrow--light">{selectedVisual?.isCurrent ? 'La tua creatura' : 'Forma visualizzata'}</span>
-                            <strong className="ev-truncate">{viewModel.creature.name}</strong>
-                            <span className="home-stage__meta">
-                                {selectedVisual
-                                    ? `Generazione ${selectedVisual.generation - 1}${viewModel.creature.level ? ` · Livello ${viewModel.creature.level}` : ''}`
-                                    : viewModel.creature.level ? `Livello ${viewModel.creature.level}` : 'Forma iniziale'}
-                                {viewModel.creature.evolution
-                                    ? ` · ${viewModel.creature.evolution.label ?? `Evoluzione ${viewModel.creature.evolution.current}/${viewModel.creature.evolution.total}`}`
-                                    : ''}
-                            </span>
+                        {/*
+                          * The lineage, and the space under a smaller creature it fills.
+                          *
+                          * Every thumbnail points at the same signed URL its slide does, so the two
+                          * share one download — the rail costs no egress beyond the forms the
+                          * carousel would fetch anyway, which is why it is `lazy` and not eager.
+                          * It replaces the row of dots: same job, one tap instead of N swipes.
+                          */}
+                        <div className="home-forms" role="tablist" aria-label="Forme sbloccate della creatura" data-testid="home-forms-rail">
+                            {visualVersions.map((version, index) => (
+                                <button
+                                    key={version.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={version.id === selectedVisual?.id}
+                                    className={`home-forms__item ${version.id === selectedVisual?.id ? 'is-selected' : ''}`}
+                                    onClick={() => selectVisualAt(index)}
+                                    data-testid={`home-forms-item-${version.id}`}
+                                >
+                                    <img
+                                        src={version.image.src}
+                                        alt=""
+                                        loading="lazy"
+                                        onError={(event) => {
+                                            if (event.currentTarget.src !== version.image.fallbackSrc) {
+                                                event.currentTarget.src = version.image.fallbackSrc
+                                            }
+                                        }}
+                                    />
+                                    <span>{version.isCurrent ? 'Attuale' : `Gen ${version.generation - 1}`}</span>
+                                </button>
+                            ))}
                         </div>
                     </section>
                 ) : null}
 
-                <div className="home-cta">
-                    <Button tone="gold" block className="home-cta__play" onClick={openPlayModes}>
-                        <BattleIcon aria-hidden="true" />
-                        GIOCA
-                    </Button>
-                    <p className="home-cta__hint">
-                        <SparkIcon aria-hidden="true" />
-                        Crea una partita, sfida il bot o entra con un codice
-                    </p>
-                </div>
+                {/* The sheet behind it names the three ways to play, so the button does not have to. */}
+                <Button tone="gold" block className="home-cta__play" onClick={openPlayModes}>
+                    <BattleIcon aria-hidden="true" />
+                    GIOCA
+                </Button>
             </div>
 
             {isPlayModesOpen ? (
@@ -346,21 +367,6 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                 />
             ) : null}
 
-            {isCreatureDescriptionOpen && viewModel.creature?.shortDescription ? (
-                <Overlay
-                    label={`Descrizione di ${viewModel.creature.name}`}
-                    align="center"
-                    width="narrow"
-                    onClose={closeCreatureDescription}
-                >
-                    <Panel className="home-creature-description-dialog">
-                        <SheetHeader eyebrow="La tua creatura" title={viewModel.creature.name} onClose={closeCreatureDescription} />
-                        <p className="home-creature-description-dialog__copy">
-                            {viewModel.creature.shortDescription}
-                        </p>
-                    </Panel>
-                </Overlay>
-            ) : null}
         </AppShell>
     )
 }

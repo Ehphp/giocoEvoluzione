@@ -12,82 +12,113 @@
 /* Top bar                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Brand and identity on one line. The brand takes the space nothing else claims, so a long nickname
+ * narrows the logo instead of pushing the identity off the edge.
+ */
 .home-topbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--ev-s-2);
 }
 
+.home-brand {
+    display: grid;
+    flex: 1 1 auto;
+    justify-items: start;
+    min-width: 0;
+    margin: 0;
+}
+
+.home-brand__logo {
+    width: 108px;
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .5));
+}
+
+/* The menu wrapper carries the flex sizing; the pill inside it is only a look. */
+.home-account {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+/* The one item in the menu that ends something. */
+.home-account__logout {
+    color: #ffb3ad;
+}
+
+/*
+ * A moulded pill, not a pane of tinted glass. Flat `--ev-glass-strong` behind a bright avatar ring
+ * read as a hole punched in the scene — everything else in this UI is a lit object with a top
+ * highlight and a shadowed underside, so the identity gets the same slate gradient and toy lip.
+ *
+ * It is also a button: the account's settings open from here. It presses like the rest of them.
+ */
 .home-identity {
     display: flex;
     align-items: center;
-    gap: var(--ev-s-2);
+    gap: 7px;
+    width: 100%;
     min-width: 0;
-    padding: 5px 14px 5px 5px;
+    padding: 3px 8px 3px 3px;
     border-radius: var(--ev-r-pill);
-    background: var(--ev-glass-strong);
+    text-align: left;
+    background: var(--ev-grad-slate);
     border: 1.5px solid var(--ev-stroke-light-soft);
-    box-shadow: var(--ev-shadow-sm);
+    box-shadow: var(--ev-shadow-md), var(--ev-lip);
     backdrop-filter: blur(12px);
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        box-shadow var(--ev-dur-release) var(--ev-ease);
 }
 
+.home-identity:active {
+    transition:
+        transform var(--ev-dur-press) var(--ev-ease),
+        box-shadow var(--ev-dur-press) var(--ev-ease);
+    transform: translateY(var(--ev-press-sink)) scale(var(--ev-press-scale));
+    box-shadow: var(--ev-shadow-sm), var(--ev-lip-pressed);
+}
+
+/* The one thing that says the pill is worth tapping. */
+.home-identity__more {
+    flex: 0 0 auto;
+    color: var(--ev-on-dark-muted);
+    font-size: 14px;
+}
+
+/* Name over rank. Experience is not here: it is the ring around the portrait. */
 .home-identity__copy {
     display: grid;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
-    width: min(130px, 34vw);
+    width: min(110px, 28vw);
 }
 
 .home-identity__copy strong {
     color: #fff;
     font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-md);
+    font-size: var(--ev-fs-sm);
     font-weight: 800;
 }
 
 .home-identity__rank {
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-2xs);
-    font-weight: 800;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-}
-
-.home-topbar__side {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex: 0 0 auto;
-}
-
-.home-topbar__side .ev-pill {
-    padding: 4px 10px;
+    gap: 3px;
+    min-width: 0;
+    color: var(--ev-on-dark-muted);
+    font-family: var(--ev-font-display);
     font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    letter-spacing: .04em;
 }
 
-.home-topbar__side .ev-pill.is-online {
-    color: #bdf5a4;
-}
-
-.home-topbar__side .ev-pill.is-offline {
-    color: #ffb3ad;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Brand                                                                       */
-/* -------------------------------------------------------------------------- */
-
-.home-brand {
-    display: grid;
-    place-items: center;
-    margin: 0;
-}
-
-.home-brand__logo {
-    width: min(78%, 300px);
-    height: auto;
-    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
+.home-identity__rank svg {
+    flex: 0 0 auto;
+    color: var(--ev-gold);
+    font-size: 11px;
 }
 
 .home-notices {
@@ -95,30 +126,11 @@
     gap: 6px;
 }
 
-.home-creature-description-dialog {
-    display: grid;
-    gap: var(--ev-s-3);
-}
-
-.home-creature-description-dialog__copy {
-    margin: 0;
-    color: var(--ev-ink);
-    font-size: var(--ev-fs-sm);
-    font-weight: 700;
-    line-height: 1.5;
-    text-align: center;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Creature stage                                                              */
 /* -------------------------------------------------------------------------- */
 
-/*
- * Two stacked rows, art over plaque. Nothing here is positioned on top of anything else, which is
- * the point: the creature sprites do not share a framing — some carry a third of their height as
- * transparent margin, `base.png` carries none — so any attempt to overlay the art and pull it back
- * up by a measured offset is only ever correct for the one sprite it was measured on.
- */
+/* The creature over the rail of forms it has been through. */
 .home-stage {
     position: relative;
     display: grid;
@@ -130,10 +142,7 @@
     min-height: 110px;
 }
 
-/*
- * The art's own box. The sprite is bounded by this, so it can never reach the plaque.
- * Sized container so the fitted sprite below can measure itself against it in `cqh`/`cqw`.
- */
+/* Sized container, so the fitted sprite below can measure itself against it in `cqh`/`cqw`. */
 .home-stage__art {
     position: relative;
     width: 100%;
@@ -151,42 +160,27 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
-    scrollbar-width: none;
     touch-action: pan-x;
-}
-
-.home-stage__carousel::-webkit-scrollbar {
-    display: none;
 }
 
 .home-stage__carousel:focus-visible {
     outline-color: var(--ev-player-light);
 }
 
+/*
+ * `container-type: size` makes the *content* box the query container, so the padding below is what
+ * the fitted sprite measures itself against — it shrinks the creature without cropping it.
+ */
 .home-stage__slide {
+    --home-slide-pad: 2rem;
     position: relative;
     container-type: size;
     width: 100%;
     min-width: 100%;
     height: 100%;
+    padding: var(--home-slide-pad);
     scroll-snap-align: center;
     scroll-snap-stop: always;
-}
-
-.home-stage__inspect {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    touch-action: pan-x;
-}
-
-.home-stage__inspect:focus-visible {
-    outline-color: var(--ev-player-light);
 }
 
 @media (pointer: fine) {
@@ -198,6 +192,64 @@
         cursor: grabbing;
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Forms rail                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Scrolls rather than shrinks: a lineage grows one form at a time and there is no count at which
+ * squeezing them all into the width would still leave a creature you can recognise.
+ */
+.home-forms {
+    display: flex;
+    gap: var(--ev-s-2);
+    max-width: 100%;
+    padding: 2px var(--ev-s-1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.home-forms__item {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    flex: 0 0 auto;
+    width: 58px;
+    padding: 4px 2px 3px;
+    border-radius: var(--ev-r-md);
+    color: var(--ev-on-dark-muted);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+    background: var(--ev-grad-slate);
+    border: 1.5px solid transparent;
+    box-shadow: var(--ev-shadow-sm);
+    transition:
+        transform var(--ev-dur-release) var(--ev-ease-spring),
+        border-color var(--ev-dur-base) var(--ev-ease);
+}
+
+.home-forms__item img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.home-forms__item.is-selected {
+    color: #fff;
+    border-color: var(--ev-player-light);
+    box-shadow: var(--ev-shadow-md);
+}
+
+.home-forms__item:active {
+    transition: transform var(--ev-dur-press) var(--ev-ease);
+    transform: scale(.94);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Creature stage, continued                                                   */
+/* -------------------------------------------------------------------------- */
 
 .home-stage__halo {
     position: absolute;
@@ -212,51 +264,29 @@
     pointer-events: none;
 }
 
-.home-stage__position {
-    position: absolute;
-    z-index: 1;
-    bottom: 0;
-    left: 50%;
-    display: flex;
-    gap: var(--ev-s-1);
-    translate: -50% 0;
-    pointer-events: none;
-}
-
-.home-stage__position i {
-    display: block;
-    width: var(--ev-s-1);
-    height: var(--ev-s-1);
-    border-radius: var(--ev-r-pill);
-    background: var(--ev-on-dark-muted);
-    box-shadow: var(--ev-shadow-text-on-scene);
-    opacity: .55;
-}
-
-.home-stage__position i.is-current {
-    width: var(--ev-s-3);
-    background: var(--ev-player-light);
-    opacity: 1;
-}
-
 /**
  * The unmeasured state, and the permanent state for any sprite whose pixels cannot be read: a
  * plain contained fit. Correct and never cropped, but sized by the file — a sprite that is mostly
  * transparent margin renders a small animal.
  *
- * Absolute, with an explicit width and height rather than a bare `inset: 0`. Both matter: as a
+ * Absolute, with an explicit width and height rather than a bare `inset`. Both matter: as a
  * replaced *grid item* a percentage height falls back to the sprite's intrinsic height, and as an
  * absolute replaced box `inset` alone does not stretch it either — the intrinsic height wins and
- * the sprite escapes the row into the plaque. Against an absolute containing block the percentages
- * do resolve, so this is the form that actually bounds it.
+ * the sprite escapes its row. Against an absolute containing block the percentages do resolve, so
+ * this is the form that actually bounds it.
+ *
+ * The slide's padding has to be subtracted by hand here: an absolute box resolves against its
+ * containing block's *padding* box, so `inset: 0` would spill straight back over it and the sprite
+ * would visibly shrink the moment the measurement below lands. The fitted state gets this for free
+ * from `cqh`/`cqw`, which are content-box units.
  *
  * Decorative, and the drop shadow reaches past the box, so it must not take pointer events.
  */
 .home-stage__creature {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    inset: var(--home-slide-pad);
+    width: calc(100% - var(--home-slide-pad) * 2);
+    height: calc(100% - var(--home-slide-pad) * 2);
     object-fit: contain;
     object-position: bottom center;
     transform-origin: bottom center;
@@ -310,47 +340,12 @@
     font-size: var(--ev-fs-sm);
 }
 
-.home-stage__plaque {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    gap: 1px;
-    max-width: 100%;
-    padding: 7px 20px;
-    border-radius: var(--ev-r-pill);
-    color: var(--ev-on-dark);
-    text-align: center;
-    background: var(--ev-glass-strong);
-    border: 1.5px solid var(--ev-stroke-light-soft);
-    box-shadow: var(--ev-shadow-md);
-    backdrop-filter: blur(12px);
-}
-
-.home-stage__plaque strong {
-    max-width: 100%;
-    color: #fff;
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-xl);
-    font-weight: 800;
-}
-
-.home-stage__meta {
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-xs);
-    font-weight: 700;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Call to action                                                              */
 /* -------------------------------------------------------------------------- */
 
-.home-cta {
-    display: grid;
-    gap: 6px;
-    flex: 0 0 auto;
-}
-
 .home-cta__play {
+    flex: 0 0 auto;
     min-height: 60px;
     font-size: var(--ev-fs-2xl);
     letter-spacing: .06em;
@@ -358,24 +353,6 @@
 
 .home-cta__play svg {
     font-size: 24px;
-}
-
-.home-cta__hint {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-xs);
-    font-weight: 700;
-    text-align: center;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, .6);
-}
-
-.home-cta__hint svg {
-    flex: 0 0 auto;
-    color: var(--ev-gold);
-    font-size: 14px;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -502,12 +479,13 @@
         gap: var(--ev-s-2);
     }
 
-    .home-brand__logo {
-        width: min(58%, 220px);
-    }
-
     .home-stage {
         flex-basis: 160px;
+    }
+
+    /* The stage is shorter here, so the creature's breathing room comes down with it. */
+    .home-stage__slide {
+        --home-slide-pad: 1.25rem;
     }
 
     .home-cta__play {
@@ -519,7 +497,7 @@
 /* Landscape phones: the brand shrinks and the stage collapses so the call to action stays put. */
 @media (max-height: 540px) {
     .home-brand__logo {
-        width: min(34%, 170px);
+        width: 84px;
     }
 
     .home-stage {
@@ -528,23 +506,15 @@
     }
 
     /*
-     * The collapsed stage is 72px and the plaque alone is 64px of it, so the art row is left with
-     * nothing: the creature would render a few pixels tall. The plaque still names it. Same call
-     * the arena makes when it runs out of height.
+     * A landscape phone has no height to give the creature *and* the rail. The rail goes: it is a
+     * shortcut to something the swipe already reaches, and the creature is the point of the screen.
      */
-    .home-stage__art {
+    .home-forms {
         display: none;
     }
 
-    .home-stage__plaque {
-        padding: 4px 14px;
-    }
-
-    .home-stage__plaque strong {
-        font-size: var(--ev-fs-lg);
-    }
-
-    .home-cta__hint {
-        display: none;
+    /* Less padding too, or a 96px stage leaves the animal a few pixels tall. */
+    .home-stage__slide {
+        --home-slide-pad: .5rem;
     }
 }

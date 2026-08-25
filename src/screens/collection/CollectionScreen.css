@@ -4,91 +4,7 @@
     align-content: start;
 }
 
-.collection-topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: start;
-    gap: var(--ev-s-2);
-}
-
-.collection-identity {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: var(--ev-s-2);
-    min-width: 0;
-}
-
-.collection-identity__avatar {
-    --ev-avatar-size: var(--ev-collection-avatar-size);
-}
-
-.collection-identity__copy {
-    display: grid;
-    gap: var(--ev-s-1);
-    min-width: 0;
-    color: var(--ev-on-dark);
-}
-
-.collection-identity__copy strong {
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-lg);
-    text-shadow: var(--ev-shadow-text-on-scene);
-}
-
-.collection-identity__copy span {
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-xs);
-    font-weight: 900;
-    letter-spacing: var(--ev-track-label);
-    text-shadow: var(--ev-shadow-text-on-scene);
-}
-
-.collection-identity__copy .ev-progress {
-    width: 100%;
-}
-
-.collection-logo {
-    display: block;
-    width: min(28vw, var(--ev-s-6));
-    max-width: 100%;
-    align-self: center;
-    filter: drop-shadow(var(--ev-shadow-text-on-scene));
-}
-
-.collection-topbar__actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    justify-content: end;
-    align-items: center;
-    gap: var(--ev-s-2);
-}
-
-.collection-topbar__actions .ev-pill {
-    min-height: var(--ev-touch-min);
-    padding-inline: var(--ev-s-2);
-    white-space: nowrap;
-}
-
-.collection-heading {
-    display: grid;
-    justify-items: center;
-    gap: var(--ev-s-1);
-    color: var(--ev-on-dark);
-    text-align: center;
-    text-shadow: var(--ev-shadow-text-on-scene);
-}
-
-.collection-heading h1 {
-    font-size: var(--ev-fs-3xl);
-    text-transform: uppercase;
-}
-
-.collection-heading p {
-    color: var(--ev-on-dark-muted);
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-lg);
-}
+/* The header is `.ev-screen-header` in components.css: every dock destination wears it. */
 
 .collection-current {
     position: relative;
@@ -189,12 +105,6 @@
     overflow-x: auto;
     padding: var(--ev-s-1) var(--ev-s-2);
     overscroll-behavior-x: contain;
-    scrollbar-width: none;
-}
-
-.collection-lineages::-webkit-scrollbar,
-.collection-lineage::-webkit-scrollbar {
-    display: none;
 }
 
 .collection-lineages__item {
@@ -268,7 +178,6 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
 }
 
 .collection-lineage__track {
@@ -392,37 +301,7 @@
     box-shadow: var(--ev-shadow-glow-player), var(--ev-lip-cream);
 }
 
-@media (max-width: 380px) {
-    .collection-topbar {
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .collection-logo {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        justify-self: center;
-        width: var(--ev-s-6);
-    }
-
-    .collection-identity,
-    .collection-topbar__actions {
-        grid-row: 2;
-    }
-
-    .collection-topbar__actions .ev-pill {
-        display: none;
-    }
-
-    .collection-topbar__actions {
-        grid-template-columns: auto;
-    }
-}
-
 @media (max-height: 700px) {
-    .collection-heading {
-        gap: 0;
-    }
-
     .collection-current {
         min-height: var(--ev-collection-hero-art-height);
         padding: var(--ev-s-3);

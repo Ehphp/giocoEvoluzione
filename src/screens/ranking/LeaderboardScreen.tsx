@@ -2,23 +2,18 @@ import { useEffect, useState } from 'react'
 
 import { fetchCompetitiveLeaderboard, type CompetitiveLeaderboardEntry } from '../../lib/profile-api'
 import { ASSETS } from '../../ui/assets'
-import { Dock, type DockTab } from '../../ui/Dock'
-import { AppShell, IconButton, Notice, Panel, SectionLabel } from '../../ui/components'
-import { ChevronIcon, ExitIcon, TrophyIcon } from '../../ui/icons'
+import { AppShell, Notice, Panel, ScreenHeader, SectionLabel } from '../../ui/components'
+import { TrophyIcon } from '../../ui/icons'
 
 import './LeaderboardScreen.css'
 
 type LeaderboardScreenProps = {
-    onBack: () => void
-    onOpenCollection: () => void
-    onOpenProfile: () => void
-    onLogout: () => void
     previewEntries?: CompetitiveLeaderboardEntry[]
 }
 
 const RATING_FORMATTER = new Intl.NumberFormat('it-IT')
 
-export function LeaderboardScreen({ onBack, onOpenCollection, onOpenProfile, onLogout, previewEntries }: LeaderboardScreenProps) {
+export function LeaderboardScreen({ previewEntries }: LeaderboardScreenProps) {
     const [entries, setEntries] = useState<CompetitiveLeaderboardEntry[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -50,32 +45,15 @@ export function LeaderboardScreen({ onBack, onOpenCollection, onOpenProfile, onL
         return () => { isCurrent = false }
     }, [previewEntries])
 
-    function handleNavigate(tab: DockTab) {
-        if (tab === 'battle') onBack()
-        if (tab === 'collection') onOpenCollection()
-        if (tab === 'profile') onOpenProfile()
-    }
-
     return (
         <AppShell
             sceneryUrl={ASSETS.scenery.forest}
             sceneryFallbackUrl={ASSETS.scenery.fallback}
             scroll
-            dock={<Dock active="ranking" capabilities={{ collection: true, ranking: true, profile: true }} onNavigate={handleNavigate} />}
+            docked
         >
             <section className="leaderboard-screen" aria-labelledby="leaderboard-title">
-                <header className="leaderboard-topbar">
-                    <IconButton label="Torna alla home" onClick={onBack}>
-                        <ChevronIcon style={{ transform: 'rotate(180deg)' }} />
-                    </IconButton>
-                    <div className="leaderboard-topbar__title">
-                        <span className="ev-eyebrow ev-eyebrow--light">PvP competitivo</span>
-                        <h1 id="leaderboard-title">Classifica</h1>
-                    </div>
-                    <IconButton label="Esci dall account" variant="danger" onClick={onLogout}>
-                        <ExitIcon />
-                    </IconButton>
-                </header>
+                <ScreenHeader id="leaderboard-title" eyebrow="PvP competitivo" title="Classifica" />
 
                 <Panel className="leaderboard-intro">
                     <TrophyIcon aria-hidden="true" />
