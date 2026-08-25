@@ -16,6 +16,7 @@ import {
     type EvolutionLineageContext,
     type EvolutionLineageEntry,
 } from './evolution-lineage.ts'
+import { resolveChromaticDirection, type ChromaticDirection } from './chromatic-directions.ts'
 
 /**
  * Everything a FLUX generation needs, derived server-side from the canonical body plan, the
@@ -26,6 +27,8 @@ export type FluxEvolutionPlan = Readonly<{
     evolutionTargetId: EvolutionTargetId
     visualTraitId: VisualTraitId
     evolutionFunction: EvolutionFunctionId
+    /** Skin-only palette guidance, derived deterministically from the request seed. */
+    chromaticDirection?: ChromaticDirection
     capability: EvolutionCapability
     bodyPlanMutationId?: BodyPlanMutationId
     bodyPlanId: BodyPlanId
@@ -144,10 +147,15 @@ export function buildFluxEvolutionPlan(input: {
     const resultBodyPlan = capability.bodyPlanMutationId
         ? (applyBodyPlanMutation(input.bodyPlan, capability.bodyPlanMutationId) ?? input.bodyPlan)
         : input.bodyPlan
+    const chromaticDirection = resolveChromaticDirection({
+        evolutionTargetId: input.evolutionTargetId,
+        ...(input.seed ? { seed: input.seed } : {}),
+    })
     return Object.freeze({
         evolutionTargetId: input.evolutionTargetId,
         visualTraitId: direction.visualTraitId,
         evolutionFunction: direction.evolutionFunction,
+        ...(chromaticDirection ? { chromaticDirection } : {}),
         capability: capability.capability,
         ...(capability.bodyPlanMutationId ? { bodyPlanMutationId: capability.bodyPlanMutationId } : {}),
         bodyPlanId: input.bodyPlan.id,

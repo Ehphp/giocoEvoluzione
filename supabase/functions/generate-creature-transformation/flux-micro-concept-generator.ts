@@ -237,13 +237,22 @@ export function composeFluxMicroConceptInstructions(
         `PRESERVE: ${contract.preservationRules.join(' ')}`,
         ...(plan.evolutionTargetId === 'SKIN_AND_COVERING'
             ? [
-                  'SKIN SURFACE-FIRST BOUNDARY: Treat this as a conformal, anatomy-following covering mutation. The primary evolutionary change acts on the creature\'s existing biological surface and may strongly modify dominant palette and pigmentation, biological patterns, scale morphology and grain, dermal texture, skin thickness, translucency, iridescence and sheen, bioluminescent pigmentation, and other biological covering that remains attached and conformal to the existing body surface.',
+                  'SKIN SURFACE-FIRST BOUNDARY: Treat this as a conformal, anatomy-following covering mutation. The primary evolutionary change acts on the creature\'s existing biological surface and may strongly modify dominant palette and pigmentation, biological patterns, scale morphology and grain, dermal texture, skin thickness, and other biological covering that remains attached and conformal to the existing body surface.',
+                  ...(plan.chromaticDirection
+                      ? [
+                            'CHROMATIC DIRECTION',
+                            `The dominant pigmentation and biological patterning of this evolution must clearly explore the selected chromatic family: ${plan.chromaticDirection.id} — ${plan.chromaticDirection.description}.`,
+                            'Use this as a high-level chromatic direction, not as a rigid fixed palette. Invent a biologically coherent treatment within this family.',
+                            'The selected direction should be clearly readable in the resulting mutation and should meaningfully affect the dominant palette and/or biological patterning.',
+                        ]
+                      : []),
+                  'SKIN OPTICAL EFFECTS: Optical effects such as translucency, iridescence, sheen or bioluminescent pigmentation are optional secondary adaptations. Use them only when they directly support the biological concept; do not use them as the default visual treatment.',
                   'SKIN SURFACE LIMITS: Scales, plating, fur and feather-like covering are valid only when surface-bound and conformal to the existing anatomy. They may be visually prominent and strongly transform the creature\'s phenotype, but must not create a new anatomical macro-structure or significantly change the existing silhouette.',
                   'Do not propose dorsal spines, horns, crests, fins, fronds, sails, long projecting plates, new appendages or other protruding structures that substantially change the silhouette. Do not change body shape, topology, pose, stance, limb structure, tail structure or anatomical roots. The mutation must read primarily as an evolution of the creature\'s skin and body covering, not as a new dorsal or anatomical structure.',
               ]
             : []),
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
-        `MUTABLE APPEARANCE: ${mutableAppearance}. These are not identity invariants. A visible colour treatment is optional: use it only as a biologically motivated, target-linked secondary adaptation. When warranted, state its location and biological role as part of mutationIdea or visualDetails; otherwise preserve the current coloration.`,
+        `MUTABLE APPEARANCE: ${mutableAppearance}. These are not identity invariants. ${plan.chromaticDirection ? 'For this Skin evolution, clearly express the selected chromatic direction through dominant pigmentation and/or biological patterning. State its location and biological role as part of mutationIdea or visualDetails.' : 'A visible colour treatment is optional: use it only as a biologically motivated, target-linked secondary adaptation. When warranted, state its location and biological role as part of mutationIdea or visualDetails; otherwise preserve the current coloration.'}`,
         `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
         ...(retryForNovelty && plan.noveltyReferences.length
             ? [

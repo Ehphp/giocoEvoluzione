@@ -13,6 +13,7 @@ import {
     resolveCanonicalBodyPlan,
 } from './body-plan-registry.ts'
 import { buildFluxEvolutionPlan, EvolutionPlanError, selectEvolutionCapability } from './evolution-plan.ts'
+import { resolveEvolutionDirection } from '../evolution-targets.ts'
 
 const HISTORY: PreviousCreatureTransformationSummary[] = []
 
@@ -83,6 +84,32 @@ describe('body plan registry', () => {
 })
 
 describe('flux evolution plan', () => {
+    it('adds deterministic chromatic guidance only to Skin without changing the functional direction', () => {
+        const input = {
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'SKIN_AND_COVERING' as const,
+            previousTransformations: HISTORY,
+            seed: 'skin-plan-seed',
+        }
+        const skinPlan = buildFluxEvolutionPlan(input)
+        const repeatedSkinPlan = buildFluxEvolutionPlan(input)
+        const resolvedFunction = resolveEvolutionDirection({
+            evolutionTargetId: input.evolutionTargetId,
+            previousTransformations: input.previousTransformations,
+            seed: input.seed,
+        })!
+        const tailPlan = buildFluxEvolutionPlan({
+            ...input,
+            evolutionTargetId: 'TAIL',
+        })
+
+        expect(skinPlan.chromaticDirection).toBeDefined()
+        expect(repeatedSkinPlan.chromaticDirection).toEqual(skinPlan.chromaticDirection)
+        expect(skinPlan.evolutionFunction).toBe(resolvedFunction.evolutionFunction)
+        expect(skinPlan.visualTraitId).toBe(resolvedFunction.visualTraitId)
+        expect(tailPlan.chromaticDirection).toBeUndefined()
+    })
+
     it('stays anatomical while the body-plan mutation capability is disabled', () => {
         const capability = selectEvolutionCapability({
             bodyPlan: BODY_PLANS.QUADRUPED,
