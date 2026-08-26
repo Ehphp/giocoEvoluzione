@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isColdStart } from './cold-start'
+import { isColdStart, shouldShowAuthScreen } from './cold-start'
 
 describe('cold start', () => {
     it('boots while the stored session is still being restored', () => {
@@ -29,5 +29,42 @@ describe('cold start', () => {
         expect(isColdStart({ isRestoringSession: false, authStatus: 'ready', hasProfile: true })).toBe(false)
         expect(isColdStart({ isRestoringSession: false, authStatus: 'unauthenticated', hasProfile: false })).toBe(false)
         expect(isColdStart({ isRestoringSession: false, authStatus: 'error', hasProfile: false })).toBe(false)
+    })
+})
+
+describe('authentication screen', () => {
+    it('keeps the current screen visible while a resolved profile refreshes', () => {
+        expect(shouldShowAuthScreen({
+            hasActiveMatch: false,
+            authStatus: 'initializing',
+            hasProfile: true,
+            hasActiveCreature: true,
+        })).toBe(false)
+    })
+
+    it('still requires authentication when the session is absent or profile initialization fails', () => {
+        for (const authStatus of ['unauthenticated', 'error'] as const) {
+            expect(shouldShowAuthScreen({
+                hasActiveMatch: false,
+                authStatus,
+                hasProfile: true,
+                hasActiveCreature: true,
+            })).toBe(true)
+        }
+    })
+
+    it('requires a resolved profile and active creature when no match is on screen', () => {
+        expect(shouldShowAuthScreen({
+            hasActiveMatch: false,
+            authStatus: 'ready',
+            hasProfile: false,
+            hasActiveCreature: true,
+        })).toBe(true)
+        expect(shouldShowAuthScreen({
+            hasActiveMatch: false,
+            authStatus: 'ready',
+            hasProfile: true,
+            hasActiveCreature: false,
+        })).toBe(true)
     })
 })

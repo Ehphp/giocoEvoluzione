@@ -24,3 +24,22 @@ export function isColdStart(input: {
 
     return input.authStatus === 'initializing' && !input.hasProfile
 }
+
+/**
+ * Whether the app must replace its current screen with authentication.
+ *
+ * A profile refresh deliberately re-enters `initializing`, but retains the previous profile and
+ * creature until the replacement arrives. That is background work, not a sign-out: replacing the
+ * current screen with the login form would unmount it and make the refresh look like a redirect.
+ */
+export function shouldShowAuthScreen(input: {
+    hasActiveMatch: boolean
+    authStatus: AuthenticationStatus
+    hasProfile: boolean
+    hasActiveCreature: boolean
+}): boolean {
+    if (input.hasActiveMatch) return false
+    if (!input.hasProfile || !input.hasActiveCreature) return true
+
+    return input.authStatus === 'unauthenticated' || input.authStatus === 'error'
+}

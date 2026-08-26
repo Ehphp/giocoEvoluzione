@@ -303,3 +303,22 @@ selezionare il catalogo ampliato:
 ```bash
 npx supabase db push
 ```
+
+## 9. Policy di presentazione delle evoluzioni — deploy Edge Function richiesto
+
+La correzione locale della policy di pose/stance elimina il `posture rebalancing` generico dai
+micro-concept, preserva la posa nelle mutazioni anatomiche normali e lascia la postura bipede solo
+alla `BIPEDAL_TRANSITION` esplicitamente autorizzata.
+
+La logica esegue interamente dentro `generate-creature-transformation`: non introduce migration,
+secret o modifiche di configurazione. Per rendere effettiva la correzione in produzione basta
+ridistribuire questa Edge Function, dopo aver applicato l'eventuale migration del catalogo funzioni
+in Ã‚Â§8:
+
+```bash
+npx supabase functions deploy generate-creature-transformation
+```
+
+Prima del deploy, controllare come in Ã‚Â§1 che non ci siano richieste immagine in corso. Il runbook
+di Ã‚Â§1 mantiene comunque il deploy delle quattro function per le precedenti modifiche server;
+questa voce identifica la dipendenza minima specifica della policy di presentazione.

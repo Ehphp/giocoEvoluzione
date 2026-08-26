@@ -32,7 +32,7 @@ import { Dock } from './ui/Dock'
 import { ScreenTransition } from './ui/ScreenTransition'
 import { SCREEN_DEPTH, type ScreenId } from './app/screen-depth'
 import { getDockPlacement } from './app/dock-tab'
-import { isColdStart } from './app/cold-start'
+import { isColdStart, shouldShowAuthScreen } from './app/cold-start'
 
 type ResolvedScreen = Readonly<{ id: ScreenId; node: ReactNode }>
 
@@ -184,7 +184,12 @@ function App() {
       return { id: 'missing-config', node: <MissingConfigScreen /> }
     }
 
-    if (!snapshot && (auth.status !== 'ready' || !auth.profile || !activeCreature)) {
+    if (shouldShowAuthScreen({
+      hasActiveMatch: Boolean(snapshot),
+      authStatus: auth.status,
+      hasProfile: Boolean(auth.profile),
+      hasActiveCreature: Boolean(activeCreature),
+    })) {
       return {
         id: 'auth',
         node: (
