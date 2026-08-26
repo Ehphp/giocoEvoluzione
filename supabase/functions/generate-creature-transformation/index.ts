@@ -117,17 +117,15 @@ function createRepository(supabaseAdmin: SupabaseAdminClient, requestId: string)
             }
         },
         async listPreviousTransformations(creatureId) {
-            const { data, error } = await supabaseAdmin
-                .from('creature_visual_versions')
-                .select(
-                    'version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot',
-                )
-                .eq('creature_id', creatureId)
-                .not('visual_trait_id', 'is', null)
-                .in('status', ['ACTIVE', 'SUPERSEDED'])
-                .order('version_number', { ascending: false })
+            // Il cammino da cui discende la versione attiva, non tutte le versioni della creatura:
+            // dopo un rollback i rami abbandonati restano 'SUPERSEDED' e falserebbero il body plan
+            // canonico e la continuita' semantica del prompt. La RPC risale previous_version_id e
+            // restituisce le righe gia' ordinate dalla piu' vecchia alla piu' recente.
+            const { data, error } = await supabaseAdmin.rpc('list_creature_visual_lineage', {
+                p_creature_id: creatureId,
+            })
             if (error) throw error
-            return [...(data ?? [])].reverse().flatMap((entry) => {
+            return [...(data ?? [])].flatMap((entry) => {
                 if (typeof entry.visual_trait_id !== 'string' || typeof entry.concept_name !== 'string') return []
                 const snapshot =
                     entry.concept_snapshot && typeof entry.concept_snapshot === 'object'

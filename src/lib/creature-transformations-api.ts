@@ -8,8 +8,10 @@ import type {
     GetCurrentCreatureVisualRequest,
     GetGameCreatureVisualsRequest,
     AdoptCreatureTransformationRequest,
+    DiscardCreatureTransformationRequest,
     RollbackCreatureVisualVersionRequest,
     AdoptCreatureTransformationResponse,
+    DiscardCreatureTransformationResponse,
     GetTransformationRequestStatusRequest,
     SubmitBackgroundRemovalCandidateRequest,
     TransformationRequestStatusResponse,
@@ -173,6 +175,10 @@ export async function submitBackgroundRemovalCandidate(request: SubmitBackground
 
 export async function adoptCreatureTransformation(request: AdoptCreatureTransformationRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<AdoptCreatureTransformationResponse> {
     return invokeCreatureTransformation<AdoptCreatureTransformationResponse>(request, invoker)
+}
+
+export async function discardCreatureTransformation(request: DiscardCreatureTransformationRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<DiscardCreatureTransformationResponse> {
+    return invokeCreatureTransformation<DiscardCreatureTransformationResponse>(request, invoker)
 }
 
 export async function rollbackCreatureVisualVersion(request: RollbackCreatureVisualVersionRequest, invoker?: CreatureTransformationFunctionInvoker): Promise<AdoptCreatureTransformationResponse> {

@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
     parseCreatureTransformationRequest,
+    parseDiscardCreatureTransformationRequest,
     parseGenerateUnlockedTransformationRequest,
     parseRollbackCreatureVisualVersionRequest,
 } from './request-validation.ts'
 
 const TRACK_ID = '4f083244-18b0-4d1f-93c6-16742388d0a1'
 const CURRENT_VERSION_ID = 'a62b2b0a-0aa9-4c3c-884a-ddd26785c504'
+const REQUEST_ID = '6c1f0b3e-7f4a-4a52-9d0e-2f5b1c8a7d34'
 
 describe('visual progression request validation', () => {
     it('accepts the minimal unlocked-generation contract only', () => {
@@ -73,6 +75,25 @@ describe('visual progression request validation', () => {
         })
     })
 
+    it('accepts only the discard contract', () => {
+        const request = {
+            operation: 'DISCARD_CREATURE_TRANSFORMATION' as const,
+            creatureId: 'creature',
+            progressTrackId: TRACK_ID,
+            transformationRequestId: REQUEST_ID,
+        }
+
+        expect(parseDiscardCreatureTransformationRequest(request)).toMatchObject({ valid: true })
+        // Discarding closes a path; it can never carry progression the client made up.
+        expect(parseDiscardCreatureTransformationRequest({ ...request, wins: 99 })).toMatchObject({
+            valid: false,
+        })
+        // Discarding must name the exact proposal it is rejecting.
+        expect(parseDiscardCreatureTransformationRequest({ ...request, transformationRequestId: undefined })).toMatchObject({
+            valid: false,
+        })
+    })
+
     it('implements only the operations the game actually calls', () => {
         const implemented = [
             'GET_REQUEST_STATUS',
@@ -82,6 +103,7 @@ describe('visual progression request validation', () => {
             'GET_CURRENT_VISUAL',
             'GET_GAME_VISUALS',
             'ADOPT_CREATURE_TRANSFORMATION',
+            'DISCARD_CREATURE_TRANSFORMATION',
             'ROLLBACK_CREATURE_VISUAL_VERSION',
         ]
 

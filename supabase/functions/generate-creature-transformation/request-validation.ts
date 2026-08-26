@@ -1,6 +1,7 @@
 import type {
     AdoptCreatureTransformationRequest,
     CreatureTransformationRequest,
+    DiscardCreatureTransformationRequest,
     GenerateUnlockedTransformationRequest,
     GetCreatureVisualProgressRequest,
     GetCurrentCreatureVisualRequest,
@@ -27,6 +28,12 @@ const ADOPT_REQUEST_FIELDS = new Set([
     'progressTrackId',
     'transformationRequestId',
     'expectedCurrentVisualVersionId',
+])
+const DISCARD_REQUEST_FIELDS = new Set([
+    'operation',
+    'creatureId',
+    'progressTrackId',
+    'transformationRequestId',
 ])
 const ROLLBACK_REQUEST_FIELDS = new Set([
     'operation',
@@ -238,6 +245,33 @@ export function parseAdoptCreatureTransformationRequest(
     }
 }
 
+export function parseDiscardCreatureTransformationRequest(
+    value: unknown,
+): ParsedRequest<DiscardCreatureTransformationRequest> {
+    const body = asRecord(value)
+    const progressTrackId = body ? readUuid(body, 'progressTrackId') : null
+    const transformationRequestId = body ? readUuid(body, 'transformationRequestId') : null
+    if (
+        !body ||
+        !hasOnlyFields(body, DISCARD_REQUEST_FIELDS) ||
+        body.operation !== 'DISCARD_CREATURE_TRANSFORMATION' ||
+        typeof body.creatureId !== 'string' ||
+        !body.creatureId.trim() ||
+        !progressTrackId ||
+        !transformationRequestId
+    )
+        return { valid: false, code: 'INVALID_REQUEST', message: 'La richiesta di scarto non rispetta il contratto.' }
+    return {
+        valid: true,
+        request: {
+            operation: 'DISCARD_CREATURE_TRANSFORMATION',
+            creatureId: body.creatureId.trim(),
+            progressTrackId,
+            transformationRequestId,
+        },
+    }
+}
+
 export function parseRollbackCreatureVisualVersionRequest(
     value: unknown,
 ): ParsedRequest<RollbackCreatureVisualVersionRequest> {
@@ -276,6 +310,7 @@ export function parseCreatureTransformationRequest(value: unknown): ParsedCreatu
     if (body.operation === 'GET_CURRENT_VISUAL') return parseGetCurrentCreatureVisualRequest(body)
     if (body.operation === 'GET_GAME_VISUALS') return parseGetGameCreatureVisualsRequest(body)
     if (body.operation === 'ADOPT_CREATURE_TRANSFORMATION') return parseAdoptCreatureTransformationRequest(body)
+    if (body.operation === 'DISCARD_CREATURE_TRANSFORMATION') return parseDiscardCreatureTransformationRequest(body)
     if (body.operation === 'ROLLBACK_CREATURE_VISUAL_VERSION') return parseRollbackCreatureVisualVersionRequest(body)
     return { valid: false, code: 'OPERATION_NOT_IMPLEMENTED', message: 'operation non e supportata.' }
 }

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { VISUAL_TRAITS, type VisualTraitId } from '../../../shared/creature-transformations/visual-traits.ts'
 import { EVOLUTION_TARGETS, type EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 import type { PlayerCreatureRecord } from '../../lib/profile-api'
-import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
+import { CreatureTransformationApiError, adoptCreatureTransformation, createVisualTransformationIdempotencyKey, discardCreatureTransformation, generateUnlockedCreatureTransformation, getCreatureTransformationRequestStatus, getCreatureVisualProgress, getCurrentCreatureVisual, submitBackgroundRemovalCandidate } from '../../lib/creature-transformations-api'
 import { removeCreatureBackground } from '../../lib/remove-creature-background'
 import { createCreatureDisplayAsset } from '../../lib/creature-display-asset'
 import { normalizeCreatureMasterPng } from '../../lib/normalize-creature-master'
@@ -12,7 +12,7 @@ import { GAME_SELECTION_ASSETS } from '../../screens/battle/controller/gene-sele
 import { ASSETS, fallbackToDefaultCreatureImage, withResolvedCreatureImage } from '../../ui/assets'
 import { fetchEvolutionTargetProgress, openEvolutionTrackFromReadyTarget, type EvolutionTargetProgressRecord } from '../../lib/evolution-progress-api'
 import { isEvolutionTargetReady } from '../../../shared/creature-transformations/evolution-draft.ts'
-import { AppShell, Button, Chip, Notice, Panel, ProgressBar, ScreenHeader, SectionLabel } from '../../ui/components'
+import { AppShell, Button, Chip, ConfirmDialog, Notice, Panel, ProgressBar, ScreenHeader, SectionLabel } from '../../ui/components'
 import { ChevronIcon, DnaIcon, EvolutionTargetIcon, SparkIcon } from '../../ui/icons'
 
 import './CreatureVisualProgressionScreen.css'
@@ -53,6 +53,9 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [heroSide, setHeroSide] = useState<'current' | 'result'>('result')
     /** Wins banked per anatomical target, accumulated by the battle-start draft. */
     const [targetProgress, setTargetProgress] = useState<EvolutionTargetProgressRecord[] | null>(null)
+    /** Discarding costs the wins that opened the path, so it is confirmed before it runs. */
+    const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+    const [justDiscarded, setJustDiscarded] = useState(false)
     const postProcessingRequest = useRef<string | null>(null)
     const postProcessingAttempts = useRef(0)
 
@@ -117,6 +120,12 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         return available?.length ? (targetProgress ?? []).filter((entry) => available.includes(entry.evolutionTargetId)) : targetProgress ?? []
     }, [progress?.bodyPlan, targetProgress])
     const currentTarget = useMemo(() => progress?.track?.evolutionTargetId ? targetLabel(progress.track.evolutionTargetId) : progress?.track?.visualTraitId ? traitLabel(progress.track.visualTraitId) : null, [progress?.track])
+    // L'adozione numera la nuova versione come max(versionNumber) + 1, non come corrente + 1: dopo
+    // un ritorno a una forma precedente le due divergono e il badge annuncerebbe un numero sbagliato.
+    const proposedVersionNumber = useMemo(() => {
+        if (!progress) return 0
+        return Math.max(progress.currentVersion.versionNumber, ...progress.history.map((entry) => entry.versionNumber)) + 1
+    }, [progress])
 
     // --- effects ---------------------------------------------------------------
     useEffect(() => { void refresh().catch((nextError) => setError(nextError instanceof Error ? nextError.message : 'Percorso visuale non disponibile.')) }, [refresh])
@@ -166,6 +175,23 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
         } finally { setBusy(false) }
     }
     async function adopt() { if (!progress?.track || !preview) return; setBusy(true); setError(null); try { await adoptCreatureTransformation({ operation: 'ADOPT_CREATURE_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, transformationRequestId: preview.requestId, expectedCurrentVisualVersionId: preview.sourceVersionId }); await onVisualChanged(); await refresh() } catch (nextError) { setError(nextError instanceof Error ? nextError.message : 'L adozione non e riuscita.') } finally { setBusy(false) } }
+    /**
+     * Rifiutare la proposta chiude il percorso. Serve perche' finche' il percorso resta aperto
+     * nessun altro tratto puo' essere trasformato: uscire dalla schermata non lo chiudeva.
+     * Le vittorie restano spese, come per un'adozione.
+     */
+    async function discard() {
+        if (!progress?.track || !preview) return
+        setConfirmingDiscard(false); setBusy(true); setError(null)
+        try {
+            await discardCreatureTransformation({ operation: 'DISCARD_CREATURE_TRANSFORMATION', creatureId: creature.id, progressTrackId: progress.track.id, transformationRequestId: preview.requestId })
+            setPreview(null)
+            setJustDiscarded(true)
+            await Promise.all([refresh(), refreshTargetProgress()])
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError.message : 'Non e stato possibile scartare la proposta.')
+        } finally { setBusy(false) }
+    }
 
     const track = progress?.track ?? null
     const status = track?.status ?? null
@@ -317,7 +343,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                     />
                                 ) : null}
                                 <figcaption className="evolution-hero__badge">
-                                    v{heroSide === 'result' ? progress.currentVersion.versionNumber + 1 : progress.currentVersion.versionNumber}
+                                    v{heroSide === 'result' ? proposedVersionNumber : progress.currentVersion.versionNumber}
                                 </figcaption>
                             </figure>
 
@@ -345,7 +371,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                     onClick={() => setHeroSide('result')}
                                 >
                                     <span>{preview.resultUrl ? <img src={preview.resultUrl} alt="" /> : null}</span>
-                                    <small>Proposta · v{progress.currentVersion.versionNumber + 1}</small>
+                                    <small>Proposta · v{proposedVersionNumber}</small>
                                 </button>
                             </div>
 
@@ -358,7 +384,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                             </div>
                             <div className="evolution-preview__actions">
                                 <Button tone="evolve" block disabled={busy} onClick={() => void adopt()}>Adotta evoluzione</Button>
-                                <Button tone="cream" block disabled={busy} onClick={onBack}>Mantieni creatura attuale</Button>
+                                <Button tone="cream" block disabled={busy} onClick={() => setConfirmingDiscard(true)}>Scarta proposta</Button>
                             </div>
                         </Panel>
                     </>
@@ -371,6 +397,19 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                     </Panel>
                 ) : null}
 
+                {status === 'CANCELLED' && progress ? (
+                    <Panel className="evolution-card">
+                        <h2>Proposta scartata</h2>
+                        <p className="evolution-card__copy">
+                            {justDiscarded
+                                ? 'La tua creatura resta com era. Le vittorie di questo percorso sono state spese: per una nuova evoluzione devi tornare a vincere.'
+                                : 'La tua creatura resta com era. Torna a vincere per aprire un nuovo percorso evolutivo.'}
+                        </p>
+                        <Button tone="use" block disabled={busy} onClick={() => { setJustDiscarded(false); setProgress({ ...progress, track: null }) }}>Vedi i contatori</Button>
+                        <Button tone="cream" block disabled={busy} onClick={onBack}>Torna indietro</Button>
+                    </Panel>
+                ) : null}
+
                 {status === 'COMPLETED' && progress ? (
                     <Panel className="evolution-card">
                         <Chip tone="good" icon={<SparkIcon />}>Nuova versione attiva</Chip>
@@ -380,7 +419,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                     </Panel>
                 ) : null}
 
-                {progress && track && !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED'].includes(track.status) ? (
+                {progress && track && !['ACTIVE', 'READY', 'GENERATING', 'POST_PROCESSING', 'GENERATED', 'COMPLETED', 'CANCELLED'].includes(track.status) ? (
                     <Panel className="evolution-card">
                         <h2>Percorso visivo da riavviare</h2>
                         <Button tone="cream" block disabled={busy} onClick={() => setProgress({ ...progress, track: null })}>Scegli un nuovo tratto</Button>
@@ -404,6 +443,18 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                             ))}
                         </ol>
                     </>
+                ) : null}
+
+                {confirmingDiscard && progress?.track ? (
+                    <ConfirmDialog
+                        label="Conferma lo scarto della proposta"
+                        title="Scartare questa evoluzione?"
+                        description={`La proposta viene persa e non puo essere recuperata. Le ${progress.track.target} vittorie spese per aprire questo percorso${currentTarget ? ` su ${currentTarget}` : ''} non tornano indietro: per ritentare dovrai vincerne altre ${progress.track.target}.`}
+                        confirmLabel="Scarta proposta"
+                        cancelLabel="Torna indietro"
+                        onConfirm={() => void discard()}
+                        onCancel={() => setConfirmingDiscard(false)}
+                    />
                 ) : null}
             </section>
         </AppShell>

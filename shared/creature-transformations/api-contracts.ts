@@ -86,6 +86,16 @@ export type AdoptCreatureTransformationResponse = Readonly<{
 
 export type RollbackCreatureVisualVersionResponse = AdoptCreatureTransformationResponse
 
+export type DiscardCreatureTransformationResponse = Readonly<{
+    success: true
+    requestId: string
+    /**
+     * Il percorso chiuso, in stato `CANCELLED`: lo slot per un nuovo percorso e' di nuovo libero.
+     * Le vittorie restano spese — scartare non restituisce il costo di apertura.
+     */
+    track: CreatureVisualProgressTrack
+}>
+
 export type TransformationRequestStatusResponse = {
     success: true
     requestId: string
@@ -156,3 +166,4 @@ export type CreatureTransformationApiResponse =
     | GameCreatureVisualsResponse
     | AdoptCreatureTransformationResponse
     | RollbackCreatureVisualVersionResponse
+    | DiscardCreatureTransformationResponse

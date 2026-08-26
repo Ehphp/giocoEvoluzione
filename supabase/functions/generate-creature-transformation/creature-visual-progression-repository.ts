@@ -269,7 +269,10 @@ export class SupabaseCreatureVisualProgressionRepository {
             .select('*')
             .eq('profile_id', input.profileId)
             .eq('creature_id', input.creatureId).in!('status', ['ACTIVE', 'SUPERSEDED'])
-            .order('version_number', { ascending: true })
+            // Decrescente perche' il limite deve tagliare le forme piu' vecchie: in ordine crescente
+            // oltre la sedicesima versione lo strip perdeva proprio quella attiva, e il selettore
+            // "Usa questa forma" smetteva di funzionare.
+            .order('version_number', { ascending: false })
             .limit(16)
         if (error)
             throw new CreatureVisualProgressionRepositoryError(
@@ -277,7 +280,9 @@ export class SupabaseCreatureVisualProgressionRepository {
                 'Impossibile recuperare le versioni visuali.',
                 { cause: error },
             )
-        return (Array.isArray(data) ? data : []).map(mapVisualVersion)
+        // I chiamatori rendono la storia dalla piu' vecchia alla piu' recente: l'ordine di lettura
+        // serviva solo a scegliere cosa tagliare.
+        return (Array.isArray(data) ? data : []).map(mapVisualVersion).reverse()
     }
 
     async listGameHumanParticipants(gameId: string): Promise<GameVisualParticipant[]> {
@@ -390,6 +395,26 @@ export class SupabaseCreatureVisualProgressionRepository {
                 p_progress_track_id: input.trackId,
                 p_transformation_request_id: input.requestId,
                 p_expected_current_visual_version_id: input.expectedCurrentVisualVersionId,
+            }),
+        )
+    }
+
+    /**
+     * Chiude un percorso rifiutando la proposta generata. Le vittorie spese per aprirlo non
+     * tornano indietro: adottare e scartare sono due esiti dello stesso percorso, gia' pagato.
+     */
+    async discard(input: {
+        profileId: string
+        creatureId: string
+        trackId: string
+        requestId: string
+    }): Promise<CreatureVisualProgressTrack> {
+        return mapProgressTrack(
+            await this.rpc('discard_creature_visual_generation', {
+                p_profile_id: input.profileId,
+                p_creature_id: input.creatureId,
+                p_track_id: input.trackId,
+                p_request_id: input.requestId,
             }),
         )
     }

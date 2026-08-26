@@ -144,48 +144,43 @@ function createPlayerRepository(supabaseAdmin: SupabaseAdminClient): PlayerCreat
                 : null
         },
         async listPreviousTransformations(creatureId) {
-            const { data, error } = await supabaseAdmin
-                .from('creature_visual_versions')
-                .select(
-                    'version_number, visual_trait_id, evolution_target_id, evolution_function, concept_name, concept_snapshot',
-                )
-                .eq('creature_id', creatureId)
-                .not('visual_trait_id', 'is', null)
-                .in('status', ['ACTIVE', 'SUPERSEDED'])
-                .order('version_number', { ascending: false })
+            // Stessa lineage della sibling in generate-creature-transformation/index.ts: se le due
+            // divergessero, il prompt e lo snapshot persistito descriverebbero due creature diverse.
+            const { data, error } = await supabaseAdmin.rpc('list_creature_visual_lineage', {
+                p_creature_id: creatureId,
+            })
             if (error) throw error
             // The identifier columns are constrained database-side; the casts mirror the sibling
             // repository in generate-creature-transformation/index.ts.
-            return [...(data ?? [])]
-                .reverse()
-                .flatMap((entry) =>
-                    typeof entry.visual_trait_id === 'string' && typeof entry.concept_name === 'string'
-                        ? [
-                              {
-                                  versionNumber: Number(entry.version_number),
-                                  visualTraitId: entry.visual_trait_id as VisualTraitId,
-                                  conceptName: entry.concept_name,
-                                  evolutionTargetId:
-                                      typeof entry.evolution_target_id === 'string'
-                                          ? (entry.evolution_target_id as EvolutionTargetId)
-                                          : null,
-                                  evolutionFunction:
-                                      typeof entry.evolution_function === 'string'
-                                          ? (entry.evolution_function as EvolutionFunctionId)
-                                          : null,
-                                  ...(entry.concept_snapshot &&
-                                  typeof entry.concept_snapshot === 'object' &&
-                                  typeof (entry.concept_snapshot as { mutationIdea?: unknown }).mutationIdea ===
-                                      'string'
-                                      ? {
-                                            mutationIdea: (entry.concept_snapshot as { mutationIdea: string })
-                                                .mutationIdea,
-                                        }
-                                      : {}),
-                              },
-                          ]
-                        : [],
-                )
+            return [...(data ?? [])].flatMap((entry) => {
+                if (typeof entry.visual_trait_id !== 'string' || typeof entry.concept_name !== 'string') return []
+                const snapshot =
+                    entry.concept_snapshot && typeof entry.concept_snapshot === 'object'
+                        ? (entry.concept_snapshot as Record<string, unknown>)
+                        : null
+                // Senza questa riga adoptedBodyPlanMutationIds resta vuoto su questo lato, e il
+                // finalizer ricostruirebbe il body plan di partenza invece di quello dell'individuo.
+                const bodyPlanMutationId = readBodyPlanMutationId(snapshot)
+                return [
+                    {
+                        versionNumber: Number(entry.version_number),
+                        visualTraitId: entry.visual_trait_id as VisualTraitId,
+                        conceptName: entry.concept_name,
+                        evolutionTargetId:
+                            typeof entry.evolution_target_id === 'string'
+                                ? (entry.evolution_target_id as EvolutionTargetId)
+                                : null,
+                        evolutionFunction:
+                            typeof entry.evolution_function === 'string'
+                                ? (entry.evolution_function as EvolutionFunctionId)
+                                : null,
+                        ...(snapshot && typeof snapshot.mutationIdea === 'string'
+                            ? { mutationIdea: snapshot.mutationIdea }
+                            : {}),
+                        ...(bodyPlanMutationId ? { bodyPlanMutationId } : {}),
+                    },
+                ]
+            })
         },
     }
     return repository

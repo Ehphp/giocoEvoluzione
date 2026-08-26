@@ -7,6 +7,7 @@ import type {
     CurrentCreatureVisualApiResponse,
     GameCreatureVisualsResponse,
     AdoptCreatureTransformationResponse,
+    DiscardCreatureTransformationResponse,
     TransformationRequestStatusResponse,
 } from '../../../shared/creature-transformations/api-contracts.ts'
 import type {
@@ -34,6 +35,7 @@ import { FluxMicroConceptGenerator, FluxMicroConceptGeneratorError } from './flu
 import { FluxImageGenerationServiceError } from './flux-image-generation-service.ts'
 import {
     parseAdoptCreatureTransformationRequest,
+    parseDiscardCreatureTransformationRequest,
     parseGenerateUnlockedTransformationRequest,
     parseGetCreatureVisualProgressRequest,
     parseGetCurrentCreatureVisualRequest,
@@ -1084,6 +1086,31 @@ export async function orchestrateAdoptCreatureTransformation(
     }
 }
 
+export async function orchestrateDiscardCreatureTransformation(
+    input: CreatureTransformationEdgeOrchestrationInput,
+): Promise<DiscardCreatureTransformationResponse | CreatureTransformationErrorResponse> {
+    if (!input.profileId) return failure(input.requestId, 'UNAUTHENTICATED', 'Autenticazione richiesta.')
+    const parsed = parseDiscardCreatureTransformationRequest(input.body)
+    if (!parsed.valid) return failure(input.requestId, parsed.code, parsed.message)
+    // Volutamente il solo permesso di lettura, non la capability 'ADOPT': lo scarto e' la via
+    // d'uscita da un percorso aperto, e metterlo dietro l'interruttore delle adozioni
+    // ricostruirebbe il vicolo cieco proprio quando il giocatore ne ha bisogno.
+    const access = visualProgressionReadAccessFailure(input.policy)
+    if (access) return failure(input.requestId, access.code, access.message)
+    try {
+        const track = await input.visualRepository.discard({
+            profileId: input.profileId,
+            creatureId: parsed.request.creatureId,
+            trackId: parsed.request.progressTrackId,
+            requestId: parsed.request.transformationRequestId,
+        })
+        return { success: true, requestId: input.requestId, track }
+    } catch (error) {
+        const details = mapThrownError(error)
+        return failure(input.requestId, details.code, details.message)
+    }
+}
+
 export async function orchestrateRollbackCreatureVisualVersion(
     input: CreatureTransformationEdgeOrchestrationInput,
 ): Promise<AdoptCreatureTransformationResponse | CreatureTransformationErrorResponse> {
@@ -1250,6 +1277,7 @@ export async function orchestrateCreatureTransformation(
     if (operation === 'GET_CURRENT_VISUAL') return orchestrateGetCurrentCreatureVisual(input)
     if (operation === 'GET_GAME_VISUALS') return orchestrateGetGameCreatureVisuals(input)
     if (operation === 'ADOPT_CREATURE_TRANSFORMATION') return orchestrateAdoptCreatureTransformation(input)
+    if (operation === 'DISCARD_CREATURE_TRANSFORMATION') return orchestrateDiscardCreatureTransformation(input)
     if (operation === 'ROLLBACK_CREATURE_VISUAL_VERSION') return orchestrateRollbackCreatureVisualVersion(input)
     return failure(input.requestId, 'OPERATION_NOT_IMPLEMENTED', 'operation non e supportata.')
 }

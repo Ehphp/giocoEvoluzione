@@ -25,9 +25,10 @@ produzione è tracciabile e recuperabile.
 | 1 | Verificare i secret richiesti | [§3](#3-secret-da-verificare--la-pipeline-non-parte-senza-questi) | **Prima** del deploy: se manca una delle due variabili di costo la pipeline risponde 503 e sembra che il deploy abbia rotto tutto |
 | 2 | `supabase secrets set COMBAT_MUTATION_RNG_SECRET=…` | [§0](#0-fine_del_mondo--migration-da-applicare-e-secret-nuovo) | `resolve-round` non sorteggia senza la chiave HMAC |
 | 3 | Controllare che non ci siano richieste di trasformazione in volo | [§1](#1-ridistribuire-le-edge-function--bloccante) | Una richiesta creata prima e finalizzata dopo il deploy viene marcata fallita |
-| 4 | `npx supabase db push` | [§0](#0-fine_del_mondo--migration-da-applicare-e-secret-nuovo) | **Prima** del deploy di `resolve-round`, che altrimenti scrive colonne inesistenti |
-| 5 | Deployare **tutte e quattro** le Edge Function | [§1](#1-ridistribuire-le-edge-function--bloccante) | Unico deploy: copre sia il refactor sia FINE_DEL_MONDO sia l'egress |
+| 4 | `npx supabase db push` | [§0](#0-fine_del_mondo--migration-da-applicare-e-secret-nuovo), [§8](#8-catalogo-delle-funzioni-evolutive--migration-da-applicare), [§10](#10-scarto-di-unevoluzione-e-lineage-reale--due-migration-da-applicare) | **Prima** del deploy: `resolve-round` scriverebbe colonne inesistenti e le due function dell'evoluzione chiamerebbero una RPC che non c'è |
+| 5 | Deployare **tutte e quattro** le Edge Function | [§1](#1-ridistribuire-le-edge-function--bloccante), [§9](#9-policy-di-presentazione-delle-evoluzioni--deploy-edge-function-richiesto) | Unico deploy: copre refactor, FINE_DEL_MONDO, egress, policy di presentazione e scarto/lineage |
 | 6 | Smoke test: una generazione completa end-to-end | — | Conferma 1–5 prima di rimuovere qualsiasi cosa |
+| 6b | Smoke test: scarto di una proposta e ritorno a una forma precedente | [§10](#10-scarto-di-unevoluzione-e-lineage-reale--due-migration-da-applicare) | Le due migration del passo 4 sono inerti finché non le esercita qualcuno |
 | 7 | `npm run backfill:creature-display-assets` | [§7](#7-egress--backfill-dei-display-asset) | Indipendente dal deploy, ma senza il display asset le versioni vecchie continuano a servire il master |
 | 8 | Rimuovere i secret morti | [§2](#2-secret-da-rimuovere-dopo-il-deploy) | **Solo dopo** che lo smoke test è passato: servono al codice attualmente deployato |
 | 9 | Migration che elimina le funzioni orfane | [§4](#4-funzioni-di-database-rimaste-senza-chiamante) | Pulizia, nessuna urgenza, migration dedicata |
@@ -103,7 +104,7 @@ Cosa cambia nel contratto, dopo il deploy:
 - **Operazioni attive** (le sole usate dal gioco): `GET_REQUEST_STATUS`,
   `GENERATE_UNLOCKED_TRANSFORMATION`, `SUBMIT_BACKGROUND_REMOVAL_CANDIDATE`, `GET_VISUAL_PROGRESS`,
   `GET_CURRENT_VISUAL`, `GET_GAME_VISUALS`, `ADOPT_CREATURE_TRANSFORMATION`,
-  `ROLLBACK_CREATURE_VISUAL_VERSION`.
+  `ROLLBACK_CREATURE_VISUAL_VERSION`, `DISCARD_CREATURE_TRANSFORMATION` ([§10](#10-scarto-di-unevoluzione-e-lineage-reale--due-migration-da-applicare)).
 - **Una sola pipeline immagine**: Seedream (`fal-ai/bytedance/seedream/v4.5/edit`). Lo switch
   `CREATURE_EVOLUTION_IMAGE_PIPELINE` non esiste più, il provider FLUX è stato rimosso.
 - `falWorkflow` accetta ora solo `kind: 'SEEDREAM_PRODUCTION'`.
@@ -322,3 +323,66 @@ npx supabase functions deploy generate-creature-transformation
 Prima del deploy, controllare come in Ã‚Â§1 che non ci siano richieste immagine in corso. Il runbook
 di Ã‚Â§1 mantiene comunque il deploy delle quattro function per le precedenti modifiche server;
 questa voce identifica la dipendenza minima specifica della policy di presentazione.
+
+## 10. Scarto di un'evoluzione e lineage reale — due migration da applicare
+
+Due difetti dell'evoluzione, entrambi corretti nel repo e in attesa di `db push` + redeploy.
+
+### 10a. Scartare una proposta non esisteva
+
+Il bottone "Mantieni creatura attuale" era una semplice navigazione indietro: nessuna chiamata al
+server. Il percorso restava in `GENERATED`, che è uno degli stati che fanno alzare
+`VISUAL_TRACK_ALREADY_ACTIVE`, quindi **la creatura non poteva più evolversi** — né su quel target
+né su nessun altro, per sempre, qualunque numero di vittorie accumulasse in seguito. L'unica uscita
+era il reset distruttivo dell'ambiente.
+
+`supabase/migrations/202608260001_discard_creature_visual_generation.sql` aggiunge
+`discard_creature_visual_generation(uuid, uuid, uuid, uuid)`: porta il percorso a `CANCELLED`,
+liberando lo slot. È idempotente e prende lo stesso advisory lock di
+`open_evolution_track_from_ready_target`.
+
+**Le vittorie restano spese, di proposito.** Adottare e scartare sono due esiti dello stesso
+percorso, che l'apertura ha già pagato: nessuno dei due regala un secondo tentativo, chi scarta
+torna a giocare esattamente come chi adotta. La migration ripara il vicolo cieco, non il costo.
+
+**Nessuna migration di riparazione per i percorsi già bloccati in produzione.** Non serve: appena la
+nuova operazione è deployata, quei percorsi diventano scartabili dalla schermata come tutti gli
+altri. Una riparazione massiva avrebbe invece distrutto le proposte legittimamente in attesa di una
+decisione del giocatore.
+
+### 10b. La lineage includeva i rami abbandonati
+
+Le due Edge Function leggevano la storia evolutiva con `status in ('ACTIVE','SUPERSEDED')`, che dopo
+un ritorno a una forma precedente include anche il ramo scartato. Da quella lista il server ricostruisce
+`adoptedBodyPlanMutationIds`, quindi il body plan canonico, i target disponibili, l'anatomy contract e —
+dopo `e7144fb` e la policy di §9 — anche il regime di prompt. Una mutazione strutturale adottata su un
+ramo poi abbandonato faceva dichiarare a FLUX un'anatomia che nell'immagine sorgente non esiste.
+
+`supabase/migrations/202608260002_creature_visual_lineage_path.sql` aggiunge
+`list_creature_visual_lineage(uuid)`, che risale `previous_version_id` dalla versione `ACTIVE` fino
+alla base. Entrambe le Edge Function ora la chiamano al posto della query sulla tabella.
+
+### Esecuzione
+
+```bash
+npx supabase db push
+npx supabase functions deploy generate-creature-transformation
+npx supabase functions deploy fal-creature-transformation-finalizer
+```
+
+L'ordine non è opzionale: le due function chiamano `list_creature_visual_lineage`, e senza la
+migration ogni generazione fallirebbe sul lookup della lineage. Il webhook non è coinvolto (non
+importa nessuno dei moduli toccati), ma se lo si ridistribuisce comunque per §1 non cambia nulla.
+
+Il deploy di `generate-creature-transformation` richiesto da §9 e questo sono lo stesso deploy: §9
+però non ha migration, mentre qui il `db push` viene **prima**, altrimenti la function chiama una
+RPC che non esiste.
+
+**Smoke test dopo il deploy**, nell'ordine — è la sequenza che prima era irrecuperabile:
+
+1. Portare un target a percorso completo e generare una proposta.
+2. Scartarla: il contatore del target deve restare a zero (le vittorie non tornano indietro).
+3. Riportare quel target a percorso completo vincendo, e aprire un secondo percorso sulla stessa
+   creatura: prima rispondeva `VISUAL_TRACK_ALREADY_ACTIVE` per sempre.
+4. Con una creatura che ha almeno due versioni adottate, usare "Usa questa forma" per tornare a una
+   precedente e generare: il body plan risolto deve essere quello della forma riattivata.

@@ -80,6 +80,18 @@ export type AdoptCreatureTransformationRequest = {
     expectedCurrentVisualVersionId: string
 }
 
+/**
+ * Rifiuta la proposta generata e chiude il percorso, restituendo le vittorie al contatore.
+ * Senza questa operazione un percorso in `GENERATED` resta aperto per sempre e blocca ogni
+ * evoluzione successiva della creatura.
+ */
+export type DiscardCreatureTransformationRequest = {
+    operation: 'DISCARD_CREATURE_TRANSFORMATION'
+    creatureId: string
+    progressTrackId: string
+    transformationRequestId: string
+}
+
 export type RollbackCreatureVisualVersionRequest = {
     operation: 'ROLLBACK_CREATURE_VISUAL_VERSION'
     creatureId: string
@@ -103,4 +115,5 @@ export type CreatureTransformationRequest =
     | GetCurrentCreatureVisualRequest
     | GetGameCreatureVisualsRequest
     | AdoptCreatureTransformationRequest
+    | DiscardCreatureTransformationRequest
     | RollbackCreatureVisualVersionRequest
