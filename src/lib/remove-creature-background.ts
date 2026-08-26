@@ -5,7 +5,7 @@ export class CreatureBackgroundRemovalError extends Error {
     }
 }
 
-const BACKGROUND_REMOVAL_MODELS = ['isnet_fp16', 'isnet_quint8'] as const
+const BACKGROUND_REMOVAL_MODELS = ['isnet', 'isnet_fp16'] as const
 const BACKGROUND_REMOVAL_TIMEOUT_MS = 120_000
 const SUPPORTED_RAW_MIME_TYPES = new Set(['image/png', 'image/jpeg'])
 

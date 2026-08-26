@@ -17,7 +17,7 @@ describe('removeCreatureBackground', () => {
 
         expect(removeBackground).toHaveBeenCalledWith(expect.any(Blob), {
             device: 'cpu',
-            model: 'isnet_fp16',
+            model: 'isnet',
             output: { format: 'image/png' },
         })
     })
@@ -27,21 +27,26 @@ describe('removeCreatureBackground', () => {
         expect(removeBackground).toHaveBeenCalledWith(expect.objectContaining({ type: 'image/jpeg' }), expect.any(Object))
     })
 
-    it('falls back to the lighter quantized model when the high-quality model fails', async () => {
-        removeBackground.mockRejectedValueOnce(new Error('fp16 allocation failed'))
+    it('falls back to the FP16 model when the primary model fails', async () => {
+        removeBackground.mockRejectedValueOnce(new Error('isnet allocation failed'))
 
         await expect(removeCreatureBackground(new Blob(['raw'], { type: 'image/png' }))).resolves.toMatchObject({ type: 'image/png' })
 
         expect(removeBackground).toHaveBeenCalledTimes(2)
+        expect(removeBackground).toHaveBeenNthCalledWith(1, expect.any(Blob), {
+            device: 'cpu',
+            model: 'isnet',
+            output: { format: 'image/png' },
+        })
         expect(removeBackground).toHaveBeenNthCalledWith(2, expect.any(Blob), {
             device: 'cpu',
-            model: 'isnet_quint8',
+            model: 'isnet_fp16',
             output: { format: 'image/png' },
         })
     })
 
     it('keeps the final provider detail when both models fail', async () => {
-        removeBackground.mockRejectedValueOnce(new Error('fp16 allocation failed')).mockRejectedValueOnce(new Error('model download blocked'))
+        removeBackground.mockRejectedValueOnce(new Error('isnet allocation failed')).mockRejectedValueOnce(new Error('model download blocked'))
 
         await expect(removeCreatureBackground(new Blob(['raw'], { type: 'image/png' })))
             .rejects.toThrow('La rimozione dello sfondo non e riuscita. Dettaglio: model download blocked')
