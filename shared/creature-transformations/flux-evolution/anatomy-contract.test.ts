@@ -96,16 +96,18 @@ describe('anatomy contract', () => {
         expect(contract.failureConditions.join(' ')).toMatch(/may not create a new dominant mutation elsewhere/i)
     })
 
-    it('LIMBS_AND_FEET keeps the limb count in a normal mutation', () => {
+    it('LIMBS_AND_FEET keeps the limb count and presentation in a normal mutation', () => {
         const contract = contractFor('LIMBS_AND_FEET')
 
         expect(contract.topologyInvariants.join(' ')).toMatch(
             /Keep exactly 4 limbs, in 2 symmetrical pairs, connected to the same anatomical roots and body regions/i,
         )
-        expect(contract.preservationRules.join(' ')).toMatch(/Relative spacing, stance and visible position may adapt/i)
-        expect(contract.preservationRules.join(' ')).not.toMatch(
-            /attachment point stay exactly|current attachment points/i,
-        )
+        expect(contract.topologyInvariants.join(' ')).toMatch(/Preserve the existing pose, stance, weight distribution/i)
+        expect(contract.targetAllowances.join(' ')).toMatch(/Strong changes of limb proportion, thickness and anatomical reach/i)
+        expect(contract.targetAllowances.join(' ')).toMatch(/naturally make the creature appear taller or shorter/i)
+        expect(contract.targetAllowances.join(' ')).toMatch(/do not change its stance, weight distribution/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/Evolve local proportions and geometry in place/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/do not change relative presentation, stance or visible placement/i)
         // The limbs are one system: the contract never distinguishes fore from hind.
         expect(text(contract)).not.toMatch(/forelimb|hind limb/i)
     })
@@ -151,6 +153,24 @@ describe('anatomy contract', () => {
             expect(structural.failureConditions.join(' ')).not.toMatch(
                 /Adding, removing, duplicating or relocating heads, limbs/i,
             )
+        })
+
+        it('keeps presentation changes available only to the upright bipedal transition', () => {
+            const bipedal = buildAnatomyContract({
+                bodyPlan: quadruped,
+                evolutionTargetId: 'BODY_SHAPE',
+                capability: 'BODY_PLAN_MUTATION',
+                bodyPlanMutationId: 'BIPEDAL_TRANSITION',
+            })
+            const addedLimbs = buildAnatomyContract({
+                bodyPlan: quadruped,
+                evolutionTargetId: 'LIMBS_AND_FEET',
+                capability: 'BODY_PLAN_MUTATION',
+                bodyPlanMutationId: 'ADD_LIMB_PAIR',
+            })
+
+            expect(bipedal.topologyInvariants.join(' ')).toMatch(/may adapt only as required by the authorized body-plan mutation/i)
+            expect(addedLimbs.topologyInvariants.join(' ')).toMatch(/Preserve the existing pose, stance, weight distribution/i)
         })
 
         it('keeps source and result topology distinct for an authorized tail split', () => {

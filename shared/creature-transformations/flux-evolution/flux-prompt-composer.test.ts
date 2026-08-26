@@ -147,6 +147,24 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(skinPrompt).toContain('New appendages or structural anatomy changes are invalid on this target.')
     })
 
+    it('keeps normal limb morphology strong without authorizing a new stance', () => {
+        const limbsContract = buildAnatomyContract({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'LIMBS_AND_FEET',
+        })
+        const limbsPrompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: limbsContract,
+            microConcept: dynamicConcept,
+        })
+
+        expect(limbsPrompt).toMatch(/Strong changes of limb proportion, thickness and anatomical reach are wanted/i)
+        expect(limbsPrompt).toMatch(/naturally make the creature appear taller or shorter within its existing pose/i)
+        expect(limbsPrompt).toMatch(/do not change its stance, weight distribution or overall body presentation/i)
+        expect(limbsPrompt).toMatch(/Preserve the exact same camera angle, 3\/4 view, facing direction and overall pose/i)
+        expect(limbsPrompt).not.toMatch(/may adapt naturally to authorized changes in body proportions or stance/i)
+    })
+
     it('keeps the existing TAIL colour-preservation wording unchanged', () => {
         const tailContract = buildAnatomyContract({ bodyPlan: BODY_PLANS.QUADRUPED, evolutionTargetId: 'TAIL' })
         const tailPrompt = composeLockedDynamicFluxEvolutionPrompt({
@@ -202,5 +220,24 @@ describe('composeLockedDynamicFluxEvolutionPrompt', () => {
         expect(prompt).toMatch(/Grow one additional symmetrical pair of limbs/i)
         expect(prompt).toContain('Keep exactly 6 limbs')
         expect(prompt).toContain('any topology change other than the authorized structural mutation')
+    })
+
+    it('keeps BIPEDAL_TRANSITION as the only explicit presentation exception', () => {
+        const bipedalContract = buildAnatomyContract({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'BODY_SHAPE',
+            capability: 'BODY_PLAN_MUTATION',
+            bodyPlanMutationId: 'BIPEDAL_TRANSITION',
+        })
+        const prompt = composeLockedDynamicFluxEvolutionPrompt({
+            identity,
+            anatomyContract: bipedalContract,
+            microConcept: dynamicConcept,
+        })
+
+        expect(prompt).toMatch(/AUTHORIZED STRUCTURAL MUTATION: Rebuild the posture into an upright bipedal stance/i)
+        expect(prompt).toMatch(/Only the posture and silhouette changes required by the authorized structural mutation are allowed/i)
+        expect(prompt).toMatch(/may adapt only as required by the authorized body-plan mutation/i)
+        expect(prompt).not.toMatch(/not an added plate or crest or a new presentation/i)
     })
 })

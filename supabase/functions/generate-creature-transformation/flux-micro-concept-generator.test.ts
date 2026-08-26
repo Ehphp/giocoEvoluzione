@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS } from '../../../shared/creature-transformations/evolution-targets.ts'
+import {
+    EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS,
+    EVOLUTION_TARGET_IDS,
+    type EvolutionTargetId,
+} from '../../../shared/creature-transformations/evolution-targets.ts'
 import { BODY_PLANS } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import { buildFluxEvolutionPlan } from '../../../shared/creature-transformations/flux-evolution/evolution-plan.ts'
+import { composeLockedDynamicFluxEvolutionPrompt } from '../../../shared/creature-transformations/flux-evolution/flux-prompt-composer.ts'
 import {
     FluxMicroConceptGenerator,
     composeFluxMicroConceptInstructions,
@@ -44,6 +49,17 @@ function planFor(
                       evolutionTargetId === 'TAIL' ? ('TAIL_SPLIT' as const) : ('ADD_LIMB_PAIR' as const),
               }
             : {}),
+    })
+}
+
+function normalPlanFor(evolutionTargetId: EvolutionTargetId) {
+    const bodyPlan = Object.values(BODY_PLANS).find((candidate) => candidate.evolutionTargets.includes(evolutionTargetId))
+    if (!bodyPlan) throw new Error(`Nessun body-plan offre ${evolutionTargetId}.`)
+    return buildFluxEvolutionPlan({
+        bodyPlan,
+        evolutionTargetId,
+        previousTransformations: [],
+        seed: 'normal-presentation-lock',
     })
 }
 
@@ -181,6 +197,61 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).not.toMatch(/differently balanced|posture rebalancing/i)
     })
 
+    it('never grants a normal target generic presentation rebalancing', () => {
+        for (const evolutionTargetId of EVOLUTION_TARGET_IDS) {
+            const prompt = composeFluxMicroConceptInstructions({
+                identity: TEST_CREATURE_IDENTITY,
+                plan: normalPlanFor(evolutionTargetId),
+            })
+
+            expect(prompt, evolutionTargetId).not.toMatch(/posture rebalancing|stance rebalancing|supporting anatomy/i)
+            expect(prompt, evolutionTargetId).toMatch(
+                /never add one by default, rebalance posture, change stance, redistribute weight/i,
+            )
+        }
+    })
+
+    it('keeps normal concept and Seedream prompt presentation policy aligned', () => {
+        const concept = {
+            conceptName: 'Integrazione locale',
+            mutationIdea: 'Una mutazione biologica locale sul target selezionato.',
+            visualDetails: ['una struttura radicata localmente'],
+            avoid: [],
+        }
+
+        for (const evolutionTargetId of EVOLUTION_TARGET_IDS) {
+            const plan = normalPlanFor(evolutionTargetId)
+            const conceptInstructions = composeFluxMicroConceptInstructions({
+                identity: TEST_CREATURE_IDENTITY,
+                plan,
+            })
+            const finalPrompt = composeLockedDynamicFluxEvolutionPrompt({
+                identity: TEST_CREATURE_IDENTITY,
+                anatomyContract: plan.anatomyContract,
+                microConcept: concept,
+            })
+
+            expect(conceptInstructions, evolutionTargetId).toMatch(/never add one by default, rebalance posture, change stance/i)
+            expect(finalPrompt, evolutionTargetId).toMatch(
+                /exact same camera angle, 3\/4 view, facing direction(?:,| and) overall pose/i,
+            )
+            expect(finalPrompt, evolutionTargetId).not.toMatch(/may adapt only as required by the authorized body-plan mutation/i)
+        }
+    })
+
+    it('keeps strong limb morphology and natural height inside the existing stance', () => {
+        const prompt = composeFluxMicroConceptInstructions({
+            identity: TEST_CREATURE_IDENTITY,
+            plan: planFor('LIMBS_AND_FEET'),
+        })
+
+        expect(prompt).toMatch(/length, mass, visible articulation, feet, toes, claws, pads, spurs, membranes/i)
+        expect(prompt).toMatch(/Strong changes of limb proportion, thickness and anatomical reach are wanted/i)
+        expect(prompt).toMatch(/Longer or shorter limbs may naturally make the creature appear taller or shorter within its existing pose/i)
+        expect(prompt).toMatch(/do not change its stance, weight distribution or overall body presentation/i)
+        expect(prompt).not.toMatch(/posture rebalancing|stance rebalancing|biomechanical support/i)
+    })
+
     it('locks TAIL concepts to the source pose and local tail anatomy', () => {
         const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan: planFor('TAIL') })
         const nonTailPrompt = composeFluxMicroConceptInstructions(input)
@@ -206,6 +277,23 @@ describe('FluxMicroConceptGenerator', () => {
         expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
         expect(prompt).toMatch(/one additional symmetrical pair of limbs/i)
         expect(prompt).toContain('Keep exactly 6 limbs')
+    })
+
+    it('allows a stance change only when BIPEDAL_TRANSITION explicitly authorizes it', () => {
+        const plan = buildFluxEvolutionPlan({
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            evolutionTargetId: 'BODY_SHAPE',
+            previousTransformations: [],
+            seed: 'bipedal-presentation-change',
+            bodyPlanMutationEnabled: true,
+            requestedBodyPlanMutationId: 'BIPEDAL_TRANSITION',
+        })
+        const prompt = composeFluxMicroConceptInstructions({ identity: TEST_CREATURE_IDENTITY, plan })
+
+        expect(prompt).toContain('AUTHORIZED BODY-PLAN MUTATION')
+        expect(prompt).toMatch(/Rebuild the posture into an upright bipedal stance/i)
+        expect(prompt).toMatch(/Any change to posture, stance, weight distribution or overall body presentation must be explicitly required/i)
+        expect(prompt).not.toContain('BODY-SHAPE PRESENTATION LOCK')
     })
 
     it('separates source, authorized change and output topology for a structural TAIL concept', () => {

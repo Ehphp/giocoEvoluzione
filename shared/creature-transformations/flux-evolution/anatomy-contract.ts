@@ -54,13 +54,13 @@ function freeze(items: readonly string[]): readonly string[] {
     return Object.freeze(items.filter((item) => item.trim().length > 0))
 }
 
-function limbSentence(topology: CreatureTopology, preservePresentation = false): string | null {
+function limbSentence(topology: CreatureTopology, allowPresentationChange = false): string | null {
     const limbs = topology.forelimbCount + topology.hindLimbCount
     if (!limbs) return 'The creature has no limbs; it stays limbless.'
     const pairs = limbs / 2
-    const presentationRule = preservePresentation
-        ? ' Keep every limb in its existing anatomical root and body region.'
-        : ' Their relative visual positions may adapt naturally to authorized changes in body proportions or stance; no limb may migrate to a different anatomical region.'
+    const presentationRule = allowPresentationChange
+        ? ' Their relative visual positions may adapt only as required by the authorized body-plan mutation; no limb may migrate to a different anatomical region.'
+        : ' Keep every limb in its existing anatomical root and body region. Preserve the existing pose, stance, weight distribution and overall body presentation.'
     return Number.isInteger(pairs)
         ? `Keep exactly ${limbs} limbs, in ${pairs} symmetrical pair${pairs === 1 ? '' : 's'}, connected to the same anatomical roots and body regions.${presentationRule}`
         : `Keep exactly ${limbs} limbs connected to the same anatomical roots and body regions.${presentationRule}`
@@ -70,11 +70,11 @@ function countSentence(count: number, singular: string, plural: string): string 
     return count > 0 ? `Keep exactly ${count} ${count === 1 ? singular : plural}.` : null
 }
 
-function topologyInvariants(bodyPlan: CreatureBodyPlan, preservePresentation = false): string[] {
+function topologyInvariants(bodyPlan: CreatureBodyPlan, allowPresentationChange = false): string[] {
     const topology = bodyPlan.topology
     return [
         `Keep exactly ${topology.headCount} head${topology.headCount === 1 ? '' : 's'} with the recognisable face of this individual.`,
-        limbSentence(topology, preservePresentation),
+        limbSentence(topology, allowPresentationChange),
         countSentence(topology.wingCount, 'wing', 'wings'),
         countSentence(topology.tentacleCount, 'tentacle', 'tentacles'),
         countSentence(topology.tailCount, 'tail', 'tails'),
@@ -100,10 +100,10 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
     LIMBS_AND_FEET: {
         allowances: [
             'Treat all existing limbs as one system and evolve them together: length, mass, visible articulation, feet, toes, claws, pads, spurs, membranes and structures anchored to the limbs.',
-            'Strong changes of limb proportion, thickness and stance height are wanted.',
+            'Strong changes of limb proportion, thickness and anatomical reach are wanted. Longer or shorter limbs may naturally make the creature appear taller or shorter within its existing pose; do not change its stance, weight distribution or overall body presentation.',
         ],
         preservation: [
-            'Keep every limb connected to its existing anatomical root and body region. Relative spacing, stance and visible position may adapt to the evolved limb proportions.',
+            'Keep every limb connected to its existing anatomical root and body region. Evolve local proportions and geometry in place; do not change relative presentation, stance or visible placement.',
         ],
         failures: [],
     },
@@ -154,7 +154,7 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
             'A strong change of the wing silhouette is wanted.',
         ],
         preservation: [
-            'Keep every wing connected to its existing anatomical root and body region; its visible angle and span may adapt to the mutation.',
+            'Keep every wing connected to its existing anatomical root and body region; its visible angle and span may adapt locally to the mutation without changing the overall pose, stance, weight distribution or body presentation.',
         ],
         failures: ['Wing structures may not become independently rooted limbs or appendages.'],
     },
@@ -236,7 +236,7 @@ export function buildAnatomyContract(input: {
         resultBodyPlanId: resultBodyPlan.id,
         sourceTopology: Object.freeze({ ...input.bodyPlan.topology }),
         resultTopology: Object.freeze({ ...resultBodyPlan.topology }),
-        topologyInvariants: freeze(topologyInvariants(resultBodyPlan, input.evolutionTargetId === 'TAIL')),
+        topologyInvariants: freeze(topologyInvariants(resultBodyPlan, mutation?.id === 'BIPEDAL_TRANSITION')),
         targetAllowances: freeze([`Work on ${target.promptRegion}.`, ...contract.allowances]),
         preservationRules: freeze(mutation ? mutation.structuralGuardrails : contract.preservation),
         ...(mutation ? { structuralChange: mutation.structuralChange, bodyPlanMutationId: mutation.id } : {}),

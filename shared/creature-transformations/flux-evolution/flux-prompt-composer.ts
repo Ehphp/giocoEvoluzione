@@ -60,13 +60,14 @@ function lockedTopologyInvariants(invariants: readonly string[]): readonly strin
     )
 }
 
-function lockedTargetRules(contract: AnatomyContract): readonly string[] {
-    // The locked shell owns presentation. Domain rules that explicitly grant a stance or camera
-    // adjustment belong to the flexible FLUX composers, never to this diagnostic template.
+function targetRules(contract: AnatomyContract): readonly string[] {
     const rules = [...contract.targetAllowances, ...contract.preservationRules]
-    if (contract.capability === 'BODY_PLAN_MUTATION') return rules
-    return rules.filter(
-        (rule) => !/\b(?:stance|posture|orientation|viewpoint|camera|composition|rebalancing)\b/i.test(rule),
+    if (contract.bodyPlanMutationId !== 'BIPEDAL_TRANSITION') return rules
+    return rules.map((rule) =>
+        rule.replace(
+            ' This target is a change of body form, not an added plate or crest or a new presentation of the creature.',
+            ' This target is a change of body form, not an added plate or crest.',
+        ),
     )
 }
 
@@ -87,7 +88,7 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         input.framingAttempt && input.framingAttempt > 0
             ? `RETRY FRAMING OVERRIDE (attempt ${input.framingAttempt + 1})\n\nMake the creature visibly smaller in frame. Use a wider camera and at least ${10 + input.framingAttempt * 5}% clear background margin around the complete silhouette. Do not crop, rotate or mirror the creature.`
             : null
-    const targetRules = lockedTargetRules(contract)
+    const selectedTargetRules = targetRules(contract)
     const identity = input.identity.identityFeatures.length
         ? input.identity.identityFeatures.join('; ')
         : input.identity.description
@@ -106,7 +107,7 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         ...(retryFraming ? [retryFraming] : []),
         'ANATOMY LOCK',
         [
-            ...lockedTopologyInvariants(anatomyInvariants),
+            ...(structural ? anatomyInvariants : lockedTopologyInvariants(anatomyInvariants)),
             ...(!tailStructural && structural && contract.structuralChange
                 ? [
                       `AUTHORIZED STRUCTURAL MUTATION: ${contract.structuralChange}`,
@@ -121,7 +122,7 @@ export function composeLockedDynamicFluxEvolutionPrompt(input: ComposeFluxPrompt
         [
             `The primary mutation is restricted to ${target.promptRegion}.`,
             'Structures belonging to this mutation must be anatomically integrated with and rooted in the selected target.',
-            ...(targetRules.length ? ['Target-specific anatomical rules:', ...targetRules] : []),
+            ...(selectedTargetRules.length ? ['Target-specific anatomical rules:', ...selectedTargetRules] : []),
             'Do not redesign unrelated anatomy.',
         ].join('\n'),
         ...tailSpecificPolicySections(contract),
