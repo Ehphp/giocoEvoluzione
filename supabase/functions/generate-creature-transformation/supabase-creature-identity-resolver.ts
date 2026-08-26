@@ -3,6 +3,7 @@ import type {
     ResolvedCreatureSource,
 } from '../../../shared/creature-transformations/contracts.ts'
 import { CREATURE_IDENTITY_REGISTRY, type CreatureIdentityDefinition } from './identity-registry.ts'
+import { getSafeDatabaseLookupCode } from './database-lookup-diagnostics.ts'
 import type { PreviousCreatureTransformationSummary } from '../../../shared/creature-transformations/creature-visual-versions.ts'
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
@@ -73,6 +74,25 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
         this.registry = registry
     }
 
+    /**
+     * Esegue una lettura di supporto trasformandone il guasto in un errore riconoscibile.
+     *
+     * Il codice del database finisce nel messaggio perche' e' l'unica diagnostica che arriva a chi
+     * chiama: un `42883` (funzione inesistente) e un `PGRST202` (schema cache non ricaricato) hanno
+     * rimedi opposti e altrimenti sarebbero lo stesso 500 opaco.
+     */
+    private async lookup<T>(stage: string, read: () => Promise<T>): Promise<T> {
+        try {
+            return await read()
+        } catch (error) {
+            throw new CreatureIdentityResolutionError(
+                'CREATURE_LOOKUP_FAILED',
+                `Lettura non riuscita (${stage}/${getSafeDatabaseLookupCode(error)}).`,
+                { cause: error },
+            )
+        }
+    }
+
     async resolve(input: { profileId: string; creatureId: string }): Promise<ResolvedCreatureSource> {
         let creature: StoredPlayerCreature | null
         try {
@@ -109,23 +129,28 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
             )
         }
 
-        const currentVisualVersion =
+        // Come findByCreatureId sopra: senza questa classificazione un guasto di lettura risale
+        // fino a mapThrownError, che non lo riconosce e lo appiattisce in un INTERNAL_ERROR senza
+        // codice ne' log — indistinguibile da qualunque altro errore del server.
+        const currentVisualVersion = await this.lookup('CURRENT_VISUAL_VERSION', () =>
             creature.currentVisualVersionId && this.repository.findCurrentVisualVersion
-                ? await this.repository.findCurrentVisualVersion({
+                ? this.repository.findCurrentVisualVersion({
                       creatureId: creature.id,
                       versionId: creature.currentVisualVersionId,
                   })
-                : null
+                : Promise.resolve(null),
+        )
         if (creature.currentVisualVersionId && !currentVisualVersion) {
             throw new CreatureIdentityResolutionError(
                 'CREATURE_LOOKUP_FAILED',
                 'La versione visuale corrente della creatura non e disponibile.',
             )
         }
-        const previousTransformations =
+        const previousTransformations = await this.lookup('VISUAL_LINEAGE', () =>
             creature.currentVisualVersionId && this.repository.listPreviousTransformations
-                ? await this.repository.listPreviousTransformations(creature.id)
-                : []
+                ? this.repository.listPreviousTransformations(creature.id)
+                : Promise.resolve([]),
+        )
         // Adopted structural mutations, in adoption order, are what makes the canonical body
         // plan of this individual differ from its starter topology.
         const adoptedBodyPlanMutationIds = previousTransformations.flatMap((entry): BodyPlanMutationId[] =>

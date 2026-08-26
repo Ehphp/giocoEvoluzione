@@ -40,6 +40,7 @@ import {
 import { parseFalQueueWorkflow } from '../generate-creature-transformation/fal-queue-workflow.ts'
 import { readCreatureEvolutionPolicy } from '../generate-creature-transformation/evolution-policy.ts'
 import { redactErrorMessage, redactSensitiveText } from '../generate-creature-transformation/secret-redaction.ts'
+import { getSafeDatabaseLookupCode } from '../generate-creature-transformation/database-lookup-diagnostics.ts'
 import {
     isFluxEvolutionSnapshot,
     readBodyPlanMutationId,
@@ -149,7 +150,13 @@ function createPlayerRepository(supabaseAdmin: SupabaseAdminClient): PlayerCreat
             const { data, error } = await supabaseAdmin.rpc('list_creature_visual_lineage', {
                 p_creature_id: creatureId,
             })
-            if (error) throw error
+            if (error) {
+                console.error('Creature transformation visual lineage lookup failed', {
+                    creatureId,
+                    databaseCode: getSafeDatabaseLookupCode(error),
+                })
+                throw error
+            }
             // The identifier columns are constrained database-side; the casts mirror the sibling
             // repository in generate-creature-transformation/index.ts.
             return [...(data ?? [])].flatMap((entry) => {

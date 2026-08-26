@@ -124,7 +124,13 @@ function createRepository(supabaseAdmin: SupabaseAdminClient, requestId: string)
             const { data, error } = await supabaseAdmin.rpc('list_creature_visual_lineage', {
                 p_creature_id: creatureId,
             })
-            if (error) throw error
+            if (error) {
+                console.error('Creature transformation visual lineage lookup failed', {
+                    requestId,
+                    databaseCode: getSafeDatabaseLookupCode(error),
+                })
+                throw error
+            }
             return [...(data ?? [])].flatMap((entry) => {
                 if (typeof entry.visual_trait_id !== 'string' || typeof entry.concept_name !== 'string') return []
                 const snapshot =
