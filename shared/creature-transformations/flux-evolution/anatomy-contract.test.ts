@@ -86,14 +86,18 @@ describe('anatomy contract', () => {
         expect(contract.failureConditions.join(' ')).toMatch(/HARD INVARIANTS.*NON-TARGET PRESERVATION/i)
     })
 
-    it('DORSAL_STRUCTURES allows only necessary, subordinate support changes', () => {
+    it('DORSAL_STRUCTURES keeps structures posterior to the nape and subordinate to the body', () => {
         const contract = contractFor('DORSAL_STRUCTURES')
 
         expect(contract.targetAllowances.join(' ')).toMatch(
-            /spines, crests, ridges, fins, plates, membranes, sails or humps/i,
+            /spines, ridges, osteoderms, keratinous or bony plates, knobs, humps or short local crests/i,
         )
-        expect(contract.preservationRules.join(' ')).toMatch(/rooted along the existing back and spine region/i)
-        expect(contract.failureConditions.join(' ')).toMatch(/may not create a new dominant mutation elsewhere/i)
+        expect(contract.targetAllowances.join(' ')).not.toMatch(/fins, plates, membranes, sails/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/strictly posterior to the nape/i)
+        expect(contract.preservationRules.join(' ')).toMatch(/Preserve the skull, crown, forehead, head/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/continuous crown-to-neck-to-back or head-to-tail crest/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/generic fins, sails, large membranes or fan-like forms/i)
+        expect(contract.failureConditions.join(' ')).toMatch(/pose, stance, reorientation or body-presentation change/i)
     })
 
     it('LIMBS_AND_FEET keeps the limb count and presentation in a normal mutation', () => {

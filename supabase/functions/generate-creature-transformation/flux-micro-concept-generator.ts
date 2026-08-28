@@ -12,6 +12,11 @@ import {
     EVOLUTION_FUNCTION_MICRO_CONCEPT_DESCRIPTIONS,
     EVOLUTION_TARGET_BY_ID,
 } from '../../../shared/creature-transformations/evolution-targets.ts'
+import {
+    describeFluxMicroConceptSemanticRetry,
+    type FluxMicroConceptSemanticViolationCode,
+    validateFluxMicroConceptTargetSemantics,
+} from './dorsal-concept-policy.ts'
 
 type FetchLike = typeof fetch
 
@@ -176,6 +181,7 @@ function tailStructuralTopologyInstructions(plan: FluxEvolutionPlan): readonly s
 export function composeFluxMicroConceptInstructions(
     input: GenerateFluxMicroConceptInput,
     retryForNovelty = false,
+    semanticRetryViolations: readonly FluxMicroConceptSemanticViolationCode[] = [],
 ): string {
     const plan = input.plan
     const contract = plan.anatomyContract
@@ -184,6 +190,7 @@ export function composeFluxMicroConceptInstructions(
     const bodyShapePresentationLock =
         plan.evolutionTargetId === 'BODY_SHAPE' && plan.capability === 'ANATOMICAL_MUTATION'
     const tailPresentationLock = plan.evolutionTargetId === 'TAIL'
+    const dorsalPresentationLocalityLock = plan.evolutionTargetId === 'DORSAL_STRUCTURES'
     const tailStructural = isTailStructuralMutation(plan)
     const secondaryAdaptationRule = structural
         ? 'Introduce a secondary adaptation only when it is necessary for local anatomical continuity, local structural integration, minimal local proportion adjustment or tightly linked visual propagation. A secondary adaptation must be subordinate, less visually prominent and clearly derived from the primary mutation. Any change to posture, stance, weight distribution or overall body presentation must be explicitly required by the AUTHORIZED BODY-PLAN MUTATION; never infer one as secondary support.'
@@ -197,6 +204,7 @@ export function composeFluxMicroConceptInstructions(
     const functionalDirection = functionalDescription
         ? `${plan.evolutionFunction} — ${functionalDescription}`
         : plan.evolutionFunction
+    const semanticRetry = describeFluxMicroConceptSemanticRetry(semanticRetryViolations)
     return [
         'Return one strict JSON FluxMicroConcept and nothing else.',
         'Invent one creature mutation that is visually distinctive, surprising, clearly readable at gameplay scale and anatomically integrated.',
@@ -251,6 +259,12 @@ export function composeFluxMicroConceptInstructions(
                   'Do not propose dorsal spines, horns, crests, fins, fronds, sails, long projecting plates, new appendages or other protruding structures that substantially change the silhouette. Do not change body shape, topology, pose, stance, limb structure, tail structure or anatomical roots. The mutation must read primarily as an evolution of the creature\'s skin and body covering, not as a new dorsal or anatomical structure.',
               ]
             : []),
+        ...(dorsalPresentationLocalityLock
+            ? [
+                  'DORSAL LOCALITY AND PRESENTATION LOCK: Start every dorsal structure on the back or spine strictly posterior to the skull and nape. Preserve the head, skull, crown, forehead and cranial silhouette; do not grow or propagate the structure forward onto them. The neck may be only a short transition, never a second dominant target. Do not create a continuous crown-to-neck-to-back or head-to-tail crest.',
+                  'DORSAL SCALE AND BODY LOCK: Keep the dorsal mutation visibly strong but anatomically subordinate to the creature. Do not make it body-length, multiply it beyond the creature, or let it dwarf the body. Preserve the original pose, stance, weight distribution, orientation and overall body presentation; a dorsal mutation does not authorize rebalancing or re-staging.',
+              ]
+            : []),
         `CURRENT SOURCE IMAGE: the creature currently looks like the supplied source image. Creature identity: ${input.identity.description} Preserve: ${input.identity.identityFeatures.join('; ')}.`,
         `MUTABLE APPEARANCE: ${mutableAppearance}. These are not identity invariants. ${plan.chromaticDirection ? 'For this Skin evolution, clearly express the selected chromatic direction through dominant pigmentation and/or biological patterning. State its location and biological role as part of mutationIdea or visualDetails.' : 'A visible colour treatment is optional: use it only as a biologically motivated, target-linked secondary adaptation. When warranted, state its location and biological role as part of mutationIdea or visualDetails; otherwise preserve the current coloration.'}`,
         `CURRENT TARGET STATE: ${describeCurrentTargetState(plan.lineage)}`,
@@ -259,6 +273,7 @@ export function composeFluxMicroConceptInstructions(
                   `NOVELTY RETRY: a recent local mutation of this same target was too similar: ${describeNoveltyReferences(plan.noveltyReferences)}. Choose a genuinely different morphological direction for this target (different form, material, arrangement or growth pattern), while keeping the mutation local and respecting the same anatomy contract.`,
               ]
             : []),
+        ...(semanticRetry ? [semanticRetry] : []),
         'Do not write an image-generation prompt, technical instructions, a body-area catalog, an archetype, a biological essay, a separate colour schema or extra fields.',
     ].join('\n')
 }
@@ -309,6 +324,7 @@ export class FluxMicroConceptGenerator {
 
     async generate(input: GenerateFluxMicroConceptInput): Promise<FluxMicroConcept> {
         let retryForNovelty = false
+        let semanticRetryViolations: readonly FluxMicroConceptSemanticViolationCode[] = []
         for (let attempt = 0; attempt < 2; attempt += 1) {
             const controller = new AbortController()
             const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
@@ -325,7 +341,11 @@ export class FluxMicroConceptGenerator {
                                 content: [
                                     {
                                         type: 'input_text',
-                                        text: composeFluxMicroConceptInstructions(input, retryForNovelty),
+                                        text: composeFluxMicroConceptInstructions(
+                                            input,
+                                            retryForNovelty,
+                                            semanticRetryViolations,
+                                        ),
                                     },
                                 ],
                             },
@@ -349,8 +369,18 @@ export class FluxMicroConceptGenerator {
                     /* retry a malformed schema response once */
                 }
                 const isNovel = concept ? isNovelFluxMicroConcept(concept, input.plan) : false
-                if (concept && isTopologicallyCompatibleFluxMicroConcept(concept, input.plan) && isNovel) return concept
+                const semanticValidation = concept
+                    ? validateFluxMicroConceptTargetSemantics(concept, input.plan)
+                    : { valid: false, violations: [] }
+                if (
+                    concept &&
+                    isTopologicallyCompatibleFluxMicroConcept(concept, input.plan) &&
+                    semanticValidation.valid &&
+                    isNovel
+                )
+                    return concept
                 retryForNovelty ||= Boolean(concept && !isNovel)
+                semanticRetryViolations = semanticValidation.violations
                 if (attempt === 0) continue
                 throw new FluxMicroConceptGeneratorError(
                     'FLUX_CONCEPT_RESPONSE_INVALID',

@@ -268,6 +268,25 @@ describe('FluxMicroConceptGenerator', () => {
         expect(nonTailPrompt).not.toContain('TAIL POSE AND BODY LOCK')
     })
 
+    it('locks DORSAL_STRUCTURES to the posterior back while preserving head and presentation', () => {
+        const dorsalPrompt = composeFluxMicroConceptInstructions({
+            identity: TEST_CREATURE_IDENTITY,
+            plan: normalPlanFor('DORSAL_STRUCTURES'),
+        })
+        const headPrompt = composeFluxMicroConceptInstructions({
+            identity: TEST_CREATURE_IDENTITY,
+            plan: normalPlanFor('HEAD_AND_CROWN'),
+        })
+
+        expect(dorsalPrompt).toContain('DORSAL LOCALITY AND PRESENTATION LOCK')
+        expect(dorsalPrompt).toMatch(/back or spine strictly posterior to the skull and nape/i)
+        expect(dorsalPrompt).toMatch(/Preserve the head, skull, crown, forehead and cranial silhouette/i)
+        expect(dorsalPrompt).toMatch(/neck may be only a short transition, never a second dominant target/i)
+        expect(dorsalPrompt).toMatch(/continuous crown-to-neck-to-back or head-to-tail crest/i)
+        expect(dorsalPrompt).toMatch(/Preserve the original pose, stance, weight distribution/i)
+        expect(headPrompt).not.toContain('DORSAL LOCALITY AND PRESENTATION LOCK')
+    })
+
     it('states the authorized structural change when the capability is used', () => {
         const prompt = composeFluxMicroConceptInstructions({
             identity: TEST_CREATURE_IDENTITY,
@@ -375,6 +394,51 @@ describe('FluxMicroConceptGenerator', () => {
             generator.generate({ identity: TEST_CREATURE_IDENTITY, plan: planFor('TAIL') }),
         ).resolves.toMatchObject({ conceptName: 'Ventaglio abissale' })
         expect(fetchImplementation).toHaveBeenCalledTimes(2)
+    })
+
+    it('retries a semantically invalid DORSAL_STRUCTURES concept before accepting a local dorsal mutation', async () => {
+        const fetchImplementation = vi
+            .fn()
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        output_text: JSON.stringify({
+                            conceptName: 'Corona dorsale',
+                            mutationIdea: 'Una cresta parte dalla corona e continua fino alla coda.',
+                            visualDetails: ['cresta continua'],
+                            avoid: [],
+                        }),
+                    }),
+                ),
+            )
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        output_text: JSON.stringify({
+                            conceptName: 'Osteodermi dorsali',
+                            mutationIdea: 'Osteodermi compatti emergono dal dorso centrale dietro la nuca.',
+                            visualDetails: ['placche ossee locali'],
+                            avoid: [],
+                        }),
+                    }),
+                ),
+            )
+        const generator = new FluxMicroConceptGenerator({
+            apiKey: 'test-key',
+            model: 'test-model',
+            fetchImplementation,
+        })
+
+        await expect(
+            generator.generate({
+                identity: TEST_CREATURE_IDENTITY,
+                plan: normalPlanFor('DORSAL_STRUCTURES'),
+            }),
+        ).resolves.toMatchObject({ conceptName: 'Osteodermi dorsali' })
+        expect(fetchImplementation).toHaveBeenCalledTimes(2)
+        const retryRequest = JSON.parse(String(fetchImplementation.mock.calls[1]![1].body))
+        expect(JSON.stringify(retryRequest)).toContain('DORSAL SEMANTIC RETRY')
+        expect(JSON.stringify(retryRequest)).toContain('cranial or neck locality')
     })
 
     it('retries one malformed schema response then rejects an invalid contract', async () => {

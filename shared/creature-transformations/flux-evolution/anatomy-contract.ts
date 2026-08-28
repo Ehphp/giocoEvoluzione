@@ -130,12 +130,16 @@ const TARGET_CONTRACTS: Readonly<Record<EvolutionTargetId, TargetContract>> = Ob
     },
     DORSAL_STRUCTURES: {
         allowances: [
-            'Add or develop structures anchored to the back and spine: spines, crests, ridges, fins, plates, membranes, sails or humps, following the existing spine line.',
-            'These structures may be large and may change the upper silhouette strongly.',
+            'Add or develop biologically rooted dorsal structures along the back and spine, beginning posterior to the nape: spines, ridges, osteoderms, keratinous or bony plates, knobs, humps or short local crests.',
+            'The upper silhouette may become clearly readable, but the mutation remains a local, subordinate dorsal structure and must not dominate or dwarf the whole body.',
         ],
-        preservation: ['Keep new dorsal structures biologically rooted along the existing back and spine region.'],
+        preservation: [
+            'Keep every new dorsal structure rooted along the existing back and spine region, strictly posterior to the nape. Preserve the skull, crown, forehead, head, face and their silhouette; the neck may only provide a short transition and cannot become a second dominant target.',
+        ],
         failures: [
-            'Dorsal structures may not become limbs, wings, tails or heads, and related secondary adaptations may not create a new dominant mutation elsewhere.',
+            'No structure may originate on or propagate onto the skull, crown, forehead or head. A continuous crown-to-neck-to-back or head-to-tail crest is invalid.',
+            'Do not default to wings, independent appendages, generic fins, sails, large membranes or fan-like forms. Dorsal structures may not become limbs, wings, tails or heads.',
+            'Body-length multiples, towering or enormous structures, and any pose, stance, reorientation or body-presentation change are invalid. Related secondary adaptations may not create a new dominant mutation elsewhere.',
         ],
     },
     SKIN_AND_COVERING: {
