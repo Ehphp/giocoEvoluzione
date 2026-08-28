@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     mergeVisualInspection,
+    parseOrientationArbiterAssessment,
     parseObservedVisualState,
     parseVisualInspection,
     type ObservedVisualState,
@@ -48,6 +49,17 @@ function prior(): VisualInspection {
 }
 
 describe('visual inspection repair lifecycle', () => {
+    it('parses only the bounded orientation arbiter result schema', () => {
+        expect(
+            parseOrientationArbiterAssessment({
+                status: 'COMPLETE',
+                results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'],
+            }),
+        ).toEqual({ status: 'COMPLETE', results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'] })
+        expect(parseOrientationArbiterAssessment({ status: 'COMPLETE', results: ['CENTER'] })).toBeNull()
+        expect(parseOrientationArbiterAssessment({ status: 'COMPLETE', results: ['UNCERTAIN', 'CLEAR_FRONT', 'X'] })).toBeNull()
+    })
+
     it('parses Vision 2 short descriptions while keeping prior inspections readable', () => {
         const description = 'Una creatura quadrupede dalle scaglie verdi, con una coda lunga e soffici corna arancioni.'
         expect(parseObservedVisualState({ ...observed, shortDescription: description })?.shortDescription).toBe(
@@ -142,6 +154,10 @@ describe('visual inspection repair lifecycle', () => {
     it('accepts bounded persisted horizontal-mirror correction metadata', () => {
         const parsed = parseVisualInspection({
             ...prior(),
+            orientationArbiter: {
+                status: 'COMPLETE',
+                results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'],
+            },
             assetCorrection: {
                 type: 'HORIZONTAL_MIRROR',
                 appliedAt: '2026-08-17T00:00:01.000Z',
@@ -150,5 +166,9 @@ describe('visual inspection repair lifecycle', () => {
             },
         })
         expect(parsed?.assetCorrection).toMatchObject({ type: 'HORIZONTAL_MIRROR', correctedFacing: 'IMAGE_RIGHT' })
+        expect(parsed?.orientationArbiter).toEqual({
+            status: 'COMPLETE',
+            results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'],
+        })
     })
 })

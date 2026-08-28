@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
     applyHorizontalMirrorCorrection,
+    decideSeedreamCenterFacing,
     decideHorizontalMirrorCorrection,
     mergeVisualInspection,
     shouldRejectSeedreamCenterFacing,
+    type OrientationArbiterAssessment,
     type ObservedVisualState,
     type VisualInspection,
 } from './visual-inspection.ts'
@@ -29,7 +31,11 @@ function observed(facing: Facing): ObservedVisualState {
     }
 }
 
-function inspection(facing: Facing, mirrored = true): VisualInspection {
+function inspection(
+    facing: Facing,
+    mirrored = true,
+    orientationArbiter?: OrientationArbiterAssessment,
+): VisualInspection {
     const evidence = mirrored
         ? [
               {
@@ -60,14 +66,34 @@ function inspection(facing: Facing, mirrored = true): VisualInspection {
             structuralConcerns: evidence,
             observedVisualState: observed(facing),
         },
+        orientationArbiter,
     })
 }
 
 describe('Seedream horizontal mirror correction decision', () => {
-    it('rejects only a Vision-verified center-facing output', () => {
-        expect(shouldRejectSeedreamCenterFacing(inspection('CENTER'))).toBe(true)
+    it('rejects CENTER only after the orientation arbiter confirms a clear front', () => {
+        expect(shouldRejectSeedreamCenterFacing(inspection('CENTER'))).toBe(false)
+        expect(
+            shouldRejectSeedreamCenterFacing(
+                inspection('CENTER', true, { status: 'COMPLETE', results: ['CLEAR_FRONT'] }),
+            ),
+        ).toBe(true)
         expect(shouldRejectSeedreamCenterFacing(inspection('UNKNOWN'))).toBe(false)
         expect(shouldRejectSeedreamCenterFacing(null)).toBe(false)
+    })
+
+    it.each([
+        ['DIRECTIONAL_RIGHT', ['DIRECTIONAL_RIGHT'], 'ARBITER_DIRECTIONAL', false],
+        ['CLEAR_FRONT', ['CLEAR_FRONT'], 'ARBITER_CLEAR_FRONT', true],
+        ['UNCERTAIN then directional', ['UNCERTAIN', 'DIRECTIONAL_LEFT'], 'ARBITER_DIRECTIONAL', false],
+        ['UNCERTAIN twice', ['UNCERTAIN', 'UNCERTAIN'], 'ARBITER_UNCERTAIN_FAIL_OPEN', false],
+    ] as const)('applies the CENTER arbiter policy for %s', (_label, results, reason, rejects) => {
+        const center = inspection('CENTER', true, { status: 'COMPLETE', results })
+        expect(decideSeedreamCenterFacing({ inspection: center })).toMatchObject({
+            action: rejects ? 'REJECT' : 'ACCEPT',
+            reason,
+        })
+        expect(shouldRejectSeedreamCenterFacing(center)).toBe(rejects)
     })
 
     it.each([
@@ -84,6 +110,17 @@ describe('Seedream horizontal mirror correction decision', () => {
             action: 'FLIP',
             reason: 'OUTPUT_FACING_LEFT',
         })
+    })
+
+    it('does not let an arbiter directional result alter horizontal mirror correction', () => {
+        const center = inspection('CENTER', true)
+        const arbitratedCenter = inspection('CENTER', true, {
+            status: 'COMPLETE',
+            results: ['DIRECTIONAL_RIGHT'],
+        })
+        expect(decideHorizontalMirrorCorrection({ inspection: arbitratedCenter })).toEqual(
+            decideHorizontalMirrorCorrection({ inspection: center }),
+        )
     })
 
     it('records the correction, updates the persisted orientation and cannot flip the same inspection twice', () => {

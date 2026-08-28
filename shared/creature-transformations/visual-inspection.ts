@@ -72,6 +72,24 @@ export type ObservedVisualState = Readonly<{
     targetRegions: readonly Readonly<{ target: EvolutionTargetId; description: string }>[]
 }>
 
+export const ORIENTATION_ARBITER_RESULTS = [
+    'CLEAR_FRONT',
+    'DIRECTIONAL_LEFT',
+    'DIRECTIONAL_RIGHT',
+    'UNCERTAIN',
+] as const
+export type OrientationArbiterResult = (typeof ORIENTATION_ARBITER_RESULTS)[number]
+
+/**
+ * A focused second opinion captured only when the general mapper reported CENTER. Its result is
+ * intentionally separate from observed orientation: it gates rejection only and never steers a
+ * horizontal mirror correction.
+ */
+export type OrientationArbiterAssessment = Readonly<{
+    status: 'COMPLETE' | 'UNAVAILABLE'
+    results: readonly OrientationArbiterResult[]
+}>
+
 export type HorizontalMirrorAssetCorrection = Readonly<{
     type: 'HORIZONTAL_MIRROR'
     appliedAt: string
@@ -96,6 +114,7 @@ export type VisualInspection = Readonly<{
         structuralConcerns: readonly Vision1DiagnosticEvidence[]
     }>
     observedVisualState?: ObservedVisualState
+    orientationArbiter?: OrientationArbiterAssessment
     assetCorrection?: HorizontalMirrorAssetCorrection
 }>
 
@@ -298,6 +317,24 @@ export function parseObservedVisualState(value: unknown): ObservedVisualState | 
     })
 }
 
+export function parseOrientationArbiterAssessment(value: unknown): OrientationArbiterAssessment | null {
+    const item = record(value)
+    if (!item || Object.keys(item).some((key) => !['status', 'results'].includes(key))) return null
+    const results =
+        Array.isArray(item.results) && item.results.length <= 2
+            ? item.results.map((result) =>
+                  typeof result === 'string' && (ORIENTATION_ARBITER_RESULTS as readonly string[]).includes(result)
+                      ? (result as OrientationArbiterResult)
+                      : null,
+              )
+            : null
+    return (item.status === 'COMPLETE' || item.status === 'UNAVAILABLE') &&
+        results &&
+        results.every((result): result is OrientationArbiterResult => result !== null)
+        ? Object.freeze({ status: item.status, results: Object.freeze(results) })
+        : null
+}
+
 function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
     const item = record(value)
     if (
@@ -375,6 +412,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
                     'visualAnomalies',
                     'stateMapper',
                     'observedVisualState',
+                    'orientationArbiter',
                     'assetCorrection',
                 ].includes(key),
         )
@@ -395,6 +433,8 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
     const structuralConcerns = parseEvidenceList(mapper?.structuralConcerns)
     const observed =
         item.observedVisualState === undefined ? undefined : parseObservedVisualState(item.observedVisualState)
+    const orientationArbiter =
+        item.orientationArbiter === undefined ? undefined : parseOrientationArbiterAssessment(item.orientationArbiter)
     const assetCorrection =
         item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
     if (
@@ -409,6 +449,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         !assessments.every((entry): entry is MapperEvidenceAssessment => entry !== null) ||
         !structuralConcerns ||
         (item.observedVisualState !== undefined && !observed) ||
+        (item.orientationArbiter !== undefined && !orientationArbiter) ||
         (item.assetCorrection !== undefined && !assetCorrection)
     )
         return null
@@ -424,6 +465,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
             structuralConcerns: Object.freeze(structuralConcerns),
         }),
         ...(observed ? { observedVisualState: observed } : {}),
+        ...(orientationArbiter ? { orientationArbiter } : {}),
         ...(assetCorrection ? { assetCorrection } : {}),
     })
 }
@@ -434,15 +476,43 @@ export type HorizontalMirrorCorrectionDecision = Readonly<{
     outputFacing: 'IMAGE_LEFT' | 'IMAGE_RIGHT' | null
 }>
 
+export type SeedreamCenterFacingDecision = Readonly<{
+    action: 'REJECT' | 'ACCEPT'
+    reason:
+        | 'NOT_CENTER'
+        | 'ARBITER_CLEAR_FRONT'
+        | 'ARBITER_DIRECTIONAL'
+        | 'ARBITER_UNCERTAIN_FAIL_OPEN'
+        | 'ARBITER_UNAVAILABLE_FAIL_OPEN'
+}>
+
 /**
- * A deliberately front-facing generated creature cannot preserve the side-on presentation.
- * This is a quality gate for Seedream production only: unavailable Vision and UNKNOWN remain
- * fail-open so a transient mapper outage cannot discard a paid generation.
+ * CENTER from the broad mapper is ambiguous for three-quarter poses. Reject only when the
+ * specialist arbiter confirms a clear front, retaining fail-open behaviour for an unavailable
+ * or inconclusive second opinion.
  */
+export function decideSeedreamCenterFacing(input: {
+    inspection: VisualInspection | null | undefined
+}): SeedreamCenterFacingDecision {
+    const inspection = input.inspection
+    if (
+        inspection?.stateMapper.status !== 'COMPLETE' ||
+        inspection.observedVisualState?.orientation.facing !== 'CENTER'
+    ) {
+        return Object.freeze({ action: 'ACCEPT', reason: 'NOT_CENTER' })
+    }
+    const arbiter = inspection.orientationArbiter
+    if (arbiter?.status !== 'COMPLETE')
+        return Object.freeze({ action: 'ACCEPT', reason: 'ARBITER_UNAVAILABLE_FAIL_OPEN' })
+    const finalResult = arbiter.results.at(-1)
+    if (finalResult === 'CLEAR_FRONT') return Object.freeze({ action: 'REJECT', reason: 'ARBITER_CLEAR_FRONT' })
+    if (finalResult === 'DIRECTIONAL_LEFT' || finalResult === 'DIRECTIONAL_RIGHT')
+        return Object.freeze({ action: 'ACCEPT', reason: 'ARBITER_DIRECTIONAL' })
+    return Object.freeze({ action: 'ACCEPT', reason: 'ARBITER_UNCERTAIN_FAIL_OPEN' })
+}
+
 export function shouldRejectSeedreamCenterFacing(inspection: VisualInspection | null | undefined): boolean {
-    return (
-        inspection?.stateMapper.status === 'COMPLETE' && inspection.observedVisualState?.orientation.facing === 'CENTER'
-    )
+    return decideSeedreamCenterFacing({ inspection }).action === 'REJECT'
 }
 
 /**
@@ -558,6 +628,7 @@ export function mergeVisualInspection(input: {
         structuralConcerns: readonly Vision1DiagnosticEvidence[]
         observedVisualState?: ObservedVisualState
     }>
+    orientationArbiter?: OrientationArbiterAssessment
 }): VisualInspection {
     const previous = input.previous ?? null
     if (input.detector.status === 'UNAVAILABLE') {
@@ -573,6 +644,7 @@ export function mergeVisualInspection(input: {
                 structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]),
             }),
             ...(input.mapper.observedVisualState ? { observedVisualState: input.mapper.observedVisualState } : {}),
+            ...(input.orientationArbiter ? { orientationArbiter: input.orientationArbiter } : {}),
         })
     }
 
@@ -616,6 +688,7 @@ export function mergeVisualInspection(input: {
             structuralConcerns: Object.freeze([...input.mapper.structuralConcerns]),
         }),
         ...(input.mapper.observedVisualState ? { observedVisualState: input.mapper.observedVisualState } : {}),
+        ...(input.orientationArbiter ? { orientationArbiter: input.orientationArbiter } : {}),
     })
 }
 

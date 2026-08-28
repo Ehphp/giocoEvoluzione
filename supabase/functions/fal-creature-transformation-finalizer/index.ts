@@ -53,6 +53,7 @@ import type {
 } from '../../../shared/creature-transformations/evolution-targets.ts'
 import {
     applyHorizontalMirrorCorrection,
+    decideSeedreamCenterFacing,
     decideHorizontalMirrorCorrection,
     parseVisualInspection,
     shouldRejectSeedreamCenterFacing,
@@ -449,12 +450,22 @@ async function inspectSeedreamVisual(input: {
             previous: source.visualInspection,
             expectedOrientation: orientation ? `${orientation.viewpoint}/${orientation.facing}` : null,
         })
+        const centerFacingDecision = decideSeedreamCenterFacing({ inspection })
         console.info('fal.finalizer.seedream_visual_inspection', {
             providerRequestId: input.record.providerRequestId,
             detector: inspection.anomalyDetector.status,
             mapper: inspection.stateMapper.status,
             anomalies: inspection.visualAnomalies.filter((anomaly) => anomaly.status === 'UNRESOLVED').length,
         })
+        if (inspection.observedVisualState?.orientation.facing === 'CENTER') {
+            console.info('fal.finalizer.seedream_orientation_arbiter', {
+                providerRequestId: input.record.providerRequestId,
+                mapperFacing: 'CENTER',
+                arbiterStatus: inspection.orientationArbiter?.status ?? 'UNAVAILABLE',
+                arbiterResults: inspection.orientationArbiter?.results ?? [],
+                decision: centerFacingDecision.reason,
+            })
+        }
         return Object.freeze({ inspection, generation: source.currentVersionNumber + 1 })
     } catch (error) {
         console.warn('fal.finalizer.seedream_visual_inspection_unavailable', {
@@ -545,14 +556,18 @@ async function finalizeSeedreamProduction(input: {
         mimeType: downloaded.mimeType,
         resolver: input.resolver,
     })
-    // `shouldRejectSeedreamCenterFacing` is false for a missing inspection, so guarding on the
-    // inspection itself keeps the same behaviour while making the reads below provably safe.
+    // The gate fails open for a missing inspection or an unavailable/inconclusive arbiter, so
+    // guarding on the inspection itself keeps the reads below provably safe.
     if (visualInspection && shouldRejectSeedreamCenterFacing(visualInspection.inspection)) {
+        const centerFacingDecision = decideSeedreamCenterFacing({ inspection: visualInspection.inspection })
         console.warn('fal.finalizer.seedream_orientation_rejected', {
             providerRequestId: input.record.providerRequestId,
             facing: 'CENTER',
             detector: visualInspection.inspection.anomalyDetector.status,
             mapper: visualInspection.inspection.stateMapper.status,
+            arbiterStatus: visualInspection.inspection.orientationArbiter?.status ?? 'UNAVAILABLE',
+            arbiterResults: visualInspection.inspection.orientationArbiter?.results ?? [],
+            decision: centerFacingDecision.reason,
         })
         throw new FluxImageGenerationServiceError(
             'SEEDREAM_CENTER_FACING',

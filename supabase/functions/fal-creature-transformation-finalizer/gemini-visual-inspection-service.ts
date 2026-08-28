@@ -6,6 +6,8 @@ import {
     parseVision1DiagnosticEvidence,
     type MapperEvidenceAssessment,
     type ObservedVisualState,
+    type OrientationArbiterAssessment,
+    type OrientationArbiterResult,
     type Vision1DiagnosticEvidence,
     type VisualInspection,
 } from '../../../shared/creature-transformations/visual-inspection.ts'
@@ -214,6 +216,16 @@ const MAPPER_SCHEMA = responseSchema(
     ['observedVisualState', 'evidenceAssessments', 'structuralConcerns'],
 )
 
+const ORIENTATION_ARBITER_SCHEMA = responseSchema(
+    'OBJECT',
+    {
+        result: responseSchema('STRING', {
+            enum: ['CLEAR_FRONT', 'DIRECTIONAL_LEFT', 'DIRECTIONAL_RIGHT', 'UNCERTAIN'],
+        }),
+    },
+    ['result'],
+)
+
 function detectorPrompt(input: { bodyPlan: CreatureBodyPlan; expectedOrientation?: string | null }): string {
     const topology = input.bodyPlan.topology
     return [
@@ -240,6 +252,21 @@ function mapperPrompt(evidence: readonly Vision1DiagnosticEvidence[]): string {
         'For every supplied item return CONFIRMED, POSSIBLE, or REJECTED_WITH_STRONG_CONTRARY_EVIDENCE. Do not silently discard upstream evidence. Upstream evidence describes possible visual defects and MUST NOT modify canonical anatomy.',
         upstream,
         'Also list independently visible structural concerns, even when upstream evidence is empty. Use the same evidence object shape.',
+    ].join('\n')
+}
+
+function orientationArbiterPrompt(expectedOrientation?: string | null): string {
+    return [
+        'You are a specialist orientation arbiter for one generated creature image. Return JSON only.',
+        'Decide only whether the creature is truly front-facing or remains clearly directional. Do not inspect anatomy, quality, defects, mirroring, or propose image corrections.',
+        expectedOrientation
+            ? `Expected source presentation reference (context only, never a substitute for visible evidence): ${expectedOrientation}.`
+            : 'No prior presentation reference is available; decide from the visible pose only.',
+        'Return CLEAR_FRONT only when both head and torso are substantially directed toward the observer with no clear left/right dominance.',
+        'A three-quarter pose whose head is partly turned toward the camera is NOT CLEAR_FRONT when its silhouette, torso, or head still has a clear lateral dominance.',
+        'Return DIRECTIONAL_LEFT or DIRECTIONAL_RIGHT when a clear lateral dominance remains, using the observer viewpoint.',
+        'Return UNCERTAIN when frontality versus direction cannot be decided from the visible image.',
+        'This result is a rejection gate only. It must not determine a horizontal mirror correction.',
     ].join('\n')
 }
 
@@ -295,12 +322,17 @@ export class GeminiVisualInspectionService {
         try {
             const detector = await this.detect(file, input.bodyPlan, input.expectedOrientation)
             const mapper = await this.map(file, detector.status === 'COMPLETE' ? detector.evidence : [])
+            const orientationArbiter =
+                mapper.status === 'COMPLETE' && mapper.observedVisualState?.orientation.facing === 'CENTER'
+                    ? await this.arbitrateOrientation(file, input.expectedOrientation)
+                    : undefined
             return mergeVisualInspection({
                 previous: input.previous,
                 generation: input.generation,
                 inspectedAt: now(),
                 detector,
                 mapper,
+                orientationArbiter,
             })
         } finally {
             await this.deleteFile(file).catch(() => undefined)
@@ -423,6 +455,39 @@ export class GeminiVisualInspectionService {
                   evidenceAssessments: Object.freeze([]),
                   structuralConcerns: Object.freeze([]),
               })
+    }
+
+    private async arbitrateOrientation(
+        file: GeminiFile,
+        expectedOrientation?: string | null,
+    ): Promise<OrientationArbiterAssessment> {
+        const first = await this.classifyOrientation(file, expectedOrientation)
+        if (!first) return Object.freeze({ status: 'UNAVAILABLE', results: Object.freeze([]) })
+        if (first !== 'UNCERTAIN') return Object.freeze({ status: 'COMPLETE', results: Object.freeze([first]) })
+
+        const second = await this.classifyOrientation(file, expectedOrientation)
+        return second
+            ? Object.freeze({ status: 'COMPLETE', results: Object.freeze([first, second]) })
+            : Object.freeze({ status: 'UNAVAILABLE', results: Object.freeze([first]) })
+    }
+
+    private async classifyOrientation(
+        file: GeminiFile,
+        expectedOrientation?: string | null,
+    ): Promise<OrientationArbiterResult | null> {
+        const payload = await this.generateJson(
+            file,
+            orientationArbiterPrompt(expectedOrientation),
+            ORIENTATION_ARBITER_SCHEMA,
+            this.configuration.mapperTimeoutMs,
+        )
+        const result = record(payload)?.result
+        return result === 'CLEAR_FRONT' ||
+            result === 'DIRECTIONAL_LEFT' ||
+            result === 'DIRECTIONAL_RIGHT' ||
+            result === 'UNCERTAIN'
+            ? result
+            : null
     }
 
     private async generateJson(

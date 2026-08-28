@@ -47,7 +47,14 @@ function generatedText(text: string): Response {
     return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }), { status: 200 })
 }
 
-function fetchFor(input: { detector: unknown; mapper: unknown; onMapper?: (body: Record<string, unknown>) => void }) {
+function fetchFor(input: {
+    detector: unknown
+    mapper: unknown
+    arbiter?: readonly unknown[]
+    onMapper?: (body: Record<string, unknown>) => void
+    onArbiter?: (body: Record<string, unknown>) => void
+}) {
+    let arbiterIndex = 0
     return vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
         const href = String(url)
         if (href.endsWith('/upload/v1beta/files'))
@@ -65,6 +72,11 @@ function fetchFor(input: { detector: unknown; mapper: unknown; onMapper?: (body:
             const prompt = String((body.contents as Array<{ parts: Array<{ text?: string }> }>)[0].parts[0].text)
             if (prompt.includes('specialized visual anomaly detector'))
                 return input.detector === INVALID_JSON ? generatedText('{not valid json') : generated(input.detector)
+            if (prompt.includes('specialist orientation arbiter')) {
+                input.onArbiter?.(body)
+                const result = input.arbiter?.[arbiterIndex++] ?? { unexpected: true }
+                return result === INVALID_JSON ? generatedText('{not valid json') : generated(result)
+            }
             input.onMapper?.(body)
             return generated(input.mapper)
         }
@@ -126,6 +138,67 @@ describe('GeminiVisualInspectionService', () => {
         expect(mapperPrompt).toContain('shortDescription in Italian')
         expect(mapperPrompt).toContain('compact visual signature')
         expect(mapperPrompt).toContain('never say "occhi espressivi"')
+    })
+
+    it('arbitrates only a CENTER mapper result, reusing the upload and carrying expected orientation as context', async () => {
+        const arbiterBodies: Record<string, unknown>[] = []
+        const centerObserved = { ...observed, orientation: { viewpoint: 'THREE_QUARTER', facing: 'CENTER' } }
+        const service = new GeminiVisualInspectionService(
+            configuration,
+            fetchFor({
+                detector: { evidence: [] },
+                mapper: { observedVisualState: centerObserved, evidenceAssessments: [], structuralConcerns: [] },
+                arbiter: [{ result: 'UNCERTAIN' }, { result: 'DIRECTIONAL_RIGHT' }],
+                onArbiter: (body) => {
+                    arbiterBodies.push(body)
+                },
+            }),
+        )
+        const result = await service.inspect({
+            image: new Uint8Array([1, 2, 3]),
+            mimeType: 'image/png',
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            generation: 2,
+            previous: null,
+            expectedOrientation: 'PROFILE/IMAGE_RIGHT',
+        })
+
+        expect(result.orientationArbiter).toEqual({
+            status: 'COMPLETE',
+            results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'],
+        })
+        expect(arbiterBodies).toHaveLength(2)
+        for (const body of arbiterBodies) {
+            const parts = (body.contents as Array<{ parts: Array<{ text?: string; file_data?: { file_uri?: string } }> }>)[0]
+                .parts
+            expect(parts[1]?.file_data?.file_uri).toBe('gemini://files/one')
+            expect(parts[0]?.text).toContain('PROFILE/IMAGE_RIGHT')
+            expect(parts[0]?.text).toContain('three-quarter pose')
+        }
+    })
+
+    it('does not call the orientation arbiter for a directional mapper result', async () => {
+        const arbiterBodies: Record<string, unknown>[] = []
+        const service = new GeminiVisualInspectionService(
+            configuration,
+            fetchFor({
+                detector: { evidence: [] },
+                mapper: { observedVisualState: observed, evidenceAssessments: [], structuralConcerns: [] },
+                onArbiter: (body) => {
+                    arbiterBodies.push(body)
+                },
+            }),
+        )
+        const result = await service.inspect({
+            image: new Uint8Array([1]),
+            mimeType: 'image/png',
+            bodyPlan: BODY_PLANS.QUADRUPED,
+            generation: 2,
+            previous: null,
+        })
+
+        expect(result.orientationArbiter).toBeUndefined()
+        expect(arbiterBodies).toEqual([])
     })
 
     it('continues with image-only Vision 2 when Vision 1 returns invalid JSON', async () => {
