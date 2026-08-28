@@ -84,6 +84,46 @@ describe('FalFluxImageProvider', () => {
         ).rejects.toMatchObject({ code: 'FAL_SEEDREAM_MODEL_REQUIRED' })
     })
 
+    it('recovers one completed Queue output without creating another Seedream submission', async () => {
+        const fetchImplementation = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        items: [
+                            {
+                                json_output: {
+                                    images: [
+                                        {
+                                            url: 'https://fal.media/recovered-seedream.png',
+                                            content_type: 'image/png',
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    }),
+                ),
+        )
+        const provider = new FalFluxImageProvider({
+            apiKey: 'test-fal-key',
+            model: FAL_SEEDREAM_MODEL,
+            fetchImplementation,
+        })
+
+        await expect(provider.recoverQueuedImage({ providerRequestId: 'already-completed-request' })).resolves.toEqual({
+            url: 'https://fal.media/recovered-seedream.png',
+            contentType: 'image/png',
+        })
+
+        const [url, init] = fetchImplementation.mock.calls[0]!
+        expect(url).toBe(
+            'https://api.fal.ai/v1/models/requests/by-endpoint?endpoint_id=fal-ai%2Fbytedance%2Fseedream%2Fv4.5%2Fedit&request_id=already-completed-request&expand=payloads',
+        )
+        expect(init.method).toBeUndefined()
+        expect(init.body).toBeUndefined()
+        expect(fetchImplementation).toHaveBeenCalledTimes(1)
+    })
+
     it('rejects an oversized queued result before buffering it in the finalizer', async () => {
         const fetchImplementation = vi.fn(
             async () => new Response(createTestPng(), { headers: { 'content-length': String(40 * 1024 * 1024) } }),

@@ -322,6 +322,69 @@ export class FalFluxImageProvider {
         }
     }
 
+    /**
+     * Re-reads the already-completed Queue result when a verified webhook reached us without its
+     * media payload. This is retrieval only: it never submits, retries, or changes the Fal job.
+     */
+    async recoverQueuedImage(input: { providerRequestId: string }): Promise<FalQueuedImage> {
+        const providerRequestId = input.providerRequestId.trim()
+        if (!providerRequestId || providerRequestId.length > 256)
+            throw new FalFluxImageProviderError(
+                'FAL_FLUX_RESPONSE_INVALID',
+                'L identificativo della richiesta Fal non e valido per il recupero del risultato.',
+            )
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
+        try {
+            let response: Response
+            try {
+                const query = new URLSearchParams({
+                    endpoint_id: this.model,
+                    request_id: providerRequestId,
+                    expand: 'payloads',
+                })
+                response = await this.fetchImplementation(`https://api.fal.ai/v1/models/requests/by-endpoint?${query}`, {
+                    headers: { Authorization: 'Key ' + this.options.apiKey },
+                    signal: controller.signal,
+                })
+            } catch (error) {
+                if (controller.signal.aborted)
+                    throw new FalFluxImageProviderError(
+                        'FAL_FLUX_TIMEOUT',
+                        'Il recupero del risultato Fal ha superato il tempo massimo.',
+                        { cause: error },
+                    )
+                throw new FalFluxImageProviderError(
+                    'FAL_FLUX_PROVIDER_ERROR',
+                    'Fal non e raggiungibile per recuperare il risultato gia generato.',
+                    { cause: error },
+                )
+            }
+            let payload: unknown = null
+            try {
+                payload = await response.json()
+            } catch {
+                /* The status is mapped below without retaining external response text. */
+            }
+            if (!response.ok)
+                throw new FalFluxImageProviderError(
+                    'FAL_FLUX_PROVIDER_ERROR',
+                    'Fal non ha reso disponibile il risultato gia generato.',
+                    { providerStatus: response.status, providerErrorCode: providerErrorCode(payload) },
+                )
+            const item = Array.isArray(record(payload)?.items) ? record(payload)?.items[0] : null
+            const image = queuedImage(record(item)?.json_output)
+            if (!image)
+                throw new FalFluxImageProviderError(
+                    'FAL_FLUX_RESPONSE_INVALID',
+                    'Fal non ha restituito un output immagine recuperabile.',
+                )
+            return image
+        } finally {
+            clearTimeout(timeout)
+        }
+    }
+
     async normalizeQueuedImage(
         input: Readonly<{ bytes: Uint8Array; mimeType: FalImageMimeType }>,
     ): Promise<Uint8Array> {

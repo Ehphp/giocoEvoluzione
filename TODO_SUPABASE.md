@@ -1,5 +1,27 @@
 # TODO Supabase
 
+## 2026-08-28 — Recovery idempotente di una finalizzazione Fal
+
+La richiesta `df81c323-fced-479d-91e0-3b96211dcf5a` (track
+`2e60e04c-9f41-44fa-a982-5e946d736c5e`) ha ricevuto il callback Fal ma il
+finalizer e stato terminato per `WallClockTime` prima del claim. Per recuperare
+lo stesso output senza una nuova submission:
+
+1. applicare `202608280001_recover_stale_fal_finalization_claims.sql`;
+2. deployare `fal-creature-transformation-webhook`;
+3. ripetere un callback autorizzato per il medesimo `provider_request_id` con
+   payload `OK` senza immagine: il webhook legge il risultato gia completato da
+   Fal e lo passa al finalizer esistente.
+
+La migration rende riacquisibile dopo dieci minuti un claim dello **stesso**
+provider request rimasto orfano; non modifica idempotency key, non crea una
+nuova request e non esegue submission o crop retry.
+
+**Eseguito il 2026-08-28:** migration applicata, webhook ridistribuito e
+callback ripetuto sul solo provider request `01a0475f-1839-7a03-90de-935c9fe8a134`.
+La request e `SUCCEEDED` con raw `EXPERIMENT_ONLY`; la track e
+`POST_PROCESSING`, pronta per lo scontorno del browser.
+
 Azioni che vanno eseguite **sul progetto Supabase** (`xvzolxmatmibxbqaixxc`), non nel repository:
 deploy delle Edge Function, secret, oggetti di database, configurazione auth.
 

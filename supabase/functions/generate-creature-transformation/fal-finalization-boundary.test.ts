@@ -84,4 +84,10 @@ describe('Fal webhook and finalization boundary', () => {
     it('does not re-enter finalization for a duplicate callback after the first claim', () => {
         expect(finalizer).toContain("if (claim.outcome !== 'CLAIMED') return json(202)")
     })
+
+    it('keeps a successful callback retriable when its output cannot yet be recovered', () => {
+        expect(webhook).toContain('recoverMissingWebhookImage(event)')
+        expect(webhook).toContain("if (!image) return json(202)")
+        expect(webhook).not.toContain("event.status === 'ERROR' || !image")
+    })
 })

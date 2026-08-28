@@ -1,6 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
-import { parseFalWebhookEvent } from '../generate-creature-transformation/fal-flux-image-provider.ts'
+import {
+    FAL_SEEDREAM_MODEL,
+    FalFluxImageProvider,
+    parseFalWebhookEvent,
+    type FalQueuedImage,
+} from '../generate-creature-transformation/fal-flux-image-provider.ts'
 import { hasFalWebhookCallbackToken } from '../generate-creature-transformation/fal-webhook-callback-token.ts'
 import { verifyFalWebhookSignature } from '../generate-creature-transformation/fal-webhook-signature.ts'
 import { redactErrorMessage } from '../generate-creature-transformation/secret-redaction.ts'
@@ -19,6 +24,31 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 function json(status = 200): Response {
     return new Response(JSON.stringify({ ok: true }), { status, headers: JSON_HEADERS })
+}
+
+async function recoverMissingWebhookImage(input: {
+    providerRequestId: string
+    image: FalQueuedImage | null
+}): Promise<FalQueuedImage | null> {
+    if (input.image) return input.image
+    const apiKey =
+        Deno.env.get('FAL_SEEDREAM_API_KEY')?.trim() ||
+        Deno.env.get('FAL_FLUX_API_KEY')?.trim() ||
+        Deno.env.get('FAL_KEY')?.trim()
+    if (!apiKey) return null
+    try {
+        const image = await new FalFluxImageProvider({ apiKey, model: FAL_SEEDREAM_MODEL }).recoverQueuedImage({
+            providerRequestId: input.providerRequestId,
+        })
+        console.info('fal.webhook.output_recovered', { providerRequestId: input.providerRequestId })
+        return image
+    } catch (error) {
+        console.error('fal.webhook.output_recovery_failed', {
+            providerRequestId: input.providerRequestId,
+            reason: redactErrorMessage(error),
+        })
+        return null
+    }
 }
 
 async function restoreTrack(
@@ -111,7 +141,8 @@ Deno.serve(async (request) => {
     )
     const record = await repository.getByProviderRequestId({ providerRequestId: event.providerRequestId })
     if (!record || record.status === 'SUCCEEDED' || record.status === 'FAILED') return json(200)
-    if (event.status === 'ERROR' || !event.image) {
+    const image = event.status === 'OK' ? await recoverMissingWebhookImage(event) : null
+    if (event.status === 'ERROR') {
         try {
             await repository.markFailed({
                 requestId: record.id,
@@ -129,6 +160,10 @@ Deno.serve(async (request) => {
         await restoreTrack(visualRepository, record)
         return json(200)
     }
+    // A successful callback without a resolvable image is retriable external state, not a terminal
+    // generation failure. Keeping the record RUNNING lets a later verified callback recover the
+    // exact provider output instead of spending another generation.
+    if (!image) return json(202)
     // The finalizer acquires the durable claim. Claiming here would make a transient failure while
     // invoking it look like a permanently in-progress job; duplicate webhooks are instead safely
     // collapsed by the finalizer's atomic claim.
@@ -137,7 +172,7 @@ Deno.serve(async (request) => {
             supabaseUrl,
             secret: finalizerSecret,
             providerRequestId: event.providerRequestId,
-            image: event.image,
+            image,
         }).catch((error) =>
             console.error('fal.webhook.finalizer_enqueue_failed', {
                 providerRequestId: event.providerRequestId,
