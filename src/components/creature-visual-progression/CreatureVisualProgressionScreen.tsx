@@ -22,7 +22,12 @@ type CreatureBodyPlanSummary = { id: string; label: string; availableEvolutionTa
 type ProgressResponse = { track: Track | null; lastExperiment: ExperimentOnlyResult | null; lastFailure: { requestId: string; code: string; message: string } | null; currentVersion: { id: string; versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }; history: Array<{ versionNumber: number; visualTraitId: VisualTraitId | null; evolutionTargetId?: EvolutionTargetId | null; conceptName: string | null }>; bodyPlan: CreatureBodyPlanSummary | null }
 type Preview = { requestId: string; sourceUrl: string | null; resultUrl: string | null; sourceVersionId: string; conceptName: string; evolutionaryFunction: string; warnings: string[] }
 type ExperimentOnlyResult = { requestId: string; warnings: string[] }
-type Props = { creature: PlayerCreatureRecord; onBack: () => void; onVisualChanged: () => Promise<void> | void }
+type Props = {
+    creature: PlayerCreatureRecord
+    entryPoint?: 'progress' | 'target-picker'
+    onBack: () => void
+    onVisualChanged: () => Promise<void> | void
+}
 
 function traitLabel(id: VisualTraitId) { return VISUAL_TRAITS.find((trait) => trait.id === id)?.displayName ?? id }
 function targetLabel(id: EvolutionTargetId) { return EVOLUTION_TARGETS.find((target) => target.id === id)?.label ?? id }
@@ -41,7 +46,7 @@ function validationLabel(code: string) {
     return code
 }
 
-export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChanged }: Props) {
+export function CreatureVisualProgressionScreen({ creature, entryPoint = 'progress', onBack, onVisualChanged }: Props) {
     const [progress, setProgress] = useState<ProgressResponse | null>(null)
     const [preview, setPreview] = useState<Preview | null>(null)
     const [experimentOnly, setExperimentOnly] = useState<ExperimentOnlyResult | null>(null)
@@ -58,13 +63,18 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
     const [justDiscarded, setJustDiscarded] = useState(false)
     const postProcessingRequest = useRef<string | null>(null)
     const postProcessingAttempts = useRef(0)
+    const skipCompletedTrackOnEntry = useRef(entryPoint === 'target-picker')
 
     // --- derived ---------------------------------------------------------------
     const refresh = useCallback(async () => {
         const result = await getCreatureVisualProgress({ operation: 'GET_VISUAL_PROGRESS', creatureId: creature.id }) as unknown as ProgressResponse
-        setProgress(result); setExperimentOnly(result.lastExperiment); setLastFailure(result.lastFailure)
-        const requestId = result.track?.generatedRequestId
-        if (result.track?.status !== 'GENERATED' || !requestId) { setPreview(null); return }
+        const shouldSkipCompletedTrack = skipCompletedTrackOnEntry.current && result.track?.status === 'COMPLETED'
+        skipCompletedTrackOnEntry.current = false
+        const nextProgress = shouldSkipCompletedTrack ? { ...result, track: null } : result
+
+        setProgress(nextProgress); setExperimentOnly(nextProgress.lastExperiment); setLastFailure(nextProgress.lastFailure)
+        const requestId = nextProgress.track?.generatedRequestId
+        if (nextProgress.track?.status !== 'GENERATED' || !requestId) { setPreview(null); return }
         const [status, source] = await Promise.all([
             getCreatureTransformationRequestStatus({ operation: 'GET_REQUEST_STATUS', transformationRequestId: requestId }),
             getCurrentCreatureVisual({ operation: 'GET_CURRENT_VISUAL', creatureId: creature.id }),

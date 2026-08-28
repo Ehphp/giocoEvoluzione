@@ -208,6 +208,7 @@ function App() {
         node: (
           <CreatureVisualProgressionScreen
             creature={evolutionCreature}
+            entryPoint="target-picker"
             onBack={leaveEvolution}
             onVisualChanged={onVisualChanged}
           />
