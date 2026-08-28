@@ -43,4 +43,23 @@ describe('ProfileScreen combat mutation loadout', () => {
         expect(onSetCombatMutationLoadout).toHaveBeenCalledWith(['ARMORED_MEMORY', 'ADAPTIVE_CORE'])
         expect(document.body.textContent).not.toContain('Scegli una mutazione')
     })
+
+    it('opens the evolution target picker from the primary evolution action', () => {
+        const onOpenEvolution = vi.fn()
+
+        act(() => {
+            root.render(createElement(ProfileScreen, {
+                profile: { id: 'profile', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
+                history: [], isLoadingHistory: false, errorMessage: null, onOpenEvolution,
+            }))
+        })
+
+        const evolve = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Evolvi creatura'))
+        expect(evolve).toBeDefined()
+
+        act(() => evolve?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+
+        expect(onOpenEvolution).toHaveBeenCalledOnce()
+    })
 })

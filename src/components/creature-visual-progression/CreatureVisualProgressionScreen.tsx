@@ -207,7 +207,7 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
             scroll
         >
             <section className="evolution-screen" aria-labelledby="visual-progression-title">
-                <ScreenHeader id="visual-progression-title" eyebrow="Progressione visuale" title="Evoluzione della creatura" />
+                <ScreenHeader id="visual-progression-title" eyebrow="Evolvi creatura" title="Scegli il tratto" />
 
                 {error ? <Notice tone="error">{error}</Notice> : null}
 
@@ -220,14 +220,10 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
 
                 {progress && !track ? (
                     <>
-                        <Panel className="evolution-card">
-                            <span className="ev-eyebrow">Vittorie accumulate</span>
-                            <h2>Percorsi evolutivi</h2>
-                            <p className="evolution-card__copy">
-                                A inizio partita scegli fra due tratti: vincendo, quel tratto avanza. Quando un
-                                percorso e completo puoi trasformarlo.
-                            </p>
-                        </Panel>
+                        <SectionLabel>Tratti da evolvere</SectionLabel>
+                        <p className="evolution-screen__hint">
+                            Scegli un tratto pronto. Le vittorie si accumulano durante le partite.
+                        </p>
 
                         {targetProgress === null ? (
                             <Panel className="evolution-card evolution-card--centered" role="status" aria-live="polite">
@@ -235,9 +231,12 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                 <p className="evolution-card__copy">Caricamento dei contatori...</p>
                             </Panel>
                         ) : (
-                            <ul className="evolution-counters">
+                            <ul className="evolution-counters" aria-label="Tratti evolutivi">
                                 {availableTargetProgress.map((entry) => {
                                     const ready = isEvolutionTargetReady(entry)
+                                    const progressLabel = ready
+                                        ? 'Pronto per l evoluzione'
+                                        : `${entry.wins} / ${entry.target} vittorie`
 
                                     return (
                                         <li key={entry.evolutionTargetId}>
@@ -251,11 +250,11 @@ export function CreatureVisualProgressionScreen({ creature, onBack, onVisualChan
                                                         tone={ready ? 'gold' : 'green'}
                                                         label={`${entry.wins} vittorie su ${entry.target} per ${targetLabel(entry.evolutionTargetId)}`}
                                                     />
-                                                    <small>{entry.wins} / {entry.target} vittorie</small>
+                                                    <small>{progressLabel}</small>
                                                 </div>
                                                 {ready ? (
                                                     <Button tone="evolve" size="sm" disabled={busy} onClick={() => void spendReadyTarget(entry.evolutionTargetId)}>
-                                                        Evolvi
+                                                        Scegli
                                                     </Button>
                                                 ) : null}
                                             </Panel>
