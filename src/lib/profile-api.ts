@@ -316,8 +316,19 @@ export async function createMyCreatureLineage(): Promise<PlayerCreatureRecord> {
 }
 
 export async function deleteMyCreatureLineage(lineageId: string): Promise<void> {
-    const { error } = await requireSupabase().rpc('delete_my_creature_lineage', { p_lineage_id: lineageId })
-    if (error) throw new Error(error.message)
+    const { data, error } = await requireSupabase().functions.invoke('delete-creature-lineage', {
+        body: { lineageId },
+    })
+
+    if (error) throw new Error('Impossibile eliminare la stirpe.')
+    if (!data || typeof data !== 'object' || (data as Record<string, unknown>).success !== true) {
+        throw new Error('Impossibile eliminare la stirpe.')
+    }
+
+    const cleanup = (data as Record<string, unknown>).storageCleanup
+    if (cleanup && typeof cleanup === 'object' && (cleanup as Record<string, unknown>).status === 'PENDING_RETRY') {
+        console.warn('La stirpe è stata eliminata; alcuni asset Storage richiedono una pulizia manuale.')
+    }
 }
 
 export async function updateMyNickname(nickname: string): Promise<ProfileRecord> {

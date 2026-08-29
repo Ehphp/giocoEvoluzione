@@ -1,5 +1,23 @@
 # TODO Supabase
 
+## 2026-08-29 — Eliminazione di una stirpe con pulizia Storage
+
+Il frontend ora invoca l'Edge Function autenticata `delete-creature-lineage`, anziché chiamare
+direttamente la RPC. La Function verifica il proprietario, legge i soli path di esperimento della
+stirpe, elimina prima i record tramite `delete_my_creature_lineage` e poi usa Storage API `.remove()`
+in batch da massimo 1.000 oggetti. Gli asset sorgente canonici e ogni path ancora referenziato da
+record residui sono esclusi.
+
+Da eseguire sul progetto Supabase `xvzolxmatmibxbqaixxc`:
+
+```bash
+npx supabase functions deploy delete-creature-lineage
+```
+
+Non servono migration né nuovi secret. Prima del deploy controllare che non ci siano cancellazioni
+di stirpe in corso; dopo, eliminare una stirpe non finale dal frontend e verificare che la risposta
+della Function riporti `storageCleanup.status: COMPLETED`.
+
 ## 2026-08-28 — Recovery idempotente di una finalizzazione Fal
 
 La richiesta `df81c323-fced-479d-91e0-3b96211dcf5a` (track

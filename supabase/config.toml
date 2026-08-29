@@ -427,3 +427,6 @@ verify_jwt = false
 
 [functions.fal-creature-transformation-finalizer]
 verify_jwt = false
+
+[functions.delete-creature-lineage]
+verify_jwt = true
