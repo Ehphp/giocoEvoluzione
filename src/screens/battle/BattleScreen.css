@@ -464,7 +464,7 @@
  */
 .arena__creature {
     position: absolute;
-    bottom: 0;
+    bottom: var(--ev-battle-creature-lift);
     width: 50%;
     height: 110%;
     translate: var(--arena-creature-offset-x, 0) 0;

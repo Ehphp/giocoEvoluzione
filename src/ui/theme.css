@@ -224,6 +224,8 @@
     --ev-battle-arena-basis-medium: 126px;
     --ev-battle-arena-basis-compact: 102px;
     --ev-battle-arena-basis-tight: 68px;
+    /* Keeps both creatures clear of the decision board without scaling or cropping their art. */
+    --ev-battle-creature-lift: var(--ev-s-5);
     --ev-battle-decision-overlap: 22px;
     /*
      * The round decision is a fixed-size control surface, not a box that grows with its copy.
