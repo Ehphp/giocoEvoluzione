@@ -1,6 +1,6 @@
 import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_BATTLE_OPPONENT_CREATURE } from './controller/gene-selection-assets'
 import type { GeneCardV2, GeneSelectionViewModelV2 } from './controller/types'
@@ -28,6 +28,13 @@ const GENES: GeneCardV2[] = [
     makeGene({ id: 'SENSES', traitType: 'SENSES', name: 'Sensi', level: 0, affinity: 'unfavorable', usable: false, exhausted: true, score: 2, affinityValue: 0 }),
     makeGene({ id: 'CAMOUFLAGE', traitType: 'CAMOUFLAGE', name: 'Mimetismo', level: 2, affinity: 'suitable', usable: true, exhausted: false, score: 5, affinityValue: 1 }),
 ]
+
+function pointerEvent(type: string, x = 0, y = 0) {
+    const event = new Event(type, { bubbles: true, cancelable: true })
+
+    Object.assign(event, { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: 'touch' })
+    return event
+}
 
 function makeViewModel(overrides: Partial<GeneSelectionViewModelV2> = {}): GeneSelectionViewModelV2 {
     const genes = overrides.genes ?? GENES
@@ -93,6 +100,7 @@ describe('BattleScreen', () => {
     afterEach(() => {
         act(() => root.unmount())
         container.remove()
+        vi.useRealTimers()
     })
 
     function render(viewModel = makeViewModel(), onSelectGene: (geneId: string) => void = () => undefined) {
@@ -264,22 +272,125 @@ describe('BattleScreen', () => {
         expect(orbs()[3]?.getAttribute('aria-label')).toContain('sfavorevole')
     })
 
-    it('says the two matchups with glyphs above the orbs, and nothing below them', () => {
-        render()
+    it('keeps a short tap as the normal gene selection', () => {
+        renderInteractive()
 
-        const strip = container.querySelector('.gene-matchup')!
-        const pairs = [...strip.querySelectorAll('.gene-matchup__pair')]
+        const armor = container.querySelectorAll<HTMLButtonElement>('.gene-orb')[1]!
 
-        // `attacker -> victim`, twice: this gene beating its victim, then its predator beating it.
-        expect(pairs).toHaveLength(2)
-        expect([...pairs[0]!.querySelectorAll('.gene-glyph')].map((g) => (g as HTMLElement).dataset.gene)).toEqual(['FEROCITY', 'ARMOR'])
-        expect([...pairs[1]!.querySelectorAll('.gene-glyph')].map((g) => (g as HTMLElement).dataset.gene)).toEqual(['CAMOUFLAGE', 'FEROCITY'])
-        // No words in the strip itself; the whole statement is in its label.
-        expect(strip.textContent).toBe('')
-        expect(strip.getAttribute('aria-label')).toContain('forte contro Avversario naturale')
-        expect(strip.getAttribute('aria-label')).toContain('teme Predatore naturale')
-        // The strip precedes the orbs: the explanatory card that used to follow them is gone.
-        expect(strip.compareDocumentPosition(container.querySelector('.gene-orbs')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        act(() => armor.click())
+
+        expect(armor.getAttribute('aria-selected')).toBe('true')
+    })
+
+    it('shows the event-adjusted expected score with visible matchup ears during a long press', () => {
+        vi.useFakeTimers()
+        const ferocity = {
+            ...GENES[0]!,
+            prediction: {
+                ...GENES[0]!.prediction!,
+                useScore: 5,
+                eventModifier: 2,
+            },
+        }
+        render(makeViewModel({ genes: [ferocity], selectedGeneId: ferocity.id, selectedGene: ferocity }))
+
+        const geneOrb = container.querySelector<HTMLButtonElement>('.gene-orb')!
+        const normalScore = geneOrb.querySelector('.gene-orb__score')?.textContent
+
+        expect(normalScore).toBe('5')
+
+        act(() => geneOrb.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => vi.advanceTimersByTime(350))
+
+        expect(geneOrb.dataset.matchupVisible).toBe('true')
+        expect(geneOrb.classList.contains('is-matchup-visible')).toBe(true)
+        expect(geneOrb.querySelector('.gene-orb__expected-score')?.textContent).toBe(normalScore)
+        expect(geneOrb.textContent).not.toContain('LIVELLO')
+        expect(geneOrb.querySelector('.gene-orb__icon')?.classList.contains('is-context-hidden')).toBe(true)
+        expect(geneOrb.querySelector('.gene-orb__score')?.classList.contains('is-context-hidden')).toBe(true)
+        expect(geneOrb.querySelector('.gene-orb__frame')?.classList.contains('is-context-hidden')).toBe(true)
+        expect([...geneOrb.querySelectorAll<HTMLElement>('.gene-orb__ear')].map((ear) => ear.dataset.gene)).toEqual(['ARMOR', 'CAMOUFLAGE'])
+        expect(geneOrb.querySelector<HTMLElement>('.gene-orb__ear--strong')?.dataset.gene).toBe('ARMOR')
+        expect(geneOrb.querySelector<HTMLElement>('.gene-orb__ear--weak')?.dataset.gene).toBe('CAMOUFLAGE')
+        expect(getComputedStyle(geneOrb.querySelector<HTMLElement>('.gene-orb__matchups')!).zIndex).toBe('2')
+        expect(getComputedStyle(geneOrb.querySelector<HTMLElement>('.gene-orb__disc')!).zIndex).toBe('1')
+        expect(getComputedStyle(geneOrb.querySelector<HTMLElement>('.gene-orb__expected-score')!).zIndex).toBe('3')
+        expect(getComputedStyle(geneOrb.querySelector<HTMLElement>('.gene-orb__expected-score')!).transformOrigin).toBe('50% 100%')
+        expect(container.querySelector('.gene-matchup')).toBeNull()
+
+        act(() => geneOrb.dispatchEvent(pointerEvent('pointerup')))
+
+        expect(geneOrb.dataset.matchupVisible).toBeUndefined()
+        expect(geneOrb.classList.contains('is-matchup-visible')).toBe(false)
+        expect(geneOrb.querySelector('.gene-orb__score')?.classList.contains('is-context-hidden')).toBe(false)
+    })
+
+    it.each([0, -12])('keeps the normal expected score %i for a long press', (expectedScore) => {
+        vi.useFakeTimers()
+        const gene = {
+            ...GENES[0]!,
+            prediction: {
+                ...GENES[0]!.prediction!,
+                useScore: expectedScore,
+            },
+        }
+        render(makeViewModel({ genes: [gene], selectedGeneId: gene.id, selectedGene: gene }))
+
+        const geneOrb = container.querySelector<HTMLButtonElement>('.gene-orb')!
+        const normalScore = geneOrb.querySelector('.gene-orb__score')?.textContent
+
+        act(() => geneOrb.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => vi.advanceTimersByTime(350))
+
+        expect(normalScore).toBe(String(expectedScore))
+        expect(geneOrb.querySelector('.gene-orb__expected-score')?.textContent).toBe(normalScore)
+    })
+
+    it('does not select or open details after releasing a long press', () => {
+        vi.useFakeTimers()
+        renderInteractive()
+
+        const armor = container.querySelectorAll<HTMLButtonElement>('.gene-orb')[1]!
+
+        act(() => armor.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => vi.advanceTimersByTime(350))
+        act(() => armor.dispatchEvent(pointerEvent('pointerup')))
+        act(() => armor.click())
+
+        expect(armor.getAttribute('aria-selected')).toBe('false')
+        expect(document.querySelector('.gene-detail')).toBeNull()
+    })
+
+    it('cancels a pending long press when the pointer starts to scroll', () => {
+        vi.useFakeTimers()
+        renderInteractive()
+
+        const ferocity = container.querySelectorAll<HTMLButtonElement>('.gene-orb')[0]!
+
+        act(() => ferocity.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => ferocity.dispatchEvent(pointerEvent('pointermove', 11)))
+        act(() => vi.advanceTimersByTime(350))
+
+        expect(ferocity.dataset.matchupVisible).toBeUndefined()
+    })
+
+    it('cleans a pending long press on pointercancel and unmount', () => {
+        vi.useFakeTimers()
+        const clearTimer = vi.spyOn(globalThis, 'clearTimeout')
+        renderInteractive()
+
+        const ferocity = container.querySelectorAll<HTMLButtonElement>('.gene-orb')[0]!
+
+        act(() => ferocity.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => ferocity.dispatchEvent(pointerEvent('pointercancel')))
+        act(() => vi.advanceTimersByTime(350))
+
+        expect(ferocity.dataset.matchupVisible).toBeUndefined()
+
+        act(() => ferocity.dispatchEvent(pointerEvent('pointerdown')))
+        act(() => root.unmount())
+
+        expect(clearTimer).toHaveBeenCalled()
     })
 
     it('does not reconstruct a score when the authoritative prediction is missing', () => {

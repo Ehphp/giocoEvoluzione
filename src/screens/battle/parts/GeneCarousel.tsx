@@ -1,11 +1,11 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 
 import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
-import type { TraitType } from '../../../game/types'
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
 import { playCue } from '../../../ui/feedback/feedback'
-import { ArrowDownIcon, ArrowUpIcon, ChevronIcon, GeneIcon, InfoIcon } from '../../../ui/icons'
+import { ArrowDownIcon, ArrowUpIcon, GeneIcon } from '../../../ui/icons'
 import type { GeneCardV2 } from '../controller/types'
+import { useGeneLongPress } from './use-gene-long-press'
 
 type GeneCarouselProps = {
     genes: GeneCardV2[]
@@ -30,15 +30,6 @@ const AFFINITY_TONE = { ideal: 'good', suitable: 'info', unfavorable: 'bad' } as
 
 function formatContribution(value: number): string {
     return value > 0 ? `+${value}` : String(value)
-}
-
-/** One adaptation's glyph in its own colour. The unit both the strip and the orbs are read by. */
-function GeneGlyph({ trait, className = '' }: { trait: TraitType; className?: string }) {
-    return (
-        <span className={`gene-glyph ${className}`} data-gene={trait} aria-hidden="true">
-            <GeneIcon trait={trait} />
-        </span>
-    )
 }
 
 function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => void }) {
@@ -90,40 +81,6 @@ function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => v
     )
 }
 
-/**
- * The selected gene's two matchups, said with glyphs.
- *
- * One pattern read twice: `attacker → victim`. Left, this gene beating the one it counters; right,
- * the one that counters it beating this gene. No words at all, which is the point — the row below is
- * already five glyphs, so the strip reuses the same alphabet instead of translating it into names.
- *
- * It sits *above* the orbs, where the explanatory card used to sit below them. Same information, a
- * third of the height, and it no longer separates the genes from the actions they feed.
- */
-function GeneMatchupStrip({ gene, onOpenDetail }: { gene: GeneCardV2; onOpenDetail: () => void }) {
-    return (
-        <button
-            type="button"
-            className="gene-matchup"
-            onClick={onOpenDetail}
-            aria-label={`${gene.name}: forte contro ${gene.strongAgainst}, teme ${gene.weakAgainst}. Apri i dettagli`}
-        >
-            <span className="gene-matchup__pair gene-matchup__pair--strong">
-                <GeneGlyph trait={gene.traitType} />
-                <ChevronIcon aria-hidden="true" />
-                <GeneGlyph trait={gene.strongAgainstTrait} />
-            </span>
-            <span className="gene-matchup__divider" aria-hidden="true" />
-            <span className="gene-matchup__pair gene-matchup__pair--weak">
-                <GeneGlyph trait={gene.weakAgainstTrait} />
-                <ChevronIcon aria-hidden="true" />
-                <GeneGlyph trait={gene.traitType} />
-            </span>
-            <span className="gene-matchup__info" aria-hidden="true"><InfoIcon /></span>
-        </button>
-    )
-}
-
 function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }: {
     gene: GeneCardV2
     isSelected: boolean
@@ -132,6 +89,13 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
     onActivate: () => void
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
 }) {
+    const longPress = useGeneLongPress({ disabled })
+    const expectedScore = gene.prediction?.useScore
+    const matchupDescription = [
+        gene.strongAgainstTrait && gene.strongAgainst ? `supera ${gene.strongAgainst}` : null,
+        gene.weakAgainstTrait && gene.weakAgainst ? `viene superato da ${gene.weakAgainst}` : null,
+    ].filter((description): description is string => Boolean(description)).join(', ')
+
     return (
         <button
             type="button"
@@ -143,18 +107,53 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
              * a level the stylesheet has no frame for falls back to the nearest one it does.
              */
             data-level={Math.max(0, Math.min(gene.level, MAX_ADAPTATION_LEVEL))}
-            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''}`}
+            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''} ${longPress.isLongPressActive ? 'is-matchup-visible' : ''}`}
             aria-selected={isSelected}
-            aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${gene.prediction ? gene.prediction.useScore : 'non disponibile'}, ${AFFINITY_FULL[gene.affinity]}${isSelected ? '. Tocca di nuovo per i dettagli' : ''}`}
+            aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${gene.prediction ? gene.prediction.useScore : 'non disponibile'}, ${AFFINITY_FULL[gene.affinity]}${longPress.isLongPressActive && matchupDescription ? `. Matchup: ${matchupDescription}` : ''}${isSelected ? '. Tocca di nuovo per i dettagli' : ''}`}
+            data-matchup-visible={longPress.isLongPressActive || undefined}
             tabIndex={tabIndex}
             disabled={disabled}
-            onClick={onActivate}
+            onClick={(event) => {
+                if (longPress.consumeLongPressClick()) {
+                    event.preventDefault()
+                    return
+                }
+
+                onActivate()
+            }}
             onKeyDown={onKeyDown}
+            onContextMenu={(event) => event.preventDefault()}
+            onPointerDown={longPress.onPointerDown}
+            onPointerMove={longPress.onPointerMove}
+            onPointerUp={longPress.onPointerUp}
+            onPointerCancel={longPress.onPointerCancel}
+            onLostPointerCapture={longPress.onLostPointerCapture}
         >
-            <span className="gene-orb__disc" aria-hidden="true">
-                <span className="gene-orb__frame" />
-                <GeneIcon trait={gene.traitType} />
-                <b className="gene-orb__score">{gene.prediction ? gene.prediction.useScore : '—'}</b>
+            <span className="gene-orb__visual" aria-hidden="true">
+                <span className="gene-orb__matchups">
+                    {gene.strongAgainstTrait ? (
+                        <span className="gene-orb__ear gene-orb__ear--strong" data-gene={gene.strongAgainstTrait}>
+                            <GeneIcon trait={gene.strongAgainstTrait} />
+                        </span>
+                    ) : null}
+                    {gene.weakAgainstTrait ? (
+                        <span className="gene-orb__ear gene-orb__ear--weak" data-gene={gene.weakAgainstTrait}>
+                            <GeneIcon trait={gene.weakAgainstTrait} />
+                        </span>
+                    ) : null}
+                </span>
+                <span className="gene-orb__disc">
+                    <span className={`gene-orb__frame ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`} />
+                    <span className="gene-orb__content">
+                        <span className={`gene-orb__icon ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`}>
+                            <GeneIcon trait={gene.traitType} />
+                        </span>
+                    </span>
+                    <b className={`gene-orb__score ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`}>
+                        {expectedScore ?? '—'}
+                    </b>
+                </span>
+                <b className="gene-orb__expected-score">{expectedScore ?? '—'}</b>
             </span>
             <span className="gene-orb__name ev-truncate">{gene.name}</span>
         </button>
@@ -164,7 +163,6 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
 export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelection }: GeneCarouselProps) {
     const [detailGeneId, setDetailGeneId] = useState<string | null>(null)
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
-    const selectedGene = genes[selectedIndex] ?? null
     const detailGene = detailGeneId ? genes.find((gene) => gene.id === detailGeneId) ?? null : null
 
     useEffect(() => {
@@ -208,10 +206,6 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
 
     return (
         <section className="gene-carousel" aria-label="Selettore adattamenti">
-            {selectedGene ? (
-                <GeneMatchupStrip gene={selectedGene} onOpenDetail={() => setDetailGeneId(selectedGene.id)} />
-            ) : null}
-
             {/*
              * All five fit side by side down to 320px, so there is nothing to scroll and no stepper:
              * every orb is directly tappable and the arrow keys still walk the row. The orbs

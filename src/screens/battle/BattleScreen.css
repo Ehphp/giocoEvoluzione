@@ -651,79 +651,6 @@
     background: var(--ev-gold-light);
 }
 
-/*
- * Natural-advantage strip.
- *
- * One pattern read twice: `attacker -> victim`. Left, this gene beating the one it counters; right,
- * the one that counters it beating this gene. No words, deliberately — the row below is already five
- * glyphs, so the strip reuses that alphabet instead of translating it into names. It replaced the
- * explanatory card that used to sit *below* the genes, where it separated them from the actions they
- * feed; up here it is a caption for the row, which is why it is glass on the artwork and not a
- * second cream surface to read.
- */
-.gene-matchup {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ev-s-3);
-    justify-self: center;
-    /* A tap target, so §7's 40px floor applies to the strip as much as to a button. */
-    min-height: var(--ev-touch-min);
-    padding: 3px var(--ev-s-3);
-    border-radius: var(--ev-r-pill);
-    color: var(--ev-on-dark);
-    background: var(--ev-glass);
-    border: 1.5px solid var(--ev-stroke-light-soft);
-    backdrop-filter: blur(10px);
-}
-
-.gene-matchup__pair {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-/* The arrow only: the glyphs inside keep their own adaptation colour. */
-.gene-matchup__pair > svg {
-    font-size: 13px;
-}
-
-.gene-matchup__pair--strong > svg {
-    color: var(--ev-good);
-}
-
-.gene-matchup__pair--weak > svg {
-    color: var(--ev-bad);
-}
-
-.gene-matchup__divider {
-    width: 1.5px;
-    height: 18px;
-    border-radius: var(--ev-r-pill);
-    background: var(--ev-stroke-light-soft);
-}
-
-.gene-matchup__info {
-    display: grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    color: var(--ev-on-dark-muted);
-    font-size: 15px;
-}
-
-/* One adaptation's glyph in its own colour: the unit both the strip and the orbs are read by. */
-.gene-glyph {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    border-radius: var(--ev-r-pill);
-    color: var(--gene-color-strong, var(--ev-ink));
-    font-size: 16px;
-    background: var(--gene-color-soft, var(--ev-cream-deep));
-}
-
 /* -------------------------------------------------------------------------- */
 /* Gene orbs                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -731,9 +658,10 @@
 /*
  * Spheres, not cards.
  *
- * Everything the old card wrote out is now shown: the round score rides the disc, the level *is* the
- * frame around it, and affinity is already inside the score. The name is the only word that stays,
- * because five glyphs with no names is a memory test.
+ * In the resting state the round score rides the disc, the level *is* the frame around it, and affinity
+ * is already inside the score. Holding a gene temporarily moves that same level to the centre and
+ * reveals its two matchup glyphs behind it. The name is the only word that stays, because five glyphs
+ * with no names is a memory test.
  *
  * They bottom-align, and the selected one grows by `scale` rather than by width. That is what lets it
  * rise above the row without pushing its neighbours or moving the names off one line.
@@ -750,11 +678,11 @@
     gap: 12px;
     /*
      * Reserved, not guessed. The selected disc's transform-origin is its foot, so the whole of its
-     * growth goes upward and overflows this container by exactly that much. Deriving the room from the
-     * tokens that cause the overflow is what stops a change to the size or the scale from silently
-     * pushing the orb into the strip above — which is what the hard-coded 12px here did.
+     * growth goes upward and overflows this container by exactly that much. The ear clearance reserves
+     * the held-state matchup too, keeping it clear of the mutation loadout without changing the row's
+     * flow. Both values come from the tokens that cause the overflow.
      */
-    padding-top: calc(var(--ev-gene-orb-size) * (var(--ev-gene-orb-selected-scale) - 1));
+    padding-top: calc(var(--ev-gene-orb-size) * (var(--ev-gene-orb-selected-scale) - 1) + var(--ev-gene-matchup-ear-clearance));
 }
 
 .gene-orb {
@@ -772,11 +700,73 @@
 
 .gene-orb.is-selected {
     /* The scaled disc overlaps its neighbours by a couple of pixels; it has to be the one on top. */
+    z-index: 2;
+}
+
+.gene-orb__visual {
+    position: relative;
+    display: block;
+    width: var(--ev-gene-orb-size);
+    height: var(--ev-gene-orb-size);
+    overflow: visible;
+    isolation: isolate;
+}
+
+.gene-orb__matchups {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    transform-origin: 50% 100%;
+    transition: scale var(--ev-dur-gene-matchup) var(--ev-ease);
+}
+
+.gene-orb.is-selected .gene-orb__matchups {
+    scale: var(--ev-gene-orb-selected-scale);
+}
+
+.gene-orb__ear {
+    --gene-matchup-ear-border: var(--ev-good);
+    position: absolute;
     z-index: 1;
+    top: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-ear-top));
+    display: grid;
+    place-items: center;
+    width: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-ear-ratio));
+    aspect-ratio: 1;
+    border: var(--ev-gene-matchup-ear-border-width) solid var(--gene-matchup-ear-border);
+    border-radius: var(--ev-r-pill);
+    color: var(--gene-color-strong, var(--ev-ink));
+    font-size: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-ear-ratio) * var(--ev-gene-matchup-ear-icon-size));
+    background: color-mix(in srgb, var(--gene-color-soft, var(--ev-cream-deep)) 78%, var(--ev-cream-deep));
+    box-shadow: inset 0 0 0 var(--ev-gene-matchup-ear-inner-ring-width) color-mix(in srgb, var(--gene-matchup-ear-border) 52%, transparent), var(--ev-shadow-sm);
+    opacity: 0;
+    scale: var(--ev-gene-matchup-ear-scale);
+    translate: 0 var(--ev-s-1);
+    transition:
+        opacity var(--ev-dur-gene-matchup) var(--ev-ease),
+        scale var(--ev-dur-gene-matchup) var(--ev-ease-spring),
+        translate var(--ev-dur-gene-matchup) var(--ev-ease);
+}
+
+.gene-orb__ear--strong {
+    left: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-ear-left));
+}
+
+.gene-orb__ear--weak {
+    --gene-matchup-ear-border: var(--ev-bad);
+    left: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-ear-right));
+}
+
+.gene-orb.is-matchup-visible .gene-orb__ear {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
 }
 
 .gene-orb__disc {
     position: relative;
+    z-index: 1;
     display: grid;
     place-items: center;
     width: var(--ev-gene-orb-size);
@@ -824,8 +814,12 @@
 .gene-orb__frame {
     position: absolute;
     inset: 0;
+    z-index: 1;
     border-radius: inherit;
     box-shadow: inset 0 0 0 2.5px var(--gene-color, var(--ev-player));
+    transition:
+        opacity var(--ev-dur-gene-matchup) var(--ev-ease),
+        scale var(--ev-dur-gene-matchup) var(--ev-ease);
 }
 
 /*
@@ -869,8 +863,65 @@
         calc(-50% + var(--ev-gene-orb-size) * .433);
 }
 
+.gene-orb__content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+}
+
+.gene-orb__icon,
+.gene-orb__expected-score {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    transition:
+        opacity var(--ev-dur-gene-matchup) var(--ev-ease),
+        scale var(--ev-dur-gene-matchup) var(--ev-ease-spring),
+        translate var(--ev-dur-gene-matchup) var(--ev-ease);
+}
+
+.gene-orb__icon {
+    font-size: inherit;
+}
+
+.gene-orb__expected-score {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    color: var(--gene-color-strong, var(--ev-ink));
+    font-family: var(--ev-font-display);
+    font-size: calc(var(--ev-gene-orb-size) * var(--ev-gene-matchup-expected-score-size));
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    transform-origin: 50% 100%;
+    opacity: 0;
+    scale: var(--ev-gene-matchup-content-scale);
+    translate: 0 var(--ev-s-1);
+}
+
+.gene-orb.is-matchup-visible .gene-orb__frame,
+.gene-orb.is-matchup-visible .gene-orb__icon,
+.gene-orb.is-matchup-visible .gene-orb__score {
+    opacity: 0;
+    scale: var(--ev-gene-matchup-content-scale);
+}
+
+.gene-orb.is-matchup-visible .gene-orb__expected-score {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+}
+
+.gene-orb.is-selected.is-matchup-visible .gene-orb__expected-score {
+    scale: var(--ev-gene-orb-selected-scale);
+}
+
 .gene-orb__score {
     position: absolute;
+    z-index: 3;
     top: -2px;
     right: -2px;
     min-width: 20px;
@@ -882,6 +933,9 @@
     line-height: 17px;
     background: var(--gene-color-strong, var(--ev-ink));
     border: 2px solid var(--ev-cream-light);
+    transition:
+        opacity var(--ev-dur-gene-matchup) var(--ev-ease),
+        scale var(--ev-dur-gene-matchup) var(--ev-ease);
 }
 
 .gene-orb__name {
@@ -1235,11 +1289,6 @@
     .gene-orb__name {
         font-size: 9px;
         letter-spacing: -.01em;
-    }
-
-    .gene-matchup {
-        gap: var(--ev-s-2);
-        padding-inline: var(--ev-s-2);
     }
 
     .mutation-loadout {
