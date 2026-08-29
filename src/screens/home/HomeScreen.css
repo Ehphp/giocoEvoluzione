@@ -143,7 +143,7 @@
 .home-stage {
     position: relative;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
     gap: var(--ev-s-2);
@@ -201,63 +201,6 @@
     .home-stage__carousel:active {
         cursor: grabbing;
     }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Forms rail                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/*
- * Scrolls rather than shrinks: a lineage grows one form at a time and there is no count at which
- * squeezing them all into the width would still leave a creature you can recognise.
- */
-.home-forms {
-    display: flex;
-    /* `safe`, so a lineage too long to centre falls back to the start rather than hiding its head. */
-    justify-content: safe center;
-    gap: var(--ev-s-2);
-    width: 100%;
-    min-width: 0;
-    padding: 2px var(--ev-s-1);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-}
-
-.home-forms__item {
-    display: grid;
-    justify-items: center;
-    gap: 3px;
-    flex: 0 0 auto;
-    width: 58px;
-    padding: 4px 2px 3px;
-    border-radius: var(--ev-r-md);
-    color: var(--ev-on-dark-muted);
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-2xs);
-    font-weight: 800;
-    background: var(--ev-grad-slate);
-    border: 1.5px solid transparent;
-    box-shadow: var(--ev-shadow-sm);
-    transition:
-        transform var(--ev-dur-release) var(--ev-ease-spring),
-        border-color var(--ev-dur-base) var(--ev-ease);
-}
-
-.home-forms__item img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-}
-
-.home-forms__item.is-selected {
-    color: #fff;
-    border-color: var(--ev-player-light);
-    box-shadow: var(--ev-shadow-md);
-}
-
-.home-forms__item:active {
-    transition: transform var(--ev-dur-press) var(--ev-ease);
-    transform: scale(.94);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -516,14 +459,6 @@
     .home-stage {
         flex-basis: 96px;
         min-height: 72px;
-    }
-
-    /*
-     * A landscape phone has no height to give the creature *and* the rail. The rail goes: it is a
-     * shortcut to something the swipe already reaches, and the creature is the point of the screen.
-     */
-    .home-forms {
-        display: none;
     }
 
     /* Less padding too, or a 96px stage leaves the animal a few pixels tall. */

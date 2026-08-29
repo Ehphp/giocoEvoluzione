@@ -32,6 +32,26 @@ function createActions(): HomeActions {
     }
 }
 
+function createLongLineageViewModel(): HomeViewModel {
+    const viewModel = createViewModel()
+    const creature = viewModel.creature!
+    const forms = [1, 2, 3, 4, 5, 6].map((generation) => ({
+        id: `long-${generation}`,
+        generation,
+        name: `Forma ${generation}`,
+        image: {
+            src: `/assets/long-${generation}.png`,
+            fallbackSrc: '/assets/battle/creatures/verdant-hatchling.webp',
+            alt: `Verdante, Generazione ${generation - 1}`,
+        },
+        isCurrent: generation === 6,
+    }))
+
+    viewModel.creature = { ...creature, name: 'Verdante', image: forms.at(-1)!.image, visualVersions: forms }
+
+    return viewModel
+}
+
 function createVisualLineageViewModel(): HomeViewModel {
     const viewModel = createViewModel()
     const creature = viewModel.creature!
@@ -290,24 +310,87 @@ describe('HomeScreen', () => {
         expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('true')
     })
 
-    it('reaches a past form from the rail in one tap, without adopting it', () => {
-        const viewModel = createVisualLineageViewModel()
-        render(viewModel)
+    it('offers no form picker: the swipe is the only way through the lineage', () => {
+        render(createVisualLineageViewModel())
 
-        const rail = [...container.querySelectorAll<HTMLButtonElement>('[data-testid="home-forms-rail"] button')]
+        // The rail of generation thumbnails was a placeholder and is gone. It was also the last
+        // thing asking for the whole lineage up front, which is what made a load cost 1.08 MB.
+        expect(container.querySelector('[data-testid="home-forms-rail"]')).toBeNull()
+        expect(container.querySelector('[role="tablist"]')).toBeNull()
+        expect(container.querySelectorAll('[data-testid="home-creature-stage"] button')).toHaveLength(0)
+    })
 
-        // Same URLs the carousel uses, so the two share one download rather than costing a second.
-        expect(rail.map((item) => item.querySelector('img')?.getAttribute('src')))
-            .toEqual(['/assets/form-1.png', '/assets/form-3.png'])
-        expect(rail.map((item) => item.textContent)).toEqual(['Gen 0', 'Attuale'])
-        expect(rail[1]!.getAttribute('aria-selected')).toBe('true')
+    it('fetches only the selected form and its neighbours, not the whole lineage', () => {
+        render(createLongLineageViewModel())
 
-        act(() => rail[0]!.click())
+        const slides = [...container.querySelectorAll<HTMLImageElement>('.home-stage__carousel img')]
 
-        expect(rail[0]!.getAttribute('aria-selected')).toBe('true')
-        expect(container.querySelector('[data-testid="home-creature-form-form-1"]')?.getAttribute('aria-hidden')).toBe('false')
-        // Looking is not switching: the creature you play with is untouched.
-        expect(viewModel.creature?.visualVersions.find((version) => version.isCurrent)?.id).toBe('form-3')
+        // Six forms on the creature, the last one current: only it and the one before it are asked
+        // for. Giving every slide a `src` is what made a page load cost the entire lineage.
+        expect(slides.map((slide) => slide.getAttribute('src')))
+            .toEqual([null, null, null, null, '/assets/long-5.png', '/assets/long-6.png'])
+    })
+
+    it('fetches a form once a swipe reaches it, and keeps the ones already fetched', () => {
+        render(createLongLineageViewModel())
+
+        const carousel = container.querySelector<HTMLDivElement>('[data-testid="home-creature-carousel"]')!
+        Object.defineProperty(carousel, 'clientWidth', { configurable: true, value: 300 })
+
+        // Swipe from the current form back to the first one.
+        act(() => {
+            carousel.scrollLeft = 0
+            carousel.dispatchEvent(new Event('scroll', { bubbles: true }))
+        })
+
+        const slides = [...container.querySelectorAll<HTMLImageElement>('.home-stage__carousel img')]
+
+        // The first two are now reachable, and the pair fetched before the swipe is not given up:
+        // dropping a `src` would only make the swipe back ask for the sprite a second time.
+        expect(slides.map((slide) => slide.getAttribute('src')))
+            .toEqual(['/assets/long-1.png', '/assets/long-2.png', null, null, '/assets/long-5.png', '/assets/long-6.png'])
+    })
+
+    it('carries the swipe one form at a time, fetching the next neighbour each step', () => {
+        render(createLongLineageViewModel())
+
+        const carousel = container.querySelector<HTMLDivElement>('[data-testid="home-creature-carousel"]')!
+        Object.defineProperty(carousel, 'clientWidth', { configurable: true, value: 300 })
+        const sources = () => [...container.querySelectorAll<HTMLImageElement>('.home-stage__carousel img')]
+            .map((slide) => slide.getAttribute('src'))
+
+        // Starting on the last of six: it and its one neighbour.
+        expect(sources()).toEqual([null, null, null, null, '/assets/long-5.png', '/assets/long-6.png'])
+
+        act(() => {
+            carousel.scrollLeft = 3 * 300
+            carousel.dispatchEvent(new Event('scroll', { bubbles: true }))
+        })
+
+        // One swipe left: the form before the new selection joins, the far end stays untouched.
+        expect(sources()).toEqual([null, null, '/assets/long-3.png', '/assets/long-4.png', '/assets/long-5.png', '/assets/long-6.png'])
+    })
+
+    it('keeps the mouse drag alive past the first pull', () => {
+        render(createLongLineageViewModel())
+
+        const carousel = container.querySelector<HTMLDivElement>('[data-testid="home-creature-carousel"]')!
+        carousel.setPointerCapture = vi.fn()
+        carousel.focus = vi.fn()
+
+        const pointerDown = new Event('pointerdown', { bubbles: true, cancelable: true })
+        Object.assign(pointerDown, { pointerType: 'mouse', pointerId: 1, clientX: 0 })
+        act(() => { carousel.dispatchEvent(pointerDown) })
+
+        /*
+         * The default has to go: left in, the browser claims the gesture for its own panning and
+         * answers the capture with `pointercancel`, which drops the drag before the first move —
+         * a mouse could pull the carousel exactly once and then never again. Only reproducible in
+         * a real engine, so what the test can hold is the call that prevents it.
+         */
+        expect(pointerDown.defaultPrevented).toBe(true)
+        expect(carousel.focus).toHaveBeenCalled()
+        expect(carousel.setPointerCapture).toHaveBeenCalledWith(1)
     })
 
     it('updates the Home preview through scroll snap without changing the active creature', () => {

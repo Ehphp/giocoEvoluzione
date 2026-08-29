@@ -12,6 +12,7 @@ import {
     type ProfileRecord,
     updateMyNickname,
 } from '../lib/profile-api'
+import { clearCreatureVisualUrlCache } from '../lib/creature-visual-url-cache'
 import { hasSupabaseConfig, requireSupabase } from '../lib/supabase'
 
 export type AuthenticationStatus = 'loading' | 'unauthenticated' | 'initializing' | 'ready' | 'error'
@@ -77,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(nextSession)
 
         if (!nextSession) {
+            // The signed URLs outlive the session by up to twelve hours and are persisted, so the
+            // end of a session has to be the end of them too.
+            clearCreatureVisualUrlCache()
             setProfile(null)
             setLineages([])
             setActiveLineageState(null)

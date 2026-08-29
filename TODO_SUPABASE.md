@@ -408,3 +408,209 @@ RPC che non esiste.
    creatura: prima rispondeva `VISUAL_TRACK_ALREADY_ACTIVE` per sempre.
 4. Con una creatura che ha almeno due versioni adottate, usare "Usa questa forma" per tornare a una
    precedente e generare: il body plan risolto deve essere quello della forma riattivata.
+
+
+## 11. Egress e Storage — misurazione del 2026-08-29
+
+Misurato pilotando l'app vera (`npm run dev` + Chromium via `playwright-core`, profilo `elk`,
+viewport iPhone 12) e contando i byte di ogni richiesta verso il progetto Supabase. Non è una
+deduzione dal codice: sono i `request.sizes()` di quattro sessioni complete.
+
+### 11.1 Quello che NON è il problema — verificato, non ipotizzato
+
+Tre sospetti plausibili, tutti smentiti dalla misura:
+
+| Sospetto | Misura | Esito |
+|---|---|---|
+| Il TTL delle firme è ancora 300 s (deploy §1 mancante) | `expiresAt` restituito dalla function: **43195 s ≈ 12 h** | la correzione **è già in produzione** |
+| La history serve i master PNG (backfill §7.2 mancante) | 11 oggetti su 11 sono `display/*.webp`, 72–175 KB | **i display asset ci sono e vengono serviti** |
+| Ogni ritorno sull'app ricarica tutto | 3 cicli di `bringToFront()` reali: **0 richieste, 0 byte** | il refocus **non costa niente** |
+
+Anche il resto dell'uso normale è quasi gratis:
+
+| Azione | Traffico Supabase |
+|---|---|
+| Partita completa contro il bot | **7,8 KB** (`create_vs_bot_game`, `get_game_snapshot`, `GET_GAME_VISUALS`; le immagini arrivano dalla cache) |
+| Navigazione fra le schermate del dock | **0 byte di Storage** (10 richieste, tutte cache hit) |
+| Aprire la schermata evoluzione | 35 KB, di cui 0 di Storage |
+| WebSocket realtime durante la partita | 4 frame, 0,5 KB |
+
+Le §7 e §11 della versione precedente di questo documento davano per deployato il TTL a 300 s e per
+mancante il backfill. Erano sbagliate entrambe.
+
+### 11.2 Il problema è uno solo: il caricamento della pagina costa 1,08 MB, ogni volta
+
+Quattro caricamenti misurati di fila, stesso account, stessa creatura:
+
+```
+1-cold-load+login    23 req   1109,5 KB   Storage 1082,7 KB
+2-reload-#1          26 req   1111,4 KB   Storage 1082,6 KB
+2-reload-#2          26 req   1111,5 KB   Storage 1082,6 KB
+2-reload-#3          26 req   1111,5 KB   Storage 1082,6 KB
+```
+
+Sempre gli **stessi 11 oggetti**, sempre riscaricati per intero. Due cause indipendenti che si
+moltiplicano.
+
+**a) La home monta tutte le generazioni a piena risoluzione.** Ispezione del DOM dopo il login:
+
+```
+11 img .home-stage__creature   naturale 512x768   rese 326x323   loading=lazy (1 sola eager)
+11 img rail "Gen 0..Gen 10"    naturale 512x768   rese  40x40    loading=lazy
+```
+
+Le due file condividono l'URL, quindi i download sono 11, non 22 — il commento a
+`HomeScreen.tsx:321` su questo è corretto. Quello a `HomeScreen.tsx:20` no: dice *"Only the form on
+screen is worth fetching"*, ma `CreatureArt` assegna `src` a **ogni** slide e distingue solo
+`loading` fra `eager` e `lazy`. `lazy` non trattiene niente, perché il carosello è una riga
+orizzontale già dentro il viewport e Chrome le considera tutte imminenti. **Ne vedi una, ne scarichi
+undici.** Di 1,08 MB, circa 980 KB sono forme che non stai guardando.
+
+E cresce da solo: ~90 KB in più per ogni evoluzione adottata, fino al tetto di 16 voci della
+history (`creature-visual-progression-repository.ts:276`), cioè ~1,5 MB per caricamento a regime.
+
+**b) La firma ruota a ogni caricamento, quindi la cache HTTP non aggancia mai.** Su 4 caricamenti,
+**11 oggetti su 11 hanno ricevuto 4 firme diverse**. La cache degli URL firmati esiste in due punti
+e nessuno dei due sopravvive a un reload:
+
+- client — `creature-visual-url-cache.ts:18`, una `Map` a livello di modulo, muore col contesto JS;
+- server — `SupabaseCreatureTransformationStorageAdapter.signedUrlCache`, `static` dentro l'isolate
+  Edge, muore al riciclo e non è condivisa fra isolate.
+
+Il browser indicizza la cache sull'URL completo, firma inclusa. Firma nuova = URL nuovo = miss su
+tutto, nonostante il `cacheControl: 31536000` sugli oggetti e nonostante la firma precedente sia
+ancora valida per altre 11 ore e 55 minuti. **Dentro una sessione la cache funziona benissimo**
+(è per questo che navigazione e refocus costano zero); fra una sessione e l'altra non esiste.
+
+1,08 MB × ~740 caricamenti ≈ 800 MB, che è l'egress del 28 agosto. Con Vite in HMR aperto su
+desktop e telefono durante una giornata di sviluppo, 740 caricamenti non è un numero strano.
+
+### 11.3 Correzioni applicate il 2026-08-29
+
+Tre correzioni, tutte lato client: **nessun deploy Edge, nessuna migration, nessun secret.**
+Rimisurate con la stessa sonda, stesso account, stesso viewport.
+
+```
+                              prima        dopo
+cold load                  1082,7 KB    247,8 KB     2 immagini invece di 12
+reload (x3)                1082,6 KB      0,0 KB     304, corpo vuoto
+firme stabili su reload       0 / 11      2 / 2
+sessione completa             4479 KB      396 KB
+```
+
+**a) Persistenza degli URL firmati** — `creature-visual-url-cache.ts`. La cache era una `Map` a
+livello di modulo: moriva col contesto JS, quindi ogni caricamento rifirmava tutto e la cache HTTP
+del browser mancava su ogni immagine. Ora è persistita in `localStorage` col suo `expiresAt`,
+sfoltita alla scadenza, e svuotata al logout — un URL firmato è un bearer token per l'immagine e
+vale 12 ore, quindi la fine della sessione deve essere anche la sua (`AuthProvider.tsx`, ramo
+`!nextSession`; `clearCreatureVisualUrlCache` non aveva alcun chiamante in produzione).
+
+Gli oggetti sono serviti `cache-control: no-cache` con ETag — **non** `max-age=31536000` come
+afferma il commento in `supabase-creature-transformation-storage.ts:4`. Verificato con `curl -I` su
+un URL firmato vero. Non cambia l'esito: con l'URL stabile il browser rivalida e riceve `304` a
+corpo vuoto (`size_download=0`).
+
+**b) Rimozione della rail delle forme** — era un placeholder, e con undici thumbnail 40x40 disegnati
+da WebP 512x768 era diventata l'unica cosa che ancora tirava giù l'intera lineage a ogni
+caricamento. Via la rail sono spariti anche `.home-forms*` dal CSS e l'override landscape; la riga
+`auto` di `.home-stage` non serviva più. Lo swipe resta l'unico modo di attraversare le forme, che
+era già il caso: la rail ne era la scorciatoia.
+
+**c) Carosello limitato ai vicini** — `HomeScreen.tsx`, `PREFETCHED_NEIGHBOURS = 1`. Le slide non
+adiacenti non ricevono `src` e non fanno richiesta; l'insieme di quelle già prese cresce e non viene
+mai rilasciato, così tornare indietro non richiede due volte lo stesso sprite. Con la rail ancora
+presente questa correzione valeva zero byte: i due consumatori condividevano l'URL e l'unione
+restava dodici. Ora è quella che porta il cold load da 1082 KB a 248 KB.
+
+Verificato nel browser, non solo nei test — swipe touch reali via CDP su iPhone 12:
+
+```
+partenza      slide 11/11   caricate [10,11]
+swipe #1      slide 10/11   caricate [9,10,11]      1 immagine nuova
+swipe #2      slide  9/11   caricate [8,...,11]     1 immagine nuova
+...
+in avanti     slide  7,8,9  caricate invariate      0 byte
+tastiera      slide  8,7    caricate invariate      0 byte
+```
+
+**Effetto netto**: il costo per caricamento sparisce, resta un cold load da 248 KB per dispositivo
+ogni volta che le firme scadono, cioè due volte al giorno. Da ~800 MB/giorno a ~0,5 MB/giorno.
+Il problema di egress e chiuso con tre ordini di grandezza di margine.
+
+### 11.3b Bug preesistente corretto: il drag col mouse funzionava una volta sola
+
+Emerso verificando lo swipe, non cercandolo, e **presente anche su HEAD pulito**. Su desktop il
+carosello si trascinava una volta e poi restava bloccato per sempre.
+
+Causa, trovata strumentando gli eventi puntatore nel browser: al secondo `pointerdown` il browser
+emette `pointercancel` subito dopo `gotpointercapture` — reclama il gesto per il proprio panning —
+e l'handler `onPointerCancel` azzera `dragStartRef`, quindi nessun `pointermove` muove più niente.
+
+```
+=== drag #1 ===  pointerdown -> gotpointercapture -> scroll 4360 -> pointerup
+=== drag #2 ===  pointerdown -> gotpointercapture -> pointercancel      <-- qui
+```
+
+Corretto con `event.preventDefault()` sul `pointerdown` del mouse, che impedisce al browser di
+appropriarsi del gesto. Sopprimere il default sopprime anche il focus, quindi il carosello lo
+riprende a mano o le frecce smettono di funzionare. Touch e tastiera non erano coinvolti e restano
+invariati — verificati entrambi dopo la correzione.
+
+### 11.3c Accessorio, non ancora corretto
+
+Ogni caricamento fa il **bootstrap del profilo due volte**: sul reload si vedono
+`bootstrap_my_profile`, `profiles`, `creature_lineages`, `player_creatures` duplicati, più
+3× `GET_CURRENT_VISUAL` e 3× `GET_VISUAL_PROGRESS` = 6 invocazioni Edge. Causa: `AuthProvider`
+chiama `getSession()` **e** riceve `INITIAL_SESSION` dal listener di `onAuthStateChange`
+(`AuthProvider.tsx:127` e `:141`), e `resolveSession` gira per entrambi. Vale ~14 KB PostgREST e
+metà delle invocazioni per caricamento: non è egress, ma è la voce "Edge Function Invocations" a
+7.210. Non toccato perché filtrare gli eventi di `onAuthStateChange` cambia il ciclo di vita
+dell'autenticazione, che merita una verifica a sé.
+
+### 11.4 Storage al 94% — problema separato, e più urgente
+
+Questo non l'ho misurato dal browser: è visibile dal codice e va confermato con le query qui sotto.
+`grep -rn '\.remove(' supabase/ src/ tools/` trova **un solo chiamante**, il reset distruttivo in
+`tools/reset-creature-evolution-environment.ts:173`. La pipeline non cancella mai niente. Ogni
+generazione lascia in `creature-transformation-experiments`, per sempre e anche se la proposta viene
+scartata o fallisce:
+
+| Prefisso | Contenuto | Peso indicativo |
+|---|---|---|
+| `experiments/raw/<profile>/<sha>.png\|.jpg` | output grezzo Seedream 1024×1536 | 2–3 MB |
+| `candidates/<profile>/<sha>.png` | PNG scontornato con alpha | 3–5 MB |
+| `cleanup/<sha>.png` | master ripulito | 2–3 MB |
+| `display/<sha>.webp` | display asset ~512×768 | 0,07–0,18 MB |
+
+Il display asset è l'unico oggetto che il gioco serve davvero — la misura del §11.2 lo conferma:
+**tutte** le richieste di Storage puntano a `display/`. Gli altri tre prefissi sono materiale di
+lavorazione che nessuno legge più dopo la finalizzazione, e sono ~97% del peso.
+
+**Da eseguire nel SQL editor**, prima di decidere cosa togliere:
+
+```sql
+select bucket_id,
+       split_part(name, '/', 1) as prefisso,
+       count(*) as oggetti,
+       pg_size_pretty(sum((metadata->>'size')::bigint)) as peso
+from storage.objects
+where bucket_id in ('creature-transformation-sources', 'creature-transformation-experiments')
+group by 1, 2
+order by sum((metadata->>'size')::bigint) desc;
+```
+
+```sql
+-- Raw e candidate di richieste chiuse da piu di sette giorni: candidati alla cancellazione.
+select split_part(o.name, '/', 1) as prefisso,
+       count(*) as oggetti,
+       pg_size_pretty(sum((o.metadata->>'size')::bigint)) as recuperabile
+from storage.objects o
+where o.bucket_id = 'creature-transformation-experiments'
+  and (o.name like 'experiments/raw/%' or o.name like 'candidates/%')
+  and o.created_at < now() - interval '7 days'
+group by 1;
+```
+
+Decisione aperta: retention manuale periodica, oppure un `pg_cron` che cancella raw e candidate
+delle richieste in stato terminale oltre i sette giorni. Finché non c'è, il piano free satura da
+solo — mancano ~64 MB al limite di 1 GB.
