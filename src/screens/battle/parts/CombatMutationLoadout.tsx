@@ -58,8 +58,7 @@ export function CombatMutationLoadout({ mutations, onActivateSymbiosis, onActiva
 
     return (
         <section className="mutation-loadout" aria-label="Mutazioni equipaggiate">
-            <span className="mutation-loadout__label">Mutazioni</span>
-            <div className="mutation-loadout__items" role="list">
+            <div className="mutation-loadout__items" data-count={mutations.length} role="list">
                 {mutations.map((mutation) => {
                     const stateLabel = mutationStatusLabel(mutation.status)
                     const label = `${mutation.label}, ${stateLabel.toLowerCase()}. ${mutation.shortDescription}${mutation.linkLabel ? ` ${mutation.linkLabel}.` : ''}`

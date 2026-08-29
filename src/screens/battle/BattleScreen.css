@@ -539,20 +539,7 @@
 /* -------------------------------------------------------------------------- */
 
 .mutation-loadout {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: var(--ev-s-2);
     min-width: 0;
-}
-
-.mutation-loadout__label {
-    color: var(--ev-player-light);
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-xs);
-    font-weight: 800;
-    letter-spacing: var(--ev-track-label);
-    text-transform: uppercase;
 }
 
 .mutation-loadout__items {
@@ -562,11 +549,18 @@
     min-width: 0;
 }
 
+.mutation-loadout__items[data-count='1'] {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .mutation-slot {
     display: grid;
     grid-template-columns: var(--ev-touch-min) minmax(0, 1fr);
     align-items: center;
     gap: var(--ev-s-1);
+    justify-self: center;
+    width: max-content;
+    max-width: 100%;
     min-width: 0;
     min-height: var(--ev-touch-min);
 }
