@@ -11,6 +11,7 @@ import type { TraitType } from '../../game/types'
 import { AppShell, Button, ConfirmDialog, Notice, Overlay, Panel } from '../../ui/components'
 import { MeteorIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
+import { CombatMutationLoadout } from './parts/CombatMutationLoadout'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
 import { DuelHeader } from './parts/DuelHeader'
 import { EnvironmentCard } from './parts/EnvironmentCard'
@@ -157,8 +158,6 @@ export function BattleScreen({
                     opponent={viewModel.opponent}
                     round={viewModel.round}
                     onRequestLeave={() => setIsLeaveConfirmOpen(true)}
-                    onActivateSymbiosis={viewModel.canActivateSymbiosis && isChoosing ? openSymbiosisPicker : undefined}
-                    onActivateFineDelMondo={viewModel.canActivateFineDelMondo && isChoosing ? () => setIsFineDelMondoConfirmOpen(true) : undefined}
                 />
 
                 <EnvironmentCard roundEvent={viewModel.roundEvent} nextRoundEvent={viewModel.nextRoundEvent} />
@@ -172,7 +171,12 @@ export function BattleScreen({
                     <Notice tone="error">{viewModel.errorMessage}</Notice>
                 ) : null}
 
-                <div className="battle-screen__decision">
+                <Panel variant="glass" compact className="battle-screen__decision">
+                    <CombatMutationLoadout
+                        mutations={viewModel.player.combatMutations ?? []}
+                        onActivateSymbiosis={viewModel.canActivateSymbiosis && isChoosing ? openSymbiosisPicker : undefined}
+                        onActivateFineDelMondo={viewModel.canActivateFineDelMondo && isChoosing ? () => setIsFineDelMondoConfirmOpen(true) : undefined}
+                    />
                     {isWaiting && viewModel.waitingState ? (
                         <WaitingPanel waitingState={viewModel.waitingState} />
                     ) : (
@@ -194,7 +198,7 @@ export function BattleScreen({
                             />
                         </>
                     )}
-                </div>
+                </Panel>
             </div>
             {leaveConfirm}
             {symbiosisPicker}

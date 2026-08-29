@@ -145,17 +145,14 @@ describe('BattleScreen', () => {
         expect(rounds.closest('.duel-header')).not.toBeNull()
     })
 
-    it('integrates the ordered mutation slots under each player panel with semantic states', () => {
+    it('keeps the ordered player mutation loadout in the battle board with semantic states', () => {
         render()
 
-        const playerSlots = container.querySelectorAll('.duel-card__mutations--player .duel-mutation')
-        const opponentSlots = container.querySelectorAll('.duel-card__mutations--opponent .duel-mutation')
+        const playerSlots = container.querySelectorAll('.mutation-loadout .mutation-slot')
 
         expect(playerSlots).toHaveLength(2)
-        expect(opponentSlots).toHaveLength(2)
-        expect(playerSlots[1]?.classList.contains('duel-mutation--armed')).toBe(true)
-        expect(opponentSlots[0]?.classList.contains('duel-mutation--consumed')).toBe(true)
-        expect(playerSlots[1]?.getAttribute('aria-label')).toContain('Nucleo adattivo, attiva')
+        expect(playerSlots[1]?.classList.contains('mutation-slot--armed')).toBe(true)
+        expect(playerSlots[1]?.querySelector('.mutation-slot__icon')?.getAttribute('aria-label')).toContain('Nucleo adattivo, attiva')
         expect(container.querySelectorAll('.duel-card .ev-pips--compact')).toHaveLength(2)
     })
 

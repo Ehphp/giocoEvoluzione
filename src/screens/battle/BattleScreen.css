@@ -15,9 +15,8 @@
      */
     margin-inline: -8px;
     padding-inline: 8px;
-    /* Short viewports scroll rather than hiding the gene row or the actions. */
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
+    /* The arena yields before the controls do: battle never becomes a vertical scroller. */
+    overflow: hidden;
 }
 
 .duel-header,
@@ -59,13 +58,11 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: start;
-    gap: var(--ev-s-1);
+    align-items: center;
+    gap: var(--ev-s-2);
 }
 
 .duel-header__competitor {
-    display: grid;
-    gap: var(--ev-s-1);
     min-width: 0;
 }
 
@@ -94,78 +91,6 @@
     background: var(--ev-grad-opponent);
 }
 
-.duel-card__mutations {
-    display: flex;
-    align-items: center;
-    gap: var(--ev-s-1);
-    min-height: var(--ev-mutation-slot-size);
-    padding-inline: var(--ev-s-1);
-}
-
-.duel-mutation {
-    display: grid;
-    place-items: center;
-    width: var(--ev-mutation-slot-size);
-    height: var(--ev-mutation-slot-size);
-    border-radius: var(--ev-r-md);
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-lg);
-    background: var(--ev-glass-strong);
-    border: var(--ev-stroke-width) solid var(--ev-stroke-light-soft);
-    box-shadow: var(--ev-shadow-sm), inset 0 1px 0 var(--ev-stroke-light-soft);
-}
-
-.duel-mutation-wrap {
-    display: grid;
-    justify-items: center;
-    gap: var(--ev-s-1);
-    min-width: 0;
-}
-
-.duel-mutation__link {
-    max-width: calc(var(--ev-mutation-slot-size) * 2);
-    overflow: hidden;
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-2xs);
-    line-height: var(--ev-lh-compact);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.duel-card__mutations--player .duel-mutation--available {
-    color: var(--ev-player-light);
-}
-
-.duel-card__mutations--opponent .duel-mutation--available {
-    color: var(--ev-opponent-light);
-}
-
-.duel-card__mutations--player .duel-mutation--armed {
-    color: var(--ev-on-dark);
-    background: var(--ev-grad-player);
-    border-color: var(--ev-player-light);
-    box-shadow: var(--ev-shadow-glow-player), var(--ev-lip);
-}
-
-.duel-card__mutations--opponent .duel-mutation--armed {
-    color: var(--ev-on-dark);
-    background: var(--ev-grad-opponent);
-    border-color: var(--ev-opponent-light);
-    box-shadow: var(--ev-shadow-md), var(--ev-lip);
-}
-
-.duel-mutation--consumed {
-    color: var(--ev-on-dark-muted);
-    opacity: var(--ev-mutation-consumed-opacity);
-    filter: grayscale(var(--ev-mutation-consumed-grayscale));
-}
-
-.duel-mutation--linked {
-    color: var(--ev-gold-light);
-    border-color: var(--ev-gold-light);
-    box-shadow: var(--ev-shadow-glow-gold), var(--ev-lip);
-}
-
 .duel-card__portrait {
     position: relative;
     flex: 0 0 auto;
@@ -190,16 +115,16 @@
     width: 11px;
     height: 11px;
     border-radius: var(--ev-r-pill);
-    background: #ffd75e;
-    border: 2px solid rgba(10, 28, 22, .55);
+    background: var(--ev-gold);
+    border: var(--ev-stroke-width) solid var(--ev-slate-deep);
 }
 
 .duel-card__state--ready {
-    background: #8bf05e;
+    background: var(--ev-player-light);
 }
 
 .duel-card__state--disconnected {
-    background: #ff8079;
+    background: var(--ev-danger-light);
 }
 
 .duel-card__copy {
@@ -264,8 +189,8 @@
      * the extra dots wrap onto a second line instead of widening the column.
      */
     max-width: calc(var(--ev-pips-dot-size-compact) * 7 + var(--ev-pips-gap-compact) * 6);
-    /* Lines the badge up with the middle of the profile cards beside it. */
-    padding-top: var(--ev-s-2);
+    /* The compact profiles and their match state now share one vertical axis. */
+    padding-top: 0;
 }
 
 .duel-header__rounds .ev-pips {
@@ -438,8 +363,8 @@
     min-width: 0;
     min-height: var(--ev-touch-min);
     padding-left: var(--ev-s-2);
-    border-left: 2px solid rgba(160, 138, 92, .22);
-    color: var(--ev-ink-muted);
+    border-left: var(--ev-stroke-width) solid var(--ev-stroke-light-soft);
+    color: var(--ev-on-dark-muted);
 }
 
 /* Two short lines rather than one long one: it buys the active biome's name ~22px of the row. */
@@ -467,18 +392,7 @@
  * button above already reads it out, so on screen this is a caption, not a second thing to find.
  */
 .environment-line {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-    color: var(--ev-on-dark-muted);
-    font-size: var(--ev-fs-xs);
-    font-weight: 700;
-    line-height: 1.3;
-    text-align: center;
-    text-shadow: var(--ev-shadow-text-on-scene);
-    overflow-wrap: anywhere;
+    display: none;
 }
 
 .environment-detail {
@@ -608,21 +522,139 @@
 /* -------------------------------------------------------------------------- */
 
 .battle-screen__decision {
-    position: relative;
     z-index: 1;
     display: grid;
-    gap: 6px;
+    gap: var(--ev-s-2);
     flex: 0 0 auto;
-    margin: 0 -8px;
-    padding: 8px 8px 2px;
-    border-radius: var(--ev-r-xl) var(--ev-r-xl) 0 0;
-    /* Keeps light labels legible over whatever biome art sits behind them. */
-    background: linear-gradient(180deg, rgba(6, 20, 15, 0) 0%, rgba(6, 20, 15, .58) 30%, rgba(6, 20, 15, .74) 100%);
+    margin: 0 calc(var(--ev-s-2) * -1);
 }
 
 .gene-carousel {
     display: grid;
-    gap: 6px;
+    gap: var(--ev-s-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Equipped mutations                                                         */
+/* -------------------------------------------------------------------------- */
+
+.mutation-loadout {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-2);
+    min-width: 0;
+}
+
+.mutation-loadout__label {
+    color: var(--ev-player-light);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    letter-spacing: var(--ev-track-label);
+    text-transform: uppercase;
+}
+
+.mutation-loadout__items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ev-s-2);
+    min-width: 0;
+}
+
+.mutation-slot {
+    display: grid;
+    grid-template-columns: var(--ev-touch-min) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--ev-s-1);
+    min-width: 0;
+    min-height: var(--ev-touch-min);
+}
+
+.mutation-slot__icon {
+    display: grid;
+    place-items: center;
+    width: var(--ev-touch-min);
+    height: var(--ev-touch-min);
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-lg);
+    background: var(--ev-glass-strong);
+    border: var(--ev-stroke-width) solid var(--ev-stroke-light-soft);
+    box-shadow: var(--ev-shadow-sm);
+}
+
+.mutation-slot__copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.mutation-slot__copy > strong {
+    color: var(--ev-on-dark);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+}
+
+.mutation-slot__copy > small {
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 700;
+}
+
+.mutation-slot__state {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ev-s-1);
+    color: var(--ev-on-dark-muted);
+    font-size: var(--ev-fs-2xs);
+    font-weight: 800;
+}
+
+.mutation-slot__state i {
+    display: block;
+    width: var(--ev-s-2);
+    height: var(--ev-s-2);
+    border-radius: var(--ev-r-pill);
+    background: var(--ev-on-dark-muted);
+}
+
+.mutation-slot--available .mutation-slot__icon,
+.mutation-slot--available .mutation-slot__state {
+    color: var(--ev-player-light);
+}
+
+.mutation-slot--available .mutation-slot__state i {
+    background: var(--ev-player-light);
+}
+
+.mutation-slot--armed .mutation-slot__icon,
+.mutation-slot--armed .mutation-slot__state {
+    color: var(--ev-player-light);
+}
+
+.mutation-slot--armed .mutation-slot__icon {
+    background: var(--ev-grad-player);
+    border-color: var(--ev-player-light);
+}
+
+.mutation-slot--armed .mutation-slot__state i {
+    background: var(--ev-player-light);
+}
+
+.mutation-slot--consumed {
+    opacity: var(--ev-mutation-consumed-opacity);
+    filter: grayscale(var(--ev-mutation-consumed-grayscale));
+}
+
+.mutation-slot--linked .mutation-slot__icon,
+.mutation-slot--linked .mutation-slot__state {
+    color: var(--ev-gold-light);
+}
+
+.mutation-slot--linked .mutation-slot__state i {
+    background: var(--ev-gold-light);
 }
 
 /*
@@ -1143,11 +1175,6 @@
         flex-basis: var(--ev-battle-arena-basis-tight);
     }
 
-    .duel-mutation {
-        width: var(--ev-mutation-slot-size-compact);
-        height: var(--ev-mutation-slot-size-compact);
-    }
-
     /*
      * On the container, not the orb: `.gene-orbs` derives its own reserved space from this, so setting
      * it on the child would shrink the orbs and leave the reservation sized for the old ones.
@@ -1219,6 +1246,18 @@
     .gene-matchup {
         gap: var(--ev-s-2);
         padding-inline: var(--ev-s-2);
+    }
+
+    .mutation-loadout {
+        gap: var(--ev-s-1);
+    }
+
+    .mutation-loadout__items {
+        gap: var(--ev-s-1);
+    }
+
+    .mutation-slot__copy > strong {
+        font-size: var(--ev-fs-2xs);
     }
 
     .duel-card__name {

@@ -1,14 +1,12 @@
-import { Avatar, Button, IconButton, Pips, PopoverMenu } from '../../../ui/components'
-import { BackIcon, BoltIcon, EyeIcon, MeteorIcon, ShieldCheckIcon, SparkIcon, TrophyIcon } from '../../../ui/icons'
-import type { CombatMutationSlotV2, DuelPlayerV2, RoundInfoV2 } from '../controller/types'
+import { Avatar, Button, Pips, PopoverMenu } from '../../../ui/components'
+import { BackIcon, TrophyIcon } from '../../../ui/icons'
+import type { DuelPlayerV2, RoundInfoV2 } from '../controller/types'
 
 type DuelHeaderProps = {
     player: DuelPlayerV2
     opponent: DuelPlayerV2
     round: RoundInfoV2
     onRequestLeave: () => void
-    onActivateSymbiosis?: () => void
-    onActivateFineDelMondo?: () => void
 }
 
 function statusLabel(status: DuelPlayerV2['status']): string {
@@ -21,67 +19,6 @@ function statusLabel(status: DuelPlayerV2['status']): string {
     }
 
     return 'Sta scegliendo'
-}
-
-function mutationStatusLabel(status: CombatMutationSlotV2['status']): string {
-    if (status === 'armed') {
-        return 'attiva'
-    }
-
-    if (status === 'consumed') {
-        return 'consumata'
-    }
-
-    if (status === 'linked') return 'collegata'
-
-    return 'disponibile'
-}
-
-function MutationIcon({ iconKey }: { iconKey: CombatMutationSlotV2['iconKey'] }) {
-    switch (iconKey) {
-        case 'elastic-limbs':
-            return <BoltIcon />
-        case 'adaptive-core':
-            return <EyeIcon />
-        case 'armored-memory':
-            return <ShieldCheckIcon />
-        case 'fine-del-mondo':
-            return <MeteorIcon />
-        default:
-            return <SparkIcon />
-    }
-}
-
-function MutationSlots({ mutations, side, onActivateSymbiosis, onActivateFineDelMondo }: { mutations: CombatMutationSlotV2[]; side: 'player' | 'opponent'; onActivateSymbiosis?: () => void; onActivateFineDelMondo?: () => void }) {
-    if (!mutations.length) {
-        return null
-    }
-
-    return (
-        <div className={`duel-card__mutations duel-card__mutations--${side}`} role="list" aria-label={`Mutazioni ${side === 'player' ? 'del giocatore' : 'dell avversario'}`}>
-            {mutations.map((mutation) => {
-                const stateLabel = mutationStatusLabel(mutation.status)
-
-                const label = `${mutation.label}, ${stateLabel}. ${mutation.shortDescription}${mutation.linkLabel ? ` ${mutation.linkLabel}.` : ''}`
-                const activate = mutation.id === 'SYMBIOSIS' ? onActivateSymbiosis : mutation.id === 'FINE_DEL_MONDO' ? onActivateFineDelMondo : undefined
-                const canActivate = side === 'player' && mutation.status === 'available' && activate
-                return (
-                    <span key={mutation.id} className="duel-mutation-wrap" role="listitem">
-                        {canActivate ? (
-                            <IconButton label={`Attiva ${mutation.label}`} className={`duel-mutation duel-mutation--${mutation.status}`} onClick={activate}>
-                                <MutationIcon iconKey={mutation.iconKey} />
-                            </IconButton>
-                        ) : (
-                            <span className={`duel-mutation duel-mutation--${mutation.status}`} title={label} aria-label={label}>
-                                <MutationIcon iconKey={mutation.iconKey} />
-                            </span>
-                        )}
-                        {mutation.linkLabel ? <small className="duel-mutation__link" title={mutation.linkLabel}>{mutation.linkLabel}</small> : null}
-                    </span>
-                )
-            })}
-        </div>
-    )
 }
 
 function PlayerProfileMenu({ player, status, onRequestLeave }: { player: DuelPlayerV2; status: DuelPlayerV2['status']; onRequestLeave: () => void }) {
@@ -151,12 +88,11 @@ function DuelCard({ player, role, side, round, onRequestLeave }: { player: DuelP
     )
 }
 
-export function DuelHeader({ player, opponent, round, onRequestLeave, onActivateSymbiosis, onActivateFineDelMondo }: DuelHeaderProps) {
+export function DuelHeader({ player, opponent, round, onRequestLeave }: DuelHeaderProps) {
     return (
         <header className="duel-header" aria-label="Stato dello scontro">
             <div className="duel-header__competitor duel-header__competitor--player">
                 <DuelCard player={player} role="Tu" side="player" round={round} onRequestLeave={onRequestLeave} />
-                <MutationSlots mutations={player.combatMutations ?? []} side="player" onActivateSymbiosis={onActivateSymbiosis} onActivateFineDelMondo={onActivateFineDelMondo} />
             </div>
             {/*
               * VS and, under it, one dot per scheduled round lit as the match advances. Its own column
@@ -177,7 +113,6 @@ export function DuelHeader({ player, opponent, round, onRequestLeave, onActivate
             </div>
             <div className="duel-header__competitor duel-header__competitor--opponent">
                 <DuelCard player={opponent} role="Avversario" side="opponent" round={round} />
-                <MutationSlots mutations={opponent.combatMutations ?? []} side="opponent" />
             </div>
         </header>
     )

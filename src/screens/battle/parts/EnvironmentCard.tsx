@@ -72,7 +72,7 @@ export function EnvironmentCard({ roundEvent, nextRoundEvent }: EnvironmentCardP
 
     return (
         <>
-            <Panel className="environment-row" compact>
+            <Panel variant="glass" className="environment-row" compact>
                 <button
                     type="button"
                     className="environment-row__main"
