@@ -105,19 +105,20 @@ describe('stable layout', () => {
 })
 
 describe('stage sizing', () => {
-    it('keeps the forms rail from inflating the column the creature is measured against', () => {
+    it('keeps the carousel from inflating the column the creature is measured against', () => {
         /*
-         * The rail and the artwork share a grid column. An implicit `auto` track is sized by its
-         * widest item's max-content, and the rail's max-content is every unlocked form laid side by
-         * side — so a long lineage stretched the column far past the viewport, the artwork inherited
-         * that width through `width: 100%`, and `100cqw` stopped bounding anything. The fitted sprite
-         * rendered enormous and ran off the right edge. A `1fr` track with a zero minimum cannot be
-         * inflated from inside it. Nothing about this is visible in jsdom, hence the text.
+         * The carousel and the artwork share a grid column. An implicit `auto` track is sized by its
+         * widest item's max-content, and the carousel's max-content is every unlocked form laid side
+         * by side — so a long lineage stretched the column far past the viewport, the artwork
+         * inherited that width through `width: 100%`, and `100cqw` stopped bounding anything. The
+         * fitted sprite rendered enormous and ran off the right edge. A `1fr` track with a zero
+         * minimum cannot be inflated from inside it. Nothing about this is visible in jsdom, hence
+         * the text. The forms rail that first exposed this is gone; the carousel inherits the risk.
          */
         expect(block(home, '.home-stage')).toContain('grid-template-columns: minmax(0, 1fr)')
-        expect(block(home, '.home-forms')).toContain('overflow-x: auto')
-        // `max-width` was the bug's disguise: it resolved against the track the rail had inflated.
-        expect(block(home, '.home-forms')).not.toContain('max-width')
+        expect(block(home, '.home-stage__carousel')).toContain('overflow-x: auto')
+        // `max-width` was the bug's disguise: it resolved against the track the row had inflated.
+        expect(block(home, '.home-stage__carousel')).not.toContain('max-width')
     })
 
     it('bounds the unmeasured sprite by the padded box, not the box around it', () => {

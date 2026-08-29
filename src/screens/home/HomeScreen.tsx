@@ -17,11 +17,25 @@ type HomeScreenProps = {
 }
 
 /**
+ * How many forms either side of the selected one are fetched ahead of it.
+ *
+ * One, so a swipe lands on a sprite that is already there. Fetching the whole lineage instead is
+ * what made a page load cost 1.08 MB at eleven forms and grow by ~90 KB with every evolution: you
+ * see one form, and `loading="lazy"` holds nothing back because the carousel is a horizontal row
+ * already inside the viewport.
+ */
+const PREFETCHED_NEIGHBOURS = 1
+
+/**
  * The carousel mounts one of these per past form. Only the form on screen is worth fetching, and
  * only that one is worth measuring: the measurement loads its own copy of the sprite, so measuring
  * every slide would double an already unnecessary download.
+ *
+ * `isFetchable` is what enforces the first half of that. Without a `src` the element makes no
+ * request at all — the slide is sized by the carousel rather than by the image, so an empty one
+ * still holds its place in the scroll snap.
  */
-function CreatureArt({ image, isActive }: { image: HomeCreatureImage; isActive: boolean }) {
+function CreatureArt({ image, isActive, isFetchable }: { image: HomeCreatureImage; isActive: boolean; isFetchable: boolean }) {
     const [source, setSource] = useState(image.src)
     const [hasFailed, setHasFailed] = useState(false)
     const [subject, setSubject] = useState<CreatureSubject | null>(null)
@@ -69,8 +83,8 @@ function CreatureArt({ image, isActive }: { image: HomeCreatureImage; isActive: 
     return (
         <img
             className={`home-stage__creature ${subject ? 'home-stage__creature--fitted' : ''}`}
-            src={source}
-            alt={image.alt}
+            src={isFetchable ? source : undefined}
+            alt={isFetchable ? image.alt : ''}
             loading={isActive ? 'eager' : 'lazy'}
             style={style}
             onError={() => {
@@ -99,6 +113,11 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const visualVersionKey = visualVersions.map((version) => version.id).join(',')
     // --- state (seeded from the current visual above) ---------------------------
     const [selectedVisualId, setSelectedVisualId] = useState(currentVisualId)
+    /*
+     * Every form the carousel has been allowed to fetch so far. It only ever grows: dropping a
+     * `src` after a swipe away would just make the swipe back ask for the sprite a second time.
+     */
+    const [fetchableVisualIds, setFetchableVisualIds] = useState<ReadonlySet<string>>(() => new Set<string>())
     // --- derived ---------------------------------------------------------------
     const openPlayModes = useCallback(() => setIsPlayModesOpen(true), [])
     const closePlayModes = useCallback(() => setIsPlayModesOpen(false), [])
@@ -108,6 +127,14 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
     const selectedVisual = visualVersions.find((version) => version.id === selectedVisualId)
         ?? visualVersions.find((version) => version.isCurrent)
         ?? visualVersions.at(-1)
+    const selectedVisualIndex = visualVersions.findIndex((version) => version.id === selectedVisual?.id)
+    /* The forms the carousel may ask for, as one comparable value the effect below can depend on. */
+    const fetchableNeighbourKey = selectedVisualIndex < 0
+        ? ''
+        : visualVersions
+            .slice(Math.max(0, selectedVisualIndex - PREFETCHED_NEIGHBOURS), selectedVisualIndex + PREFETCHED_NEIGHBOURS + 1)
+            .map((version) => version.id)
+            .join(',')
 
     // --- effects ---------------------------------------------------------------
     useEffect(() => {
@@ -122,6 +149,18 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
             carousel.scrollLeft = currentVisualIndex * Math.max(carousel.clientWidth, 1)
         }
     }, [currentVisualId, currentVisualIndex, visualVersionKey])
+
+    useEffect(() => {
+        if (!fetchableNeighbourKey) return
+
+        setFetchableVisualIds((current) => {
+            const next = new Set(current)
+
+            for (const id of fetchableNeighbourKey.split(',')) next.add(id)
+
+            return next.size === current.size ? current : next
+        })
+    }, [fetchableNeighbourKey])
     // --- handlers --------------------------------------------------------------
     function selectVisualAt(index: number) {
         const version = visualVersions[index]
@@ -285,6 +324,16 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                 }}
                                 onPointerDown={(event) => {
                                     if (event.pointerType !== 'mouse') return
+                                    /*
+                                     * Without this the browser claims the gesture for its own
+                                     * panning and answers the capture with `pointercancel`, which
+                                     * drops the drag before the first move — so a mouse could pull
+                                     * the carousel exactly once and then never again. Suppressing
+                                     * the default also suppresses the focus that came with it, so
+                                     * the arrow keys get it back by hand.
+                                     */
+                                    event.preventDefault()
+                                    event.currentTarget.focus({ preventScroll: true })
                                     dragStartRef.current = { x: event.clientX, scrollLeft: event.currentTarget.scrollLeft }
                                     event.currentTarget.setPointerCapture(event.pointerId)
                                 }}
@@ -310,43 +359,14 @@ export function HomeScreen({ viewModel, actions }: HomeScreenProps) {
                                         aria-hidden={version.id !== selectedVisual?.id}
                                         data-testid={`home-creature-form-${version.id}`}
                                     >
-                                        <CreatureArt image={version.image} isActive={version.id === selectedVisual?.id} />
+                                        <CreatureArt
+                                            image={version.image}
+                                            isActive={version.id === selectedVisual?.id}
+                                            isFetchable={fetchableVisualIds.has(version.id)}
+                                        />
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                        {/*
-                          * The lineage, and the space under a smaller creature it fills.
-                          *
-                          * Every thumbnail points at the same signed URL its slide does, so the two
-                          * share one download — the rail costs no egress beyond the forms the
-                          * carousel would fetch anyway, which is why it is `lazy` and not eager.
-                          * It replaces the row of dots: same job, one tap instead of N swipes.
-                          */}
-                        <div className="home-forms" role="tablist" aria-label="Forme sbloccate della creatura" data-testid="home-forms-rail">
-                            {visualVersions.map((version, index) => (
-                                <button
-                                    key={version.id}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={version.id === selectedVisual?.id}
-                                    className={`home-forms__item ${version.id === selectedVisual?.id ? 'is-selected' : ''}`}
-                                    onClick={() => selectVisualAt(index)}
-                                    data-testid={`home-forms-item-${version.id}`}
-                                >
-                                    <img
-                                        src={version.image.src}
-                                        alt=""
-                                        loading="lazy"
-                                        onError={(event) => {
-                                            if (event.currentTarget.src !== version.image.fallbackSrc) {
-                                                event.currentTarget.src = version.image.fallbackSrc
-                                            }
-                                        }}
-                                    />
-                                    <span>{version.isCurrent ? 'Attuale' : `Gen ${version.generation - 1}`}</span>
-                                </button>
-                            ))}
                         </div>
                     </section>
                 ) : null}
