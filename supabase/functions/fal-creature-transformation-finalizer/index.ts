@@ -65,6 +65,13 @@ import {
     readGeminiVisualInspectionConfiguration,
 } from './gemini-visual-inspection-service.ts'
 import { flipImageHorizontallyToPng } from '../generate-creature-transformation/edge-image-codec.ts'
+import {
+    createRelativeHeightComparison,
+} from '../../../shared/creature-transformations/relative-height-comparison.ts'
+import {
+    GeminiRelativeHeightComparisonService,
+    readGeminiRelativeHeightComparisonConfiguration,
+} from './gemini-relative-height-comparison-service.ts'
 
 /**
  * This function deliberately carries no generated database types: every row that crosses a
@@ -107,7 +114,7 @@ function createPlayerRepository(supabaseAdmin: SupabaseAdminClient): PlayerCreat
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('player_creatures')
-                .select('id, profile_id, base_creature_key, current_visual_version_id')
+                .select('id, profile_id, base_creature_key, height_meters, current_visual_version_id')
                 .eq('id', creatureId)
                 .maybeSingle()
             if (error) throw error
@@ -116,6 +123,10 @@ function createPlayerRepository(supabaseAdmin: SupabaseAdminClient): PlayerCreat
                       id: String(data.id),
                       profileId: String(data.profile_id),
                       baseCreatureKey: String(data.base_creature_key),
+                      heightMeters:
+                          typeof data.height_meters === 'number' || typeof data.height_meters === 'string'
+                              ? Number(data.height_meters)
+                              : null,
                       currentVisualVersionId:
                           typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
                   }
@@ -476,6 +487,74 @@ async function inspectSeedreamVisual(input: {
     }
 }
 
+/**
+ * This comparison intentionally begins only after the provider image passed every technical
+ * gate and any deterministic mirror correction. It is advisory metadata: a missing source,
+ * provider failure or ambiguous pose never blocks the asset from reaching owner review.
+ */
+async function compareSeedreamRelativeHeight(input: {
+    record: CreatureTransformationRequestRecord
+    workflow: ReturnType<typeof parseFalQueueWorkflow>
+    image: Uint8Array<ArrayBuffer>
+    mimeType: 'image/png' | 'image/jpeg'
+    resolver: SupabaseCreatureIdentityResolver
+    storage: SupabaseCreatureTransformationStorageAdapter
+}): Promise<ReturnType<typeof createRelativeHeightComparison> | null> {
+    const existing = input.record.visualInspection?.heightComparison
+    if (existing) return existing
+    const workflow = input.workflow
+    if (!workflow || workflow.kind !== 'SEEDREAM_PRODUCTION') return null
+
+    try {
+        const source = await input.resolver.resolve({
+            profileId: input.record.profileId,
+            creatureId: input.record.creatureId,
+        })
+        if (
+            input.record.sourceVisualVersionId &&
+            input.record.sourceVisualVersionId !== source.currentVisualVersionId
+        ) {
+            console.warn('fal.finalizer.seedream_relative_height_source_conflict', {
+                providerRequestId: input.record.providerRequestId,
+            })
+            return null
+        }
+        const sourceImage = await input.storage.readVisualVersionSource(
+            workflow.source.path,
+            workflow.source.isBaseVersion,
+        )
+        const assessment = await new GeminiRelativeHeightComparisonService(
+            readGeminiRelativeHeightComparisonConfiguration((name) => Deno.env.get(name)),
+        ).compare({
+            sourceImage: sourceImage.bytes,
+            sourceMimeType: sourceImage.mimeType,
+            resultImage: input.image,
+            resultMimeType: input.mimeType,
+            sourceVersionId: input.record.sourceVisualVersionId ?? source.currentVisualVersionId,
+            sourceHeightMeters: source.heightMeters,
+        })
+        const comparison = createRelativeHeightComparison({
+            sourceVersionId: input.record.sourceVisualVersionId ?? source.currentVisualVersionId,
+            sourceHeightMeters: source.heightMeters,
+            assessment,
+        })
+        console.info('fal.finalizer.seedream_relative_height', {
+            providerRequestId: input.record.providerRequestId,
+            status: assessment.status,
+            confidence: assessment.confidence,
+            change: assessment.change,
+            persisted: Boolean(comparison),
+        })
+        return comparison
+    } catch (error) {
+        console.warn('fal.finalizer.seedream_relative_height_unavailable', {
+            providerRequestId: input.record.providerRequestId,
+            reason: redactErrorMessage(error, 180),
+        })
+        return null
+    }
+}
+
 async function finalizeSeedreamProduction(input: {
     record: CreatureTransformationRequestRecord
     image: FalQueuedImage
@@ -602,6 +681,17 @@ async function finalizeSeedreamProduction(input: {
                 persistedMimeType: mirrored.mimeType,
             })
         }
+    }
+    const heightComparison = await compareSeedreamRelativeHeight({
+        record: input.record,
+        workflow,
+        image: rawImage.bytes,
+        mimeType: rawImage.mimeType,
+        resolver: input.resolver,
+        storage: input.storage,
+    })
+    if (persistedInspection && heightComparison) {
+        persistedInspection = Object.freeze({ ...persistedInspection, heightComparison })
     }
     await input.storage.saveRawResult({
         profileId: input.record.profileId,

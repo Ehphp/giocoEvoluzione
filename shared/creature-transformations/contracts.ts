@@ -26,6 +26,8 @@ export type ResolvedCreatureSource = {
     sourceIsBaseVersion: boolean
     currentVisualVersionId: string
     currentVersionNumber: number
+    /** Canonical biological height captured before generating the next visual version. */
+    heightMeters: number
     previousTransformations: PreviousCreatureTransformationSummary[]
     /** Canonical topology: the starter body plan plus every adopted structural mutation. */
     bodyPlan: CreatureBodyPlan | null

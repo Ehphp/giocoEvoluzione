@@ -73,7 +73,7 @@ function createRepository(supabaseAdmin: SupabaseAdminClient, requestId: string)
         async findByCreatureId(creatureId) {
             const { data, error } = await supabaseAdmin
                 .from('player_creatures')
-                .select('id, profile_id, base_creature_key, current_visual_version_id')
+                .select('id, profile_id, base_creature_key, height_meters, current_visual_version_id')
                 .eq('id', creatureId)
                 .maybeSingle()
             if (error) {
@@ -88,6 +88,10 @@ function createRepository(supabaseAdmin: SupabaseAdminClient, requestId: string)
                 id: String(data.id),
                 profileId: String(data.profile_id),
                 baseCreatureKey: String(data.base_creature_key),
+                heightMeters:
+                    typeof data.height_meters === 'number' || typeof data.height_meters === 'string'
+                        ? Number(data.height_meters)
+                        : null,
                 currentVisualVersionId:
                     typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
             }

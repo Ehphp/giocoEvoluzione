@@ -1,4 +1,8 @@
 import type { EvolutionTargetId } from './evolution-targets.ts'
+import {
+    parseRelativeHeightComparison,
+    type RelativeHeightComparison,
+} from './relative-height-comparison.ts'
 
 export const VISUAL_INSPECTION_SCHEMA_VERSION = 'visual-inspection-v1'
 export const OBSERVED_VISUAL_STATE_SCHEMA_VERSION = 'observed-visual-v1'
@@ -116,6 +120,8 @@ export type VisualInspection = Readonly<{
     observedVisualState?: ObservedVisualState
     orientationArbiter?: OrientationArbiterAssessment
     assetCorrection?: HorizontalMirrorAssetCorrection
+    /** Accepted post-generation comparison with the immediately preceding visual version. */
+    heightComparison?: RelativeHeightComparison
 }>
 
 type RecordValue = Record<string, unknown>
@@ -414,6 +420,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
                     'observedVisualState',
                     'orientationArbiter',
                     'assetCorrection',
+                    'heightComparison',
                 ].includes(key),
         )
     )
@@ -437,6 +444,8 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         item.orientationArbiter === undefined ? undefined : parseOrientationArbiterAssessment(item.orientationArbiter)
     const assetCorrection =
         item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
+    const heightComparison =
+        item.heightComparison === undefined ? undefined : parseRelativeHeightComparison(item.heightComparison)
     if (
         !inspectedAt ||
         (detector?.status !== 'COMPLETE' && detector?.status !== 'UNAVAILABLE') ||
@@ -450,7 +459,8 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         !structuralConcerns ||
         (item.observedVisualState !== undefined && !observed) ||
         (item.orientationArbiter !== undefined && !orientationArbiter) ||
-        (item.assetCorrection !== undefined && !assetCorrection)
+        (item.assetCorrection !== undefined && !assetCorrection) ||
+        (item.heightComparison !== undefined && !heightComparison)
     )
         return null
     return Object.freeze({
@@ -467,6 +477,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         ...(observed ? { observedVisualState: observed } : {}),
         ...(orientationArbiter ? { orientationArbiter } : {}),
         ...(assetCorrection ? { assetCorrection } : {}),
+        ...(heightComparison ? { heightComparison } : {}),
     })
 }
 

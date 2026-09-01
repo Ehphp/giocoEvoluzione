@@ -171,4 +171,19 @@ describe('visual inspection repair lifecycle', () => {
             results: ['UNCERTAIN', 'DIRECTIONAL_RIGHT'],
         })
     })
+
+    it('keeps a valid relative-height comparison optional and rejects malformed legacy extensions', () => {
+        const heightComparison = {
+            schemaVersion: 'relative-height-v1',
+            sourceVersionId: 'version-2',
+            sourceHeightMeters: 1.4,
+            resultHeightMeters: 1.512,
+            change: 'TALLER',
+            confidence: 0.8,
+            confounders: [],
+        }
+        expect(parseVisualInspection({ ...prior(), heightComparison })?.heightComparison).toEqual(heightComparison)
+        expect(parseVisualInspection({ ...prior(), heightComparison: { ...heightComparison, confidence: 0.2 } })).toBeNull()
+        expect(parseVisualInspection(prior())?.heightComparison).toBeUndefined()
+    })
 })

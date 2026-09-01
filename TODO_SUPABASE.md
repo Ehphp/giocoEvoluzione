@@ -1,5 +1,27 @@
 # TODO Supabase
 
+## 2026-09-01 â€” Confronto relativo dell'altezza dopo un'evoluzione
+
+Applicare `supabase/migrations/202609010002_adopt_relative_creature_height.sql` **dopo**
+`202609010001_creature_biological_height.sql`, quindi ridistribuire solo
+`fal-creature-transformation-finalizer`:
+
+```bash
+npx supabase db push
+npx supabase functions deploy fal-creature-transformation-finalizer
+```
+
+Il finalizer richiede `GEMINI_API_KEY`, lo stesso secret gia usato da Vision 1/2. Opzionalmente `CREATURE_RELATIVE_HEIGHT_MODEL` e
+`CREATURE_RELATIVE_HEIGHT_TIMEOUT_MS` separano modello e timeout dal resto di Vision; in loro
+assenza riusa `CREATURE_VISION_MODEL` e 4 s. Il confronto e non bloccante: errore, timeout,
+framing ambiguo o dati legacy mantengono l'altezza sorgente.
+
+Smoke test: generare e adottare un'evoluzione con un cambiamento di silhouette evidente, verificare
+`creature_transformation_requests.visual_inspection.heightComparison`, la copia in
+`creature_visual_versions.visual_inspection` e il conseguente aggiornamento di
+`player_creatures.height_meters`. Ripetere con un output ambiguo: proposta e adozione devono
+riuscire, senza cambiare `height_meters`.
+
 ## 2026-09-01 — Altezza biologica canonica delle creature
 
 Applicare `supabase/migrations/202609010001_creature_biological_height.sql` al progetto Supabase

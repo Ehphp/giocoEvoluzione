@@ -8,11 +8,13 @@ import type { PreviousCreatureTransformationSummary } from '../../../shared/crea
 import { resolveCanonicalBodyPlan } from '../../../shared/creature-transformations/flux-evolution/body-plan-registry.ts'
 import type { BodyPlanMutationId } from '../../../shared/creature-transformations/flux-evolution/body-plan-mutations.ts'
 import type { VisualInspection } from '../../../shared/creature-transformations/visual-inspection.ts'
+import { resolveCreatureHeightMeters } from '../../../shared/creature-scale.ts'
 
 export type StoredPlayerCreature = Readonly<{
     id: string
     profileId: string
     baseCreatureKey: string
+    heightMeters?: number | null
     currentVisualVersionId?: string | null
 }>
 
@@ -178,6 +180,7 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
             currentVisualVersionId:
                 currentVisualVersion?.id ?? creature.currentVisualVersionId ?? `base:${creature.id}`,
             currentVersionNumber: currentVisualVersion?.versionNumber ?? 1,
+            heightMeters: resolveCreatureHeightMeters(creature.heightMeters, creature.baseCreatureKey),
             visualInspection: currentVisualVersion?.visualInspection ?? null,
             // The full adopted history is needed to reconstruct permanent body-plan mutations.
             // Prompt lineage itself is bounded separately by the evolution planner.

@@ -70,6 +70,18 @@ describe('Fal webhook and finalization boundary', () => {
         )
     })
 
+    it('runs the independent relative-height comparison only for the validated final image and reuses persisted metadata', () => {
+        expect(finalizer).toContain('GeminiRelativeHeightComparisonService')
+        expect(seedreamFinalizer.indexOf('flipImageHorizontallyToPng')).toBeLessThan(
+            seedreamFinalizer.indexOf('compareSeedreamRelativeHeight'),
+        )
+        expect(seedreamFinalizer.indexOf('compareSeedreamRelativeHeight')).toBeLessThan(
+            seedreamFinalizer.indexOf('saveRawResult'),
+        )
+        expect(finalizer).toContain('input.record.visualInspection?.heightComparison')
+        expect(finalizer).toContain('createRelativeHeightComparison')
+    })
+
     it('rejects a Vision-verified center-facing Seedream image before it can reach raw storage or background removal', () => {
         expect(seedreamFinalizer).toContain('shouldRejectSeedreamCenterFacing')
         expect(seedreamFinalizer).toContain("'SEEDREAM_CENTER_FACING'")

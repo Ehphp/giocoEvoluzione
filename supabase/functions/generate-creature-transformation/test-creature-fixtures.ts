@@ -36,6 +36,7 @@ export function createResolvedCreatureSource(
         sourceIsBaseVersion: true,
         currentVisualVersionId: '00000000-0000-4000-8000-000000000010',
         currentVersionNumber: 1,
+        heightMeters: 1.4,
         previousTransformations,
         adoptedBodyPlanMutationIds,
         bodyPlan: resolveCanonicalBodyPlan({

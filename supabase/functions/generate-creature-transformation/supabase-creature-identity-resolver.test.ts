@@ -39,6 +39,29 @@ describe('SupabaseCreatureIdentityResolver', () => {
             'verdant-hatchling/e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605.png',
         )
         expect(result.sourceSha256).toBe('e0b9875bc155ffa2ba00e7d83e86c8e791ccc48d539c11d3fcfd5d7fced65605')
+        expect(result.heightMeters).toBe(1.4)
+    })
+
+    it('carries the canonical height and safely falls back for a legacy record', async () => {
+        const explicit = await new SupabaseCreatureIdentityResolver(
+            createRepository({
+                id: 'creature-1',
+                profileId: 'profile-1',
+                baseCreatureKey: 'VERDANT_HATCHLING',
+                heightMeters: 1.8,
+            }),
+        ).resolve({ profileId: 'profile-1', creatureId: 'creature-1' })
+        const legacy = await new SupabaseCreatureIdentityResolver(
+            createRepository({
+                id: 'creature-2',
+                profileId: 'profile-1',
+                baseCreatureKey: 'VERDANT_HATCHLING',
+                heightMeters: Number.NaN,
+            }),
+        ).resolve({ profileId: 'profile-1', creatureId: 'creature-2' })
+
+        expect(explicit.heightMeters).toBe(1.8)
+        expect(legacy.heightMeters).toBe(1.4)
     })
 
     it('rejects missing, foreign and unsupported creature records', async () => {
