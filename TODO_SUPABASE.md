@@ -1,5 +1,23 @@
 # TODO Supabase
 
+## 2026-09-01 — Altezza biologica canonica delle creature
+
+Applicare `supabase/migrations/202609010001_creature_biological_height.sql` al progetto Supabase
+`xvzolxmatmibxbqaixxc`:
+
+```bash
+npx supabase db push
+```
+
+La migration aggiunge `player_creatures.height_meters`, popola le creature esistenti con l'altezza
+starter/riferimento di `1.4m` e assicura tramite trigger che gli snapshot delle nuove partite
+ricevano `heightMeters` dal record canonico. Non modifica snapshot storici: il client li legge con
+un fallback centralizzato.
+
+Dopo il deploy: creare una partita PvP e una contro il bot, controllare in `players.creature_snapshot`
+che la creatura umana contenga `heightMeters`, poi verificare la battaglia con una creatura a
+un'altezza diversa da `1.4m`. Nessun secret o deploy di Edge Function è richiesto.
+
 ## 2026-08-29 — Eliminazione di una stirpe con pulizia Storage
 
 Il frontend ora invoca l'Edge Function autenticata `delete-creature-lineage`, anziché chiamare

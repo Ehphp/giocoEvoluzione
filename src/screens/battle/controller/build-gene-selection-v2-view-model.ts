@@ -7,11 +7,13 @@ import { getValidatedActionBreakdown, getValidatedTraitUseBreakdown } from '../.
 import { TRAIT_CATALOG } from '../../../game/traits-catalog'
 import { getRoundEventLabel } from '../../../game/ui-context'
 import type { RoundEventDefinition, TraitCollection, TraitType } from '../../../game/types'
-import type { GameSnapshot } from '../../../lib/game-api'
+import type { GameSnapshot, PlayerRecord } from '../../../lib/game-api'
+import { resolveCreatureHeightMeters } from '../../../../shared/creature-scale.ts'
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
     DEFAULT_BATTLE_PLAYER_CREATURE,
     GAME_SELECTION_ASSETS,
+    type CreatureVisual,
     getEventAssetByArtKey,
     getGeneAssetByTrait,
 } from './gene-selection-assets'
@@ -41,6 +43,15 @@ type BuildGeneSelectionV2ViewModelInput = {
 
 function mapAffinity(score: number): GeneAffinityV2 {
     return score === 2 ? 'ideal' : score === 1 ? 'suitable' : 'unfavorable'
+}
+
+function buildBattleCreatureVisual(defaultVisual: CreatureVisual, player: PlayerRecord | null | undefined): CreatureVisual {
+    const snapshot = player?.creature_snapshot
+
+    return {
+        ...defaultVisual,
+        heightMeters: resolveCreatureHeightMeters(snapshot?.heightMeters, snapshot?.baseCreatureKey),
+    }
 }
 
 function validateTraits(traits: TraitCollection | null | undefined): boolean {
@@ -316,7 +327,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 score: 0,
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
-                creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
+                creatureVisual: buildBattleCreatureVisual(DEFAULT_BATTLE_PLAYER_CREATURE, me),
                 combatMutations: [],
                 status: 'choosing',
             },
@@ -326,7 +337,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
                 score: 0,
                 roundValueTotal: null,
                 avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
-                creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
+                creatureVisual: buildBattleCreatureVisual(DEFAULT_BATTLE_OPPONENT_CREATURE, opponent),
                 combatMutations: [],
                 status: 'choosing',
             },
@@ -413,7 +424,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             score: input.myScore,
             roundValueTotal: getRoundValueTotal(snapshot, me.slot),
             avatarUrl: GAME_SELECTION_ASSETS.playerAvatar,
-            creatureVisual: DEFAULT_BATTLE_PLAYER_CREATURE,
+            creatureVisual: buildBattleCreatureVisual(DEFAULT_BATTLE_PLAYER_CREATURE, me),
             combatMutations: buildCombatMutationSlots(me.combat_mutation_loadout, me.combat_mutation_state, me.id, symbiosisLinks, fineDelMondoActivations),
             status: resolvePlayerStatus(myHasSubmitted, me.connected),
         },
@@ -423,7 +434,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
             score: input.opponentScore,
             roundValueTotal: opponent ? getRoundValueTotal(snapshot, opponent.slot) : null,
             avatarUrl: GAME_SELECTION_ASSETS.opponentAvatar,
-            creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE,
+            creatureVisual: buildBattleCreatureVisual(DEFAULT_BATTLE_OPPONENT_CREATURE, opponent),
             combatMutations: opponent
                 ? buildCombatMutationSlots(opponent.combat_mutation_loadout, opponent.combat_mutation_state, opponent.id, symbiosisLinks, fineDelMondoActivations)
                 : [],

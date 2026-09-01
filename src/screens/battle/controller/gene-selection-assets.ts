@@ -1,18 +1,24 @@
+import { DEFAULT_CREATURE_HEIGHT_METERS } from '../../../../shared/creature-scale.ts'
 import type { TraitType } from '../../../game/types'
 import { ASSETS, type GeneAssetKey } from '../../../ui/assets'
 
 export type CreatureVisual = {
     src: string
     alt: string
+    /** Canonical biological height, used only by BattleArena. */
+    heightMeters: number
     /** Direction the original asset faces before battle presentation is applied. */
     nativeFacing?: 'left' | 'right'
-    /** Multiplier applied to the shared battle-stage creature size. */
-    scale?: number
+    /** Per-asset PNG framing correction; unrelated to biological size. */
+    assetCalibration?: number
     /** Percentage shift relative to the rendered creature asset. */
     offsetX?: number
     /** Percentage shift relative to the rendered creature asset. */
     offsetY?: number
 }
+
+/** A loaded visual may replace the asset while retaining the participant's biological data. */
+export type CreatureVisualSource = Pick<CreatureVisual, 'src' | 'alt' | 'nativeFacing' | 'offsetX' | 'offsetY'>
 
 export const GAME_SELECTION_ASSETS = {
     battleBackgroundDefault: ASSETS.scenery.forest,
@@ -29,10 +35,11 @@ export const GAME_SELECTION_ASSETS = {
 export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.playerCreature,
     alt: 'Creatura del giocatore verde',
+    heightMeters: DEFAULT_CREATURE_HEIGHT_METERS,
     nativeFacing: 'right',
     // Both starter sprites share the same arena footprint. Their transparent bounds are nearly
     // identical, so a shared presentation scale keeps the match visually fair.
-    scale: .95,
+    assetCalibration: .95,
     offsetX: 0,
     offsetY: 0,
 }
@@ -40,9 +47,10 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
 export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     src: GAME_SELECTION_ASSETS.opponentCreature,
     alt: 'Creatura avversaria viola',
+    heightMeters: DEFAULT_CREATURE_HEIGHT_METERS,
     // The supplied bot sprite already looks toward the left.
     nativeFacing: 'left',
-    scale: .95,
+    assetCalibration: .95,
     offsetX: 0,
     offsetY: 0,
 }

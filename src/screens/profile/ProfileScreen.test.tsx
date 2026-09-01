@@ -25,7 +25,7 @@ describe('ProfileScreen combat mutation loadout', () => {
         act(() => {
             root.render(createElement(ProfileScreen, {
                 profile: { id: 'profile', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
-                creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, heightMeters: 1.4, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
                 history: [], isLoadingHistory: false, errorMessage: null, onSetCombatMutationLoadout,
             }))
         })
@@ -50,7 +50,7 @@ describe('ProfileScreen combat mutation loadout', () => {
         act(() => {
             root.render(createElement(ProfileScreen, {
                 profile: { id: 'profile', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
-                creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature', profile_id: 'profile', lineage_id: 'lineage', base_creature_key: 'VERDANT_HATCHLING', name: 'Verdy', level: 1, experience: 0, progression_state: {}, heightMeters: 1.4, combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'], created_at: '2026-01-01', updated_at: '2026-01-01' },
                 history: [], isLoadingHistory: false, errorMessage: null, onOpenEvolution,
             }))
         })

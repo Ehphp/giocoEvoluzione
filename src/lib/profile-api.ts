@@ -3,6 +3,7 @@ import type { ProgressionOutcome } from './progression'
 import { requireSupabase } from './supabase'
 import { parseCombatMutationLoadout } from '../../shared/game-rules/state.ts'
 import type { CombatMutationLoadout } from '../../shared/game-rules/types.ts'
+import { resolveCreatureHeightMeters } from '../../shared/creature-scale.ts'
 
 export type ProfileRecord = {
     id: string
@@ -28,6 +29,8 @@ export type PlayerCreatureRecord = {
     level: number
     experience: number
     progression_state: Record<string, unknown>
+    /** Canonical biological height, in metres. */
+    heightMeters: number
     /** Present on every value returned by mapPlayerCreatureRecord; optional for legacy display fixtures only. */
     combat_mutation_loadout?: CombatMutationLoadout
     current_visual_version_id?: string | null
@@ -119,15 +122,18 @@ export function mapCompetitiveLeaderboardEntry(data: Record<string, unknown>): C
 }
 
 export function mapPlayerCreatureRecord(data: Record<string, unknown>): PlayerCreatureRecord {
+    const baseCreatureKey = String(data.base_creature_key)
+
     return {
         id: String(data.id),
         profile_id: String(data.profile_id),
         lineage_id: String(data.lineage_id),
-        base_creature_key: String(data.base_creature_key),
+        base_creature_key: baseCreatureKey,
         name: typeof data.name === 'string' ? data.name : null,
         level: Number(data.level),
         experience: Number(data.experience),
         progression_state: asRecord(data.progression_state),
+        heightMeters: resolveCreatureHeightMeters(data.height_meters, baseCreatureKey),
         combat_mutation_loadout: parseCombatMutationLoadout(data.combat_mutation_loadout, 'player_creature.combat_mutation_loadout'),
         current_visual_version_id: typeof data.current_visual_version_id === 'string' ? data.current_visual_version_id : null,
         created_at: String(data.created_at),

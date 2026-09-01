@@ -27,6 +27,7 @@ export const PREVIEW_CREATURE: PlayerCreatureRecord = {
     level: 4,
     experience: 108,
     progression_state: {},
+    heightMeters: 1.4,
     combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
     current_visual_version_id: 'preview-visual-3',
     created_at: '2026-01-04T10:00:00.000Z',

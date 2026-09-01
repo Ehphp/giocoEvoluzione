@@ -51,6 +51,7 @@ const CREATURE = {
     base_creature_key: 'VERDANT_HATCHLING',
     name: 'Verdello',
     level: 4,
+    heightMeters: 1.4,
 } as PlayerCreatureRecord
 
 let container: HTMLDivElement
@@ -101,7 +102,7 @@ describe('useMatchSession', () => {
             nickname: 'Naturalista',
             profileId: 'profile-1',
             creatureId: 'creature-1',
-            creatureSnapshot: { baseCreatureKey: 'VERDANT_HATCHLING', level: 4 },
+            creatureSnapshot: { baseCreatureKey: 'VERDANT_HATCHLING', level: 4, heightMeters: 1.4 },
         })
         expect(saveStoredSession).toHaveBeenCalledWith({
             playerId: 'player-1',

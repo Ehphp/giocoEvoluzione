@@ -44,6 +44,7 @@ function participantFrom(profile: ProfileRecord, creature: PlayerCreatureRecord,
             baseCreatureKey: creature.base_creature_key,
             name: creature.name,
             level: creature.level,
+            heightMeters: creature.heightMeters,
         },
     }
 }

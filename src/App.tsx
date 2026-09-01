@@ -22,7 +22,12 @@ import type { EvolutionTargetId } from '../shared/creature-transformations/evolu
 import { setMyCreatureCombatMutationLoadout } from './lib/profile-api'
 import type { CombatMutationLoadout } from '../shared/game-rules/types.ts'
 import type { GameSnapshot, PlayerRecord } from './lib/game-api'
-import type { CreatureVisual } from './screens/battle/controller/gene-selection-assets'
+import {
+  DEFAULT_BATTLE_OPPONENT_CREATURE,
+  DEFAULT_BATTLE_PLAYER_CREATURE,
+  type CreatureVisual,
+  type CreatureVisualSource,
+} from './screens/battle/controller/gene-selection-assets'
 import { isCreatureVisualProgressionEnabled, useEvolutionRoute } from './app/use-evolution-route'
 import { useCreatureVisuals } from './app/use-creature-visuals'
 import { useProfileActivity } from './app/use-profile-activity'
@@ -42,6 +47,21 @@ function getPlayerScore(snapshot: GameSnapshot, player: PlayerRecord | null): nu
   }
 
   return player.slot === 1 ? snapshot.game.player_1_score : snapshot.game.player_2_score
+}
+
+function mergeBattleCreatureVisual(
+  baseVisual: CreatureVisual | null | undefined,
+  fallbackVisual: CreatureVisual,
+  source: CreatureVisualSource | null | undefined,
+): CreatureVisual | null {
+  if (source === null) {
+    return null
+  }
+
+  return {
+    ...(baseVisual ?? fallbackVisual),
+    ...(source ?? {}),
+  }
 }
 
 function App() {
@@ -324,9 +344,9 @@ function App() {
             onContinue={() => void session.advanceRound()}
             isBusy={isBusy}
             errorMessage={errorMessage}
-            playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 } : undefined}
+            playerVisual={gameVisualResource.player.visual ? { src: gameVisualResource.player.visual.signedUrl, alt: 'Creatura del giocatore', nativeFacing: 'right', offsetX: 0, offsetY: 18 } : undefined}
             opponentVisual={gameVisualResource.opponent.visual
-              ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', scale: .95, offsetX: 0, offsetY: 18 }
+              ? { src: gameVisualResource.opponent.visual.signedUrl, alt: 'Creatura avversaria', nativeFacing: 'right', offsetX: 0, offsetY: 18 }
               : gameVisualResource.opponent.status === 'loading' ? null : undefined}
           />
         ),
@@ -401,8 +421,8 @@ type ConnectedBattleScreenProps = {
   onContinue: () => void
   isBusy: boolean
   errorMessage: string | null
-  playerVisual?: CreatureVisual
-  opponentVisual?: CreatureVisual | null
+  playerVisual?: CreatureVisualSource
+  opponentVisual?: CreatureVisualSource | null
 }
 
 /** Binds the battle presentation to the round controller and the reveal overlay. */
@@ -436,8 +456,22 @@ function ConnectedBattleScreen({
       <BattleScreen
         viewModel={{
           ...viewModel,
-          player: { ...viewModel.player, creatureVisual: playerVisual ?? viewModel.player.creatureVisual },
-          opponent: { ...viewModel.opponent, creatureVisual: opponentVisual === undefined ? viewModel.opponent.creatureVisual : opponentVisual },
+          player: {
+            ...viewModel.player,
+            creatureVisual: mergeBattleCreatureVisual(
+              viewModel.player.creatureVisual,
+              DEFAULT_BATTLE_PLAYER_CREATURE,
+              playerVisual,
+            ),
+          },
+          opponent: {
+            ...viewModel.opponent,
+            creatureVisual: mergeBattleCreatureVisual(
+              viewModel.opponent.creatureVisual,
+              DEFAULT_BATTLE_OPPONENT_CREATURE,
+              opponentVisual,
+            ),
+          },
         }}
         onSelectGene={onSelectGene}
         onUseGene={onUseGene}

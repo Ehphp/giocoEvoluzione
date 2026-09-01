@@ -19,6 +19,7 @@ import { DEFAULT_WORLD_ID, getWorldById } from '../game/worlds'
 import { requireSupabase } from './supabase'
 import { normalizeEvolutionDraftOptions } from '../../shared/creature-transformations/evolution-draft.ts'
 import { isEvolutionTargetId, type EvolutionTargetId } from '../../shared/creature-transformations/evolution-targets.ts'
+import { resolveCreatureHeightMeters } from '../../shared/creature-scale.ts'
 
 export type GameRecord = {
     id: string
@@ -59,13 +60,18 @@ export type PlayerRecord = {
     connected: boolean
     profile_id?: string | null
     creature_id?: string | null
-    creature_snapshot?: Record<string, unknown> | null
+    creature_snapshot?: CreatureSnapshot | null
     /** The two anatomical targets this player was offered at the start of the match. */
     evolution_draft_options: EvolutionTargetId[]
     /** The target that will be credited if this player wins; null until they choose. */
     chosen_evolution_target_id: EvolutionTargetId | null
     created_at: string
 }
+
+/** Immutable creature identity and biological data captured when a match starts. */
+export type CreatureSnapshot = Readonly<Record<string, unknown> & {
+    heightMeters: number
+}>
 
 export type DirectRoundActionRecord = {
     id: string
@@ -233,14 +239,25 @@ export function mapPlayerRecord(data: Record<string, unknown>): PlayerRecord {
         connected: Boolean(data.connected),
         profile_id: typeof data.profile_id === 'string' ? data.profile_id : null,
         creature_id: typeof data.creature_id === 'string' ? data.creature_id : null,
-        creature_snapshot: data.creature_snapshot && typeof data.creature_snapshot === 'object'
-            ? data.creature_snapshot as Record<string, unknown>
-            : null,
+        creature_snapshot: mapCreatureSnapshot(data.creature_snapshot),
         evolution_draft_options: evolutionDraftOptions,
         chosen_evolution_target_id: isEvolutionTargetId(data.chosen_evolution_target_id)
             ? data.chosen_evolution_target_id
             : null,
         created_at: String(data.created_at),
+    }
+}
+
+function mapCreatureSnapshot(value: unknown): CreatureSnapshot | null {
+    if (!value || typeof value !== 'object') {
+        return null
+    }
+
+    const snapshot = value as Record<string, unknown>
+
+    return {
+        ...snapshot,
+        heightMeters: resolveCreatureHeightMeters(snapshot.heightMeters, snapshot.baseCreatureKey),
     }
 }
 

@@ -480,7 +480,7 @@ describe('BattleScreen', () => {
 
     it('faces both creatures toward each other and mirrors only the sprite', () => {
         render(makeViewModel({
-            player: { id: 'me', name: 'Tu', score: 0, roundValueTotal: null, status: 'choosing', creatureVisual: { src: '/player.png', alt: 'Giocatore' } },
+            player: { id: 'me', name: 'Tu', score: 0, roundValueTotal: null, status: 'choosing', creatureVisual: { src: '/player.png', alt: 'Giocatore', heightMeters: 1.4 } },
             opponent: { id: 'other', name: 'Avversario', score: 0, roundValueTotal: null, status: 'choosing', creatureVisual: DEFAULT_BATTLE_OPPONENT_CREATURE },
         }))
 
@@ -495,6 +495,28 @@ describe('BattleScreen', () => {
         expect(opponent.querySelector('img')?.classList.contains('is-mirrored')).toBe(false)
         // The centre emblem is gone: the arena is split evenly between the two creatures instead.
         expect(container.querySelector('.arena__versus')).toBeNull()
+    })
+
+    it('combines biological size with asset calibration from the shared ground line', () => {
+        render(makeViewModel({
+            player: {
+                id: 'me', name: 'Tu', score: 0, roundValueTotal: null, status: 'choosing',
+                creatureVisual: {
+                    src: '/player.png',
+                    alt: 'Giocatore',
+                    heightMeters: 1.4,
+                    assetCalibration: .8,
+                    nativeFacing: 'left',
+                },
+            },
+        }))
+
+        const player = container.querySelector<HTMLElement>('.arena__creature--player')!
+        const sprite = player.querySelector<HTMLImageElement>('.arena__sprite')!
+
+        expect(player.style.getPropertyValue('--arena-creature-scale')).toBe('0.8')
+        expect(sprite.classList.contains('is-mirrored')).toBe(true)
+        expect(getComputedStyle(sprite).transformOrigin).toMatch(/bottom/)
     })
 
     it('confirms before abandoning a running match', () => {

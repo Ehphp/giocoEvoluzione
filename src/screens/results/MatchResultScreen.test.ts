@@ -37,8 +37,8 @@ function makeViewModel(overrides: Partial<MatchResultViewModel> = {}): MatchResu
 
     return {
         outcome: 'win',
-        player: { id: 'player', name: 'Naturalista', score: 2, creature: { src: '/player.png', alt: 'Creatura giocatore' }, tiebreakTotal: null },
-        opponent: { id: 'opponent', name: 'Bot', score: 1, creature: { src: '/opponent.png', alt: 'Creatura avversaria' }, tiebreakTotal: null },
+        player: { id: 'player', name: 'Naturalista', score: 2, creature: { src: '/player.png', alt: 'Creatura giocatore', heightMeters: 1.4 }, tiebreakTotal: null },
+        opponent: { id: 'opponent', name: 'Bot', score: 1, creature: { src: '/opponent.png', alt: 'Creatura avversaria', heightMeters: 1.4 }, tiebreakTotal: null },
         finalRoundNumber: 2,
         totalRounds: 7,
         background: '/background.png',

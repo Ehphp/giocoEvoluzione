@@ -37,6 +37,7 @@ const CREATURE = {
     level: 1,
     experience: 0,
     progression_state: {},
+    heightMeters: 1.4,
     created_at: '2026-01-01',
     updated_at: '2026-01-01',
 }

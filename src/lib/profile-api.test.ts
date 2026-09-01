@@ -6,6 +6,7 @@ import {
     getBootstrapPlan,
     getMatchOutcome,
     isRewardEligible,
+    mapPlayerCreatureRecord,
     mapProfileMatchHistory,
     type MatchRewardRecord,
     type PlayerCreatureRecord,
@@ -31,6 +32,7 @@ const creature: PlayerCreatureRecord = {
     level: 1,
     experience: 0,
     progression_state: {},
+    heightMeters: 1.4,
     created_at: profile.created_at,
     updated_at: profile.updated_at,
 }
@@ -44,6 +46,18 @@ const existingReward: MatchRewardRecord = {
 }
 
 describe('profile persistence mappings', () => {
+    it('resolves canonical biological height and keeps legacy rows readable', () => {
+        const row = {
+            ...creature,
+            height_meters: 1.75,
+            combat_mutation_loadout: ['ELASTIC_LIMBS', 'ADAPTIVE_CORE'],
+        }
+
+        expect(mapPlayerCreatureRecord(row).heightMeters).toBe(1.75)
+        expect(mapPlayerCreatureRecord({ ...row, height_meters: 0 }).heightMeters).toBe(1.4)
+        expect(mapPlayerCreatureRecord({ ...row, height_meters: Number.NaN }).heightMeters).toBe(1.4)
+    })
+
     it('maps the competitive rating and leaderboard payload independently from creature progression', () => {
         expect(mapProfileRecord({ id: 'profile-1', nickname: 'Lince', skill_rating: 1042, created_at: '2026-01-01', updated_at: '2026-01-01' }).skill_rating).toBe(1042)
         expect(mapCompetitiveLeaderboardEntry({ rank_position: 1, nickname: 'Lince', skill_rating: 1042 })).toEqual({ position: 1, nickname: 'Lince', skillRating: 1042 })

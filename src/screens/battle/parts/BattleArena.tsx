@@ -6,6 +6,7 @@ import {
     type CreatureVisual,
 } from '../controller/gene-selection-assets'
 import { shouldMirrorCreature, type CreatureFacing } from '../controller/creature-orientation'
+import { getCreatureBattleScale } from '../../../../shared/creature-scale.ts'
 
 type BattleArenaProps = {
     playerCreature: CreatureVisual | null
@@ -26,8 +27,14 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleS
     const facing: CreatureFacing = side === 'player' ? 'right' : 'left'
     const fallbackVisual = side === 'player' ? DEFAULT_BATTLE_PLAYER_CREATURE : DEFAULT_BATTLE_OPPONENT_CREATURE
     const isMirrored = shouldMirrorCreature(usesFallback ? fallbackVisual.nativeFacing : visual.nativeFacing, facing)
+    const assetCalibration = typeof visual.assetCalibration === 'number'
+        && Number.isFinite(visual.assetCalibration)
+        && visual.assetCalibration > 0
+        ? visual.assetCalibration
+        : 1
+    const battleScale = getCreatureBattleScale(visual.heightMeters) * (assetCalibration ?? 1)
     const style = {
-        '--arena-creature-scale': visual.scale ?? 1,
+        '--arena-creature-scale': battleScale,
         '--arena-creature-offset-x': `${visual.offsetX ?? 0}%`,
         '--arena-creature-offset-y': `${visual.offsetY ?? 0}%`,
     } as CSSProperties

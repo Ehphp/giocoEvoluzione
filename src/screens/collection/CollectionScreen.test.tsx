@@ -39,6 +39,7 @@ describe('CollectionScreen', () => {
                     level: 4,
                     experience: 90,
                     progression_state: {},
+                    heightMeters: 1.4,
                     current_visual_version_id: 'form-3',
                     created_at: '2026-01-01T00:00:00.000Z',
                     updated_at: '2026-01-01T00:00:00.000Z',
@@ -99,7 +100,7 @@ describe('CollectionScreen', () => {
         const onSetActiveLineage = vi.fn()
         const onOpenEvolution = vi.fn()
         const creature = {
-            id: 'creature-a', profile_id: 'profile-1', lineage_id: 'lineage-a', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 2, experience: 30, progression_state: {}, current_visual_version_id: 'a-2', created_at: '2026-01-01', updated_at: '2026-01-01',
+            id: 'creature-a', profile_id: 'profile-1', lineage_id: 'lineage-a', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 2, experience: 30, progression_state: {}, heightMeters: 1.4, current_visual_version_id: 'a-2', created_at: '2026-01-01', updated_at: '2026-01-01',
         }
         const secondCreature = { ...creature, id: 'creature-b', lineage_id: 'lineage-b', name: 'Viola', current_visual_version_id: 'b-3' }
         act(() => {
@@ -135,7 +136,7 @@ describe('CollectionScreen', () => {
         act(() => {
             root.render(createElement(CollectionScreen, {
                 profile: { id: 'profile-1', nickname: 'Naturalista', skill_rating: 1000, created_at: '2026-01-01', updated_at: '2026-01-01' },
-                creature: { id: 'creature-1', profile_id: 'profile-1', lineage_id: 'lineage-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, created_at: '2026-01-01', updated_at: '2026-01-01' },
+                creature: { id: 'creature-1', profile_id: 'profile-1', lineage_id: 'lineage-1', base_creature_key: 'VERDANT_HATCHLING', name: 'Verde', level: 1, experience: 0, progression_state: {}, heightMeters: 1.4, created_at: '2026-01-01', updated_at: '2026-01-01' },
                 onCreateLineage,
             }))
         })
