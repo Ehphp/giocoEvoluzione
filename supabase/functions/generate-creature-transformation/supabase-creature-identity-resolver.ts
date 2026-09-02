@@ -102,7 +102,7 @@ export class SupabaseCreatureIdentityResolver implements CreatureIdentityResolve
         } catch (error) {
             throw new CreatureIdentityResolutionError(
                 'CREATURE_LOOKUP_FAILED',
-                'Impossibile recuperare la creatura richiesta.',
+                `Lettura non riuscita (PLAYER_CREATURE/${getSafeDatabaseLookupCode(error)}).`,
                 { cause: error },
             )
         }

@@ -85,6 +85,21 @@ describe('SupabaseCreatureIdentityResolver', () => {
         } satisfies Partial<CreatureIdentityResolutionError>)
     })
 
+    it('keeps a safe database error code when the player-creature lookup fails', async () => {
+        const repository: PlayerCreatureRepository = {
+            async findByCreatureId() {
+                throw { code: 'PGRST204', message: 'must not reach logs' }
+            },
+        }
+
+        await expect(
+            new SupabaseCreatureIdentityResolver(repository).resolve({
+                profileId: 'profile-1',
+                creatureId: 'creature-1',
+            }),
+        ).rejects.toThrow('PLAYER_CREATURE/PGRST204')
+    })
+
     it('rejects incomplete canonical registry configuration', async () => {
         const resolver = new SupabaseCreatureIdentityResolver(
             createRepository({ id: 'creature-1', profileId: 'profile-1', baseCreatureKey: 'VERDANT_HATCHLING' }),

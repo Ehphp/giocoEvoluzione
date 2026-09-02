@@ -1,5 +1,24 @@
 # TODO Supabase
 
+## 2026-09-02 — Permesso `height_meters` per la finalizzazione server
+
+Applicare la nuova migration `supabase/migrations/20260902175808_grant_service_role_creature_height.sql`
+prima di provare un'altra evoluzione:
+
+```bash
+npx supabase db push
+```
+
+La vecchia migration `202608020001_creature_transformation_service_role_read.sql` concedeva al
+ruolo server soltanto `id`, `profile_id` e `base_creature_key`; da qui il `42501` sulla colonna
+aggiunta in seguito. Il grant è intenzionalmente limitato a `height_meters` e non concede nulla a
+`anon` o `authenticated`.
+
+Dopo il push, ridistribuire `fal-creature-transformation-finalizer`: il log
+`fal.finalizer.seedream_relative_height` includerà anche un `reason` redatto quando il confronto
+non è disponibile, così si può distinguere una configurazione Gemini assente da un timeout o da
+un'immagine sorgente non leggibile.
+
 ## 2026-09-01 â€” Confronto relativo dell'altezza dopo un'evoluzione
 
 Applicare `supabase/migrations/202609010002_adopt_relative_creature_height.sql` **dopo**

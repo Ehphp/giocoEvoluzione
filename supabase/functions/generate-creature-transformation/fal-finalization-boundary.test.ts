@@ -80,6 +80,7 @@ describe('Fal webhook and finalization boundary', () => {
         )
         expect(finalizer).toContain('input.record.visualInspection?.heightComparison')
         expect(finalizer).toContain('createRelativeHeightComparison')
+        expect(finalizer).toContain('redactSensitiveText(assessment.shortReason, 180)')
     })
 
     it('rejects a Vision-verified center-facing Seedream image before it can reach raw storage or background removal', () => {
