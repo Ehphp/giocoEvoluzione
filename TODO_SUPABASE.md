@@ -19,6 +19,10 @@ Dopo il push, ridistribuire `fal-creature-transformation-finalizer`: il log
 non è disponibile, così si può distinguere una configurazione Gemini assente da un timeout o da
 un'immagine sorgente non leggibile.
 
+La stessa ridistribuzione include la policy per cui una transizione anatomica quadrupede ↔ bipede
+non è, da sola, un confondente: se testa e piedi portanti sono visibili, Gemini deve stimare la
+variazione della sagoma piedi-testa. Restano ambigue prospettiva, taglio e posture temporanee.
+
 ## 2026-09-01 â€” Confronto relativo dell'altezza dopo un'evoluzione
 
 Applicare `supabase/migrations/202609010002_adopt_relative_creature_height.sql` **dopo**

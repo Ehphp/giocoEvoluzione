@@ -99,6 +99,8 @@ describe('GeminiRelativeHeightComparisonService', () => {
             .parts
         expect(parts[0]?.text).toContain('first image is SOURCE')
         expect(parts[0]?.text).toContain('Do not estimate absolute metres')
+        expect(parts[0]?.text).toContain('quadruped-to-biped or biped-to-quadruped locomotion transition')
+        expect(parts[0]?.text).toContain('not by itself a pose confounder')
         expect(parts[1]?.file_data?.file_uri).toBe('gemini://files/1')
         expect(parts[2]?.file_data?.file_uri).toBe('gemini://files/2')
     })
