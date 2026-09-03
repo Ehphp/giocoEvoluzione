@@ -19,14 +19,17 @@ describe('getCreatureBattleScale', () => {
         expect(getCreatureBattleScale(100)).toBe(1.35)
     })
 
+    it('makes an accepted much-taller evolution perceptibly larger without becoming unbounded', () => {
+        expect(getCreatureBattleScale(1.652)).toBeCloseTo(1.27, 2)
+    })
+
     it('grows non-linearly rather than proportionally to height', () => {
         const quarterReference = getCreatureBattleScale(DEFAULT_CREATURE_HEIGHT_METERS / 4)
-        const reference = getCreatureBattleScale(DEFAULT_CREATURE_HEIGHT_METERS)
-        const sevenQuartersReference = getCreatureBattleScale(DEFAULT_CREATURE_HEIGHT_METERS * 1.75)
+        const slightlyTallerReference = getCreatureBattleScale(DEFAULT_CREATURE_HEIGHT_METERS * 1.1)
 
-        expect(quarterReference).toBeCloseTo(.86)
-        expect(sevenQuartersReference).toBeCloseTo(.72 + .28 * Math.sqrt(1.75))
-        expect(sevenQuartersReference - reference).toBeLessThan(reference - quarterReference)
+        expect(quarterReference).toBe(.72)
+        expect(slightlyTallerReference).toBeCloseTo(Math.pow(1.1, 1.45))
+        expect(slightlyTallerReference).not.toBeCloseTo(1.1)
     })
 
     it('falls back safely for legacy and invalid biological data', () => {

@@ -6,7 +6,7 @@ import { ASSETS, srcSetFor } from '../../ui/assets'
 import { playCue } from '../../ui/feedback/feedback'
 import { useFeedbackPreference } from '../../ui/feedback/use-feedback'
 import { PlayModesSheet } from './parts/PlayModesSheet'
-import { measureCreatureSubject, type CreatureSubject } from './creature-subject-fit'
+import { measureCreatureSubject, type CreatureSubject } from '../../lib/creature-subject'
 import type { HomeActions, HomeCreatureImage, HomeViewModel } from './types'
 
 import './HomeScreen.css'

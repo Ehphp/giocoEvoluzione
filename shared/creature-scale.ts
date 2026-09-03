@@ -6,6 +6,10 @@ const STARTER_HEIGHT_METERS: Readonly<Record<string, number>> = {
     AMETHYST_HATCHLING: DEFAULT_CREATURE_HEIGHT_METERS,
 }
 
+const BATTLE_BIOLOGICAL_SCALE_EXPONENT = 1.45
+const MIN_BATTLE_BIOLOGICAL_SCALE = .72
+const MAX_BATTLE_BIOLOGICAL_SCALE = 1.35
+
 function isValidHeightMeters(value: unknown): value is number {
     return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -26,16 +30,21 @@ export function resolveCreatureHeightMeters(heightMeters: unknown, baseCreatureK
     return starterHeight ?? DEFAULT_CREATURE_HEIGHT_METERS
 }
 
-/** Maps a creature's real biological height to the bounded battle-stage scale. */
+/**
+ * Maps real height to an intentionally perceptible, but bounded battle-stage scale.
+ *
+ * Framing is normalized separately from the alpha foreground. This curve is therefore only the
+ * biological distinction: 1.652m versus the 1.4m reference is approximately 1.27× on screen.
+ */
 export function getCreatureBattleScale(heightMeters: number): number {
     const referenceHeight = DEFAULT_CREATURE_HEIGHT_METERS
     const safeHeightMeters = resolveCreatureHeightMeters(heightMeters)
 
     return Math.min(
-        1.35,
+        MAX_BATTLE_BIOLOGICAL_SCALE,
         Math.max(
-            0.72,
-            0.72 + 0.28 * Math.sqrt(safeHeightMeters / referenceHeight),
+            MIN_BATTLE_BIOLOGICAL_SCALE,
+            Math.pow(safeHeightMeters / referenceHeight, BATTLE_BIOLOGICAL_SCALE_EXPONENT),
         ),
     )
 }

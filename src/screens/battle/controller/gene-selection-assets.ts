@@ -9,8 +9,6 @@ export type CreatureVisual = {
     heightMeters: number
     /** Direction the original asset faces before battle presentation is applied. */
     nativeFacing?: 'left' | 'right'
-    /** Per-asset PNG framing correction; unrelated to biological size. */
-    assetCalibration?: number
     /** Percentage shift relative to the rendered creature asset. */
     offsetX?: number
     /** Percentage shift relative to the rendered creature asset. */
@@ -37,9 +35,6 @@ export const DEFAULT_BATTLE_PLAYER_CREATURE: CreatureVisual = {
     alt: 'Creatura del giocatore verde',
     heightMeters: DEFAULT_CREATURE_HEIGHT_METERS,
     nativeFacing: 'right',
-    // Both starter sprites share the same arena footprint. Their transparent bounds are nearly
-    // identical, so a shared presentation scale keeps the match visually fair.
-    assetCalibration: .95,
     offsetX: 0,
     offsetY: 0,
 }
@@ -50,7 +45,6 @@ export const DEFAULT_BATTLE_OPPONENT_CREATURE: CreatureVisual = {
     heightMeters: DEFAULT_CREATURE_HEIGHT_METERS,
     // The supplied bot sprite already looks toward the left.
     nativeFacing: 'left',
-    assetCalibration: .95,
     offsetX: 0,
     offsetY: 0,
 }

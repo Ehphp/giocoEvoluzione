@@ -489,13 +489,13 @@
     object-fit: contain;
     object-position: bottom center;
     transform-origin: bottom center;
-    scale: var(--arena-creature-scale, 1);
-    translate: 0 calc(var(--arena-creature-offset-y, 0) * .1);
+    /* Translation is applied after scale, compensating the asset's transparent lower margin. */
+    transform: translateY(calc(var(--arena-ground-offset, 0px) + var(--arena-creature-offset-y, 0) * .1)) scale(var(--arena-render-scale, 1));
     filter: drop-shadow(0 12px 14px rgba(4, 16, 10, .45));
 }
 
 .arena__sprite.is-mirrored {
-    scale: calc(var(--arena-creature-scale, 1) * -1) var(--arena-creature-scale, 1);
+    transform: translateY(calc(var(--arena-ground-offset, 0px) + var(--arena-creature-offset-y, 0) * .1)) scale(calc(var(--arena-render-scale, 1) * -1), var(--arena-render-scale, 1));
 }
 
 .arena__shadow {

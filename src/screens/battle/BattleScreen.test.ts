@@ -497,15 +497,14 @@ describe('BattleScreen', () => {
         expect(container.querySelector('.arena__versus')).toBeNull()
     })
 
-    it('combines biological size with asset calibration from the shared ground line', () => {
+    it('keeps dynamic assets free from starter calibration while preserving the ground anchor', () => {
         render(makeViewModel({
             player: {
                 id: 'me', name: 'Tu', score: 0, roundValueTotal: null, status: 'choosing',
                 creatureVisual: {
                     src: '/player.png',
                     alt: 'Giocatore',
-                    heightMeters: 1.4,
-                    assetCalibration: .8,
+                    heightMeters: 1.652,
                     nativeFacing: 'left',
                 },
             },
@@ -514,7 +513,11 @@ describe('BattleScreen', () => {
         const player = container.querySelector<HTMLElement>('.arena__creature--player')!
         const sprite = player.querySelector<HTMLImageElement>('.arena__sprite')!
 
-        expect(player.style.getPropertyValue('--arena-creature-scale')).toBe('0.8')
+        // JSDOM has no decoded alpha bitmap, so the framing safely starts at neutral rather than
+        // inheriting the former .95 calibration reserved for bundled starter artwork.
+        expect(player.dataset.framingNormalization).toBe('1.000')
+        expect(player.dataset.biologicalScale).toBe('1.271')
+        expect(player.style.getPropertyValue('--arena-ground-offset')).toBe('0px')
         expect(sprite.classList.contains('is-mirrored')).toBe(true)
         expect(getComputedStyle(sprite).transformOrigin).toMatch(/bottom/)
     })
