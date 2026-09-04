@@ -261,6 +261,7 @@
     --ev-gene-matchup-ear-icon-size: .55;
     --ev-gene-matchup-expected-score-size: .56;
     --ev-z-overlay: 10;
+    --ev-z-debug: 2147483647;
 
     /* Motion. */
     --ev-ease: cubic-bezier(.22, .9, .28, 1);

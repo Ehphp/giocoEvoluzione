@@ -480,6 +480,7 @@ function ConnectedBattleScreen({
         onActivateFineDelMondo={onActivateFineDelMondo}
         onLeaveSession={onLeaveSession}
         isInteractionLocked={isResolutionOpen || isDraftOpen}
+        debugPhase={snapshot.game.status}
       />
       {isDraftOpen ? (
         <EvolutionDraftOverlay options={draftOptions} creatureId={snapshot.me?.creature_id} onChoose={onChooseEvolutionTarget} />

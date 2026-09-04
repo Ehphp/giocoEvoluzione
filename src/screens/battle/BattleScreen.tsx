@@ -16,6 +16,7 @@ import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
 import { DuelHeader } from './parts/DuelHeader'
 import { EnvironmentCard } from './parts/EnvironmentCard'
 import { GeneCarousel } from './parts/GeneCarousel'
+import { ProfileMenuDiagnostics } from './parts/ProfileMenuDiagnostics'
 
 import './BattleScreen.css'
 
@@ -28,6 +29,7 @@ type BattleScreenProps = {
     onActivateFineDelMondo?: () => Promise<boolean>
     onLeaveSession: () => void
     isInteractionLocked?: boolean
+    debugPhase?: string
 }
 
 function StateCard({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
@@ -51,6 +53,7 @@ export function BattleScreen({
     onActivateFineDelMondo,
     onLeaveSession,
     isInteractionLocked = false,
+    debugPhase,
 }: BattleScreenProps) {
     const battleBackground = getBattleBackgroundForEvent(viewModel.roundEvent.id)
     const [backgroundSource, setBackgroundSource] = useState(battleBackground)
@@ -200,6 +203,10 @@ export function BattleScreen({
                     )}
                 </Panel>
             </div>
+            <ProfileMenuDiagnostics
+                phase={debugPhase ?? viewModel.status}
+                isInteractionLocked={isInteractionLocked}
+            />
             {leaveConfirm}
             {symbiosisPicker}
             {fineDelMondoConfirm}

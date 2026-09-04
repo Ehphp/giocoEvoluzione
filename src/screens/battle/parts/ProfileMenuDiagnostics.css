@@ -1,0 +1,50 @@
+.profile-menu-debug {
+    position: fixed;
+    z-index: var(--ev-z-debug);
+    inset-inline: var(--ev-s-2);
+    bottom: calc(var(--ev-safe-bottom) + var(--ev-s-2));
+    max-height: var(--ev-scroll-max-compact);
+    overflow: auto;
+    padding: var(--ev-s-2);
+    border: var(--ev-stroke-width) solid var(--ev-stroke-ink-strong);
+    border-radius: var(--ev-r-sm);
+    background: var(--ev-cream-light);
+    box-shadow: var(--ev-shadow-md);
+    color: var(--ev-ink);
+    font-family: var(--ev-font-ui);
+    font-size: var(--ev-fs-2xs);
+    line-height: var(--ev-lh-compact);
+    overflow-wrap: anywhere;
+    pointer-events: none;
+}
+
+.profile-menu-debug strong {
+    display: block;
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+}
+
+.profile-menu-debug dl {
+    display: grid;
+    gap: var(--ev-s-1);
+    margin: var(--ev-s-1) 0 0;
+}
+
+.profile-menu-debug dl div {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--ev-s-1);
+}
+
+.profile-menu-debug dt {
+    font-weight: 800;
+}
+
+.profile-menu-debug dd {
+    min-width: 0;
+    margin: 0;
+}
+
+.profile-menu-debug p {
+    margin: var(--ev-s-1) 0 0;
+}
