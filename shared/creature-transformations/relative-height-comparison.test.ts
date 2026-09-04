@@ -27,6 +27,42 @@ describe('relative height comparison', () => {
         expect(parseRelativeHeightAssessment({ ...completeAssessment, confounders: ['NOT_A_CONFOUNDER'] })).toBeNull()
     })
 
+    it('keeps the legacy height contract valid while accepting at most four regional proportion findings', () => {
+        const enriched = parseRelativeHeightAssessment({
+            ...completeAssessment,
+            proportionFindings: [
+                {
+                    region: 'TRUNK',
+                    change: 'INTRODUCED',
+                    authorization: 'AUTHORIZED',
+                    confidence: .95,
+                    reason: 'The trunk length follows the selected target.',
+                },
+                {
+                    region: 'NECK',
+                    change: 'INTRODUCED',
+                    authorization: 'UNAUTHORIZED',
+                    confidence: .9,
+                    reason: 'The neck elongation is unrelated to the target.',
+                },
+            ],
+        })
+
+        expect(enriched?.proportionFindings).toHaveLength(2)
+        expect(
+            parseRelativeHeightAssessment({
+                ...completeAssessment,
+                proportionFindings: Array.from({ length: 5 }, () => ({
+                    region: 'HEAD',
+                    change: 'PREEXISTING',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: .8,
+                    reason: 'Too many findings.',
+                })),
+            }),
+        ).toBeNull()
+    })
+
     it('maps each relative category deterministically', () => {
         expect(getRelativeHeightMultiplier('MUCH_SHORTER')).toBe(0.85)
         expect(getRelativeHeightMultiplier('SHORTER')).toBe(0.93)

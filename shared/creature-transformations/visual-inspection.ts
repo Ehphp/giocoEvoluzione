@@ -3,6 +3,12 @@ import {
     parseRelativeHeightComparison,
     type RelativeHeightComparison,
 } from './relative-height-comparison.ts'
+import {
+    parseProportionFindingRegion,
+    parseProportionFindings,
+    type ProportionFinding,
+    type ProportionFindingRegion,
+} from './proportion-findings.ts'
 
 export const VISUAL_INSPECTION_SCHEMA_VERSION = 'visual-inspection-v1'
 export const OBSERVED_VISUAL_STATE_SCHEMA_VERSION = 'observed-visual-v1'
@@ -17,6 +23,7 @@ export const VISUAL_ANOMALY_TYPES = [
     'MIRRORED_SUBJECT',
     'ORIENTATION_MISMATCH',
     'OTHER_STRUCTURAL',
+    'BODY_PROPORTION_DRIFT',
 ] as const
 export type VisualAnomalyType = (typeof VISUAL_ANOMALY_TYPES)[number]
 
@@ -47,6 +54,8 @@ export type VisualAnomaly = Vision1DiagnosticEvidence &
         status: 'UNRESOLVED' | 'RESOLVED'
         detectedAtGeneration: number
         resolvedAtGeneration?: number
+        /** Present only for BODY_PROPORTION_DRIFT so the lifecycle can match the affected anatomy. */
+        proportionRegion?: ProportionFindingRegion
     }>
 
 export type MapperEvidenceAssessment = Readonly<{
@@ -122,6 +131,8 @@ export type VisualInspection = Readonly<{
     assetCorrection?: HorizontalMirrorAssetCorrection
     /** Accepted post-generation comparison with the immediately preceding visual version. */
     heightComparison?: RelativeHeightComparison
+    /** Optional for inspections persisted before the source/result proportion comparison was added. */
+    proportionFindings?: readonly ProportionFinding[]
 }>
 
 type RecordValue = Record<string, unknown>
@@ -355,6 +366,7 @@ function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
                     'status',
                     'detectedAtGeneration',
                     'resolvedAtGeneration',
+                    'proportionRegion',
                 ].includes(key),
         )
     )
@@ -369,10 +381,14 @@ function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
     const status = item.status === 'UNRESOLVED' || item.status === 'RESOLVED' ? item.status : null
     const resolvedAtGeneration =
         item.resolvedAtGeneration === undefined ? undefined : generation(item.resolvedAtGeneration)
+    const proportionRegion =
+        item.proportionRegion === undefined ? undefined : parseProportionFindingRegion(item.proportionRegion)
     if (
         !evidence ||
         !detectedAtGeneration ||
         !status ||
+        (evidence.type === 'BODY_PROPORTION_DRIFT' && !proportionRegion) ||
+        (evidence.type !== 'BODY_PROPORTION_DRIFT' && proportionRegion !== undefined) ||
         (item.resolvedAtGeneration !== undefined && !resolvedAtGeneration) ||
         (status === 'RESOLVED' && !resolvedAtGeneration)
     )
@@ -382,6 +398,7 @@ function parseVisualAnomaly(value: unknown): VisualAnomaly | null {
         status,
         detectedAtGeneration,
         ...(resolvedAtGeneration ? { resolvedAtGeneration } : {}),
+        ...(proportionRegion ? { proportionRegion } : {}),
     })
 }
 
@@ -421,6 +438,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
                     'orientationArbiter',
                     'assetCorrection',
                     'heightComparison',
+                    'proportionFindings',
                 ].includes(key),
         )
     )
@@ -446,6 +464,8 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         item.assetCorrection === undefined ? undefined : parseHorizontalMirrorAssetCorrection(item.assetCorrection)
     const heightComparison =
         item.heightComparison === undefined ? undefined : parseRelativeHeightComparison(item.heightComparison)
+    const proportionFindings =
+        item.proportionFindings === undefined ? undefined : parseProportionFindings(item.proportionFindings)
     if (
         !inspectedAt ||
         (detector?.status !== 'COMPLETE' && detector?.status !== 'UNAVAILABLE') ||
@@ -460,7 +480,8 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         (item.observedVisualState !== undefined && !observed) ||
         (item.orientationArbiter !== undefined && !orientationArbiter) ||
         (item.assetCorrection !== undefined && !assetCorrection) ||
-        (item.heightComparison !== undefined && !heightComparison)
+        (item.heightComparison !== undefined && !heightComparison) ||
+        (item.proportionFindings !== undefined && !proportionFindings)
     )
         return null
     return Object.freeze({
@@ -478,6 +499,7 @@ export function parseVisualInspection(value: unknown): VisualInspection | null {
         ...(orientationArbiter ? { orientationArbiter } : {}),
         ...(assetCorrection ? { assetCorrection } : {}),
         ...(heightComparison ? { heightComparison } : {}),
+        ...(proportionFindings ? { proportionFindings } : {}),
     })
 }
 
@@ -623,6 +645,36 @@ function concernMatches(anomaly: VisualAnomaly, concerns: readonly Vision1Diagno
     return concerns.some((concern) => sameAnomaly(anomaly, concern))
 }
 
+function isProportionDrift(anomaly: VisualAnomaly): anomaly is VisualAnomaly & { proportionRegion: ProportionFindingRegion } {
+    return anomaly.type === 'BODY_PROPORTION_DRIFT' && anomaly.proportionRegion !== undefined
+}
+
+function isActionableProportionDrift(finding: ProportionFinding): boolean {
+    return (
+        (finding.change === 'INTRODUCED' || finding.change === 'WORSENED') &&
+        finding.authorization === 'UNAUTHORIZED' &&
+        finding.confidence >= .7
+    )
+}
+
+function canResolveProportionDrift(finding: ProportionFinding): boolean {
+    return finding.change === 'IMPROVED' && finding.authorization !== 'AMBIGUOUS' && finding.confidence >= .7
+}
+
+function toProportionDriftAnomaly(finding: ProportionFinding, generation: number, detectedAtGeneration = generation): VisualAnomaly {
+    return Object.freeze({
+        type: 'BODY_PROPORTION_DRIFT',
+        // The semantic region is explicit. The generic image location keeps VisualAnomaly
+        // compatible with the existing detector evidence contract.
+        imageRegion: 'CENTER_IMAGE',
+        description: `${finding.region}: ${finding.reason}`,
+        confidence: finding.confidence,
+        status: 'UNRESOLVED',
+        detectedAtGeneration,
+        proportionRegion: finding.region,
+    })
+}
+
 /**
  * Vision 1 remains the primary detector. A prior debt is resolved only if Vision 1 no longer
  * detects it and the successful mapper independently reports no compatible structural concern.
@@ -659,7 +711,12 @@ export function mergeVisualInspection(input: {
         })
     }
 
-    const priorUnresolved = (previous?.visualAnomalies ?? []).filter((anomaly) => anomaly.status === 'UNRESOLVED')
+    const priorUnresolved = (previous?.visualAnomalies ?? []).filter(
+        (anomaly) => anomaly.status === 'UNRESOLVED' && !isProportionDrift(anomaly),
+    )
+    const priorProportionDebt = (previous?.visualAnomalies ?? []).filter(
+        (anomaly) => anomaly.status === 'UNRESOLVED' && isProportionDrift(anomaly),
+    )
     const continuedOrNew = input.detector.evidence.map((evidence) => {
         const previousAnomaly = priorUnresolved.find((anomaly) => sameAnomaly(anomaly, evidence))
         return Object.freeze({
@@ -691,7 +748,7 @@ export function mergeVisualInspection(input: {
         schemaVersion: VISUAL_INSPECTION_SCHEMA_VERSION,
         inspectedAt: input.inspectedAt,
         anomalyDetector: Object.freeze({ status: 'COMPLETE', evidence: Object.freeze([...input.detector.evidence]) }),
-        visualAnomalies: Object.freeze([...continuedOrNew, ...retained, ...resolved]),
+        visualAnomalies: Object.freeze([...continuedOrNew, ...retained, ...resolved, ...priorProportionDebt]),
         stateMapper: Object.freeze({
             status: input.mapper.status,
             usedVision1Evidence: input.mapper.usedVision1Evidence,
@@ -700,6 +757,57 @@ export function mergeVisualInspection(input: {
         }),
         ...(input.mapper.observedVisualState ? { observedVisualState: input.mapper.observedVisualState } : {}),
         ...(input.orientationArbiter ? { orientationArbiter: input.orientationArbiter } : {}),
+    })
+}
+
+/**
+ * Applies the bounded source/result proportion assessment to the established anomaly lifecycle.
+ * Authorized, pre-existing and ambiguous findings remain descriptive metadata and never gate adoption.
+ */
+export function applyProportionFindings(input: {
+    inspection: VisualInspection
+    proportionFindings: readonly ProportionFinding[]
+    generation: number
+}): VisualInspection {
+    const structuralAnomalies = input.inspection.visualAnomalies.filter((anomaly) => !isProportionDrift(anomaly))
+    const priorDebt = input.inspection.visualAnomalies.filter(isProportionDrift)
+    const findingsByRegion = new Map(input.proportionFindings.map((finding) => [finding.region, finding]))
+    const nextProportionAnomalies: VisualAnomaly[] = []
+
+    for (const anomaly of priorDebt) {
+        const finding = findingsByRegion.get(anomaly.proportionRegion)
+        if (finding && canResolveProportionDrift(finding)) {
+            nextProportionAnomalies.push(
+                Object.freeze({
+                    ...anomaly,
+                    status: 'RESOLVED' as const,
+                    resolvedAtGeneration: input.generation,
+                }),
+            )
+            continue
+        }
+        if (finding && isActionableProportionDrift(finding)) {
+            nextProportionAnomalies.push(
+                toProportionDriftAnomaly(finding, input.generation, anomaly.detectedAtGeneration),
+            )
+            continue
+        }
+        // PREEXISTING cannot create a current-generation debt, but it also cannot silently erase
+        // a debt already attributed to an older generation. Missing or ambiguous evidence fails open.
+        nextProportionAnomalies.push(anomaly)
+    }
+
+    for (const finding of input.proportionFindings) {
+        const hasPriorDebt = priorDebt.some((anomaly) => anomaly.proportionRegion === finding.region)
+        if (!hasPriorDebt && isActionableProportionDrift(finding)) {
+            nextProportionAnomalies.push(toProportionDriftAnomaly(finding, input.generation))
+        }
+    }
+
+    return Object.freeze({
+        ...input.inspection,
+        visualAnomalies: Object.freeze([...structuralAnomalies, ...nextProportionAnomalies]),
+        proportionFindings: Object.freeze([...input.proportionFindings]),
     })
 }
 
@@ -723,6 +831,10 @@ export function visualRepairBrief(inspection: VisualInspection | null | undefine
                 anomaly.status === 'UNRESOLVED' &&
                 anomaly.confidence >= 0.7 &&
                 !hasRejectedAssessment(inspection, anomaly),
+        )
+        .sort(
+            (left, right) =>
+                Number(right.type === 'BODY_PROPORTION_DRIFT') - Number(left.type === 'BODY_PROPORTION_DRIFT'),
         )
         .slice(0, 2)
     if (!anomalies.length) return null

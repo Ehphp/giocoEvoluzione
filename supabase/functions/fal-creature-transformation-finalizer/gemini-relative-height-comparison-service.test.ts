@@ -74,6 +74,29 @@ describe('GeminiRelativeHeightComparisonService', () => {
                     confidence: 0.8,
                     confounders: ['LARGE_APPENDAGES'],
                     shortReason: 'The bearing body is taller.',
+                    proportionFindings: [
+                        {
+                            region: 'TRUNK',
+                            change: 'INTRODUCED',
+                            authorization: 'AUTHORIZED',
+                            confidence: 0.94,
+                            reason: 'The trunk is longer as requested.',
+                        },
+                        {
+                            region: 'NECK',
+                            change: 'INTRODUCED',
+                            authorization: 'UNAUTHORIZED',
+                            confidence: 0.9,
+                            reason: 'The neck is longer than the target permits.',
+                        },
+                        {
+                            region: 'HEAD',
+                            change: 'PREEXISTING',
+                            authorization: 'NOT_APPLICABLE',
+                            confidence: 0.92,
+                            reason: 'The head was already oversized in the source.',
+                        },
+                    ],
                 },
                 onComparison: (nextBody) => {
                     body = nextBody
@@ -86,6 +109,10 @@ describe('GeminiRelativeHeightComparisonService', () => {
             resultMimeType: 'image/png',
             sourceVersionId: 'version-1',
             sourceHeightMeters: 1.4,
+            proportionContext: {
+                evolutionTargetId: 'BODY_SHAPE',
+                microConceptSummary: 'Elongated Trunk. Increase trunk length by about 30%.',
+            },
         })
 
         expect(result).toEqual({
@@ -94,6 +121,29 @@ describe('GeminiRelativeHeightComparisonService', () => {
             confidence: 0.8,
             confounders: ['LARGE_APPENDAGES'],
             shortReason: 'The bearing body is taller.',
+            proportionFindings: [
+                {
+                    region: 'TRUNK',
+                    change: 'INTRODUCED',
+                    authorization: 'AUTHORIZED',
+                    confidence: 0.94,
+                    reason: 'The trunk is longer as requested.',
+                },
+                {
+                    region: 'NECK',
+                    change: 'INTRODUCED',
+                    authorization: 'UNAUTHORIZED',
+                    confidence: 0.9,
+                    reason: 'The neck is longer than the target permits.',
+                },
+                {
+                    region: 'HEAD',
+                    change: 'PREEXISTING',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: 0.92,
+                    reason: 'The head was already oversized in the source.',
+                },
+            ],
         })
         const parts = (body!.contents as Array<{ parts: Array<{ text?: string; file_data?: { file_uri?: string } }> }>)[0]
             .parts
@@ -101,6 +151,9 @@ describe('GeminiRelativeHeightComparisonService', () => {
         expect(parts[0]?.text).toContain('Do not estimate absolute metres')
         expect(parts[0]?.text).toContain('quadruped-to-biped or biped-to-quadruped locomotion transition')
         expect(parts[0]?.text).toContain('not by itself a pose confounder')
+        expect(parts[0]?.text).toContain('Selected target: BODY_SHAPE')
+        expect(parts[0]?.text).toContain('Increase trunk length by about 30%')
+        expect(parts[0]?.text).toContain('at most four proportionFindings')
         expect(parts[1]?.file_data?.file_uri).toBe('gemini://files/1')
         expect(parts[2]?.file_data?.file_uri).toBe('gemini://files/2')
     })

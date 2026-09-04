@@ -53,6 +53,7 @@ import type {
 } from '../../../shared/creature-transformations/evolution-targets.ts'
 import {
     applyHorizontalMirrorCorrection,
+    applyProportionFindings,
     decideSeedreamCenterFacing,
     decideHorizontalMirrorCorrection,
     parseVisualInspection,
@@ -71,7 +72,13 @@ import {
 import {
     GeminiRelativeHeightComparisonService,
     readGeminiRelativeHeightComparisonConfiguration,
+    type ProportionComparisonContext,
 } from './gemini-relative-height-comparison-service.ts'
+
+type SeedreamSourceResultComparison = Readonly<{
+    heightComparison: ReturnType<typeof createRelativeHeightComparison>
+    proportionFindings?: Awaited<ReturnType<GeminiRelativeHeightComparisonService['compare']>>['proportionFindings']
+}>
 
 /**
  * This function deliberately carries no generated database types: every row that crosses a
@@ -511,6 +518,27 @@ async function inspectSeedreamVisual(input: {
  * gate and any deterministic mirror correction. It is advisory metadata: a missing source,
  * provider failure or ambiguous pose never blocks the asset from reaching owner review.
  */
+function createProportionComparisonContext(
+    record: CreatureTransformationRequestRecord,
+): ProportionComparisonContext | undefined {
+    const concept = fluxMicroConceptFromSnapshot(record.conceptSnapshot)
+    if (!concept || !record.evolutionTargetId) return undefined
+
+    const summary = [
+        concept.conceptName,
+        concept.mutationIdea,
+        ...concept.visualDetails.slice(0, 2),
+        ...(concept.avoid ?? []).slice(0, 2),
+    ]
+        .join(' ')
+        .slice(0, 1_200)
+
+    return Object.freeze({
+        evolutionTargetId: record.evolutionTargetId,
+        microConceptSummary: summary,
+    })
+}
+
 async function compareSeedreamRelativeHeight(input: {
     record: CreatureTransformationRequestRecord
     workflow: ReturnType<typeof parseFalQueueWorkflow>
@@ -518,9 +546,9 @@ async function compareSeedreamRelativeHeight(input: {
     mimeType: 'image/png' | 'image/jpeg'
     resolver: SupabaseCreatureIdentityResolver
     storage: SupabaseCreatureTransformationStorageAdapter
-}): Promise<ReturnType<typeof createRelativeHeightComparison> | null> {
+}): Promise<SeedreamSourceResultComparison | null> {
     const existing = input.record.visualInspection?.heightComparison
-    if (existing) return existing
+    if (existing) return Object.freeze({ heightComparison: existing })
     const workflow = input.workflow
     if (!workflow || workflow.kind !== 'SEEDREAM_PRODUCTION') return null
 
@@ -551,6 +579,7 @@ async function compareSeedreamRelativeHeight(input: {
             resultMimeType: input.mimeType,
             sourceVersionId: input.record.sourceVisualVersionId ?? source.currentVisualVersionId,
             sourceHeightMeters: source.heightMeters,
+            proportionContext: createProportionComparisonContext(input.record),
         })
         const comparison = createRelativeHeightComparison({
             sourceVersionId: input.record.sourceVisualVersionId ?? source.currentVisualVersionId,
@@ -563,9 +592,13 @@ async function compareSeedreamRelativeHeight(input: {
             confidence: assessment.confidence,
             change: assessment.change,
             persisted: Boolean(comparison),
+            proportionFindings: assessment.proportionFindings?.length ?? 0,
             reason: comparison ? undefined : redactSensitiveText(assessment.shortReason, 180),
         })
-        return comparison
+        return Object.freeze({
+            heightComparison: comparison,
+            ...(assessment.proportionFindings ? { proportionFindings: assessment.proportionFindings } : {}),
+        })
     } catch (error) {
         console.warn('fal.finalizer.seedream_relative_height_unavailable', {
             providerRequestId: input.record.providerRequestId,
@@ -702,7 +735,7 @@ async function finalizeSeedreamProduction(input: {
             })
         }
     }
-    const heightComparison = await compareSeedreamRelativeHeight({
+    const sourceResultComparison = await compareSeedreamRelativeHeight({
         record: input.record,
         workflow,
         image: rawImage.bytes,
@@ -710,8 +743,20 @@ async function finalizeSeedreamProduction(input: {
         resolver: input.resolver,
         storage: input.storage,
     })
-    if (persistedInspection && heightComparison) {
-        persistedInspection = Object.freeze({ ...persistedInspection, heightComparison })
+    if (persistedInspection && sourceResultComparison) {
+        persistedInspection = Object.freeze({
+            ...persistedInspection,
+            ...(sourceResultComparison.heightComparison
+                ? { heightComparison: sourceResultComparison.heightComparison }
+                : {}),
+        })
+        if (sourceResultComparison.proportionFindings) {
+            persistedInspection = applyProportionFindings({
+                inspection: persistedInspection,
+                proportionFindings: sourceResultComparison.proportionFindings,
+                generation: visualInspection?.generation ?? 1,
+            })
+        }
     }
     await input.storage.saveRawResult({
         profileId: input.record.profileId,

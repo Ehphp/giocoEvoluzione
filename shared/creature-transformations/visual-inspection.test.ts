@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+    applyProportionFindings,
     mergeVisualInspection,
     parseOrientationArbiterAssessment,
     parseObservedVisualState,
@@ -185,5 +186,187 @@ describe('visual inspection repair lifecycle', () => {
         expect(parseVisualInspection({ ...prior(), heightComparison })?.heightComparison).toEqual(heightComparison)
         expect(parseVisualInspection({ ...prior(), heightComparison: { ...heightComparison, confidence: 0.2 } })).toBeNull()
         expect(parseVisualInspection(prior())?.heightComparison).toBeUndefined()
+    })
+
+    it('records the APBENZ trunk, neck and inherited head findings without treating authorized anatomy as drift', () => {
+        const inspection = applyProportionFindings({
+            inspection: mergeVisualInspection({
+                previous: null,
+                generation: 7,
+                inspectedAt: '2026-09-03T20:08:16.716Z',
+                detector: { status: 'COMPLETE', evidence: [] },
+                mapper: {
+                    status: 'COMPLETE',
+                    usedVision1Evidence: false,
+                    evidenceAssessments: [],
+                    structuralConcerns: [],
+                    observedVisualState: observed,
+                },
+            }),
+            generation: 7,
+            proportionFindings: [
+                {
+                    region: 'TRUNK',
+                    change: 'INTRODUCED',
+                    authorization: 'AUTHORIZED',
+                    confidence: .96,
+                    reason: 'The trunk is about 30% longer as requested by BODY_SHAPE.',
+                },
+                {
+                    region: 'NECK',
+                    change: 'INTRODUCED',
+                    authorization: 'UNAUTHORIZED',
+                    confidence: .9,
+                    reason: 'The neck is visibly longer although the concept only allows a slight base taper.',
+                },
+                {
+                    region: 'HEAD',
+                    change: 'PREEXISTING',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: .94,
+                    reason: 'The oversized head was already visible in the source image.',
+                },
+            ],
+        })
+
+        expect(inspection.proportionFindings).toHaveLength(3)
+        expect(inspection.visualAnomalies).toEqual([
+            expect.objectContaining({
+                type: 'BODY_PROPORTION_DRIFT',
+                proportionRegion: 'NECK',
+                status: 'UNRESOLVED',
+                detectedAtGeneration: 7,
+            }),
+        ])
+        expect(visualRepairBrief(inspection)).toContain('NECK: The neck is visibly longer')
+    })
+
+    it('resolves the APBENZ neck debt when a later source/result comparison improves it', () => {
+        const withNeckDebt = applyProportionFindings({
+            inspection: mergeVisualInspection({
+                previous: null,
+                generation: 7,
+                inspectedAt: '2026-09-03T20:08:16.716Z',
+                detector: { status: 'COMPLETE', evidence: [] },
+                mapper: {
+                    status: 'COMPLETE',
+                    usedVision1Evidence: false,
+                    evidenceAssessments: [],
+                    structuralConcerns: [],
+                    observedVisualState: observed,
+                },
+            }),
+            generation: 7,
+            proportionFindings: [
+                {
+                    region: 'NECK',
+                    change: 'INTRODUCED',
+                    authorization: 'UNAUTHORIZED',
+                    confidence: .9,
+                    reason: 'The neck is longer than the selected BODY_SHAPE mutation permits.',
+                },
+            ],
+        })
+        const next = applyProportionFindings({
+            inspection: mergeVisualInspection({
+                previous: withNeckDebt,
+                generation: 8,
+                inspectedAt: '2026-09-03T20:12:00.000Z',
+                detector: { status: 'COMPLETE', evidence: [] },
+                mapper: {
+                    status: 'COMPLETE',
+                    usedVision1Evidence: false,
+                    evidenceAssessments: [],
+                    structuralConcerns: [],
+                    observedVisualState: observed,
+                },
+            }),
+            generation: 8,
+            proportionFindings: [
+                {
+                    region: 'NECK',
+                    change: 'IMPROVED',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: .88,
+                    reason: 'The previous neck elongation is no longer visually material.',
+                },
+            ],
+        })
+
+        expect(next.visualAnomalies).toEqual([
+            expect.objectContaining({
+                type: 'BODY_PROPORTION_DRIFT',
+                proportionRegion: 'NECK',
+                status: 'RESOLVED',
+                detectedAtGeneration: 7,
+                resolvedAtGeneration: 8,
+            }),
+        ])
+        expect(visualRepairBrief(next)).toBeNull()
+    })
+
+    it('retains a pre-existing neck debt until a later comparison actually improves it', () => {
+        const priorDebt = {
+            type: 'BODY_PROPORTION_DRIFT' as const,
+            imageRegion: 'CENTER_IMAGE' as const,
+            description: 'NECK: The neck is too long.',
+            confidence: .9,
+            status: 'UNRESOLVED' as const,
+            detectedAtGeneration: 7,
+            proportionRegion: 'NECK' as const,
+        }
+        const next = applyProportionFindings({
+            inspection: mergeVisualInspection({
+                previous: {
+                    ...prior(),
+                    visualAnomalies: [priorDebt],
+                },
+                generation: 8,
+                inspectedAt: '2026-09-03T20:12:00.000Z',
+                detector: { status: 'COMPLETE', evidence: [] },
+                mapper: {
+                    status: 'COMPLETE',
+                    usedVision1Evidence: false,
+                    evidenceAssessments: [],
+                    structuralConcerns: [],
+                    observedVisualState: observed,
+                },
+            }),
+            generation: 8,
+            proportionFindings: [
+                {
+                    region: 'NECK',
+                    change: 'PREEXISTING',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: .9,
+                    reason: 'The longer neck was already present in the source image.',
+                },
+            ],
+        })
+
+        expect(next.visualAnomalies).toEqual([
+            expect.objectContaining({
+                type: 'BODY_PROPORTION_DRIFT',
+                proportionRegion: 'NECK',
+                status: 'UNRESOLVED',
+                detectedAtGeneration: 7,
+            }),
+        ])
+    })
+
+    it('keeps legacy inspections readable when proportion findings are absent or malformed', () => {
+        expect(parseVisualInspection(prior())?.proportionFindings).toBeUndefined()
+        expect(
+            parseVisualInspection({
+                ...prior(),
+                proportionFindings: Array.from({ length: 5 }, () => ({
+                    region: 'HEAD',
+                    change: 'PREEXISTING',
+                    authorization: 'NOT_APPLICABLE',
+                    confidence: .9,
+                    reason: 'Too many findings.',
+                })),
+            }),
+        ).toBeNull()
     })
 })

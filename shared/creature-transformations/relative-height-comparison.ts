@@ -1,4 +1,8 @@
 import { resolveCreatureHeightMeters } from '../creature-scale.ts'
+import {
+    parseProportionFindings,
+    type ProportionFinding,
+} from './proportion-findings.ts'
 
 export const RELATIVE_HEIGHT_COMPARISON_SCHEMA_VERSION = 'relative-height-v1'
 export const RELATIVE_HEIGHT_CONFIDENCE_THRESHOLD = 0.65
@@ -30,6 +34,8 @@ export type RelativeHeightAssessment = Readonly<{
     confidence: number
     confounders: readonly RelativeHeightConfounder[]
     shortReason: string
+    /** Present only when the existing source/result Vision comparison evaluated proportions. */
+    proportionFindings?: readonly ProportionFinding[]
 }>
 
 /**
@@ -119,7 +125,9 @@ export function parseRelativeHeightAssessment(value: unknown): RelativeHeightAss
     const item = record(value)
     if (
         !item ||
-        Object.keys(item).some((key) => !['status', 'change', 'confidence', 'confounders', 'shortReason'].includes(key))
+        Object.keys(item).some(
+            (key) => !['status', 'change', 'confidence', 'confounders', 'shortReason', 'proportionFindings'].includes(key),
+        )
     )
         return null
 
@@ -127,12 +135,15 @@ export function parseRelativeHeightAssessment(value: unknown): RelativeHeightAss
     const parsedConfidence = confidence(item.confidence)
     const parsedConfounders = confounders(item.confounders)
     const parsedReason = shortText(item.shortReason)
+    const proportionFindings =
+        item.proportionFindings === undefined ? undefined : parseProportionFindings(item.proportionFindings)
     return (
         (item.status === 'COMPLETE' || item.status === 'AMBIGUOUS' || item.status === 'UNAVAILABLE') &&
         parsedChange &&
         parsedConfidence !== null &&
         parsedConfounders &&
-        parsedReason
+        parsedReason &&
+        !(item.proportionFindings !== undefined && !proportionFindings)
     )
         ? Object.freeze({
               status: item.status,
@@ -140,6 +151,7 @@ export function parseRelativeHeightAssessment(value: unknown): RelativeHeightAss
               confidence: parsedConfidence,
               confounders: Object.freeze(parsedConfounders),
               shortReason: parsedReason,
+              ...(proportionFindings ? { proportionFindings } : {}),
           })
         : null
 }

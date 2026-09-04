@@ -1,5 +1,18 @@
 # TODO Supabase
 
+## 2026-09-04 — Deploy controllo deriva delle proporzioni
+
+Ridispiegare `fal-creature-transformation-finalizer` dopo il merge. La funzione estende il gia'
+esistente confronto Gemini sorgente/risultato con `proportionFindings` bounded, senza nuovi secret
+o chiamate AI. Verificare su una nuova evoluzione che
+`creature_transformation_requests.visual_inspection.proportionFindings` venga popolato e che un
+finding non autorizzato `INTRODUCED`/`WORSENED` con confidenza almeno `0.7` produca il debito
+`BODY_PROPORTION_DRIFT` in `visualAnomalies`; l'adozione deve comunque completarsi.
+
+```bash
+npx supabase functions deploy fal-creature-transformation-finalizer
+```
+
 ## 2026-09-02 — Permesso `height_meters` per la finalizzazione server
 
 Applicare la nuova migration `supabase/migrations/20260902175808_grant_service_role_creature_height.sql`

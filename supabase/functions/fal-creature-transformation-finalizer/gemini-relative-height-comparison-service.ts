@@ -2,6 +2,7 @@ import {
     parseRelativeHeightAssessment,
     type RelativeHeightAssessment,
 } from '../../../shared/creature-transformations/relative-height-comparison.ts'
+import type { EvolutionTargetId } from '../../../shared/creature-transformations/evolution-targets.ts'
 
 type FetchLike = typeof fetch
 
@@ -16,6 +17,12 @@ export type GeminiRelativeHeightComparisonConfiguration = Readonly<{
 }>
 
 type GeminiFile = Readonly<{ name: string; uri: string; mimeType: 'image/png' | 'image/jpeg' }>
+
+export type ProportionComparisonContext = Readonly<{
+    evolutionTargetId: EvolutionTargetId
+    /** Bounded summary of the persisted concept; it is comparison context, never a rewritten prompt. */
+    microConceptSummary: string
+}>
 
 function boundedInteger(value: string | undefined, fallback: number): number {
     const parsed = Number(value)
@@ -89,6 +96,23 @@ const RELATIVE_HEIGHT_SCHEMA = responseSchema(
             }),
         }),
         shortReason: responseSchema('STRING'),
+        proportionFindings: responseSchema('ARRAY', {
+            items: responseSchema(
+                'OBJECT',
+                {
+                    region: responseSchema('STRING', { enum: ['HEAD', 'NECK', 'TRUNK', 'LIMBS'] }),
+                    change: responseSchema('STRING', {
+                        enum: ['INTRODUCED', 'WORSENED', 'PREEXISTING', 'IMPROVED'],
+                    }),
+                    authorization: responseSchema('STRING', {
+                        enum: ['AUTHORIZED', 'UNAUTHORIZED', 'NOT_APPLICABLE', 'AMBIGUOUS'],
+                    }),
+                    confidence: responseSchema('NUMBER'),
+                    reason: responseSchema('STRING'),
+                },
+                ['region', 'change', 'authorization', 'confidence', 'reason'],
+            ),
+        }),
     },
     ['status', 'change', 'confidence', 'confounders', 'shortReason'],
 )
@@ -103,7 +127,7 @@ function unavailable(reason: string): RelativeHeightAssessment {
     })
 }
 
-function comparisonPrompt(): string {
+function comparisonPrompt(proportionContext?: ProportionComparisonContext): string {
     return [
         'You compare the biological bearing body height of the same creature across two images. Return JSON only.',
         'The first image is SOURCE. The second image is RESULT.',
@@ -114,6 +138,17 @@ function comparisonPrompt(): string {
         'Use MUCH_SHORTER, SHORTER, UNCHANGED, TALLER, or MUCH_TALLER only for reliable bearing-body-height change.',
         'Report COMPLETE only when both ground-contact feet and anatomical head top are comparable. Otherwise report AMBIGUOUS or UNAVAILABLE, list applicable confounders, and use UNCHANGED when no reliable direction remains.',
         'shortReason must be brief and factual.',
+        proportionContext
+            ? [
+                  'PROPORTION COMPARISON CONTEXT',
+                  `Selected target: ${proportionContext.evolutionTargetId}.`,
+                  `Bounded micro-concept: ${proportionContext.microConceptSummary}`,
+                  'Return at most four proportionFindings, at most one for each of HEAD, NECK, TRUNK and LIMBS.',
+                  'Compare SOURCE to RESULT. Use INTRODUCED/WORSENED only when the difference is visible in RESULT; PREEXISTING when it was already visible in SOURCE; IMPROVED when an earlier visible disproportion is reduced in RESULT.',
+                  'Mark AUTHORIZED only for the exact regional change explicitly supported by the selected target and micro-concept. Mark UNAUTHORIZED when it is a new or worse unrelated proportion. Use NOT_APPLICABLE for pre-existing observations and AMBIGUOUS when the image evidence or authorization cannot be determined.',
+                  'A finding is descriptive only: do not treat an authorized trunk change as a defect. Do not infer hidden anatomy. Return proportionFindings as [] when no region has a useful finding.',
+              ].join('\n')
+            : 'Do not include proportionFindings when target authorization context is unavailable.',
     ].join('\n')
 }
 
@@ -134,6 +169,7 @@ export class GeminiRelativeHeightComparisonService {
         resultMimeType: 'image/png' | 'image/jpeg'
         sourceVersionId: string
         sourceHeightMeters: number
+        proportionContext?: ProportionComparisonContext
     }): Promise<RelativeHeightAssessment> {
         if (!this.configuration.enabled || !this.configuration.apiKey) return unavailable('Provider non configurato.')
 
@@ -145,7 +181,7 @@ export class GeminiRelativeHeightComparisonService {
             return unavailable('Risultato non disponibile al confronto.')
         }
         try {
-            const payload = await this.generateJson(source, result)
+            const payload = await this.generateJson(source, result, input.proportionContext)
             return parseRelativeHeightAssessment(payload) ?? unavailable('Risposta di confronto non valida.')
         } catch {
             return unavailable('Confronto non disponibile.')
@@ -211,7 +247,11 @@ export class GeminiRelativeHeightComparisonService {
         if (!response.ok && response.status !== 404) throw new Error('gemini file cleanup failed')
     }
 
-    private async generateJson(source: GeminiFile, result: GeminiFile): Promise<unknown | null> {
+    private async generateJson(
+        source: GeminiFile,
+        result: GeminiFile,
+        proportionContext?: ProportionComparisonContext,
+    ): Promise<unknown | null> {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), this.configuration.timeoutMs)
         try {
@@ -224,7 +264,7 @@ export class GeminiRelativeHeightComparisonService {
                         contents: [
                             {
                                 parts: [
-                                    { text: comparisonPrompt() },
+                                    { text: comparisonPrompt(proportionContext) },
                                     { file_data: { mime_type: source.mimeType, file_uri: source.uri } },
                                     { file_data: { mime_type: result.mimeType, file_uri: result.uri } },
                                 ],
