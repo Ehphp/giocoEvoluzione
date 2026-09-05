@@ -9,13 +9,13 @@ import {
 import type { GeneActionCommandV2, GeneSelectionViewModelV2 } from './controller/types'
 import type { TraitType } from '../../game/types'
 import { AppShell, Button, ConfirmDialog, Notice, Overlay, Panel } from '../../ui/components'
-import { GeneIcon, MeteorIcon } from '../../ui/icons'
+import { MeteorIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
 import { CombatMutationLoadout } from './parts/CombatMutationLoadout'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
 import { DuelHeader } from './parts/DuelHeader'
 import { EnvironmentCard } from './parts/EnvironmentCard'
-import { GeneCarousel } from './parts/GeneCarousel'
+import { GeneCarousel, GeneOrbVisual } from './parts/GeneCarousel'
 import { ProfileMenuDiagnostics } from './parts/ProfileMenuDiagnostics'
 import { useBattleGeneInteraction } from './parts/use-battle-gene-interaction'
 
@@ -219,6 +219,7 @@ export function BattleScreen({
                                 onGenePointerUp={geneInteraction.onPointerUp}
                                 onGenePointerCancel={geneInteraction.onPointerCancel}
                                 onGeneLostPointerCapture={geneInteraction.onLostPointerCapture}
+                                draggedGeneId={isGeneDragging ? draggedGene?.id ?? null : null}
                             />
                             <DecisionActions
                                 selectedGene={viewModel.selectedGene}
@@ -235,8 +236,8 @@ export function BattleScreen({
             </div>
             {isGeneDragging && draggedGene ? (
                 <div className="gene-drag-preview" data-gene={draggedGene.traitType} style={dragPreviewStyle} aria-hidden="true">
-                    <GeneIcon trait={draggedGene.traitType} />
-                    <span>{draggedGene.name}</span>
+                    <GeneOrbVisual gene={draggedGene} />
+                    <span className="gene-drag-preview__name">{draggedGene.name}</span>
                 </div>
             ) : null}
             <ProfileMenuDiagnostics

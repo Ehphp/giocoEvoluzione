@@ -3,7 +3,7 @@ import { useEffect, useState, type KeyboardEvent, type PointerEvent } from 'reac
 import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
 import { playCue } from '../../../ui/feedback/feedback'
-import { ArrowDownIcon, ArrowUpIcon, GeneIcon } from '../../../ui/icons'
+import { ArrowDownIcon, ArrowUpIcon, GeneIcon, LockIcon } from '../../../ui/icons'
 import type { GeneCardV2 } from '../controller/types'
 
 type GeneCarouselProps = {
@@ -18,6 +18,12 @@ type GeneCarouselProps = {
     onGenePointerUp: (event: PointerEvent<HTMLButtonElement>) => void
     onGenePointerCancel: (event: PointerEvent<HTMLButtonElement>) => void
     onGeneLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void
+    draggedGeneId: string | null
+}
+
+type GeneOrbVisualProps = {
+    gene: GeneCardV2
+    isMatchupVisible?: boolean
 }
 
 const AFFINITY_SHORT: Record<GeneCardV2['affinity'], string> = {
@@ -36,6 +42,10 @@ const AFFINITY_TONE = { ideal: 'good', suitable: 'info', unfavorable: 'bad' } as
 
 function formatContribution(value: number): string {
     return value > 0 ? `+${value}` : String(value)
+}
+
+function normalizedLevel(level: number): number {
+    return Math.max(0, Math.min(level, MAX_ADAPTATION_LEVEL))
 }
 
 function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => void }) {
@@ -87,10 +97,53 @@ function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => v
     )
 }
 
-function GeneOrb({ gene, isSelected, isLongPressActive, disabled, tabIndex, onActivate, onKeyDown, consumeSuppressedClick, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture }: {
+export function GeneOrbVisual({ gene, isMatchupVisible = false }: GeneOrbVisualProps) {
+    const expectedScore = gene.prediction?.useScore
+
+    return (
+        <span
+            className={`gene-orb__visual ${gene.exhausted ? 'is-exhausted' : ''}`}
+            data-level={normalizedLevel(gene.level)}
+            aria-hidden="true"
+        >
+            <span className="gene-orb__matchups">
+                {gene.strongAgainstTrait ? (
+                    <span className="gene-orb__ear gene-orb__ear--strong" data-gene={gene.strongAgainstTrait}>
+                        <GeneIcon trait={gene.strongAgainstTrait} />
+                    </span>
+                ) : null}
+                {gene.weakAgainstTrait ? (
+                    <span className="gene-orb__ear gene-orb__ear--weak" data-gene={gene.weakAgainstTrait}>
+                        <GeneIcon trait={gene.weakAgainstTrait} />
+                    </span>
+                ) : null}
+            </span>
+            <span className="gene-orb__disc">
+                <span className={`gene-orb__frame ${isMatchupVisible ? 'is-context-hidden' : ''}`} />
+                <span className="gene-orb__content">
+                    <span className={`gene-orb__icon ${isMatchupVisible ? 'is-context-hidden' : ''}`}>
+                        <GeneIcon trait={gene.traitType} />
+                    </span>
+                </span>
+                <b className={`gene-orb__score ${isMatchupVisible ? 'is-context-hidden' : ''}`}>
+                    {expectedScore ?? '—'}
+                </b>
+                {gene.exhausted ? (
+                    <span className="gene-orb__status">
+                        <LockIcon />
+                    </span>
+                ) : null}
+            </span>
+            <b className="gene-orb__expected-score">{expectedScore ?? '—'}</b>
+        </span>
+    )
+}
+
+function GeneOrb({ gene, isSelected, isLongPressActive, isDragging, disabled, tabIndex, onActivate, onKeyDown, consumeSuppressedClick, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture }: {
     gene: GeneCardV2
     isSelected: boolean
     isLongPressActive: boolean
+    isDragging: boolean
     disabled: boolean
     tabIndex: number
     onActivate: () => void
@@ -102,7 +155,6 @@ function GeneOrb({ gene, isSelected, isLongPressActive, disabled, tabIndex, onAc
     onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void
     onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
-    const expectedScore = gene.prediction?.useScore
     const matchupDescription = [
         gene.strongAgainstTrait && gene.strongAgainst ? `supera ${gene.strongAgainst}` : null,
         gene.weakAgainstTrait && gene.weakAgainst ? `viene superato da ${gene.weakAgainst}` : null,
@@ -118,8 +170,8 @@ function GeneOrb({ gene, isSelected, isLongPressActive, disabled, tabIndex, onAc
              * class, so the CSS reads as one rule per level. Clamped to the range the frames cover, so
              * a level the stylesheet has no frame for falls back to the nearest one it does.
              */
-            data-level={Math.max(0, Math.min(gene.level, MAX_ADAPTATION_LEVEL))}
-            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''} ${isLongPressActive ? 'is-matchup-visible' : ''}`}
+            data-level={normalizedLevel(gene.level)}
+            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''} ${isLongPressActive ? 'is-matchup-visible' : ''} ${isDragging ? 'is-dragging' : ''}`}
             aria-selected={isSelected}
             aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${gene.prediction ? gene.prediction.useScore : 'non disponibile'}, ${AFFINITY_FULL[gene.affinity]}${isLongPressActive && matchupDescription ? `. Matchup: ${matchupDescription}` : ''}${isSelected ? '. Tocca di nuovo per i dettagli' : ''}`}
             data-matchup-visible={isLongPressActive || undefined}
@@ -141,38 +193,13 @@ function GeneOrb({ gene, isSelected, isLongPressActive, disabled, tabIndex, onAc
             onPointerCancel={onPointerCancel}
             onLostPointerCapture={onLostPointerCapture}
         >
-            <span className="gene-orb__visual" aria-hidden="true">
-                <span className="gene-orb__matchups">
-                    {gene.strongAgainstTrait ? (
-                        <span className="gene-orb__ear gene-orb__ear--strong" data-gene={gene.strongAgainstTrait}>
-                            <GeneIcon trait={gene.strongAgainstTrait} />
-                        </span>
-                    ) : null}
-                    {gene.weakAgainstTrait ? (
-                        <span className="gene-orb__ear gene-orb__ear--weak" data-gene={gene.weakAgainstTrait}>
-                            <GeneIcon trait={gene.weakAgainstTrait} />
-                        </span>
-                    ) : null}
-                </span>
-                <span className="gene-orb__disc">
-                    <span className={`gene-orb__frame ${isLongPressActive ? 'is-context-hidden' : ''}`} />
-                    <span className="gene-orb__content">
-                        <span className={`gene-orb__icon ${isLongPressActive ? 'is-context-hidden' : ''}`}>
-                            <GeneIcon trait={gene.traitType} />
-                        </span>
-                    </span>
-                    <b className={`gene-orb__score ${isLongPressActive ? 'is-context-hidden' : ''}`}>
-                        {expectedScore ?? '—'}
-                    </b>
-                </span>
-                <b className="gene-orb__expected-score">{expectedScore ?? '—'}</b>
-            </span>
+            <GeneOrbVisual gene={gene} isMatchupVisible={isLongPressActive} />
             <span className="gene-orb__name ev-truncate">{gene.name}</span>
         </button>
     )
 }
 
-export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelection, longPressGeneId, consumeSuppressedClick, onGenePointerDown, onGenePointerMove, onGenePointerUp, onGenePointerCancel, onGeneLostPointerCapture }: GeneCarouselProps) {
+export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelection, longPressGeneId, consumeSuppressedClick, onGenePointerDown, onGenePointerMove, onGenePointerUp, onGenePointerCancel, onGeneLostPointerCapture, draggedGeneId }: GeneCarouselProps) {
     const [detailGeneId, setDetailGeneId] = useState<string | null>(null)
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
     const detailGene = detailGeneId ? genes.find((gene) => gene.id === detailGeneId) ?? null : null
@@ -231,6 +258,7 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
                         gene={gene}
                         isSelected={index === selectedIndex}
                         isLongPressActive={longPressGeneId === gene.id}
+                        isDragging={draggedGeneId === gene.id}
                         disabled={disableSelection}
                         tabIndex={index === selectedIndex ? 0 : -1}
                         onActivate={() => {

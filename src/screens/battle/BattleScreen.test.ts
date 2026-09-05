@@ -305,6 +305,23 @@ describe('BattleScreen', () => {
         expect(orbs[2]?.getAttribute('aria-label')).toContain('Affinita ideale')
     })
 
+    it('keeps icon, score and level separate and marks exhaustion without relying on colour', () => {
+        renderInteractive()
+
+        const orbs = [...container.querySelectorAll<HTMLButtonElement>('.gene-orb')]
+
+        expect(orbs).toHaveLength(5)
+        for (const orb of orbs) {
+            expect(orb.querySelector('.gene-orb__icon')).not.toBeNull()
+            expect(orb.querySelector('.gene-orb__score')).not.toBeNull()
+            expect(orb.querySelector('.gene-orb__frame')).not.toBeNull()
+        }
+
+        expect(orbs[3]?.querySelector('.gene-orb__status')).not.toBeNull()
+        expect(orbs.filter((orb) => !orb.classList.contains('is-exhausted'))
+            .every((orb) => orb.querySelector('.gene-orb__status') === null)).toBe(true)
+    })
+
     it('supports keyboard selection and exposes exhaustion semantically', () => {
         renderInteractive()
 
@@ -356,6 +373,31 @@ describe('BattleScreen', () => {
         act(() => ferocity.click())
 
         expect(document.querySelector('.gene-detail')).toBeNull()
+    })
+
+    it.each([
+        { position: 'primo', index: 0 },
+        { position: 'centrale', index: 2 },
+        { position: 'ultimo', index: 4 },
+    ])('uses the same lifted sample visual while dragging the $position gene', ({ index }) => {
+        renderInteractive()
+
+        const orb = container.querySelectorAll<HTMLButtonElement>('.gene-orb')[index]!
+
+        enablePointerCapture(orb)
+        act(() => orb.dispatchEvent(pointerEvent('pointerdown', 40, 600)))
+        act(() => orb.dispatchEvent(pointerEvent('pointermove', 50, 600)))
+
+        const preview = container.querySelector('.gene-drag-preview')
+
+        expect(orb.classList.contains('is-dragging')).toBe(true)
+        expect(preview?.querySelector('.gene-orb__visual')).not.toBeNull()
+        expect(preview?.querySelector('.gene-orb__score')?.textContent).toBe(String(GENES[index]?.prediction?.useScore))
+        expect(preview?.querySelector('.gene-orb__visual')?.getAttribute('data-level')).toBe(String(GENES[index]?.level))
+
+        act(() => orb.dispatchEvent(pointerEvent('pointercancel', 50, 600)))
+
+        expect(container.querySelector('.gene-drag-preview')).toBeNull()
     })
 
     it('drops an unselected gene on the player creature as an explicit EVOLVE command', async () => {

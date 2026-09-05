@@ -719,12 +719,11 @@
 /* -------------------------------------------------------------------------- */
 
 /*
- * Spheres, not cards.
+ * Tactile genetic samples, not cards, seeds or fantasy medallions.
  *
- * In the resting state the round score rides the disc, the level *is* the frame around it, and affinity
- * is already inside the score. Holding a gene temporarily moves that same level to the centre and
- * reveals its two matchup glyphs behind it. The name is the only word that stays, because five glyphs
- * with no names is a memory test.
+ * In the resting state the round score rides the sample, the level *is* the studded frame, and affinity
+ * is already inside the score. Holding a gene preserves that score and reveals the two matchup glyphs
+ * above the finger. The name is the only word that stays on supported portrait widths.
  *
  * They bottom-align, and the selected one grows by `scale` rather than by width. That is what lets it
  * rise above the row without pushing its neighbours or moving the names off one line.
@@ -734,11 +733,10 @@
     align-items: flex-end;
     justify-content: center;
     /*
-     * The gap is not taste. The selected disc grows by half of `(size x scale - size)` on each side,
-     * and each badge overhangs its own disc by 2px; anything tighter and the orb that grew covers its
-     * left neighbour's score. At 52px and 1.34 that is 9px + 2px, so 12px clears it.
+     * The token follows viewport width: it spends spare room at 412px, then contracts before the
+     * samples do. The 1.06 selected scale only overhangs by about 2px at the largest size.
      */
-    gap: 12px;
+    gap: var(--ev-gene-orb-gap);
     /*
      * Reserved, not guessed. The selected disc's transform-origin is its foot, so the whole of its
      * growth goes upward and overflows this container by exactly that much. The ear clearance reserves
@@ -756,7 +754,7 @@
      * rather than 0.5 — so it hangs further below the disc than a round stud would, and further again
      * on the selected orb, which is scaled. This gap is what it hangs into.
      */
-    gap: 7px;
+    gap: var(--ev-s-1);
     min-width: 0;
     padding: 0;
     touch-action: none;
@@ -764,32 +762,34 @@
 }
 
 .gene-drag-preview {
+    --ev-gene-orb-size: var(--ev-gene-drag-preview-size);
     position: fixed;
     top: var(--gene-drag-y);
     left: var(--gene-drag-x);
     z-index: var(--ev-z-overlay);
     display: grid;
-    grid-template-columns: auto auto;
-    align-items: center;
+    justify-items: center;
     gap: var(--ev-s-1);
-    padding: var(--ev-s-2) var(--ev-s-3);
-    border: var(--ev-stroke-width) solid var(--gene-color, var(--ev-player));
-    border-radius: var(--ev-r-pill);
-    color: var(--gene-color-strong, var(--ev-on-dark));
-    font-family: var(--ev-font-display);
-    font-size: var(--ev-fs-sm);
-    font-weight: 800;
-    line-height: 1;
-    white-space: nowrap;
-    background: color-mix(in srgb, var(--gene-color-soft, var(--ev-cream-light)) 88%, var(--ev-cream-light));
-    box-shadow: var(--ev-shadow-lg);
     pointer-events: none;
-    translate: -50% calc(-100% - var(--ev-s-3));
+    translate: -50% calc(-100% - var(--ev-gene-drag-lift));
     user-select: none;
 }
 
+.gene-drag-preview__name {
+    padding: var(--ev-s-1) var(--ev-s-2);
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-cream-light);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-xs);
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    background: var(--gene-color-strong, var(--ev-ink));
+    box-shadow: var(--ev-shadow-sm);
+}
+
 .gene-orb.is-selected {
-    /* The scaled disc overlaps its neighbours by a couple of pixels; it has to be the one on top. */
+    /* The selected sample rises without changing the row's measured width or height. */
     z-index: 2;
 }
 
@@ -861,11 +861,12 @@
     place-items: center;
     width: var(--ev-gene-orb-size);
     height: var(--ev-gene-orb-size);
-    border-radius: var(--ev-r-pill);
-    color: var(--gene-color-strong, var(--ev-ink));
-    font-size: calc(var(--ev-gene-orb-size) * .56);
-    background: radial-gradient(circle at 50% 28%, var(--ev-cream-light) 0%, var(--gene-color-soft, var(--ev-cream-deep)) 100%);
-    box-shadow: var(--ev-shadow-sm);
+    border: var(--ev-gene-orb-border-width) solid color-mix(in srgb, var(--ev-cream-light) 72%, var(--gene-color));
+    border-radius: var(--ev-gene-orb-shape);
+    color: var(--ev-cream-light);
+    font-size: calc(var(--ev-gene-orb-size) * var(--ev-gene-orb-icon-ratio));
+    background: linear-gradient(145deg, color-mix(in srgb, var(--gene-color) 58%, var(--ev-cream-light)), var(--gene-color) 58%, color-mix(in srgb, var(--gene-color-strong) 74%, var(--gene-color)));
+    box-shadow: var(--ev-shadow-gene-orb);
     /* Grows from its foot, so the name below never moves. */
     transform-origin: 50% 100%;
     transition:
@@ -875,16 +876,26 @@
 
 .gene-orb.is-selected .gene-orb__disc {
     scale: var(--ev-gene-orb-selected-scale);
-    box-shadow: var(--ev-shadow-md), 0 0 16px color-mix(in srgb, var(--gene-color, var(--ev-player)) 55%, transparent);
+    box-shadow: var(--ev-shadow-gene-orb-selected);
+}
+
+.gene-drag-preview .gene-orb__disc {
+    box-shadow: var(--ev-shadow-gene-orb-selected);
 }
 
 .gene-orb:active:not(:disabled) .gene-orb__disc {
     transition: scale var(--ev-dur-press) var(--ev-ease);
-    scale: calc(var(--ev-gene-orb-selected-scale) * .94);
+    scale: var(--ev-gene-orb-selected-pressed-scale);
 }
 
 .gene-orb:not(.is-selected):active:not(:disabled) .gene-orb__disc {
-    scale: .94;
+    scale: var(--ev-gene-orb-pressed-scale);
+}
+
+.gene-orb.is-dragging .gene-orb__disc {
+    opacity: var(--ev-gene-orb-drag-source-opacity);
+    scale: var(--ev-gene-orb-drag-source-scale);
+    box-shadow: none;
 }
 
 /*
@@ -906,7 +917,7 @@
     inset: 0;
     z-index: 1;
     border-radius: inherit;
-    box-shadow: inset 0 0 0 2.5px var(--gene-color, var(--ev-player));
+    box-shadow: inset 0 0 0 var(--ev-gene-orb-frame-width) color-mix(in srgb, var(--gene-color-strong) 72%, var(--ev-cream-light));
     transition:
         opacity var(--ev-dur-gene-matchup) var(--ev-ease),
         scale var(--ev-dur-gene-matchup) var(--ev-ease);
@@ -931,7 +942,7 @@
 }
 
 /* Level 1 — a single stud at 225 degrees, the middle of the arc. */
-.gene-orb[data-level='1'] .gene-orb__frame::after {
+.gene-orb__visual[data-level='1'] .gene-orb__frame::after {
     content: '';
     translate:
         calc(-50% + var(--ev-gene-orb-size) * -.354)
@@ -939,14 +950,14 @@
 }
 
 /* Level 2 — two studs, at 210 and 240 degrees, sitting either side of where the single one was. */
-.gene-orb[data-level='2'] .gene-orb__frame::before {
+.gene-orb__visual[data-level='2'] .gene-orb__frame::before {
     content: '';
     translate:
         calc(-50% + var(--ev-gene-orb-size) * -.433)
         calc(-50% + var(--ev-gene-orb-size) * .25);
 }
 
-.gene-orb[data-level='2'] .gene-orb__frame::after {
+.gene-orb__visual[data-level='2'] .gene-orb__frame::after {
     content: '';
     translate:
         calc(-50% + var(--ev-gene-orb-size) * -.25)
@@ -973,6 +984,8 @@
 }
 
 .gene-orb__icon {
+    --gene-color: var(--ev-cream-light);
+    --gene-color-strong: var(--ev-cream-deep);
     font-size: inherit;
 }
 
@@ -994,7 +1007,8 @@
 
 .gene-orb.is-matchup-visible .gene-orb__frame,
 .gene-orb.is-matchup-visible .gene-orb__icon,
-.gene-orb.is-matchup-visible .gene-orb__score {
+.gene-orb.is-matchup-visible .gene-orb__score,
+.gene-orb.is-matchup-visible .gene-orb__status {
     opacity: 0;
     scale: var(--ev-gene-matchup-content-scale);
 }
@@ -1012,24 +1026,48 @@
 .gene-orb__score {
     position: absolute;
     z-index: 3;
-    top: -2px;
-    right: -2px;
-    min-width: 20px;
-    padding: 0 4px;
+    top: var(--ev-gene-orb-score-offset);
+    right: var(--ev-gene-orb-score-offset);
+    display: grid;
+    place-items: center;
+    min-width: var(--ev-gene-orb-score-size);
+    height: var(--ev-gene-orb-score-size);
+    padding: 0 var(--ev-s-1);
     border-radius: var(--ev-r-pill);
-    color: #fff;
+    color: var(--ev-cream-light);
     font-family: var(--ev-font-display);
     font-size: var(--ev-fs-xs);
-    line-height: 17px;
+    line-height: 1;
     background: var(--gene-color-strong, var(--ev-ink));
-    border: 2px solid var(--ev-cream-light);
+    border: var(--ev-gene-orb-score-border-width) solid var(--ev-cream-light);
+    box-shadow: var(--ev-shadow-sm);
+    transition:
+        opacity var(--ev-dur-gene-matchup) var(--ev-ease),
+        scale var(--ev-dur-gene-matchup) var(--ev-ease);
+}
+
+.gene-orb__status {
+    position: absolute;
+    right: var(--ev-gene-orb-status-offset);
+    bottom: var(--ev-gene-orb-status-offset);
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: var(--ev-gene-orb-status-size);
+    height: var(--ev-gene-orb-status-size);
+    border: var(--ev-gene-orb-score-border-width) solid var(--ev-cream-light);
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-cream-light);
+    font-size: calc(var(--ev-gene-orb-status-size) * var(--ev-gene-orb-status-icon-ratio));
+    background: var(--ev-ink-faint);
+    box-shadow: var(--ev-shadow-sm);
     transition:
         opacity var(--ev-dur-gene-matchup) var(--ev-ease),
         scale var(--ev-dur-gene-matchup) var(--ev-ease);
 }
 
 .gene-orb__name {
-    max-width: calc(var(--ev-gene-orb-size) + 8px);
+    max-width: calc(var(--ev-gene-orb-size) + var(--ev-s-2));
     color: var(--ev-on-dark-muted);
     font-family: var(--ev-font-display);
     font-size: var(--ev-fs-2xs);
@@ -1043,12 +1081,18 @@
     color: var(--gene-color, var(--ev-on-dark));
 }
 
-.gene-orb.is-exhausted .gene-orb__disc {
-    filter: saturate(.28);
+.gene-orb__visual.is-exhausted .gene-orb__disc {
+    background: linear-gradient(145deg, var(--ev-cream-deep), color-mix(in srgb, var(--ev-ink-faint) 42%, var(--ev-cream-deep)));
+}
+
+.gene-orb__visual.is-exhausted .gene-orb__content,
+.gene-orb__visual.is-exhausted .gene-orb__frame {
+    opacity: var(--ev-gene-orb-exhausted-opacity);
+    filter: saturate(var(--ev-gene-orb-exhausted-saturation));
 }
 
 /* Exhausted reads as "no colour, no score": the badge drops out of the adaptation's hue. */
-.gene-orb.is-exhausted .gene-orb__score {
+.gene-orb__visual.is-exhausted .gene-orb__score {
     background: var(--ev-ink-faint);
 }
 
@@ -1313,14 +1357,6 @@
         flex-basis: var(--ev-battle-arena-basis-tight);
     }
 
-    /*
-     * On the container, not the orb: `.gene-orbs` derives its own reserved space from this, so setting
-     * it on the child would shrink the orbs and leave the reservation sized for the old ones.
-     */
-    .gene-orbs {
-        --ev-gene-orb-size: 46px;
-    }
-
     /* Below this a second line genuinely will not fit, so the button asks for less rather than clip. */
     .battle-screen {
         --ev-action-btn-height: 52px;
@@ -1369,18 +1405,6 @@
         width: 40px;
     }
 
-    /* All five adaptations still fit side by side on a 320px screen. */
-    .gene-orbs {
-        --ev-gene-orb-size: 46px;
-        /* Smaller orbs grow less, so the badge clearance shrinks with them: 7.8px + 2px, rounded up. */
-        gap: 11px;
-    }
-
-    .gene-orb__name {
-        font-size: 9px;
-        letter-spacing: -.01em;
-    }
-
     .mutation-loadout {
         gap: var(--ev-s-1);
     }
@@ -1399,6 +1423,13 @@
 
     .duel-card {
         gap: 5px;
+    }
+}
+
+/* At 320px the labels yield before the 52px tactile targets; names remain in each accessible label. */
+@media (max-width: 339px) {
+    .gene-orb__name {
+        display: none;
     }
 }
 

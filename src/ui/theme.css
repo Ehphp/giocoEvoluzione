@@ -240,14 +240,36 @@
     --ev-action-btn-height: 66px;
     --ev-action-btn-hint-lines: 2;
     /*
-     * Gene orbs. The base size is what five of them need to sit side by side on a 320px screen; the
-     * selected one grows by `scale` rather than by width, so it can rise above the row without
-     * pushing its neighbours or re-laying the names out.
+     * Five tactile genetic samples share the decision board without horizontal scrolling.
+     * The board leaves 26px outside this row. `viewport - 70px` therefore reserves 44px for the
+     * four gaps at the wide end; the clamps then yield 68 / 64 / 58 / 52px at 412 / 390 / 360 /
+     * 320px. The gap contracts before the target does, and the small selected scale prevents a
+     * neighbour or its score badge from being covered.
      */
-    --ev-gene-orb-size: 52px;
-    --ev-gene-orb-selected-scale: 1.34;
-    /* The level studs set into the ring: rhombi, one per level, so only the side length varies. */
-    --ev-gene-orb-stud: 8px;
+    --ev-gene-orb-size: clamp(52px, calc((100vw - 70px) / 5), 68px);
+    --ev-gene-orb-gap: clamp(6px, calc((100vw - 294px) / 10), 11px);
+    --ev-gene-orb-selected-scale: 1.06;
+    --ev-gene-orb-selected-pressed-scale: 1.02;
+    --ev-gene-orb-pressed-scale: .96;
+    --ev-gene-orb-drag-source-scale: .94;
+    --ev-gene-orb-drag-source-opacity: .34;
+    --ev-gene-orb-border-width: 3px;
+    --ev-gene-orb-frame-width: 2px;
+    --ev-gene-orb-shape: 48% 52% 47% 53% / 51% 48% 52% 49%;
+    --ev-gene-orb-icon-ratio: .54;
+    --ev-gene-orb-score-size: clamp(19px, calc(var(--ev-gene-orb-size) * .32), 22px);
+    --ev-gene-orb-score-offset: -2px;
+    --ev-gene-orb-score-border-width: 2px;
+    --ev-gene-orb-status-size: clamp(18px, calc(var(--ev-gene-orb-size) * .3), 21px);
+    --ev-gene-orb-status-icon-ratio: .56;
+    --ev-gene-orb-status-offset: -2px;
+    --ev-gene-orb-exhausted-opacity: .72;
+    --ev-gene-orb-exhausted-saturation: .2;
+    --ev-gene-orb-stud: clamp(7px, calc(var(--ev-gene-orb-size) * .13), 9px);
+    --ev-gene-drag-preview-size: 64px;
+    --ev-gene-drag-lift: var(--ev-s-4);
+    --ev-shadow-gene-orb: inset 0 3px 0 color-mix(in srgb, var(--ev-cream-light) 58%, transparent), inset 0 -4px 0 color-mix(in srgb, var(--gene-color-strong) 24%, transparent), var(--ev-shadow-sm);
+    --ev-shadow-gene-orb-selected: 0 0 0 4px color-mix(in srgb, var(--ev-cream-light) 88%, var(--gene-color)), var(--ev-shadow-md), 0 0 18px color-mix(in srgb, var(--gene-color) 52%, transparent);
     /* Contextual matchup shown while a gene is held. */
     --ev-gene-matchup-ear-ratio: .45;
     --ev-gene-matchup-ear-top: -.22;

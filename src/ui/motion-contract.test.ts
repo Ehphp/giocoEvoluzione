@@ -140,8 +140,8 @@ describe('gene level frames', () => {
      */
     it('gives every level a different number of studs', () => {
         const studCount = (level: number) => [
-            `.gene-orb[data-level='${level}'] .gene-orb__frame::before`,
-            `.gene-orb[data-level='${level}'] .gene-orb__frame::after`,
+            `.gene-orb__visual[data-level='${level}'] .gene-orb__frame::before`,
+            `.gene-orb__visual[data-level='${level}'] .gene-orb__frame::after`,
         ].filter((selector) => battle.includes(`${selector} {`)).length
 
         expect(studCount(0)).toBe(0)
@@ -152,8 +152,9 @@ describe('gene level frames', () => {
     it('keeps the studs on the ring at whatever size the orb takes', () => {
         // Offsets are `radius x (cos, -sin)` written against the size token, never fixed pixels: the
         // orb shrinks on small screens and the studs have to shrink onto the new ring with it.
-        const studs = battle.slice(battle.indexOf(".gene-orb[data-level='1'] .gene-orb__frame::after"))
-            .slice(0, battle.indexOf('.gene-orb__score') - battle.indexOf(".gene-orb[data-level='1'] .gene-orb__frame::after"))
+        const levelOneSelector = ".gene-orb__visual[data-level='1'] .gene-orb__frame::after"
+        const studs = battle.slice(battle.indexOf(levelOneSelector))
+            .slice(0, battle.indexOf('.gene-orb__score') - battle.indexOf(levelOneSelector))
 
         expect(studs).toContain('var(--ev-gene-orb-size) * -.354')
         expect(studs).toContain('var(--ev-gene-orb-size) * -.433')
@@ -171,6 +172,21 @@ describe('gene level frames', () => {
         expect(orbs).toContain('var(--ev-gene-orb-size) * (var(--ev-gene-orb-selected-scale) - 1)')
         // And the height tiers must retune the size on the container, or the reservation keeps the old one.
         expect(battle).not.toMatch(/\.gene-orb \{\s*--ev-gene-orb-size/)
+    })
+})
+
+describe('gene tactile sizing', () => {
+    it('fits five visual targets by shrinking the gap before the target', () => {
+        expect(theme).toContain('--ev-gene-orb-size: clamp(52px, calc((100vw - 70px) / 5), 68px)')
+        expect(theme).toContain('--ev-gene-orb-gap: clamp(6px, calc((100vw - 294px) / 10), 11px)')
+        expect(block(battle, '.gene-orbs')).toContain('gap: var(--ev-gene-orb-gap)')
+        expect(battle).not.toContain('--ev-gene-orb-size: 46px')
+    })
+
+    it('selects without layout sizing and keeps the drag preview on the same visual', () => {
+        expect(block(battle, '.gene-orb.is-selected .gene-orb__disc')).toContain('scale: var(--ev-gene-orb-selected-scale)')
+        expect(block(battle, '.gene-orb.is-selected .gene-orb__disc')).not.toMatch(/width|height/)
+        expect(block(battle, '.gene-drag-preview')).toContain('--ev-gene-orb-size: var(--ev-gene-drag-preview-size)')
     })
 })
 
