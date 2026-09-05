@@ -254,6 +254,8 @@
     --ev-gene-matchup-ear-left: -.04;
     --ev-gene-matchup-ear-right: .59;
     --ev-gene-matchup-ear-clearance: var(--ev-s-4);
+    --ev-gene-drag-muted-opacity: .62;
+    --ev-gene-drop-disabled-opacity: .42;
     --ev-gene-matchup-ear-border-width: 3px;
     --ev-gene-matchup-ear-inner-ring-width: 1px;
     --ev-gene-matchup-content-scale: .78;

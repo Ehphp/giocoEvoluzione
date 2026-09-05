@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { TraitType } from '../../../game/types'
 import type { GameSnapshot } from '../../../lib/game-api'
-import type { GeneActionTypeV2 } from './types'
+import type { GeneActionCommandV2, GeneActionTypeV2 } from './types'
 import { buildGeneSelectionV2ViewModel, getInitialTraitIdForSnapshot } from './build-gene-selection-v2-view-model'
 
 type UseGeneSelectionV2ControllerInput = {
@@ -101,17 +101,20 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         setSubmitErrorMessage(null)
     }, [viewModel.genes, viewModel.status])
 
-    const handleSubmit = useCallback(async (actionType: GeneActionTypeV2) => {
-        if (submittingRef.current || !viewModel.selectedGene || viewModel.status === 'invalid') {
-            return
+    const handleSubmitGeneAction = useCallback(async ({ geneId, actionType }: GeneActionCommandV2): Promise<boolean> => {
+        const gene = viewModel.genes.find((candidate) => candidate.id === geneId)
+        const canChoose = viewModel.status === 'choosing' || viewModel.status === 'error'
+
+        if (submittingRef.current || !gene || !canChoose) {
+            return false
         }
 
-        if (actionType === 'USE' && !viewModel.canUse) {
-            return
+        if (actionType === 'USE' && !gene.usable) {
+            return false
         }
 
-        if (actionType === 'EVOLVE' && !viewModel.canEvolve) {
-            return
+        if (actionType === 'EVOLVE' && !gene.evolvable) {
+            return false
         }
 
         submittingRef.current = true
@@ -119,29 +122,47 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
         setSelectedAction(actionType)
         setSubmitErrorMessage(null)
 
-        const trait = viewModel.selectedGene.traitType
-        const submitted = await input.onSubmitAction({ trait, actionType })
+        const trait = gene.traitType
+        let submitted = false
 
-        if (submitted) {
-            setLocalSubmittedAction({ trait, actionType })
-            setIsSubmitting(false)
-            submittingRef.current = false
-
-            return
+        try {
+            submitted = await input.onSubmitAction({ trait, actionType })
+        } catch {
+            submitted = false
         }
 
         setIsSubmitting(false)
         submittingRef.current = false
+
+        if (submitted) {
+            setLocalSubmittedAction({ trait, actionType })
+
+            return true
+        }
+
         setSubmitErrorMessage('Invio azione non riuscito. Riprova.')
-    }, [input, viewModel.canEvolve, viewModel.canUse, viewModel.selectedGene, viewModel.status])
+        return false
+    }, [input, viewModel.genes, viewModel.status])
 
     const handleUseGene = useCallback(async () => {
-        await handleSubmit('USE')
-    }, [handleSubmit])
+        const geneId = viewModel.selectedGene?.id
+
+        if (!geneId) {
+            return
+        }
+
+        await handleSubmitGeneAction({ geneId, actionType: 'USE' })
+    }, [handleSubmitGeneAction, viewModel.selectedGene?.id])
 
     const handleEvolveGene = useCallback(async () => {
-        await handleSubmit('EVOLVE')
-    }, [handleSubmit])
+        const geneId = viewModel.selectedGene?.id
+
+        if (!geneId) {
+            return
+        }
+
+        await handleSubmitGeneAction({ geneId, actionType: 'EVOLVE' })
+    }, [handleSubmitGeneAction, viewModel.selectedGene?.id])
 
     const handleActivateSymbiosis = useCallback(async (sourceTrait: TraitType, targetTrait: TraitType) => {
         if (submittingRef.current || !viewModel.canActivateSymbiosis || viewModel.status === 'invalid') return false
@@ -182,6 +203,7 @@ export function useGeneSelectionV2Controller(input: UseGeneSelectionV2Controller
     return {
         viewModel,
         onSelectGene: handleSelectGene,
+        onSubmitGeneAction: handleSubmitGeneAction,
         onUseGene: handleUseGene,
         onEvolveGene: handleEvolveGene,
         onActivateSymbiosis: handleActivateSymbiosis,

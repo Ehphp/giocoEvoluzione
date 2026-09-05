@@ -16,6 +16,9 @@ describe('buildRoundEventEffects', () => {
     it('uses the match snapshot for Armored Memory and a qualifying Recovery Surge', () => {
         const traits = createInitialAdaptations()
         traits.ARMOR.exhausted = true
+        traits.SENSES.level = 2
+        traits.SENSES.exhausted = true
+        traits.CAMOUFLAGE.level = 2
         const me = {
             id: 'me', game_id: 'game', nickname: 'Tu', slot: 1 as const, player_type: 'HUMAN' as const, traits,
             combat_mutation_state: { elasticLimbsUsed: false, adaptiveCoreStatus: 'DORMANT' as const, armoredMemoryUsed: false, recoverySurgeUsed: false },
@@ -39,6 +42,8 @@ describe('buildRoundEventEffects', () => {
         expect(model.selectedGene?.mutationHints).toBeUndefined()
         expect(model.selectedGene?.evolvePrediction).toEqual({ score: 2, mutationBonus: 1 })
         expect(model.selectedGene?.evolveMutationHints).toEqual(['+1 Impulso di recupero'])
+        expect(model.genes.find((gene) => gene.id === 'SENSES')?.evolvable).toBe(true)
+        expect(model.genes.find((gene) => gene.id === 'CAMOUFLAGE')?.evolvable).toBe(false)
         expect(model.player.combatMutations).toEqual([
             expect.objectContaining({ id: 'ARMORED_MEMORY', label: 'Memoria corazzata', status: 'available' }),
             expect.objectContaining({ id: 'RECOVERY_SURGE', label: 'Impulso di recupero', status: 'available' }),

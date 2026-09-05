@@ -1,16 +1,23 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 
+import { BoltIcon, DnaIcon } from '../../../ui/icons'
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
     DEFAULT_BATTLE_PLAYER_CREATURE,
     type CreatureVisual,
 } from '../controller/gene-selection-assets'
 import { shouldMirrorCreature, type CreatureFacing } from '../controller/creature-orientation'
+import type { BattleDropTarget } from './use-battle-gene-interaction'
 import { useCreatureBattleFraming } from './use-creature-battle-framing'
 
 type BattleArenaProps = {
     playerCreature: CreatureVisual | null
     opponentCreature: CreatureVisual | null
+    isGeneDragging: boolean
+    activeDropTarget: BattleDropTarget | null
+    canDropOnPlayer: boolean
+    canDropOnOpponent: boolean
+    registerDropZone: (target: BattleDropTarget, element: HTMLDivElement | null) => void
 }
 
 type BattleSide = 'player' | 'opponent'
@@ -74,11 +81,27 @@ function CreatureLayer({ visual, side }: { visual: CreatureVisual; side: BattleS
  * unequal. The header already says who is facing whom, and each creature now owns exactly half
  * the arena, which reads as a fair split on its own.
  */
-export function BattleArena({ playerCreature, opponentCreature }: BattleArenaProps) {
+export function BattleArena({ playerCreature, opponentCreature, isGeneDragging, activeDropTarget, canDropOnPlayer, canDropOnOpponent, registerDropZone }: BattleArenaProps) {
     return (
-        <section className="arena" aria-label="Scena di battaglia">
+        <section className={`arena ${isGeneDragging ? 'is-gene-dragging' : ''}`} aria-label="Scena di battaglia">
             {playerCreature ? <CreatureLayer visual={playerCreature} side="player" /> : null}
             {opponentCreature ? <CreatureLayer visual={opponentCreature} side="opponent" /> : null}
+            <div
+                ref={(element) => registerDropZone('player', element)}
+                className={`arena__drop-zone arena__drop-zone--player ${activeDropTarget === 'player' ? 'is-active' : ''}`}
+                data-drop-state={canDropOnPlayer ? 'valid' : 'disabled'}
+                aria-hidden="true"
+            >
+                <span className="arena__drop-label"><DnaIcon /> EVOLVI</span>
+            </div>
+            <div
+                ref={(element) => registerDropZone('opponent', element)}
+                className={`arena__drop-zone arena__drop-zone--opponent ${activeDropTarget === 'opponent' ? 'is-active' : ''}`}
+                data-drop-state={canDropOnOpponent ? 'valid' : 'disabled'}
+                aria-hidden="true"
+            >
+                <span className="arena__drop-label"><BoltIcon /> USA</span>
+            </div>
         </section>
     )
 }

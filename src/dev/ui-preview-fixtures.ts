@@ -78,16 +78,16 @@ export function buildPreviewHomeViewModel(): HomeViewModel {
     })
 }
 
-const PREVIEW_GENE_INPUT: ReadonlyArray<Pick<GeneCardV2, 'traitType' | 'name' | 'affinity' | 'level' | 'exhausted'> & { useScore: number; eventModifier: number }> = [
+const PREVIEW_GENE_INPUT: ReadonlyArray<Pick<GeneCardV2, 'traitType' | 'name' | 'affinity' | 'level' | 'exhausted' | 'evolvable'> & { useScore: number; eventModifier: number }> = [
     // One gene per level, so the three level frames are all inspectable side by side.
-    { traitType: 'FEROCITY', name: 'Ferocia', affinity: 'unfavorable', level: 0, exhausted: false, useScore: 3, eventModifier: 0 },
-    { traitType: 'ARMOR', name: 'Corazza', affinity: 'suitable', level: 1, exhausted: false, useScore: 5, eventModifier: 1 },
-    { traitType: 'AGILITY', name: 'Agilita', affinity: 'ideal', level: 2, exhausted: false, useScore: 7, eventModifier: 2 },
-    { traitType: 'SENSES', name: 'Sensi', affinity: 'ideal', level: 1, exhausted: false, useScore: 5, eventModifier: 2 },
-    { traitType: 'CAMOUFLAGE', name: 'Mimetismo', affinity: 'suitable', level: 0, exhausted: true, useScore: 2, eventModifier: 1 },
+    { traitType: 'FEROCITY', name: 'Ferocia', affinity: 'unfavorable', level: 0, exhausted: false, evolvable: true, useScore: 3, eventModifier: 0 },
+    { traitType: 'ARMOR', name: 'Corazza', affinity: 'suitable', level: 1, exhausted: false, evolvable: true, useScore: 5, eventModifier: 1 },
+    { traitType: 'AGILITY', name: 'Agilita', affinity: 'ideal', level: 2, exhausted: false, evolvable: false, useScore: 7, eventModifier: 2 },
+    { traitType: 'SENSES', name: 'Sensi', affinity: 'ideal', level: 1, exhausted: false, evolvable: true, useScore: 5, eventModifier: 2 },
+    { traitType: 'CAMOUFLAGE', name: 'Mimetismo', affinity: 'suitable', level: 0, exhausted: true, evolvable: true, useScore: 2, eventModifier: 1 },
 ]
 
-export const PREVIEW_GENES: GeneCardV2[] = PREVIEW_GENE_INPUT.map(({ traitType, name, affinity, level, exhausted, useScore, eventModifier }) => ({
+export const PREVIEW_GENES: GeneCardV2[] = PREVIEW_GENE_INPUT.map(({ traitType, name, affinity, level, exhausted, evolvable, useScore, eventModifier }) => ({
     id: traitType,
     traitType,
     name,
@@ -95,6 +95,7 @@ export const PREVIEW_GENES: GeneCardV2[] = PREVIEW_GENE_INPUT.map(({ traitType, 
     affinity,
     imageUrl: getGeneAssetByTrait(traitType),
     usable: !exhausted,
+    evolvable,
     exhausted,
     strongAgainst: traitType === 'AGILITY' ? 'Corazza' : 'Sensi',
     weakAgainst: traitType === 'AGILITY' ? 'Mimetismo' : 'Ferocia',

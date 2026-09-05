@@ -240,6 +240,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 ? getRoundEventEffectsForTrait(roundEvent, traitType).reduce((sum, effect) => sum + effect.modifier, 0)
                 : 0
             const usable = isTraitUsable(myTraits, traitType)
+            const evolvable = isTraitEvolvable(myTraits, traitType)
             const weakAgainst = TRAITS.find((candidate) => NATURAL_ADVANTAGE[candidate] === traitType)!
             const combatMutationPreview = getCombatMutationUsePreview(me.combat_mutation_state, traitType, me.combat_mutation_loadout)
             const evolveMutationPreview = getCombatMutationEvolvePreview(me.combat_mutation_state, myTraits, traitType, me.combat_mutation_loadout)
@@ -264,6 +265,7 @@ function buildGenes(snapshot: GameSnapshot): GeneCardV2[] {
                 affinity: mapAffinity(affinity),
                 imageUrl: getGeneAssetByTrait(traitType),
                 usable,
+                evolvable,
                 exhausted: state.exhausted,
                 strongAgainst: TRAIT_LABELS[NATURAL_ADVANTAGE[traitType]],
                 weakAgainst: TRAIT_LABELS[weakAgainst],
@@ -382,11 +384,7 @@ export function buildGeneSelectionV2ViewModel(input: BuildGeneSelectionV2ViewMod
     }
 
     const canSelectGenes = status === 'choosing' || status === 'error'
-    const canEvolve = Boolean(
-        selectedGene
-        && snapshot.me
-        && isTraitEvolvable(snapshot.me.traits, selectedGene.traitType),
-    ) && (status === 'choosing' || status === 'error')
+    const canEvolve = Boolean(selectedGene?.evolvable) && (status === 'choosing' || status === 'error')
     const canUse = Boolean(selectedGene?.usable) && (status === 'choosing' || status === 'error')
     const canActivateSymbiosis = Boolean(
         snapshot.me?.combat_mutation_loadout.includes('SYMBIOSIS')

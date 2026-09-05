@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 
 import {
     DEFAULT_BATTLE_OPPONENT_CREATURE,
@@ -6,10 +6,10 @@ import {
     GAME_SELECTION_ASSETS,
     getBattleBackgroundForEvent,
 } from './controller/gene-selection-assets'
-import type { GeneSelectionViewModelV2 } from './controller/types'
+import type { GeneActionCommandV2, GeneSelectionViewModelV2 } from './controller/types'
 import type { TraitType } from '../../game/types'
 import { AppShell, Button, ConfirmDialog, Notice, Overlay, Panel } from '../../ui/components'
-import { MeteorIcon } from '../../ui/icons'
+import { GeneIcon, MeteorIcon } from '../../ui/icons'
 import { BattleArena } from './parts/BattleArena'
 import { CombatMutationLoadout } from './parts/CombatMutationLoadout'
 import { DecisionActions, WaitingPanel } from './parts/DecisionActions'
@@ -17,12 +17,14 @@ import { DuelHeader } from './parts/DuelHeader'
 import { EnvironmentCard } from './parts/EnvironmentCard'
 import { GeneCarousel } from './parts/GeneCarousel'
 import { ProfileMenuDiagnostics } from './parts/ProfileMenuDiagnostics'
+import { useBattleGeneInteraction } from './parts/use-battle-gene-interaction'
 
 import './BattleScreen.css'
 
 type BattleScreenProps = {
     viewModel: GeneSelectionViewModelV2
     onSelectGene: (geneId: string) => void
+    onSubmitGeneAction: (command: GeneActionCommandV2) => Promise<boolean>
     onUseGene: () => Promise<void>
     onEvolveGene: () => Promise<void>
     onActivateSymbiosis?: (sourceTrait: TraitType, targetTrait: TraitType) => Promise<boolean>
@@ -47,6 +49,7 @@ function StateCard({ title, description, action }: { title: string; description:
 export function BattleScreen({
     viewModel,
     onSelectGene,
+    onSubmitGeneAction,
     onUseGene,
     onEvolveGene,
     onActivateSymbiosis,
@@ -70,6 +73,21 @@ export function BattleScreen({
     const isWaiting = viewModel.status === 'waiting' || viewModel.status === 'resolving'
     const isChoosing = viewModel.status === 'choosing' || viewModel.status === 'error'
     const selectedGeneId = viewModel.selectedGeneId ?? viewModel.genes[0]?.id ?? ''
+    const geneInteraction = useBattleGeneInteraction({
+        genes: viewModel.genes,
+        isEnabled: isChoosing && !isInteractionLocked,
+        onSelectGene,
+        onSubmitGeneAction,
+    })
+    const draggedGene = geneInteraction.interaction.geneId
+        ? viewModel.genes.find((gene) => gene.id === geneInteraction.interaction.geneId) ?? null
+        : null
+    const isGeneDragging = geneInteraction.interaction.phase === 'dragging'
+    const isGestureCommitting = geneInteraction.interaction.phase === 'committing'
+    const dragPreviewStyle = {
+        '--gene-drag-x': `${geneInteraction.interaction.clientX}px`,
+        '--gene-drag-y': `${geneInteraction.interaction.clientY}px`,
+    } as CSSProperties
 
     const leaveConfirm = isLeaveConfirmOpen ? (
         <ConfirmDialog
@@ -152,7 +170,7 @@ export function BattleScreen({
     return (
         <AppShell sceneryUrl={backgroundSource} sceneryFallbackUrl={GAME_SELECTION_ASSETS.backgroundFallback}>
             <div
-                className={`battle-screen ${isInteractionLocked ? 'is-locked' : ''}`}
+                className={`battle-screen ${isInteractionLocked ? 'is-locked' : ''} ${isGeneDragging ? 'is-gene-dragging' : ''}`}
                 aria-hidden={isInteractionLocked || undefined}
                 inert={isInteractionLocked}
             >
@@ -168,6 +186,11 @@ export function BattleScreen({
                 <BattleArena
                     playerCreature={viewModel.player.creatureVisual === undefined ? DEFAULT_BATTLE_PLAYER_CREATURE : viewModel.player.creatureVisual}
                     opponentCreature={viewModel.opponent.creatureVisual === undefined ? DEFAULT_BATTLE_OPPONENT_CREATURE : viewModel.opponent.creatureVisual}
+                    isGeneDragging={isGeneDragging}
+                    activeDropTarget={geneInteraction.interaction.target}
+                    canDropOnPlayer={Boolean(draggedGene?.evolvable)}
+                    canDropOnOpponent={Boolean(draggedGene?.usable)}
+                    registerDropZone={geneInteraction.registerDropZone}
                 />
 
                 {viewModel.status === 'error' && viewModel.errorMessage ? (
@@ -188,14 +211,21 @@ export function BattleScreen({
                                 genes={viewModel.genes}
                                 selectedGeneId={selectedGeneId}
                                 onSelectGene={onSelectGene}
-                                disableSelection={!isChoosing}
+                                disableSelection={!isChoosing || isGestureCommitting}
+                                longPressGeneId={geneInteraction.longPressGeneId}
+                                consumeSuppressedClick={geneInteraction.consumeSuppressedClick}
+                                onGenePointerDown={geneInteraction.onPointerDown}
+                                onGenePointerMove={geneInteraction.onPointerMove}
+                                onGenePointerUp={geneInteraction.onPointerUp}
+                                onGenePointerCancel={geneInteraction.onPointerCancel}
+                                onGeneLostPointerCapture={geneInteraction.onLostPointerCapture}
                             />
                             <DecisionActions
                                 selectedGene={viewModel.selectedGene}
                                 selectedAction={viewModel.selectedAction}
                                 canUse={viewModel.canUse}
                                 canEvolve={viewModel.canEvolve}
-                                isSubmitting={viewModel.status === 'submitting'}
+                                isSubmitting={viewModel.status === 'submitting' || isGestureCommitting}
                                 onUse={() => { void onUseGene() }}
                                 onEvolve={() => { void onEvolveGene() }}
                             />
@@ -203,6 +233,12 @@ export function BattleScreen({
                     )}
                 </Panel>
             </div>
+            {isGeneDragging && draggedGene ? (
+                <div className="gene-drag-preview" data-gene={draggedGene.traitType} style={dragPreviewStyle} aria-hidden="true">
+                    <GeneIcon trait={draggedGene.traitType} />
+                    <span>{draggedGene.name}</span>
+                </div>
+            ) : null}
             <ProfileMenuDiagnostics
                 phase={debugPhase ?? viewModel.status}
                 isInteractionLocked={isInteractionLocked}

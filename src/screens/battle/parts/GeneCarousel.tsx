@@ -1,17 +1,23 @@
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent, type PointerEvent } from 'react'
 
 import { MAX_ADAPTATION_LEVEL, NATURAL_ADVANTAGE_BONUS } from '../../../../shared/game-rules/catalog.ts'
 import { Chip, Overlay, Panel, SheetHeader } from '../../../ui/components'
 import { playCue } from '../../../ui/feedback/feedback'
 import { ArrowDownIcon, ArrowUpIcon, GeneIcon } from '../../../ui/icons'
 import type { GeneCardV2 } from '../controller/types'
-import { useGeneLongPress } from './use-gene-long-press'
 
 type GeneCarouselProps = {
     genes: GeneCardV2[]
     selectedGeneId: string
     onSelectGene: (geneId: string) => void
     disableSelection: boolean
+    longPressGeneId: string | null
+    consumeSuppressedClick: (geneId: string) => boolean
+    onGenePointerDown: (geneId: string, event: PointerEvent<HTMLButtonElement>) => void
+    onGenePointerMove: (event: PointerEvent<HTMLButtonElement>) => void
+    onGenePointerUp: (event: PointerEvent<HTMLButtonElement>) => void
+    onGenePointerCancel: (event: PointerEvent<HTMLButtonElement>) => void
+    onGeneLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void
 }
 
 const AFFINITY_SHORT: Record<GeneCardV2['affinity'], string> = {
@@ -81,15 +87,21 @@ function GeneDetailSheet({ gene, onClose }: { gene: GeneCardV2; onClose: () => v
     )
 }
 
-function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }: {
+function GeneOrb({ gene, isSelected, isLongPressActive, disabled, tabIndex, onActivate, onKeyDown, consumeSuppressedClick, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture }: {
     gene: GeneCardV2
     isSelected: boolean
+    isLongPressActive: boolean
     disabled: boolean
     tabIndex: number
     onActivate: () => void
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
+    consumeSuppressedClick: () => boolean
+    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void
+    onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void
+    onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void
+    onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void
+    onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
-    const longPress = useGeneLongPress({ disabled })
     const expectedScore = gene.prediction?.useScore
     const matchupDescription = [
         gene.strongAgainstTrait && gene.strongAgainst ? `supera ${gene.strongAgainst}` : null,
@@ -107,14 +119,14 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
              * a level the stylesheet has no frame for falls back to the nearest one it does.
              */
             data-level={Math.max(0, Math.min(gene.level, MAX_ADAPTATION_LEVEL))}
-            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''} ${longPress.isLongPressActive ? 'is-matchup-visible' : ''}`}
+            className={`gene-orb ${isSelected ? 'is-selected' : ''} ${gene.exhausted ? 'is-exhausted' : ''} ${isLongPressActive ? 'is-matchup-visible' : ''}`}
             aria-selected={isSelected}
-            aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${gene.prediction ? gene.prediction.useScore : 'non disponibile'}, ${AFFINITY_FULL[gene.affinity]}${longPress.isLongPressActive && matchupDescription ? `. Matchup: ${matchupDescription}` : ''}${isSelected ? '. Tocca di nuovo per i dettagli' : ''}`}
-            data-matchup-visible={longPress.isLongPressActive || undefined}
+            aria-label={`${gene.name}, livello ${gene.level}, ${gene.usable ? 'disponibile' : 'esaurito'}, valore ambientale ${gene.prediction ? gene.prediction.useScore : 'non disponibile'}, ${AFFINITY_FULL[gene.affinity]}${isLongPressActive && matchupDescription ? `. Matchup: ${matchupDescription}` : ''}${isSelected ? '. Tocca di nuovo per i dettagli' : ''}`}
+            data-matchup-visible={isLongPressActive || undefined}
             tabIndex={tabIndex}
             disabled={disabled}
             onClick={(event) => {
-                if (longPress.consumeLongPressClick()) {
+                if (consumeSuppressedClick()) {
                     event.preventDefault()
                     return
                 }
@@ -123,11 +135,11 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
             }}
             onKeyDown={onKeyDown}
             onContextMenu={(event) => event.preventDefault()}
-            onPointerDown={longPress.onPointerDown}
-            onPointerMove={longPress.onPointerMove}
-            onPointerUp={longPress.onPointerUp}
-            onPointerCancel={longPress.onPointerCancel}
-            onLostPointerCapture={longPress.onLostPointerCapture}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerCancel}
+            onLostPointerCapture={onLostPointerCapture}
         >
             <span className="gene-orb__visual" aria-hidden="true">
                 <span className="gene-orb__matchups">
@@ -143,13 +155,13 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
                     ) : null}
                 </span>
                 <span className="gene-orb__disc">
-                    <span className={`gene-orb__frame ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`} />
+                    <span className={`gene-orb__frame ${isLongPressActive ? 'is-context-hidden' : ''}`} />
                     <span className="gene-orb__content">
-                        <span className={`gene-orb__icon ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`}>
+                        <span className={`gene-orb__icon ${isLongPressActive ? 'is-context-hidden' : ''}`}>
                             <GeneIcon trait={gene.traitType} />
                         </span>
                     </span>
-                    <b className={`gene-orb__score ${longPress.isLongPressActive ? 'is-context-hidden' : ''}`}>
+                    <b className={`gene-orb__score ${isLongPressActive ? 'is-context-hidden' : ''}`}>
                         {expectedScore ?? '—'}
                     </b>
                 </span>
@@ -160,7 +172,7 @@ function GeneOrb({ gene, isSelected, disabled, tabIndex, onActivate, onKeyDown }
     )
 }
 
-export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelection }: GeneCarouselProps) {
+export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelection, longPressGeneId, consumeSuppressedClick, onGenePointerDown, onGenePointerMove, onGenePointerUp, onGenePointerCancel, onGeneLostPointerCapture }: GeneCarouselProps) {
     const [detailGeneId, setDetailGeneId] = useState<string | null>(null)
     const selectedIndex = Math.max(0, genes.findIndex((gene) => gene.id === selectedGeneId))
     const detailGene = detailGeneId ? genes.find((gene) => gene.id === detailGeneId) ?? null : null
@@ -218,6 +230,7 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
                         key={gene.id}
                         gene={gene}
                         isSelected={index === selectedIndex}
+                        isLongPressActive={longPressGeneId === gene.id}
                         disabled={disableSelection}
                         tabIndex={index === selectedIndex ? 0 : -1}
                         onActivate={() => {
@@ -228,6 +241,12 @@ export function GeneCarousel({ genes, selectedGeneId, onSelectGene, disableSelec
                             }
                         }}
                         onKeyDown={handleKeyDown}
+                        consumeSuppressedClick={() => consumeSuppressedClick(gene.id)}
+                        onPointerDown={(event) => onGenePointerDown(gene.id, event)}
+                        onPointerMove={onGenePointerMove}
+                        onPointerUp={onGenePointerUp}
+                        onPointerCancel={onGenePointerCancel}
+                        onLostPointerCapture={onGeneLostPointerCapture}
                     />
                 ))}
             </div>

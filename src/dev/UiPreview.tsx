@@ -26,6 +26,7 @@ import {
 
 const noop = () => undefined
 const asyncNoop = async () => undefined
+const asyncSuccess = async () => true
 
 /**
  * The app's dock, as the app renders it: once, outside whatever screen is showing. Repeating that
@@ -75,6 +76,7 @@ function BattlePreview() {
         <BattleScreen
             viewModel={buildPreviewBattleViewModel(selectedGeneId)}
             onSelectGene={setSelectedGeneId}
+            onSubmitGeneAction={asyncSuccess}
             onUseGene={asyncNoop}
             onEvolveGene={asyncNoop}
             onActivateSymbiosis={async () => false}

@@ -22,6 +22,11 @@ export type GeneAffinityV2 = 'unfavorable' | 'suitable' | 'ideal'
 export type GeneActionTypeV2 = 'USE' | 'EVOLVE'
 export type SubmittedActionTypeV2 = GeneActionTypeV2 | 'ACTIVATE_MUTATION'
 
+export type GeneActionCommandV2 = {
+    geneId: string
+    actionType: GeneActionTypeV2
+}
+
 export type GeneSelectionStatusV2 = 'loading' | 'choosing' | 'submitting' | 'waiting' | 'resolving' | 'error' | 'invalid'
 
 export interface DuelPlayerV2 {
@@ -67,6 +72,7 @@ export interface GeneCardV2 {
     affinity: GeneAffinityV2
     imageUrl?: string
     usable: boolean
+    evolvable: boolean
     exhausted: boolean
     strongAgainst: string
     weakAgainst: string

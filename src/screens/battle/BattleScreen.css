@@ -29,6 +29,10 @@
     filter: saturate(.7) brightness(.8);
 }
 
+.battle-screen.is-gene-dragging > :not(.arena) {
+    opacity: var(--ev-gene-drag-muted-opacity);
+}
+
 .battle-screen__state {
     display: grid;
     flex: 1;
@@ -531,6 +535,63 @@
     margin: 0 calc(var(--ev-s-2) * -1);
 }
 
+.arena__drop-zone {
+    --arena-drop-color: var(--ev-player);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 50%;
+    border: var(--ev-stroke-width) solid var(--arena-drop-color);
+    border-radius: var(--ev-r-lg);
+    background: color-mix(in srgb, var(--arena-drop-color) 16%, transparent);
+    box-shadow: inset 0 0 var(--ev-s-6) color-mix(in srgb, var(--arena-drop-color) 32%, transparent);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.arena__drop-zone--player {
+    --arena-drop-color: var(--ev-opponent);
+    left: 0;
+}
+
+.arena__drop-zone--opponent {
+    right: 0;
+}
+
+.arena.is-gene-dragging .arena__drop-zone {
+    opacity: 1;
+}
+
+.arena.is-gene-dragging .arena__drop-zone[data-drop-state='disabled'] {
+    --arena-drop-color: var(--ev-ink-muted);
+    border-style: dashed;
+    opacity: var(--ev-gene-drop-disabled-opacity);
+}
+
+.arena.is-gene-dragging .arena__drop-zone.is-active {
+    background: color-mix(in srgb, var(--arena-drop-color) 30%, transparent);
+    box-shadow:
+        inset 0 0 var(--ev-s-6) color-mix(in srgb, var(--arena-drop-color) 52%, transparent),
+        0 0 var(--ev-s-4) color-mix(in srgb, var(--arena-drop-color) 70%, transparent);
+}
+
+.arena__drop-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ev-s-1);
+    padding: var(--ev-s-1) var(--ev-s-3);
+    border-radius: var(--ev-r-pill);
+    color: var(--ev-on-dark);
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    background: color-mix(in srgb, var(--arena-drop-color) 78%, var(--ev-slate-deep));
+    box-shadow: var(--ev-shadow-sm);
+}
+
 .gene-carousel {
     display: grid;
     gap: var(--ev-s-2);
@@ -698,6 +759,33 @@
     gap: 7px;
     min-width: 0;
     padding: 0;
+    touch-action: none;
+    user-select: none;
+}
+
+.gene-drag-preview {
+    position: fixed;
+    top: var(--gene-drag-y);
+    left: var(--gene-drag-x);
+    z-index: var(--ev-z-overlay);
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: var(--ev-s-1);
+    padding: var(--ev-s-2) var(--ev-s-3);
+    border: var(--ev-stroke-width) solid var(--gene-color, var(--ev-player));
+    border-radius: var(--ev-r-pill);
+    color: var(--gene-color-strong, var(--ev-on-dark));
+    font-family: var(--ev-font-display);
+    font-size: var(--ev-fs-sm);
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--gene-color-soft, var(--ev-cream-light)) 88%, var(--ev-cream-light));
+    box-shadow: var(--ev-shadow-lg);
+    pointer-events: none;
+    translate: -50% calc(-100% - var(--ev-s-3));
+    user-select: none;
 }
 
 .gene-orb.is-selected {
