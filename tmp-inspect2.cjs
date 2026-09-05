@@ -1,0 +1,20 @@
+const { chromium, devices } = require('playwright-core')
+;(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] })
+  const ctx = await browser.newContext({ viewport: { width: 412, height: 924 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+  const page = await ctx.newPage()
+  await page.goto('http://localhost:5173/?ui-preview=battle', { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: 'artifacts/preview/battle-lift-check.png' })
+  const data = await page.evaluate(() => {
+    const bs = document.querySelector('.battle-screen').getBoundingClientRect()
+    const ar = document.querySelector('.arena').getBoundingClientRect()
+    const cr = document.querySelector('.arena__creature--player').getBoundingClientRect()
+    const img = document.querySelector('.arena__creature--player .arena__sprite').getBoundingClientRect()
+    const envRow = document.querySelector('.environment-row')?.getBoundingClientRect()
+    return { viewport: { w: innerWidth, h: innerHeight }, battleScreen: bs, arena: ar, creatureBox: cr, spriteImg: img, envRow }
+  })
+  console.log(JSON.stringify(data, null, 2))
+  await ctx.close()
+  await browser.close()
+})()

@@ -224,8 +224,21 @@
     --ev-battle-arena-basis-medium: 126px;
     --ev-battle-arena-basis-compact: 102px;
     --ev-battle-arena-basis-tight: 68px;
-    /* Keeps both creatures clear of the decision board without scaling or cropping their art. */
-    --ev-battle-creature-lift: var(--ev-s-5);
+    /*
+     * Lifts the duel into the arena's middle third rather than pinning it to the floor, freeing the
+     * bottom for the gene-to-action gesture. `cqh` reads off the arena's own box (it is the `size`
+     * container), so the lift scales with however much room the elastic block actually has instead
+     * of a fixed pixel that would either crop on a short viewport or look stranded on a tall one.
+     */
+    /*
+     * Lifts the duel into the arena's middle third rather than pinning it to the floor, freeing the
+     * bottom for the gene-to-action gesture. The header leaves a near-constant ~110px of headroom
+     * above the arena regardless of viewport; `10cqh` is the sprite's own fixed 10% overflow in that
+     * same headroom (the lane already reaches above the arena on purpose), so subtracting it keeps
+     * the lift inside the budget instead of the two together pushing the transparent hit-box past the
+     * screen on viewports tall enough to let the arena itself grow large (tablets).
+     */
+    --ev-battle-creature-lift: clamp(30px, calc(106px - 10cqh), 90px);
     --ev-battle-decision-overlap: 22px;
     /*
      * The round decision is a fixed-size control surface, not a box that grows with its copy.
