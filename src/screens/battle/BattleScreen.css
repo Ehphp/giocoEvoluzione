@@ -468,6 +468,8 @@
     width: 50%;
     height: 110%;
     translate: var(--arena-creature-offset-x, 0) 0;
+    /* The transformed transparent sprite box can reach over the header on tall mobile viewports. */
+    pointer-events: none;
 }
 
 .arena__creature--player {
